@@ -82,3 +82,8 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Production
+docker-compose.override.yml
+secrets/
+backups/
