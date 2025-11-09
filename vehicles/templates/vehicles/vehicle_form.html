@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{% if object %}Редактировать ТС{% else %}Добавить ТС{% endif %}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <p>
+        {{ form.vehicle_type.label_tag }}<br>
+        {{ form.vehicle_type }}
+        {{ form.vehicle_type.errors }}
+    </p>
+    
+    <p>
+        {{ form.grn.label_tag }}<br>
+        {{ form.grn }}
+        {{ form.grn.errors }}
+    </p>
+    
+    <p>
+        {{ form.brand.label_tag }}<br>
+        {{ form.brand }}
+        {{ form.brand.errors }}
+    </p>
+    
+    <p>
+        {{ form.model.label_tag }}<br>
+        {{ form.model }}
+        {{ form.model.errors }}
+    </p>
+    
+    <button type="submit">Сохранить</button>
+    <a href="{% url 'vehicles:list' %}">Отмена</a>
+</form>
+{% endblock %}
