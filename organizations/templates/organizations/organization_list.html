@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Организации</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>ИНН</th>
+            <th>ОГРН</th>
+            <th>Адрес</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for organization in organizations %}
+        <tr>
+            <td>{{ organization.short_name }}</td>
+            <td>{{ organization.inn }}</td>
+            <td>{{ organization.ogrn }}</td>
+            <td>{{ organization.address }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">Нет организаций</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'organizations:create' %}">Добавить организацию</a>
+{% endblock %}

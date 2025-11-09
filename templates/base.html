@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}TMS{% endblock %}</title>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'organizations:list' %}">Организации</a>
+    </nav>
+    
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>

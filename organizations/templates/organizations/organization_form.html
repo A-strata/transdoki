@@ -1,5 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Создание организации</h1>
+
 <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Создать</button>
+    
+    <p>
+        {{ form.inn.label_tag }}<br>
+        {{ form.inn }}
+        <button type="button" id="btn_fill_inn">Заполнить по ИНН</button><br>
+        {{ form.inn.errors }}
+    </p>
+    
+    <p>
+        {{ form.full_name.label_tag }}<br>
+        {{ form.full_name }}<br>
+        {{ form.full_name.errors }}
+    </p>
+    
+    <p>
+        {{ form.short_name.label_tag }}<br>
+        {{ form.short_name }}<br>
+        {{ form.short_name.errors }}
+    </p>
+    
+    <p>
+        {{ form.ogrn.label_tag }}<br>
+        {{ form.ogrn }}<br>
+        {{ form.ogrn.errors }}
+    </p>
+    
+    <p>
+        {{ form.kpp.label_tag }}<br>
+        {{ form.kpp }}<br>
+        {{ form.kpp.errors }}
+    </p>
+    
+    <p>
+        {{ form.address.label_tag }}<br>
+        {{ form.address }}<br>
+        {{ form.address.errors }}
+    </p>
+    
+    <p>
+        <button type="submit">Сохранить</button>
+    </p>
 </form>
+
+<script src="{% static 'organizations/js/suggestions_by_inn.js' %}"></script>
+{% endblock %}
