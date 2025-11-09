@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Добавить человека</h1>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <p>
+        {{ form.surname.label_tag }}<br>
+        {{ form.surname }}
+    </p>
+    
+    <p>
+        {{ form.name.label_tag }}<br>
+        {{ form.name }}
+    </p>
+    
+    <p>
+        {{ form.patronymic.label_tag }}<br>
+        {{ form.patronymic }}
+    </p>
+    
+    <p>
+        {{ form.phone.label_tag }}<br>
+        {{ form.phone }}
+    </p>
+    
+    <p>
+        {{ form.email.label_tag }}<br>
+        {{ form.email }}
+    </p>
+    
+    <button type="submit">Сохранить</button>
+</form>
+{% endblock %}

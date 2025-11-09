@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Люди</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Фамилия</th>
+            <th>Имя</th>
+            <th>Отчество</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for person in persons %}
+        <tr>
+            <td>{{ person.surname }}</td>
+            <td>{{ person.name }}</td>
+            <td>{{ person.patronymic }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Нет людей</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'persons:create' %}">Добавить человека</a>
+{% endblock %}
