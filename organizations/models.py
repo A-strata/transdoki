@@ -2,6 +2,7 @@ from django.db import models
 from django.urls import reverse
 from django.db.models import UniqueConstraint
 from django.core.exceptions import ValidationError
+from .validators import validate_inn
 
 ORG_NAME_LENGTH = 200
 INN_LENGTH = 12
@@ -26,6 +27,7 @@ class Organization(models.Model):
     inn = models.CharField(
         max_length=INN_LENGTH,
         unique=True,
+        validators=[validate_inn],
         verbose_name="ИНН",
     )
     kpp = models.CharField(
