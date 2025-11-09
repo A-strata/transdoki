@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Поездки</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>№ заявки</th>
+            <th>Дата</th>
+            <th>Отправитель</th>
+            <th>Получатель</th>
+            <th>Перевозчик</th>
+            <th>Груз</th>
+            <th>Вес, кг</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for trip in trips %}
+        <tr>
+            <td>{{ trip.num_of_trip }}</td>
+            <td>{{ trip.date_of_trip|date:"d.m.Y" }}</td>
+            <td>{{ trip.consignor.short_name }}</td>
+            <td>{{ trip.consignee.short_name }}</td>
+            <td>{{ trip.carrier.short_name }}</td>
+            <td>{{ trip.cargo }}</td>
+            <td>{{ trip.weight }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7">Нет поездок</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'trips:create' %}">Создать поездку</a>
+{% endblock %}

@@ -1,0 +1,82 @@
+from django.db import models
+from organizations.models import Organization
+from persons.models import Person
+from vehicles.models import Vehicle
+
+CARGO_LENGTH = 20
+
+
+class Trip(models.Model):
+    num_of_trip = models.PositiveSmallIntegerField(
+        verbose_name='Номер заявки'
+    )
+    date_of_trip = models.DateField(
+        verbose_name='Дата заявки',
+        null=True,
+        blank=True
+    )
+    client = models.ForeignKey(
+        Organization, 
+        on_delete=models.PROTECT,
+        related_name='trips_as_client',
+        verbose_name='Заказчик перевозки'
+    )
+    consignor = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT,
+        related_name='trips_as_consignor',
+        verbose_name='Отправитель'
+    )
+    consignee = models.ForeignKey(
+        Organization, 
+        on_delete=models.PROTECT,
+        related_name='trips_as_consignee',
+        verbose_name='Получатель'
+    )
+    carrier = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT, 
+        related_name='trips_as_carrier',
+        verbose_name='Перевозчик'
+    )
+    driver = models.ForeignKey(
+        Person,
+        on_delete=models.PROTECT,
+        related_name='trips_as_driver',
+        verbose_name='Водитель'
+    )
+    truck = models.ForeignKey(
+        Vehicle,
+        on_delete=models.PROTECT,
+        related_name='trips_as_truck',
+        verbose_name='Автомобиль'
+    )
+    trailer = models.ForeignKey(
+        Vehicle,
+        on_delete=models.PROTECT,
+        related_name='trips_as_trailer',
+        verbose_name='Прицеп'
+    )
+    planned_loading_date = models.DateTimeField(
+        verbose_name='Заявленные дата и время погрузки'
+    )
+    planned_unloading_date = models.DateTimeField(
+        verbose_name='Заявленные дата и время выгрузки'
+    )
+    actual_loading_date = models.DateTimeField(
+        verbose_name='Фактическая дата и время погрузки', 
+        null=True, 
+        blank=True
+    )
+    actual_unloading_date = models.DateTimeField(
+        verbose_name='Фактическая дата и время выгрузки',
+        null=True,
+        blank=True
+    )
+    cargo = models.CharField(
+        max_length=CARGO_LENGTH,
+        verbose_name='Груз'
+    )
+    weight = models.PositiveIntegerField(
+        verbose_name='Вес'
+    )

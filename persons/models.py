@@ -20,3 +20,16 @@ class Person(models.Model):
         max_length=NAME_LENGTH,
         verbose_name='Отчество'
     )
+
+    def __str__(self):
+        return f"{self.surname} {self.name} {self.patronymic}"
+
+    class Meta:
+        verbose_name = 'Человек'
+        verbose_name_plural = 'Люди'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['surname', 'name', 'patronymic'],
+                name='unique_person_full_name'
+            )
+        ]

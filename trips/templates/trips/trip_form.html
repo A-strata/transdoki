@@ -1,0 +1,90 @@
+ {% extends "base.html" %}
+
+{% block content %}
+<h1>{% if object %}Редактировать поездку{% else %}Создать поездку{% endif %}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+        <div style="color: red;">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <h2>Основная информация</h2>
+    <p>
+        {{ form.num_of_trip.label_tag }}<br>
+        {{ form.num_of_trip }}<br>
+        {{ form.num_of_trip.errors }}
+    </p>
+    <p>
+        {{ form.date_of_trip.label_tag }}<br>
+        {{ form.date_of_trip }}<br>
+        {{ form.date_of_trip.errors }}
+    </p>
+    <h2>Участники перевозки</h2>
+    <p>
+        {{ form.client.label_tag }}<br>
+        {{ form.client }}<br>
+        {{ form.client.errors }}
+    </p>
+    <p>
+        {{ form.consignor.label_tag }}<br>
+        {{ form.consignor }}<br>
+        {{ form.consignor.errors }}
+    </p>
+    <p>
+        {{ form.consignee.label_tag }}<br>
+        {{ form.consignee }}<br>
+        {{ form.consignee.errors }}
+    </p>
+    <p>
+        {{ form.carrier.label_tag }}<br>
+        {{ form.carrier }}<br>
+        {{ form.carrier.errors }}
+    </p>
+    <p>
+        {{ form.driver.label_tag }}<br>
+        {{ form.driver }}<br>
+        {{ form.driver.errors }}
+    </p>
+    <p>
+        {{ form.truck.label_tag }}<br>
+        {{ form.truck }}<br>
+        {{ form.truck.errors }}
+    </p>
+    <p>
+        {{ form.trailer.label_tag }}<br>
+        {{ form.trailer }}<br>
+        {{ form.trailer.errors }}
+    </p>
+    <h2>Детали перевозки</h2>
+    <p>
+        {{ form.cargo.label_tag }}<br>
+        {{ form.cargo }}<br>
+        {{ form.cargo.errors }}
+    </p>
+    <p>
+        {{ form.weight.label_tag }}<br>
+        {{ form.weight }}<br>
+        {{ form.weight.errors }}
+    </p>
+    <h2>Даты</h2>
+    <p>
+        {{ form.planned_loading_date.label_tag }}<br>
+        {{ form.planned_loading_date }}<br>
+        {{ form.planned_loading_date.errors }}
+    </p>
+    <p>
+        {{ form.planned_unloading_date.label_tag }}<br>
+        {{ form.planned_unloading_date }}<br>
+        {{ form.planned_unloading_date.errors }}
+    </p>
+    
+    <button type="submit">Сохранить</button>
+    <a href="{% url 'trips:list' %}">Отмена</a>
+</form>
+{% endblock %}
