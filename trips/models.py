@@ -78,5 +78,7 @@ class Trip(models.Model):
         verbose_name='Груз'
     )
     weight = models.PositiveIntegerField(
-        verbose_name='Вес'
+        verbose_name='Вес',
+        blank=True,
+        null=True
     )

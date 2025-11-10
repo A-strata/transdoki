@@ -1,5 +1,5 @@
- {% extends "base.html" %}
-
+{% extends "base.html" %}
+{% load static %}
 {% block content %}
 <h1>{% if object %}Редактировать поездку{% else %}Создать поездку{% endif %}</h1>
 
@@ -87,4 +87,5 @@
     <button type="submit">Сохранить</button>
     <a href="{% url 'trips:list' %}">Отмена</a>
 </form>
+<script src="{% static 'trips/js/autocomplete.js' %}"></script>
 {% endblock %}
