@@ -11,8 +11,10 @@
             <th>Отправитель</th>
             <th>Получатель</th>
             <th>Перевозчик</th>
+            <th>Водитель</th>
             <th>Груз</th>
             <th>Вес, кг</th>
+            <th>Действия</th>
         </tr>
     </thead>
     <tbody>
@@ -23,8 +25,10 @@
             <td>{{ trip.consignor.short_name }}</td>
             <td>{{ trip.consignee.short_name }}</td>
             <td>{{ trip.carrier.short_name }}</td>
+            <td>{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
             <td>{{ trip.cargo }}</td>
             <td>{{ trip.weight }}</td>
+            <td><a href="{% url 'trips:print_tn' trip.pk %}" download>📥 ТН</a></td>
         </tr>
         {% empty %}
         <tr>
