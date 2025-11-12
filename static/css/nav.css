@@ -1,0 +1,28 @@
+ .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.nav-left a, .nav-right a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #007bff;
+}
+
+.nav-left a:hover, .nav-right a:hover {
+    text-decoration: underline;
+}
+
+.nav-right {
+    text-align: right;
+}
+
+.nav-left a.active {
+    border-bottom: 2px solid #007bff;
+    font-weight: bold;
+    color: #0056b3;
+}

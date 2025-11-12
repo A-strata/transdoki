@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Мои приложения
+    'accounts',
     'organizations',
     'persons',
     'vehicles',
@@ -103,6 +104,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGIN_REDIRECT_URL = '/trips/'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

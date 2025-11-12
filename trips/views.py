@@ -4,15 +4,16 @@ from .models import Trip
 from .forms import TripForm
 from .services import TNGenerator
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
-class TripCreateView(CreateView):
+class TripCreateView(LoginRequiredMixin, CreateView):
     model = Trip
     form_class = TripForm
     template_name = 'trips/trip_form.html'
     success_url = reverse_lazy('trips:list')
 
-class TripListView(ListView):
+class TripListView(LoginRequiredMixin, ListView):
     model = Trip
     template_name = 'trips/trip_list.html'
     context_object_name = 'trips'  # опционально, для ясности в шаблоне

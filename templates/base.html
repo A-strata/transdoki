@@ -3,6 +3,7 @@
 <html>
 <head>
     <title>{% block title %}TMS{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/nav.css' %}">
     <link rel="stylesheet" href="{% static 'css/tables.css' %}">
     <link rel="stylesheet" href="{% static 'css/forms.css' %}">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,11 +11,37 @@
     <meta http-equiv="Expires" content="0">
 </head>
 <body>
-    <nav>
-        <a href="{% url 'organizations:list' %}">Организации</a>
-        <a href="{% url 'persons:list' %}">Люди</a>
-        <a href="{% url 'vehicles:list' %}">Транспортные средства</a>
-        <a href="{% url 'trips:list' %}">Поездки</a>
+    <nav class="nav-container">
+        <div class="nav-left">
+            {% url 'organizations:list' as organizations_url %}
+            <a href="{{ organizations_url }}" 
+            class="{% if request.path == organizations_url %}active{% endif %}">Организации</a>
+            
+            {% url 'persons:list' as persons_url %}
+            <a href="{{ persons_url }}" 
+            class="{% if request.path == persons_url %}active{% endif %}">Люди</a>
+            
+            {% url 'vehicles:list' as vehicles_url %}
+            <a href="{{ vehicles_url }}" 
+            class="{% if request.path == vehicles_url %}active{% endif %}">Транспортные средства</a>
+            
+            {% url 'trips:list' as trips_url %}
+            <a href="{{ trips_url }}" 
+            class="{% if request.path == trips_url %}active{% endif %}">Поездки</a>
+        </div>
+        
+        <div class="nav-right">
+            {% if user.is_authenticated %}
+                Привет, {{ user.username }}!
+                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: none; border: none; color: #007bff; cursor: pointer; text-decoration: underline;">Выйти</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}">Войти</a>
+                <a href="{% url 'accounts:register' %}">Регистрация</a>
+            {% endif %}
+        </div>
     </nav>
     
     <main>
