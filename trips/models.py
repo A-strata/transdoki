@@ -1,27 +1,10 @@
-from django.conf import settings
 from django.db import models
 
-from organizations.models import Organization
+from organizations.models import Organization, UserOwnedModel
 from persons.models import Person
 from vehicles.models import Vehicle
 
 CARGO_LENGTH = 20
-
-
-class UserOwnedModel(models.Model):
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
-
-    class Meta:
-        abstract = True
 
 
 class Trip(UserOwnedModel):
@@ -34,7 +17,7 @@ class Trip(UserOwnedModel):
         blank=True
     )
     client = models.ForeignKey(
-        Organization, 
+        Organization,
         on_delete=models.PROTECT,
         related_name='trips_as_client',
         verbose_name='Заказчик перевозки'
@@ -46,14 +29,14 @@ class Trip(UserOwnedModel):
         verbose_name='Отправитель'
     )
     consignee = models.ForeignKey(
-        Organization, 
+        Organization,
         on_delete=models.PROTECT,
         related_name='trips_as_consignee',
         verbose_name='Получатель'
     )
     carrier = models.ForeignKey(
         Organization,
-        on_delete=models.PROTECT, 
+        on_delete=models.PROTECT,
         related_name='trips_as_carrier',
         verbose_name='Перевозчик'
     )
@@ -82,8 +65,8 @@ class Trip(UserOwnedModel):
         verbose_name='Заявленные дата и время выгрузки'
     )
     actual_loading_date = models.DateTimeField(
-        verbose_name='Фактическая дата и время погрузки', 
-        null=True, 
+        verbose_name='Фактическая дата и время погрузки',
+        null=True,
         blank=True
     )
     actual_unloading_date = models.DateTimeField(

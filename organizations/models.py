@@ -44,7 +44,6 @@ class Organization(UserOwnedModel):
     )
     inn = models.CharField(
         max_length=INN_LENGTH,
-        unique=True,
         validators=[validate_inn],
         verbose_name="ИНН",
     )
@@ -56,7 +55,6 @@ class Organization(UserOwnedModel):
     )
     ogrn = models.CharField(
         max_length=OGRN_LENGTH,
-        unique=True,
         verbose_name="ОГРН",
     )
     address = models.CharField(
@@ -67,7 +65,7 @@ class Organization(UserOwnedModel):
     )
 
     def get_absolute_url(self):
-        return reverse("org_edit", kwargs={"pk": self.pk})
+        return reverse("organizations:edit", kwargs={"pk": self.pk})
 
     def __str__(self):
         return self.short_name
@@ -75,6 +73,12 @@ class Organization(UserOwnedModel):
     class Meta:
         verbose_name = "Организация"
         verbose_name_plural = "Организации"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['created_by', 'inn'],
+                name='unique_inn_per_user'
+            )
+        ]
 
 
 class Bank(models.Model):

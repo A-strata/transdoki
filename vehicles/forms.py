@@ -8,19 +8,18 @@ from .validators import validate_grn_by_type
 class VehicleForm(forms.ModelForm):
     class Meta:
         model = Vehicle
-        fields = "__all__"
+        exclude = ['created_by', 'created_at', 'updated_at']
 
-    
     def clean(self):
         cleaned_data = super().clean()
         grn = cleaned_data.get('grn')
         vehicle_type = cleaned_data.get('vehicle_type')
-        
+
         if grn and vehicle_type:
             try:
                 validate_grn_by_type(grn, vehicle_type)
             except ValidationError as e:
                 # Явно привязываем ошибку к полю grn
                 self.add_error('grn', e)
-        
+
         return cleaned_data

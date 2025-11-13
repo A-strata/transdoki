@@ -1,9 +1,8 @@
 from django.db import models
 from django.urls import reverse
 
-from organizations.models import Organization
+from organizations.models import Organization, UserOwnedModel
 
-from .validators import validate_grn_by_type
 
 VEHICLE_TYPE_LENTH = 100
 GRN_LENTH = 20
@@ -17,21 +16,22 @@ class VehicleType(models.TextChoices):
     TRAILER = 'trailer', 'Прицеп'
 
 
-class Vehicle(models.Model):
+class Vehicle(UserOwnedModel):
     """Машины и прицепы."""
 
     grn = models.CharField(
         max_length=GRN_LENTH,
-        verbose_name='Регистрационный номер',
-        unique=True
-        )
+        verbose_name='Регистрационный номер'
+    )
     brand = models.CharField(
         max_length=BRAND_MODEL_LENGTH,
-        verbose_name='Марка',)
+        verbose_name='Марка'
+    )
     model = models.CharField(
         max_length=20,
         verbose_name='Модель',
-        blank=True)
+        blank=True
+    )
     vehicle_type = models.CharField(
         max_length=PROPERTY_TYPE_LENGTH,
         choices=VehicleType.choices,
@@ -47,6 +47,12 @@ class Vehicle(models.Model):
     class Meta:
         verbose_name = 'Транспортное средство'
         verbose_name_plural = 'Транспортные средства'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['created_by', 'grn'],
+                name='unique_grn_per_user'
+            )
+        ]
 
 
 class PropertyType(models.TextChoices):
@@ -57,7 +63,7 @@ class PropertyType(models.TextChoices):
     UNPAID = 'unpaid', 'Безвозмездное пользование'
 
 
-class VehicleOrganisation(models.Model):
+class VehicleOrganisation(UserOwnedModel):
     vehicle = models.ForeignKey(
         Vehicle,
         on_delete=models.CASCADE,
@@ -89,4 +95,3 @@ class VehicleOrganisation(models.Model):
             'organizations:organization_vehicles',
             kwargs={'organization_pk': self.owner.pk}
         )
-    
