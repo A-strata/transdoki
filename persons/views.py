@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import IntegrityError
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
 
@@ -17,6 +18,14 @@ class PersonCreateView(LoginRequiredMixin, CreateView):
     form_class = PersonForm
     template_name = 'persons/person_form.html'
     success_url = reverse_lazy('persons:list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        try:
+            return super().form_valid(form)
+        except IntegrityError:
+            form.add_error(None, 'Человек с таким ФИО уже существует.')
+            return self.form_invalid(form)
 
 
 class PersonListView(UserOwnedListView):

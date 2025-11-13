@@ -23,6 +23,21 @@ form label {
     padding: 0;
     list-style: none;
 }
+.form-errors {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.form-errors .error {
+    color: #721c24;
+    margin: 5px 0;
+    font-weight: bold;
+    list-style: none;
+    padding: 0;
+}
 
 button, .btn {
     padding: 10px 20px;

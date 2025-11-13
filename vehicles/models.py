@@ -3,7 +3,6 @@ from django.urls import reverse
 
 from organizations.models import Organization, UserOwnedModel
 
-
 VEHICLE_TYPE_LENTH = 100
 GRN_LENTH = 20
 BRAND_MODEL_LENGTH = 20

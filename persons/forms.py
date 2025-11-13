@@ -6,4 +6,4 @@ from .models import Person
 class PersonForm(forms.ModelForm):
     class Meta:
         model = Person
-        fields = '__all__'
+        exclude = ['created_by', 'created_at', 'updated_at']

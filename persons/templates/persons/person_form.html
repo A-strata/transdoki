@@ -6,13 +6,12 @@
 <form method="post">
     {% csrf_token %}
     {% if form.non_field_errors %}
-        <div class="error">
+        <div class="form-errors">
             {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
+                <p class="error">{{ error }}</p>
             {% endfor %}
         </div>
     {% endif %}
-    
     <p>
         {{ form.surname.label_tag }}<br>
         {{ form.surname }}

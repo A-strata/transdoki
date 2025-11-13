@@ -12,7 +12,8 @@
 </head>
 <body>
     <nav class="nav-container">
-        <div class="nav-left">
+        
+        <div class="nav-left">{% if user.is_authenticated %}
             {% url 'organizations:list' as organizations_url %}
             <a href="{{ organizations_url }}" 
             class="{% if request.path == organizations_url %}active{% endif %}">Организации</a>
@@ -28,7 +29,8 @@
             {% url 'trips:list' as trips_url %}
             <a href="{{ trips_url }}" 
             class="{% if request.path == trips_url %}active{% endif %}">Поездки</a>
-        </div>
+        {% endif %}</div>
+        
         
         <div class="nav-right">
             {% if user.is_authenticated %}

@@ -1,4 +1,5 @@
 from django.db import models
+
 from organizations.models import UserOwnedModel
 
 FIO_LENGTH = 150
@@ -30,7 +31,7 @@ class Person(UserOwnedModel):
         verbose_name_plural = 'Люди'
         constraints = [
             models.UniqueConstraint(
-                fields=['surname', 'name', 'patronymic'],
-                name='unique_person_full_name'
+                fields=['surname', 'name', 'patronymic', 'created_by'],
+                name='unique_fio_per_user'
             )
         ]

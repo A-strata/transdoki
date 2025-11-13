@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import IntegrityError
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
-from django.db import IntegrityError
 
 from .forms import VehicleForm
 from .models import Vehicle
