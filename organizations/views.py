@@ -1,8 +1,15 @@
-from django.views.generic import CreateView, ListView
-from django.urls import reverse_lazy
-from .models import Organization
-from .forms import OrganizationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, ListView
+
+from .forms import OrganizationForm
+from .models import Organization
+
+
+class UserOwnedListView(LoginRequiredMixin, ListView):
+    """Базовый View показывающий только записи пользователя"""
+    def get_queryset(self):
+        return self.model.objects.filter(created_by=self.request.user)
 
 
 class OrganizationCreateView(LoginRequiredMixin, CreateView):
@@ -11,7 +18,8 @@ class OrganizationCreateView(LoginRequiredMixin, CreateView):
     template_name = 'organizations/organization_form.html'
     success_url = reverse_lazy('organizations:list')
 
-class OrganizationListView(LoginRequiredMixin, ListView):
+
+class OrganizationListView(UserOwnedListView):
     model = Organization
     template_name = 'organizations/organization_list.html'
     context_object_name = 'organizations'  # опционально, для ясности в шаблоне

@@ -1,21 +1,39 @@
-from django.db import models
-from django.urls import reverse
-from django.db.models import UniqueConstraint
+from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import UniqueConstraint
+from django.urls import reverse
+
 from .validators import validate_inn
 
 ORG_NAME_LENGTH = 200
 INN_LENGTH = 12
-KPP_LENGTH = 9  # Исправлено: КПП всегда 9 цифр
+KPP_LENGTH = 9
 OGRN_LENGTH = 15
-ORG_ADDRESS_LENGTH = 200  # Исправлено: добавлено _LENGTH для консистентности
-BIC_LENGTH = 9  # Исправлено: БИК всегда 9 цифр
+ORG_ADDRESS_LENGTH = 200
+BIC_LENGTH = 9
 ACCOUNT_LENGTH = 20
 
 
-class Organization(models.Model):
+class UserOwnedModel(models.Model):
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Organization(UserOwnedModel):
     """Заказчики, экспедиторы, перевозчики."""
-    
+
     full_name = models.CharField(
         max_length=ORG_NAME_LENGTH,
         verbose_name="Полное наименование",
@@ -50,7 +68,7 @@ class Organization(models.Model):
 
     def get_absolute_url(self):
         return reverse("org_edit", kwargs={"pk": self.pk})
-    
+
     def __str__(self):
         return self.short_name
 
@@ -82,7 +100,7 @@ class Bank(models.Model):
         verbose_name_plural = "Банки"
 
 
-class OrganizationBank(models.Model):
+class OrganizationBank(UserOwnedModel):
     account_num = models.CharField(
         max_length=ACCOUNT_LENGTH,
         verbose_name="Расчётный счёт",
@@ -101,7 +119,7 @@ class OrganizationBank(models.Model):
 
     def clean(self):
         super().clean()
-        
+
         # Проверка расчётного счёта
         if not self.account_num.isdigit() or len(self.account_num) != 20:
             raise ValidationError(
@@ -109,25 +127,38 @@ class OrganizationBank(models.Model):
             )
 
         # Проверка БИК (только если банк уже сохранен в БД)
-        if self.account_bank_id:  # Проверяем по ID, чтобы избежать лишних запросов
+        # Проверяем по ID, чтобы избежать лишних запросов
+        if self.account_bank_id:
             try:
                 bank = Bank.objects.get(pk=self.account_bank_id)
                 bic = bank.bic
                 if len(bic) != 9 or not bic.isdigit():
                     raise ValidationError(
-                        {"account_bank": "БИК банка должен состоять из 9 цифр."}
+                        {
+                            "account_bank": "БИК должен состоять из 9 цифр."
+                        }
                     )
-                
+
                 # Проверка контрольной суммы
                 bic_rs = bic[-3:] + self.account_num
-                weights = [7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1]
-                total = sum(int(bic_rs[i]) * weights[i] % 10 for i in range(23))
-                
+                weights = [
+                    7, 1, 3, 7, 1, 3,
+                    7, 1, 3, 7, 1, 3,
+                    7, 1, 3, 7, 1, 3,
+                    7, 1, 3, 7, 1
+                ]
+                total = sum(
+                    int(bic_rs[i]) * weights[i] % 10 for i in range(23)
+                )
+
                 if total % 10 != 0:
                     raise ValidationError(
-                        {"account_num": "Неверное сочетание расчётного счёта и БИК."}
+                        {
+                            "account_num": "Неверное сочетание "
+                                           "расчётного счёта и БИК."
+                        }
                     )
-                    
+
             except Bank.DoesNotExist:
                 pass  # Банк не найден, проверка будет при сохранении
 

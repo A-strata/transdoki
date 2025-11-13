@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 from .api import get_org_data
 

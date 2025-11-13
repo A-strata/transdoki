@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 FIO_LENGTH = 150
@@ -5,7 +6,23 @@ NAME_LENGTH = 50
 PHONE_LENGTH = 13
 
 
-class Person(models.Model):
+class UserOwnedModel(models.Model):
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Person(UserOwnedModel):
     """Водители, контактные лица, руководители"""
 
     name = models.CharField(

@@ -1,8 +1,9 @@
 from django.db import models
-from organizations.models import Organization
 from django.urls import reverse
-from .validators import validate_grn_by_type
 
+from organizations.models import Organization
+
+from .validators import validate_grn_by_type
 
 VEHICLE_TYPE_LENTH = 100
 GRN_LENTH = 20

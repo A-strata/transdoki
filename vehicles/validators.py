@@ -1,5 +1,7 @@
-from django.core.exceptions import ValidationError
 import re
+
+from django.core.exceptions import ValidationError
+
 
 def validate_grn_by_type(grn, vehicle_type):
     """

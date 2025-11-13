@@ -1,6 +1,8 @@
-from docxtpl import DocxTemplate
-from django.http import FileResponse
 import os
+
+from django.http import FileResponse
+from docxtpl import DocxTemplate
+
 
 class TNGenerator:
     @staticmethod

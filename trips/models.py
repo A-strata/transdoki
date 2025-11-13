@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.db import models
+
 from organizations.models import Organization
 from persons.models import Person
 from vehicles.models import Vehicle
@@ -6,7 +8,23 @@ from vehicles.models import Vehicle
 CARGO_LENGTH = 20
 
 
-class Trip(models.Model):
+class UserOwnedModel(models.Model):
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Trip(UserOwnedModel):
     num_of_trip = models.PositiveSmallIntegerField(
         verbose_name='Номер заявки'
     )

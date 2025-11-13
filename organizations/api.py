@@ -1,8 +1,8 @@
-from django.http import JsonResponse
-from dadata import Dadata
-from dotenv import load_dotenv
 import os
 
+from dadata import Dadata
+from django.http import JsonResponse
+from dotenv import load_dotenv
 
 load_dotenv()
 
