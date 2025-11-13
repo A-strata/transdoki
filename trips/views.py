@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
 from django.db import IntegrityError
 from django.core.exceptions import PermissionDenied
+import logging
 
 from .forms import TripForm
 from .models import Trip
@@ -11,6 +12,8 @@ from .services import TNGenerator
 from organizations.views import Organization
 from persons.views import Person
 from vehicles.views import Vehicle
+
+logger = logging.getLogger('security')
 
 
 class UserOwnedListView(LoginRequiredMixin, ListView):
@@ -68,6 +71,15 @@ def print_tn(request, pk):
     file_path = TNGenerator.generate_tn(trip)
 
     if trip.created_by != request.user:
+
+        logger.warning(
+            f"Unauthorized TN access attempt: "
+            f"user={request.user.username}({request.user.id}) "
+            f"tried to access trip={trip.id} "
+            f"owned by user={trip.created_by.username}({trip.created_by.id}) "
+            f"IP={request.META.get('REMOTE_ADDR')}"
+        )
+
         raise PermissionDenied(
             "У вас нет доступа к этой транспортной накладной"
         )
