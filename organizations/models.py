@@ -63,6 +63,10 @@ class Organization(UserOwnedModel):
         null=True,
         verbose_name="Адрес юридического лица",
     )
+    is_own_company = models.BooleanField(
+        default=False,
+        verbose_name="Моя компания"
+    )
 
     def get_absolute_url(self):
         return reverse("organizations:edit", kwargs={"pk": self.pk})
@@ -79,6 +83,31 @@ class Organization(UserOwnedModel):
                 name='unique_inn_per_user'
             )
         ]
+
+    def clean(self):
+        super().clean()
+
+        # Валидация работает только когда created_by установлен
+        if self.is_own_company and self.created_by_id:
+            own_companies_count = Organization.objects.filter(
+                created_by_id=self.created_by_id,
+                is_own_company=True
+            ).exclude(pk=self.pk).count()
+
+            if (own_companies_count >=
+                    self.created_by.profile.max_own_companies):
+                raise ValidationError({
+                    'is_own_company': (
+                        f"Превышен лимит собственных компаний. "
+                        f"Использовано {own_companies_count} "
+                        f"из {self.created_by.profile.max_own_companies}"
+                    )
+                })
+
+    def save(self, *args, **kwargs):
+        """Вызываем валидацию перед сохранением"""
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Bank(models.Model):

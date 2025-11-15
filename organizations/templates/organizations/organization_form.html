@@ -19,7 +19,11 @@
         <button type="button" id="btn_fill_inn">Заполнить по ИНН</button><br>
         {{ form.inn.errors }}
     </p>
-    
+    <p>
+        {{ form.is_own_company.label_tag }}<br>
+        {{ form.is_own_company }}
+        {{ form.is_own_company.errors }}
+    </p>
     <p>
         {{ form.full_name.label_tag }}<br>
         {{ form.full_name }}<br>
