@@ -9,6 +9,7 @@
             <th>Фамилия</th>
             <th>Имя</th>
             <th>Отчество</th>
+            <th>Действия</th>
         </tr>
     </thead>
     <tbody>
@@ -17,6 +18,10 @@
             <td>{{ person.surname }}</td>
             <td>{{ person.name }}</td>
             <td>{{ person.patronymic }}</td>
+            <td>
+                <a href="{% url 'persons:edit' person.pk %}">Редактировать</a>
+                <a href="{% url 'persons:delete' person.pk %}" onclick="return confirm('Удалить {{ person }}?')">Удалить</a>
+            </td>
         </tr>
         {% empty %}
         <tr>

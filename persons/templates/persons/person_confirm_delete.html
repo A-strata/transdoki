@@ -1,0 +1,14 @@
+<!-- persons/person_confirm_delete.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Удаление человека</h1>
+
+<p>Вы уверены, что хотите удалить "{{ object }}"?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Удалить</button>
+    <a href="{% url 'persons:list' %}" >Отмена</a>
+</form>
+{% endblock %}
