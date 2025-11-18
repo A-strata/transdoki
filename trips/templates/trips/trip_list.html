@@ -8,6 +8,7 @@
         <tr>
             <th>№ заявки</th>
             <th>Дата</th>
+            <th>Заказчик</th>
             <th>Отправитель</th>
             <th>Получатель</th>
             <th>Перевозчик</th>
@@ -22,6 +23,7 @@
         <tr>
             <td>{{ trip.num_of_trip }}</td>
             <td>{{ trip.date_of_trip|date:"d.m.Y" }}</td>
+            <td>{{ trip.client.short_name }}</td>
             <td>{{ trip.consignor.short_name }}</td>
             <td>{{ trip.consignee.short_name }}</td>
             <td>{{ trip.carrier.short_name }}</td>
