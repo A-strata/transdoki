@@ -20,22 +20,12 @@ class OrganizationCreateView(LoginRequiredMixin, CreateView):
     template_name = 'organizations/organization_form.html'
     success_url = reverse_lazy('organizations:list')
 
-    """def form_valid(self, form):
-        form.instance.created_by = self.request.user
-        try:
-            return super().form_valid(form)
-        except IntegrityError:
-            form.add_error('inn', 'Организация с таким ИНН уже существует.')
-            return self.form_invalid(form)"""
-
     def form_valid(self, form):
         form.instance.created_by = self.request.user
 
         try:
-            # full_clean() автоматически вызовется в save() благодаря нашей модели
             return super().form_valid(form)
         except ValidationError as e:
-            # Обрабатываем ошибки валидации из модели
             for field, errors in e.error_dict.items():
                 for error in errors:
                     form.add_error(field, error)

@@ -30,8 +30,11 @@
             <td>{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
             <td>{{ trip.cargo }}</td>
             <td>{{ trip.weight }}</td>
-            <td><a href="{% url 'trips:print_tn' trip.pk %}" download>📥 ТН</a></td>
-        </tr>
+            <td>
+                <a href="{% url 'trips:print_tn' trip.pk %}" download>Скачать ТН</a>
+                <a href="{% url 'trips:edit' trip.pk %}">Редактировать</a>
+            </td>
+            
         {% empty %}
         <tr>
             <td colspan="7">Нет поездок</td>

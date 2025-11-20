@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, ListView
+from django.views.generic import CreateView, ListView, UpdateView
 
 from django.core.exceptions import PermissionDenied
 import logging
@@ -35,6 +35,27 @@ class TripCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         # Управляет созданием объекта
         form.instance.created_by = self.request.user  # Устанавливает создателя
+        return super().form_valid(form)  # Делегирует сохранение
+
+
+class TripUpdateView(LoginRequiredMixin, UpdateView):
+    model = Trip
+    form_class = TripForm
+    template_name = 'trips/trip_form.html'
+    success_url = reverse_lazy('trips:list')
+
+    def get_queryset(self):
+        # Ограничивает доступ только к своим рейсам
+        return Trip.objects.filter(created_by=self.request.user)
+
+    def get_form_kwargs(self):
+        # Готовит контекст для формы
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # Передает user для фильтрации
+        return kwargs
+
+    def form_valid(self, form):
+        # Управляет обновлением объекта (created_by уже установлен)
         return super().form_valid(form)  # Делегирует сохранение
 
 

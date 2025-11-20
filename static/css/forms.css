@@ -63,3 +63,65 @@ button:hover, .btn:hover {
     font-size: 14px !important;
     box-sizing: border-box !important;
 }
+/* forms.css - добавь эти стили в конец файла */
+
+/* Контейнер для центрирования формы входа */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+}
+
+/* Стили для формы входа */
+.login-form {
+    max-width: 400px;
+    width: 100%;
+    padding: 2rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.login-form h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.login-form form p {
+    margin-bottom: 1rem;
+}
+
+.login-form form input[type="text"],
+.login-form form input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.login-form form button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 1rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.login-form form button:hover {
+    background: #0056b3;
+}
+
+.login-form p:last-child {
+    text-align: center;
+    margin-top: 1.5rem;
+    color: #666;
+}

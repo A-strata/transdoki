@@ -6,25 +6,24 @@ from .validators import (
     validate_our_company_participation)
 
 
+# trips/forms.py
 class TripForm(forms.ModelForm):
     class Meta:
         model = Trip
         exclude = ['created_by', 'created_at', 'updated_at']
         widgets = {
-            'date_of_trip': forms.DateInput(
-                attrs={'type': 'date'}),
-            'planned_loading_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local'}),
-            'planned_unloading_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local'}),
-            'actual_loading_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local'}),
-            'actual_unloading_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local'}),
+            'date_of_trip': forms.DateInput(attrs={'type': 'date'}),
+            'planned_loading_date': forms.DateTimeInput(attrs={
+                'type': 'datetime-local'}),
+            'planned_unloading_date': forms.DateTimeInput(attrs={
+                'type': 'datetime-local'}),
+            'actual_loading_date': forms.DateTimeInput(attrs={
+                'type': 'datetime-local'}),
+            'actual_unloading_date': forms.DateTimeInput(attrs={
+                'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
-        # Извлекаем user из kwargs ДО вызова super()
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
@@ -32,38 +31,45 @@ class TripForm(forms.ModelForm):
             self._apply_queryset_filters()
 
     def _apply_queryset_filters(self):
-        """Применяем фильтрацию для всех ForeignKey полей"""
+        """Применяем фильтрацию с сохранением текущих значений"""
         from organizations.models import Organization
         from persons.models import Person
         from vehicles.models import Vehicle
 
         # Организации
         organization_qs = Organization.objects.filter(created_by=self.user)
-        self.fields['client'].queryset = organization_qs
-        self.fields['consignor'].queryset = organization_qs
-        self.fields['consignee'].queryset = organization_qs
-        self.fields['carrier'].queryset = organization_qs
+        for field in ['client', 'consignor', 'consignee', 'carrier']:
+            self.fields[field].queryset = self._add_current_value(
+                organization_qs, field)
 
         # Люди
-        self.fields['driver'].queryset = Person.objects.filter(
-            created_by=self.user)
+        person_qs = Person.objects.filter(created_by=self.user)
+        self.fields['driver'].queryset = self._add_current_value(
+            person_qs, 'driver')
 
         # Транспорт
-        self.fields['truck'].queryset = Vehicle.objects.filter(
-            created_by=self.user,
-            vehicle_type__in=['truck', 'single']
-        )
-        self.fields['trailer'].queryset = Vehicle.objects.filter(
-            created_by=self.user,
-            vehicle_type='trailer'
-        )
+        truck_qs = Vehicle.objects.filter(
+            created_by=self.user, vehicle_type__in=['truck', 'single'])
+        self.fields['truck'].queryset = self._add_current_value(
+            truck_qs, 'truck')
+
+        trailer_qs = Vehicle.objects.filter(
+            created_by=self.user, vehicle_type='trailer')
+        self.fields['trailer'].queryset = self._add_current_value(
+            trailer_qs, 'trailer')
+
+    def _add_current_value(self, base_queryset, field_name):
+        """Добавляет текущее значение в queryset"""
+        current_value = getattr(self.instance, field_name, None)
+        if current_value:
+            return base_queryset | base_queryset.model.objects.filter(
+                pk=current_value.pk)
+        return base_queryset
 
     def clean(self):
-        """Валидация уникальности комбинации полей"""
         cleaned_data = super().clean()
 
         if self.user:
-            # Валидация уникальности через отдельный валидатор
             validate_unique_trip_number_and_date(
                 user=self.user,
                 num_of_trip=cleaned_data.get('num_of_trip'),
