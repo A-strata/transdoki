@@ -15,21 +15,25 @@
     <p>
         {{ form.surname.label_tag }}<br>
         {{ form.surname }}
+        {{ form.surname.errors }}
     </p>
     
     <p>
         {{ form.name.label_tag }}<br>
         {{ form.name }}
+        {{ form.name.errors }}
     </p>
     
     <p>
         {{ form.patronymic.label_tag }}<br>
         {{ form.patronymic }}
+        {{ form.patronymic.errors }}
     </p>
     
     <p>
         {{ form.phone.label_tag }}<br>
         {{ form.phone }}
+        {{ form.phone.errors }}
     </p>
     
     <p>
@@ -40,4 +44,47 @@
     <button type="submit">Сохранить</button>
     <a href="{% url 'persons:list' %}">Отмена</a>
 </form>
+
+<!---->
+<script src="https://unpkg.com/imask"></script>
+<script>
+console.log('=== СКРИПТ ЗАПУЩЕН ===');
+
+var element = document.getElementById('id_phone');
+
+if (element) {
+    var maskOptions = {
+        mask: '+7(000)000-00-00',
+        lazy: false
+    } 
+    var mask = new IMask(element, maskOptions);
+    
+    window.addEventListener('submit', function(e) {
+        console.log('=== ОБРАБОТЧИК WINDOW ===');
+        
+        const phoneInput = document.getElementById('id_phone');
+        if (phoneInput) {
+            console.log('До преобразования:', phoneInput.value);
+            const rawValue = phoneInput.value.replace(/\D/g, '');
+            console.log('После преобразования:', rawValue);
+            
+            // Создаем скрытое поле с преобразованным значением
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'phone'; // то же имя, что у основного поля
+            hiddenInput.value = rawValue === '7' ? '' : rawValue;
+            
+            // Отключаем основное поле чтобы оно не отправлялось
+            phoneInput.disabled = true;
+            
+            // Добавляем скрытое поле в форму
+            phoneInput.parentNode.appendChild(hiddenInput);
+            
+            console.log('Отправляем через скрытое поле:', hiddenInput.value);
+        }
+    }, true);
+}
+
+console.log('=== СКРИПТ ЗАВЕРШЕН ===');
+</script>
 {% endblock %}

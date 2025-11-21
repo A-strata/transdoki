@@ -22,6 +22,12 @@ class Person(UserOwnedModel):
         max_length=NAME_LENGTH,
         verbose_name='Отчество'
     )
+    phone = models.CharField(
+        max_length=12,
+        verbose_name='Номер телефона',
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return f"{self.surname} {self.name} {self.patronymic}"

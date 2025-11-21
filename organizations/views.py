@@ -1,8 +1,8 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
-from django.core.exceptions import ValidationError
 
 from .forms import OrganizationForm
 from .models import Organization

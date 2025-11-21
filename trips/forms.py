@@ -1,9 +1,9 @@
 from django import forms
+
 from .models import Trip
-from .validators import (
-    validate_unique_trip_number_and_date,
-    validate_client_cannot_be_carrier,
-    validate_our_company_participation)
+from .validators import (validate_client_cannot_be_carrier,
+                         validate_our_company_participation,
+                         validate_unique_trip_number_and_date)
 
 
 # trips/forms.py

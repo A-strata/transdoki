@@ -1,15 +1,14 @@
+import logging
+
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView
 
-from django.core.exceptions import PermissionDenied
-import logging
-
 from .forms import TripForm
 from .models import Trip
 from .services import TNGenerator
-
 
 logger = logging.getLogger('security')
 
