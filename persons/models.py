@@ -25,8 +25,7 @@ class Person(UserOwnedModel):
     phone = models.CharField(
         max_length=12,
         verbose_name='Номер телефона',
-        blank=True,
-        null=True
+        default='70000000000'
     )
 
     def __str__(self):
