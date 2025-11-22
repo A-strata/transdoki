@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 def validate_phone_number(value):
     if not value:
-        return value
+        raise ValidationError('Заполните это поле')
 
     clean_phone = ''.join(filter(str.isdigit, value))
 

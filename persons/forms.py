@@ -1,19 +1,13 @@
 from django import forms
 
 from .models import Person
-from .validators import validate_phone_number
 
 
 class PersonForm(forms.ModelForm):
-    #phone = forms.CharField(
-        #max_length=25,
-        #required=True,
-        #label='Номер телефона',
-        #validators=[validate_phone_number],
-        #error_messages={
-        #    'required': 'Обязательное поле'  # кастомное сообщение
-        #}
-    #)
+    phone = forms.CharField(
+        error_messages={'required': 'Заполните это поле'},
+        required=True
+    )
 
     class Meta:
         model = Person
@@ -26,5 +20,4 @@ class PersonForm(forms.ModelForm):
             value = cleaned_data.get(field)
             if value:
                 cleaned_data[field] = value.capitalize()
-
         return cleaned_data

@@ -2,6 +2,8 @@ from django.db import models
 
 from organizations.models import UserOwnedModel
 
+from .validators import validate_phone_number
+
 FIO_LENGTH = 150
 NAME_LENGTH = 50
 PHONE_LENGTH = 13
@@ -23,8 +25,9 @@ class Person(UserOwnedModel):
         verbose_name='Отчество'
     )
     phone = models.CharField(
-        max_length=12,
+        max_length=25,
         verbose_name='Номер телефона',
+        validators=[validate_phone_number]
     )
 
     def __str__(self):
