@@ -5,6 +5,7 @@ from .models import Person
 
 class PersonForm(forms.ModelForm):
     phone = forms.CharField(
+        label='Номер телефона',
         error_messages={'required': 'Заполните это поле'},
         required=True
     )
