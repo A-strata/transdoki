@@ -89,20 +89,18 @@ class Trip(UserOwnedModel):
     client_cost = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        verbose_name='Стоимость заказа',
+        verbose_name='Стоимость для клиента',
         blank=True,
         null=True,
         validators=[RussianMinValueValidator(0)],
-        help_text='Общая стоимость заказа для клиента'
     )
     carrier_cost = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        verbose_name='Стоимость перевозки',
+        verbose_name='Стоимость для перевозчика',
         blank=True,
         null=True,
         validators=[RussianMinValueValidator(0)],
-        help_text='Общая стоимость заказа для перевозчика'
     )
     comments = models.TextField(
         max_length=1000,
