@@ -10,6 +10,7 @@
             <th>ИНН</th>
             <th>ОГРН</th>
             <th>Адрес</th>
+            <th>Действия</th>
         </tr>
     </thead>
     <tbody>
@@ -19,6 +20,10 @@
             <td>{{ organization.inn }}</td>
             <td>{{ organization.ogrn }}</td>
             <td>{{ organization.address }}</td>
+            <td><a href="{% url 'organizations:detail' organization.pk %}" class="btn btn-sm btn-secondary">
+                    Карточка компании
+                </a>
+            </td>
         </tr>
         {% empty %}
         <tr>

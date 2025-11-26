@@ -3,7 +3,9 @@ from django import forms
 from .models import Trip
 from .validators import (validate_client_cannot_be_carrier,
                          validate_our_company_participation,
-                         validate_unique_trip_number_and_date)
+                         validate_trailer_for_truck,
+                         validate_unique_trip_number_and_date,
+                         validate_vehicles_belong_to_carrier)
 
 
 # trips/forms.py
@@ -84,6 +86,15 @@ class TripForm(forms.ModelForm):
                 client=cleaned_data.get('client'),
                 consignor=cleaned_data.get('consignor'),
                 consignee=cleaned_data.get('consignee'),
+                carrier=cleaned_data.get('carrier')
+            )
+            validate_trailer_for_truck(  # ✅ Добавляем новый валидатор
+                truck=cleaned_data.get('truck'),
+                trailer=cleaned_data.get('trailer')
+            )
+            validate_vehicles_belong_to_carrier(  # ✅ Новый валидатор
+                truck=cleaned_data.get('truck'),
+                trailer=cleaned_data.get('trailer'),
                 carrier=cleaned_data.get('carrier')
             )
 

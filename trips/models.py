@@ -56,7 +56,9 @@ class Trip(UserOwnedModel):
         Vehicle,
         on_delete=models.PROTECT,
         related_name='trips_as_trailer',
-        verbose_name='Прицеп'
+        verbose_name='Прицеп',
+        blank=True,
+        null=True
     )
     planned_loading_date = models.DateTimeField(
         verbose_name='Заявленные дата и время погрузки'

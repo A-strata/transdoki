@@ -5,32 +5,44 @@
 
 <form method="post">
     {% csrf_token %}
-    
+
+    {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}
+                    <p class="error">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    <p>
+        {{ form.property_type.label_tag }}<br>
+        {{ form.property_type }}
+        {{ form.property_type.errors }}
+    </p>
     <p>
         {{ form.vehicle_type.label_tag }}<br>
         {{ form.vehicle_type }}
         {{ form.vehicle_type.errors }}
     </p>
-    
+
     <p>
         {{ form.grn.label_tag }}<br>
         {{ form.grn }}
         {{ form.grn.errors }}
     </p>
-    
+
     <p>
         {{ form.brand.label_tag }}<br>
         {{ form.brand }}
         {{ form.brand.errors }}
     </p>
-    
+
     <p>
         {{ form.model.label_tag }}<br>
         {{ form.model }}
         {{ form.model.errors }}
     </p>
-    
+
     <button type="submit">Сохранить</button>
-    <a href="{% url 'vehicles:list' %}">Отмена</a>
+    <a href="{% url 'organizations:detail' organization_pk %}">Отмена</a>
 </form>
 {% endblock %}

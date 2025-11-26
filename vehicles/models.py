@@ -15,6 +15,14 @@ class VehicleType(models.TextChoices):
     TRAILER = 'trailer', 'Прицеп'
 
 
+class PropertyType(models.TextChoices):
+    PROPERTY = 'property', 'Собственность'
+    COPROPERTY = 'coproperty', 'Совместная собственность супругов'
+    RENT = 'rent', 'Аренда'
+    LEASING = 'leasing', 'Лизинг'
+    UNPAID = 'unpaid', 'Безвозмездное пользование'
+
+
 class Vehicle(UserOwnedModel):
     """Машины и прицепы."""
 
@@ -36,6 +44,18 @@ class Vehicle(UserOwnedModel):
         choices=VehicleType.choices,
         verbose_name='Тип ТС',
     )
+    property_type = models.CharField(
+        max_length=PROPERTY_TYPE_LENGTH,
+        choices=PropertyType.choices,
+        verbose_name='Тип владения',
+        default=PropertyType.PROPERTY
+    )
+    owner = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        verbose_name='Cобственник ТС',
+        default=1
+    )
 
     def __str__(self):
         return f'{self.grn}, {self.brand}'
@@ -52,45 +72,3 @@ class Vehicle(UserOwnedModel):
                 name='unique_grn_per_user'
             )
         ]
-
-
-class PropertyType(models.TextChoices):
-    PROPERTY = 'property', 'Собственность'
-    COPROPERTY = 'coproperty', 'Совместная собственность супругов'
-    RENT = 'rent', 'Аренда'
-    LEASING = 'leasing', 'Лизинг'
-    UNPAID = 'unpaid', 'Безвозмездное пользование'
-
-
-class VehicleOrganisation(UserOwnedModel):
-    vehicle = models.ForeignKey(
-        Vehicle,
-        on_delete=models.CASCADE,
-        verbose_name='Машина'
-    )
-    owner = models.ForeignKey(
-        Organization,
-        on_delete=models.CASCADE,
-        verbose_name='Cобственник ТС'
-    )
-    property_type = models.CharField(
-        max_length=PROPERTY_TYPE_LENGTH,
-        choices=PropertyType.choices,
-        verbose_name='Тип владения'
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['vehicle', 'owner'],
-                name='unique_vehicle_owner',
-                # violation_error_message='Такая комбинация ТС и Владельца ТС '
-                # 'уже существует'
-            )
-        ]
-
-    def get_absolute_url(self):
-        return reverse(
-            'organizations:organization_vehicles',
-            kwargs={'organization_pk': self.owner.pk}
-        )

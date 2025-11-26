@@ -8,7 +8,8 @@ from .validators import validate_grn_by_type
 class VehicleForm(forms.ModelForm):
     class Meta:
         model = Vehicle
-        exclude = ['created_by', 'created_at', 'updated_at']
+        fields = ['grn', 'brand', 'model', 'vehicle_type', 'property_type']
+        exclude = ['created_by', 'created_at', 'updated_at', 'owner']
 
     def clean(self):
         cleaned_data = super().clean()

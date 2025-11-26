@@ -53,13 +53,55 @@ def validate_our_company_participation(client, consignor, consignee, carrier):
     """
     our_participation = any([
         client.is_own_company if client else False,
-        consignor.is_own_company if consignor else False,
-        consignee.is_own_company if consignee else False,
         carrier.is_own_company if carrier else False
     ])
 
     if not our_participation:
         raise ValidationError(
-            "В заявке должна участвовать ваша компания. "
-            "Выберите организацию, помеченную как 'Моя компания'."
+            "Ваша компания должна быть участником перевозки."
+            "Укажите Вашу компанию в качестве заказчика или перевозчика."
         )
+
+
+def validate_trailer_for_truck(truck, trailer):
+    """
+    Валидатор: если автомобиль типа "Тягач седельный", то прицеп обязателен
+    """
+    if truck and truck.vehicle_type == 'truck' and not trailer:
+        raise ValidationError({
+            'trailer': 'Для указанного автомобиля обязателен прицеп'
+        })
+
+
+def validate_vehicles_belong_to_carrier(truck, trailer, carrier):
+    """
+    Валидатор: автомобиль и прицеп (если обязателен)
+    должны принадлежать перевозчику
+    """
+    errors = {}
+
+    # Проверяем автомобиль
+    if truck and truck.owner != carrier:
+        errors['truck'] = (
+            'Автомобиль должен принадлежать перевозчику.'
+            f'Этот автомбиль принадлежит {truck.owner.short_name}'
+        )
+
+    # Проверяем прицеп (если он обязателен для седельного тягача)
+    if (truck and truck.vehicle_type == 'truck' and
+            trailer and trailer.owner != carrier):
+        errors['trailer'] = (
+            'Прицеп должен принадлежать перевозчику'
+            f'Этот прицеп принадлежит {truck.owner.short_name}'
+        )
+
+    # Проверяем прицеп (если он указан для одиночного грузовика)
+    if (truck and truck.vehicle_type == 'single' and
+            trailer and trailer.owner != carrier):
+        errors['trailer'] = (
+            'Прицеп должен принадлежать перевозчику'
+            f'Этот прицеп принадлежит {truck.owner.short_name}'
+        )
+
+    if errors:
+        raise ValidationError(errors)

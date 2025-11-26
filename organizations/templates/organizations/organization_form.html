@@ -1,64 +1,87 @@
+<!-- organizations/organization_form.html -->
 {% extends "base.html" %}
 {% load static %}
 
 {% block content %}
-<h1>Создание организации</h1>
+<div class="organization-form">
+    <h1>
+        {% if form.instance.pk %}
+            Редактирование организации
+        {% else %}
+            Создание организации
+        {% endif %}
+    </h1>
 
-<form method="post">
-    {% csrf_token %}
-    {% if form.non_field_errors %}
-        <div class="form-errors">
-            {% for error in form.non_field_errors %}
-                <p class="error">{{ error }}</p>
-            {% endfor %}
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}
+                    <p class="error">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-section">
+            <h2>Основные данные</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.inn.label_tag }}
+                    {{ form.inn }}
+                    {{ form.inn.errors }}
+                    <button type="button" id="btn_fill_inn" class="btn-small">Заполнить по ИНН</button>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.is_own_company.label_tag }}
+                    {{ form.is_own_company }}
+                    {{ form.is_own_company.errors }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.full_name.label_tag }}
+                {{ form.full_name }}
+                {{ form.full_name.errors }}
+            </div>
+
+            <div class="form-group">
+                {{ form.short_name.label_tag }}
+                {{ form.short_name }}
+                {{ form.short_name.errors }}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.ogrn.label_tag }}
+                    {{ form.ogrn }}
+                    {{ form.ogrn.errors }}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.kpp.label_tag }}
+                    {{ form.kpp }}
+                    {{ form.kpp.errors }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.address.label_tag }}
+                {{ form.address }}
+                {{ form.address.errors }}
+            </div>
         </div>
-    {% endif %}
-    <p>
-        {{ form.inn.label_tag }}<br>
-        {{ form.inn }}
-        <button type="button" id="btn_fill_inn">Заполнить по ИНН</button><br>
-        {{ form.inn.errors }}
-    </p>
-    <p>
-        {{ form.is_own_company.label_tag }}<br>
-        {{ form.is_own_company }}
-        {{ form.is_own_company.errors }}
-    </p>
-    <p>
-        {{ form.full_name.label_tag }}<br>
-        {{ form.full_name }}<br>
-        {{ form.full_name.errors }}
-    </p>
-    
-    <p>
-        {{ form.short_name.label_tag }}<br>
-        {{ form.short_name }}<br>
-        {{ form.short_name.errors }}
-    </p>
-    
-    <p>
-        {{ form.ogrn.label_tag }}<br>
-        {{ form.ogrn }}<br>
-        {{ form.ogrn.errors }}
-    </p>
-    
-    <p>
-        {{ form.kpp.label_tag }}<br>
-        {{ form.kpp }}<br>
-        {{ form.kpp.errors }}
-    </p>
-    
-    <p>
-        {{ form.address.label_tag }}<br>
-        {{ form.address }}<br>
-        {{ form.address.errors }}
-    </p>
-    
-    <p>
-        <button type="submit">Сохранить</button>
-        <a href="{% url 'organizations:list' %}">Отмена</a>
-    </p>
-</form>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if form.instance.pk %}Сохранить{% else %}Создать{% endif %} организацию
+            </button>
+            <a href="{% url 'organizations:detail' form.instance.pk %}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
 
 <script src="{% static 'organizations/js/suggestions_by_inn.js' %}"></script>
 {% endblock %}

@@ -1,17 +1,16 @@
 from django.urls import path
 
-from . import views
 from .api import get_org_data
+from .views import (OrganizationCreateView, OrganizationDetailView,
+                    OrganizationListView, OrganizationUpdateView)
 
 app_name = 'organizations'
 
 urlpatterns = [
-    path('', views.OrganizationListView.as_view(), name='list'),
-    path('create/', views.OrganizationCreateView.as_view(), name='create'),
-    # path('<int:pk>/',
-    # views.OrganizationDetailView.as_view(), name='detail'),
-    # path('<int:pk>/edit/',
-    # views.OrganizationUpdateView.as_view(), name='edit'),
+    path('', OrganizationListView.as_view(), name='list'),
+    path('create/', OrganizationCreateView.as_view(), name='create'),
+    path('<int:pk>/', OrganizationDetailView.as_view(), name='detail'),
+    path('<int:pk>/edit/', OrganizationUpdateView.as_view(), name='edit'),
     # path('<int:pk>/delete/',
     # views.OrganizationDeleteView.as_view(), name='delete'),
 

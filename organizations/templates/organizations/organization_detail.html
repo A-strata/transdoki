@@ -1,0 +1,80 @@
+<!-- organizations/organization_detail.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="organization-detail">
+    <h1>{{ organization.short_name }}{% if organization.is_own_company%}✅{% endif %}</h1>
+
+    <div class="organization-info">
+        <h2>Основные данные</h2>
+        <table class="info-table">
+            <tr>
+                <td><strong>Полное название:</strong></td>
+                <td>{{ organization.full_name }} </td>
+            </tr>
+            <tr>
+                <td><strong>ИНН:</strong></td>
+                <td>{{ organization.inn }}</td>
+            </tr>
+            <tr>
+                <td><strong>ОГРН:</strong></td>
+                <td>{{ organization.ogrn }}</td>
+            </tr>
+            <tr>
+                <td><strong>КПП:</strong></td>
+                <td>{{ organization.kpp|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Адрес:</strong></td>
+                <td>{{ organization.address|default:"-" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="organization-actions">
+        <a href="{% url 'organizations:edit' organization.pk %}" class="btn btn-primary">Редактировать</a>
+        <a href="{% url 'organizations:list' %}" class="btn btn-secondary">Назад к списку</a>
+    </div>
+
+    <div class="vehicles-section">
+        <h2>Транспортные средства</h2>
+
+        <a href="{% url 'vehicles:create' organization.pk %}" class="btn btn-success">
+            + Добавить транспортное средство
+        </a>
+
+        {% if organization.vehicle_set.all %}
+        <table class="vehicle-table">
+            <thead>
+                <tr>
+                    <th>Рег. номер</th>
+                    <th>Марка</th>
+                    <th>Модель</th>
+                    <th>Тип ТС</th>
+                    <th>Тип владения</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehicle in organization.vehicle_set.all %}
+                <tr>
+                    <td>{{ vehicle.grn }}</td>
+                    <td>{{ vehicle.brand }}</td>
+                    <td>{{ vehicle.model|default:"-" }}</td>
+                    <td>{{ vehicle.get_vehicle_type_display }}</td>
+                    <td>{{ vehicle.get_property_type_display }}</td>
+                    <td>
+                        <a href="{% url 'vehicles:edit' vehicle.pk %}" class="btn btn-sm btn-secondary">
+                            Редактировать
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-vehicles">Нет транспортных средств</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
