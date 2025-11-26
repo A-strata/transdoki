@@ -83,6 +83,23 @@
         {{ form.planned_unloading_date }}<br>
         {{ form.planned_unloading_date.errors }}
     </p>
+    <p>
+        {{ form.client_cost.label_tag }}<br>
+        {{ form.client_cost }}
+        {{ form.client_cost.errors }}
+    </p>
+
+    <p>
+        {{ form.carrier_cost.label_tag }}<br>
+        {{ form.carrier_cost }}
+        {{ form.carrier_cost.errors }}
+    </p>
+
+    <p>
+        {{ form.comments.label_tag }}<br>
+        {{ form.comments }}
+        {{ form.comments.errors }}
+    </p>
     
     <button type="submit">Сохранить</button>
     <a href="{% url 'trips:list' %}">Отмена</a>

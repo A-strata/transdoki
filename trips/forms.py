@@ -8,7 +8,6 @@ from .validators import (validate_client_cannot_be_carrier,
                          validate_vehicles_belong_to_carrier)
 
 
-# trips/forms.py
 class TripForm(forms.ModelForm):
     class Meta:
         model = Trip

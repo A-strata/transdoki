@@ -3,6 +3,7 @@ from django.db import models
 from organizations.models import Organization, UserOwnedModel
 from persons.models import Person
 from vehicles.models import Vehicle
+from .validators import RussianMinValueValidator
 
 CARGO_LENGTH = 20
 
@@ -84,6 +85,30 @@ class Trip(UserOwnedModel):
         verbose_name='Вес',
         blank=True,
         null=True
+    )
+    client_cost = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name='Стоимость заказа',
+        blank=True,
+        null=True,
+        validators=[RussianMinValueValidator(0)],
+        help_text='Общая стоимость заказа для клиента'
+    )
+    carrier_cost = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name='Стоимость перевозки',
+        blank=True,
+        null=True,
+        validators=[RussianMinValueValidator(0)],
+        help_text='Общая стоимость заказа для перевозчика'
+    )
+    comments = models.TextField(
+        max_length=1000,
+        verbose_name='Комментарии',
+        blank=True,
+        help_text='Дополнительная информация о рейсе'
     )
 
     class Meta:

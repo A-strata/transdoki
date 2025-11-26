@@ -1,4 +1,6 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.utils.translation import gettext_lazy as _
 
 
 def validate_unique_trip_number_and_date(
@@ -105,3 +107,12 @@ def validate_vehicles_belong_to_carrier(truck, trailer, carrier):
 
     if errors:
         raise ValidationError(errors)
+
+
+class RussianMinValueValidator(MinValueValidator):
+    message = _('Убедитесь, что значение больше или равно %(limit_value)s.')
+
+    def __init__(self, limit_value, message=None):
+        if message is None:
+            message = self.message
+        super().__init__(limit_value, message)
