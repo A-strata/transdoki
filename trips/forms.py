@@ -32,7 +32,8 @@ class TripForm(forms.ModelForm):
             self._apply_queryset_filters()
 
     def _apply_queryset_filters(self):
-        """Применяем фильтрацию с сохранением текущих значений"""
+        """Применяем фильтрацию с сохранением текущих значений
+        для полей, являющихся внешними ключами"""
         from organizations.models import Organization
         from persons.models import Person
         from vehicles.models import Vehicle

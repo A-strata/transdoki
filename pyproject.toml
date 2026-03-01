@@ -1,22 +1,20 @@
-[project]
+[tool.poetry]
 name = "transdoki"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Art",email = "a.astakhin@gmail.com"}
-]
+authors = ["Art <a.astakhin@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "django (>=5.2.8,<6.0.0)",
-    "dadata (>=25.10.0,<26.0.0)",
-    "dotenv (>=0.9.9,<0.10.0)",
-    "docxtpl (>=0.20.1,<0.21.0)",
-    "flake8 (>=7.3.0,<8.0.0)",
-    "isort (>=7.0.0,<8.0.0)",
-]
 
+[tool.poetry.dependencies]
+python = "^3.12"
+django = "^5.1"
+dadata = "^25.10.0"
+python-dotenv = "^1.0.0"
+docxtpl = "^0.20.1"
+flake8 = "^7.3.0"
+isort = "^7.0.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+

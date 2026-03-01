@@ -88,17 +88,40 @@
         {{ form.client_cost }}
         {{ form.client_cost.errors }}
     </p>
-
     <p>
         {{ form.carrier_cost.label_tag }}<br>
         {{ form.carrier_cost }}
         {{ form.carrier_cost.errors }}
     </p>
-
     <p>
         {{ form.comments.label_tag }}<br>
         {{ form.comments }}
         {{ form.comments.errors }}
+    </p>
+     <p>
+        {{ form.loading_type.label_tag }}<br>
+        {{ form.loading_type }}
+        {{ form.loading_type.errors }}
+    </p>
+    <p>
+        {{ form.unloading_type.label_tag }}<br>
+        {{ form.unloading_type }}
+        {{ form.unloading_type.errors }}
+    </p>
+    <p>
+        {{ form.payment_type.label_tag }}<br>
+        {{ form.payment_type }}
+        {{ form.payment_type.errors }} 
+    </p>
+    <p>
+        {{ form.payment_condition.label_tag }}<br>
+        {{ form.payment_condition }}
+        {{ form.payment_condition.errors }}
+    </p>
+    <p>
+        {{ form.payment_term.label_tag }}<br>
+        {{ form.payment_term }}
+        {{ form.payment_term.errors }}
     </p>
     
     <button type="submit">Сохранить</button>

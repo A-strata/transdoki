@@ -6,6 +6,25 @@ from vehicles.models import Vehicle
 from .validators import RussianMinValueValidator
 
 CARGO_LENGTH = 20
+LOADING_TYPE_LENGTH = 20
+TERM_OF_PAYMENT_LENGTH = 100
+PAYMENT_TYPE_LENGTH = 50
+
+
+class LoadingType(models.TextChoices):
+    REAR = 'rear', 'Задняя'
+    TOP = 'top', 'Верхняя'
+    SIDE = 'side', 'Боковая'
+
+
+class PaymentCondition(models.TextChoices):
+    DOCUMENTS = 'documents', 'По факту предоставления документов',
+    UNLOADING = 'unloading', 'По факту выгрузки'
+
+
+class PaymentType(models.TextChoices):
+    CASHLESS = 'cashless', 'Безналичный расчёт'
+    CASH = 'cash', 'Наличный расчёт'
 
 
 class Trip(UserOwnedModel):
@@ -107,6 +126,40 @@ class Trip(UserOwnedModel):
         verbose_name='Комментарии',
         blank=True,
         help_text='Дополнительная информация о рейсе'
+    )
+    loading_type = models.CharField(
+        max_length=LOADING_TYPE_LENGTH,
+        choices=LoadingType.choices,
+        blank=True,
+        default='',
+        verbose_name='Тип погрузки',
+    )
+    unloading_type = models.CharField(
+        max_length=LOADING_TYPE_LENGTH,
+        choices=LoadingType.choices,
+        blank=True,
+        default='',
+        verbose_name='Тип выгрузки',
+
+    )
+    payment_type = models.CharField(
+        max_length=PAYMENT_TYPE_LENGTH,
+        choices=PaymentType.choices,
+        blank=True,
+        default='',
+        verbose_name='Форма оплаты'
+    )
+    payment_condition = models.CharField(
+        max_length=50,
+        choices=PaymentCondition.choices,
+        blank=True,
+        default='',
+        verbose_name='Условия оплаты'
+    )
+    payment_term = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name='Срок оплаты',
     )
 
     class Meta:

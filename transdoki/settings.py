@@ -26,11 +26,13 @@ SECRET_KEY = 'django-insecure-^&oq)ba)8=45jxfx3lc*068wm$vp4=$9xaazusav(r#-iskh#c
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    '212.193.24.247',
+    'transdoki.ru',
+    'www.transdoki.ru',
+    '95.163.231.186',
+    # '212.193.24.247',
     'localhost',
     '127.0.0.1',
 ]
-
 
 # Application definition
 
