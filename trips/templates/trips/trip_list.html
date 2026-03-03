@@ -1,46 +1,212 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Поездки</h1>
+<style>
+    .trips-page {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
 
-<table>
-    <thead>
-        <tr>
-            <th>№ заявки</th>
-            <th>Дата</th>
-            <th>Заказчик</th>
-            <th>Отправитель</th>
-            <th>Получатель</th>
-            <th>Перевозчик</th>
-            <th>Водитель</th>
-            <th>Груз</th>
-            <th>Вес, кг</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for trip in trips %}
-        <tr>
-            <td>{{ trip.num_of_trip }}</td>
-            <td>{{ trip.date_of_trip|date:"d.m.Y" }}</td>
-            <td>{{ trip.client.short_name }}</td>
-            <td>{{ trip.consignor.short_name }}</td>
-            <td>{{ trip.consignee.short_name }}</td>
-            <td>{{ trip.carrier.short_name }}</td>
-            <td>{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
-            <td>{{ trip.cargo }}</td>
-            <td>{{ trip.weight }}</td>
-            <td>
-                <a href="{% url 'trips:print_tn' trip.pk %}" download>Скачать ТН</a>
-                <a href="{% url 'trips:edit' trip.pk %}">Редактировать</a>
-            </td>
-            
-        {% empty %}
-        <tr>
-            <td colspan="7">Нет поездок</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<a href="{% url 'trips:create' %}">Создать поездку</a>
+    .trips-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .trips-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+    }
+
+    .trips-subtitle {
+        margin: 4px 0 0;
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+
+    .table-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .tms-table {
+        width: 100%;
+        min-width: 1280px;
+        border-collapse: collapse;
+    }
+
+    .tms-table thead th {
+        text-align: left;
+        padding: 12px 14px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6b7280;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .tms-table tbody td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.92rem;
+        color: #111827;
+        vertical-align: top;
+    }
+
+    .tms-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .tms-table tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .trip-number {
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .trip-date, .trip-weight {
+        white-space: nowrap;
+    }
+
+    .driver-name {
+        white-space: nowrap;
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        min-width: 180px;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.83rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+        white-space: nowrap;
+    }
+
+    .tms-btn-primary {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .tms-btn-primary:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .tms-btn-secondary {
+        background: #fff;
+        color: #374151;
+        border-color: #e5e7eb;
+    }
+
+    .tms-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .tms-btn-add {
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    .empty-row td {
+        color: #6b7280;
+        text-align: center;
+        padding: 20px 14px;
+    }
+
+    @media (max-width: 768px) {
+        .trips-header .tms-btn-add {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="trips-page">
+    <div class="trips-header">
+        <div>
+            <h1 class="trips-title">Поездки</h1>
+            <p class="trips-subtitle">Управление заявками и транспортными накладными</p>
+        </div>
+        <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">Создать поездку</a>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap">
+            <table class="tms-table">
+                <thead>
+                    <tr>
+                        <th>№ заявки</th>
+                        <th>Дата</th>
+                        <th>Заказчик</th>
+                        <th>Отправитель</th>
+                        <th>Получатель</th>
+                        <th>Перевозчик</th>
+                        <th>Водитель</th>
+                        <th>Груз</th>
+                        <th>Вес, кг</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trip in trips %}
+                    <tr>
+                        <td><span class="trip-number">{{ trip.num_of_trip }}</span></td>
+                        <td><span class="trip-date">{{ trip.date_of_trip|date:"d.m.Y" }}</span></td>
+                        <td>{{ trip.client.short_name }}</td>
+                        <td>{{ trip.consignor.short_name }}</td>
+                        <td>{{ trip.consignee.short_name }}</td>
+                        <td>{{ trip.carrier.short_name }}</td>
+                        <td class="driver-name">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
+                        <td>{{ trip.cargo }}</td>
+                        <td><span class="trip-weight">{{ trip.weight }}</span></td>
+                        <td>
+                            <div class="actions">
+                                <a href="{% url 'trips:print_tn' trip.pk %}" class="tms-btn tms-btn-secondary" download>Скачать ТН</a>
+                                <a href="{% url 'trips:edit' trip.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="10">Нет поездок</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
 {% endblock %}

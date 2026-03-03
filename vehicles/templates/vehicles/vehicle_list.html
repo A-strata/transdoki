@@ -1,31 +1,189 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Транспортные средства</h1>
+<style>
+    .vehicles-page {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
 
-<table>
-    <thead>
-        <tr>
-            <th>Тип ТС</th>
-            <th>Госномер</th>
-            <th>Марка</th>
-            <th>Модель</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for vehicle in vehicles %}
-        <tr>
-            <td>{{ vehicle.get_vehicle_type_display }}</td>
-            <td>{{ vehicle.grn }}</td>
-            <td>{{ vehicle.brand }}</td>
-            <td>{{ vehicle.model }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4">Нет транспортных средств</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    .vehicles-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
 
+    .vehicles-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+    }
+
+    .vehicles-subtitle {
+        margin: 4px 0 0;
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+
+    .table-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .tms-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 680px;
+    }
+
+    .tms-table thead th {
+        text-align: left;
+        padding: 12px 14px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6b7280;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .tms-table tbody td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.93rem;
+        color: #111827;
+        vertical-align: top;
+    }
+
+    .tms-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .tms-table tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .vehicle-grn {
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    .vehicle-muted {
+        color: #6b7280;
+    }
+
+    .empty-row td {
+        color: #6b7280;
+        text-align: center;
+        padding: 20px 14px;
+    }
+
+    @media (max-width: 760px) {
+        .table-wrap {
+            overflow: visible;
+        }
+
+        .tms-table {
+            min-width: 100%;
+        }
+
+        .tms-table thead {
+            display: none;
+        }
+
+        .tms-table tbody tr {
+            display: block;
+            margin: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .tms-table tbody td {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .tms-table tbody td:last-child {
+            border-bottom: none;
+        }
+
+        .tms-table tbody td::before {
+            content: attr(data-label);
+            color: #6b7280;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .empty-row td {
+            display: block;
+            text-align: center;
+        }
+
+        .empty-row td::before {
+            content: none;
+        }
+    }
+</style>
+
+<section class="vehicles-page">
+    <div class="vehicles-header">
+        <div>
+            <h1 class="vehicles-title">Транспортные средства</h1>
+            <p class="vehicles-subtitle">Список всех транспортных средств в системе</p>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap">
+            <table class="tms-table">
+                <thead>
+                    <tr>
+                        <th>Тип ТС</th>
+                        <th>Госномер</th>
+                        <th>Марка</th>
+                        <th>Модель</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                    <tr>
+                        <td data-label="Тип ТС">{{ vehicle.get_vehicle_type_display }}</td>
+                        <td data-label="Госномер"><span class="vehicle-grn">{{ vehicle.grn }}</span></td>
+                        <td data-label="Марка">{{ vehicle.brand }}</td>
+                        <td data-label="Модель">
+                            {% if vehicle.model %}
+                                {{ vehicle.model }}
+                            {% else %}
+                                <span class="vehicle-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="4">Нет транспортных средств</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
 {% endblock %}

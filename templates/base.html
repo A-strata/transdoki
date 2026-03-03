@@ -1,58 +1,275 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}TMS{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/nav.css' %}">
-    <link rel="stylesheet" href="{% static 'css/tables.css' %}">
-    <link rel="stylesheet" href="{% static 'css/forms.css' %}">
 
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --surface: #ffffff;
+            --text: #111827;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+
+            --radius: 12px;
+            --radius-sm: 10px;
+            --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+
+            --container: 1200px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .app-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* NAVBAR */
+        .nav-wrap {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-container {
+            max-width: var(--container);
+            margin: 0 auto;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 62px;
+        }
+
+        .nav-left, .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-right: 10px;
+            color: #0f172a;
+        }
+
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 11px;
+            border-radius: 9px;
+            font-size: 0.92rem;
+            color: #374151;
+            border: 1px solid transparent;
+            transition: background .2s ease, color .2s ease, border-color .2s ease;
+        }
+
+        .nav-link:hover {
+            background: #f3f4f6;
+            border-color: #e5e7eb;
+        }
+
+        .nav-link.active {
+            background: #eff6ff;
+            color: var(--primary);
+            border-color: #bfdbfe;
+            font-weight: 600;
+        }
+
+        .user-meta {
+            color: var(--muted);
+            font-size: 0.92rem;
+            margin-right: 4px;
+        }
+
+        .logout-form {
+            margin: 0;
+        }
+
+        .btn-link {
+            border: 0;
+            background: transparent;
+            color: var(--primary);
+            padding: 7px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background .2s ease, color .2s ease;
+        }
+
+        .btn-link:hover {
+            background: #eff6ff;
+            color: var(--primary-hover);
+        }
+
+        .auth-link {
+            color: var(--primary);
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .auth-link:hover {
+            background: #eff6ff;
+        }
+
+        /* MAIN */
+        main {
+            width: 100%;
+            max-width: var(--container);
+            margin: 0 auto;
+            padding: 20px 16px 28px;
+            flex: 1;
+        }
+
+        /* Универсальная карточка для страниц */
+        .page-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px;
+        }
+
+        /* focus-visible для доступности */
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.3);
+            outline-offset: 1px;
+        }
+
+        @media (max-width: 900px) {
+            .nav-container {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 10px;
+                padding-top: 12px;
+                padding-bottom: 12px;
+            }
+
+            .nav-left, .nav-right {
+                width: 100%;
+            }
+
+            .nav-right {
+                justify-content: space-between;
+            }
+
+            .user-meta {
+                margin-right: auto;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .nav-left {
+                gap: 4px;
+            }
+
+            .nav-link {
+                font-size: 0.86rem;
+                padding: 7px 9px;
+            }
+
+            main {
+                padding: 14px 12px 20px;
+            }
+        }
+    </style>
+
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="nav-container">
-        
-        <div class="nav-left">{% if user.is_authenticated %}
-            {% url 'organizations:list' as organizations_url %}
-            <a href="{{ organizations_url }}" 
-            class="{% if request.path == organizations_url %}active{% endif %}">Организации</a>
-            
-            {% url 'persons:list' as persons_url %}
-            <a href="{{ persons_url }}" 
-            class="{% if request.path == persons_url %}active{% endif %}">Люди</a>
-            
-            {% url 'vehicles:list' as vehicles_url %}
-            <a href="{{ vehicles_url }}" 
-            class="{% if request.path == vehicles_url %}active{% endif %}">Транспортные средства</a>
-            
-            {% url 'trips:list' as trips_url %}
-            <a href="{{ trips_url }}" 
-            class="{% if request.path == trips_url %}active{% endif %}">Поездки</a>
-        {% endif %}</div>
-        
-        
-        <div class="nav-right">
-            {% if user.is_authenticated %}
-                Привет, {{ user.username }}!
-                <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" style="background: none; border: none; color: #007bff; cursor: pointer; text-decoration: underline;">Выйти</button>
-                </form>
-            {% else %}
-                <a href="{% url 'login' %}">Войти</a>
-                <a href="{% url 'accounts:register' %}">Регистрация</a>
-            {% endif %}
-        </div>
-    </nav>
-    
+<div class="app-shell">
+    <header class="nav-wrap">
+        <nav class="nav-container">
+            <div class="nav-left">
+                <span class="brand">TMS</span>
+
+                {% if user.is_authenticated %}
+                    {% url 'organizations:list' as organizations_url %}
+                    <a href="{{ organizations_url }}"
+                       class="nav-link {% if request.path == organizations_url %}active{% endif %}">
+                        Организации
+                    </a>
+
+                    {% url 'persons:list' as persons_url %}
+                    <a href="{{ persons_url }}"
+                       class="nav-link {% if request.path == persons_url %}active{% endif %}">
+                        Люди
+                    </a>
+
+                    {% url 'vehicles:list' as vehicles_url %}
+                    <a href="{{ vehicles_url }}"
+                       class="nav-link {% if request.path == vehicles_url %}active{% endif %}">
+                        Транспорт
+                    </a>
+
+                    {% url 'trips:list' as trips_url %}
+                    <a href="{{ trips_url }}"
+                       class="nav-link {% if request.path == trips_url %}active{% endif %}">
+                        Поездки
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="nav-right">
+                {% if user.is_authenticated %}
+                    <span class="user-meta">Привет, {{ user.username }}!</span>
+                    <form method="post" action="{% url 'logout' %}" class="logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-link">Выйти</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="auth-link">Войти</a>
+                    <a href="{% url 'accounts:register' %}" class="auth-link">Регистрация</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
     <main>
         {% block content %}
         {% endblock %}
     </main>
+</div>
 </body>
-
-
 </html>

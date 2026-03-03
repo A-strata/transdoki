@@ -2,13 +2,134 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Удаление человека</h1>
+<style>
+    .delete-page {
+        max-width: 620px;
+        margin: 0 auto;
+        padding-top: 8px;
+    }
 
-<p>Вы уверены, что хотите удалить "{{ object }}"?</p>
+    .delete-card {
+        background: #fff;
+        border: 1px solid #fecaca;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 18px;
+    }
 
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Удалить</button>
-    <a href="{% url 'persons:list' %}" >Отмена</a>
-</form>
+    .delete-title {
+        margin: 0 0 10px;
+        font-size: clamp(1.2rem, 1.7vw, 1.5rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        color: #991b1b;
+    }
+
+    .delete-text {
+        margin: 0;
+        color: #374151;
+        font-size: 0.95rem;
+        line-height: 1.45;
+    }
+
+    .delete-target {
+        display: inline-block;
+        margin-top: 4px;
+        font-weight: 700;
+        color: #111827;
+        word-break: break-word;
+    }
+
+    .delete-warning {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border: 1px solid #fee2e2;
+        background: #fef2f2;
+        border-radius: 10px;
+        color: #b91c1c;
+        font-size: 0.88rem;
+    }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .tms-btn-danger {
+        background: #dc2626;
+        color: #fff;
+        border-color: #dc2626;
+    }
+
+    .tms-btn-danger:hover {
+        background: #b91c1c;
+        border-color: #b91c1c;
+    }
+
+    .tms-btn-secondary {
+        background: #fff;
+        color: #374151;
+        border-color: #e5e7eb;
+    }
+
+    .tms-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    @media (max-width: 640px) {
+        .delete-card {
+            padding: 14px;
+        }
+
+        .actions {
+            flex-direction: column;
+        }
+
+        .actions .tms-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="delete-page">
+    <div class="delete-card">
+        <h1 class="delete-title">Удаление человека</h1>
+
+        <p class="delete-text">
+            Вы уверены, что хотите удалить:
+            <br>
+            <span class="delete-target">«{{ object }}»</span>?
+        </p>
+
+        <div class="delete-warning">
+            Это действие нельзя отменить.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <a href="{% url 'persons:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</section>
 {% endblock %}

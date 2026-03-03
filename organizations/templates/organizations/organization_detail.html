@@ -2,79 +2,375 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="organization-detail">
-    <h1>{{ organization.short_name }}{% if organization.is_own_company%}✅{% endif %}</h1>
+<style>
+    .org-detail-page {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
 
-    <div class="organization-info">
-        <h2>Основные данные</h2>
-        <table class="info-table">
-            <tr>
-                <td><strong>Полное название:</strong></td>
-                <td>{{ organization.full_name }} </td>
-            </tr>
-            <tr>
-                <td><strong>ИНН:</strong></td>
-                <td>{{ organization.inn }}</td>
-            </tr>
-            <tr>
-                <td><strong>ОГРН:</strong></td>
-                <td>{{ organization.ogrn }}</td>
-            </tr>
-            <tr>
-                <td><strong>КПП:</strong></td>
-                <td>{{ organization.kpp|default:"-" }}</td>
-            </tr>
-            <tr>
-                <td><strong>Адрес:</strong></td>
-                <td>{{ organization.address|default:"-" }}</td>
-            </tr>
-        </table>
+    .detail-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 16px;
+    }
+
+    .org-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .org-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .org-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.7rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+    }
+
+    .own-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #166534;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+    }
+
+    .section-title {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        font-weight: 650;
+        color: #111827;
+    }
+
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .info-table tr + tr td {
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .info-table td {
+        padding: 10px 12px;
+        vertical-align: top;
+        font-size: 0.93rem;
+    }
+
+    .info-table td:first-child {
+        width: 230px;
+        color: #6b7280;
+        background: #fafafa;
+        font-weight: 600;
+    }
+
+    .info-value {
+        color: #111827;
+        word-break: break-word;
+    }
+
+    .actions-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .tms-btn-primary {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+    .tms-btn-primary:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .tms-btn-secondary {
+        background: #fff;
+        color: #374151;
+        border-color: #e5e7eb;
+    }
+    .tms-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .tms-btn-success {
+        background: #16a34a;
+        color: #fff;
+        border-color: #16a34a;
+    }
+    .tms-btn-success:hover {
+        background: #15803d;
+        border-color: #15803d;
+    }
+
+    .vehicles-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .vehicle-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 780px;
+    }
+
+    .vehicle-table thead th {
+        text-align: left;
+        padding: 12px 14px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6b7280;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .vehicle-table tbody td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.93rem;
+        color: #111827;
+        vertical-align: top;
+    }
+
+    .vehicle-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .vehicle-table tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .no-vehicles {
+        margin: 0;
+        padding: 14px;
+        border: 1px dashed #d1d5db;
+        border-radius: 10px;
+        color: #6b7280;
+        background: #fafafa;
+        font-size: 0.92rem;
+    }
+
+    @media (max-width: 760px) {
+        .detail-card {
+            padding: 12px;
+        }
+
+        .info-table,
+        .info-table tbody,
+        .info-table tr,
+        .info-table td {
+            display: block;
+            width: 100%;
+        }
+
+        .info-table td:first-child {
+            width: 100%;
+            border-bottom: 1px solid #f1f5f9;
+            border-right: none;
+            border-radius: 0;
+        }
+
+        .info-table tr + tr td {
+            border-top: none;
+        }
+
+        .info-table tr {
+            border: 1px solid #f1f5f9;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .info-table td {
+            border-top: none;
+        }
+
+        .vehicles-head .tms-btn {
+            width: 100%;
+        }
+
+        .actions-row {
+            flex-direction: column;
+        }
+
+        .actions-row .tms-btn {
+            width: 100%;
+        }
+
+        /* Mobile: vehicle table stacked cards */
+        .table-wrap {
+            overflow: visible;
+        }
+
+        .vehicle-table {
+            min-width: 100%;
+        }
+
+        .vehicle-table thead {
+            display: none;
+        }
+
+        .vehicle-table tbody tr {
+            display: block;
+            margin-bottom: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .vehicle-table tbody td {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 10px 12px;
+        }
+
+        .vehicle-table tbody td:last-child {
+            border-bottom: none;
+        }
+
+        .vehicle-table tbody td::before {
+            content: attr(data-label);
+            color: #6b7280;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+    }
+</style>
+
+<section class="org-detail-page">
+    <div class="detail-card">
+        <div class="org-head">
+            <div class="org-title-wrap">
+                <h1 class="org-title">{{ organization.short_name }}</h1>
+                {% if organization.is_own_company %}
+                    <span class="own-badge">Своя компания</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="margin-top: 14px;">
+            <h2 class="section-title">Основные данные</h2>
+            <table class="info-table">
+                <tr>
+                    <td>Полное название</td>
+                    <td class="info-value">{{ organization.full_name }}</td>
+                </tr>
+                <tr>
+                    <td>ИНН</td>
+                    <td class="info-value">{{ organization.inn }}</td>
+                </tr>
+                <tr>
+                    <td>ОГРН</td>
+                    <td class="info-value">{{ organization.ogrn }}</td>
+                </tr>
+                <tr>
+                    <td>КПП</td>
+                    <td class="info-value">{{ organization.kpp|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td>Адрес</td>
+                    <td class="info-value">{{ organization.address|default:"-" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="actions-row">
+            <a href="{% url 'organizations:edit' organization.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
+            <a href="{% url 'organizations:list' %}" class="tms-btn tms-btn-secondary">Назад к списку</a>
+        </div>
     </div>
 
-    <div class="organization-actions">
-        <a href="{% url 'organizations:edit' organization.pk %}" class="btn btn-primary">Редактировать</a>
-        <a href="{% url 'organizations:list' %}" class="btn btn-secondary">Назад к списку</a>
-    </div>
-
-    <div class="vehicles-section">
-        <h2>Транспортные средства</h2>
-
-        <a href="{% url 'vehicles:create' organization.pk %}" class="btn btn-success">
-            + Добавить транспортное средство
-        </a>
+    <div class="detail-card">
+        <div class="vehicles-head">
+            <h2 class="section-title" style="margin: 0;">Транспортные средства</h2>
+            <a href="{% url 'vehicles:create' organization.pk %}" class="tms-btn tms-btn-success">+ Добавить транспортное средство</a>
+        </div>
 
         {% if organization.vehicle_set.all %}
-        <table class="vehicle-table">
-            <thead>
-                <tr>
-                    <th>Рег. номер</th>
-                    <th>Марка</th>
-                    <th>Модель</th>
-                    <th>Тип ТС</th>
-                    <th>Тип владения</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for vehicle in organization.vehicle_set.all %}
-                <tr>
-                    <td>{{ vehicle.grn }}</td>
-                    <td>{{ vehicle.brand }}</td>
-                    <td>{{ vehicle.model|default:"-" }}</td>
-                    <td>{{ vehicle.get_vehicle_type_display }}</td>
-                    <td>{{ vehicle.get_property_type_display }}</td>
-                    <td>
-                        <a href="{% url 'vehicles:edit' vehicle.pk %}" class="btn btn-sm btn-secondary">
-                            Редактировать
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <div class="table-wrap">
+                <table class="vehicle-table">
+                    <thead>
+                        <tr>
+                            <th>Рег. номер</th>
+                            <th>Марка</th>
+                            <th>Модель</th>
+                            <th>Тип ТС</th>
+                            <th>Тип владения</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vehicle in organization.vehicle_set.all %}
+                            <tr>
+                                <td data-label="Рег. номер">{{ vehicle.grn }}</td>
+                                <td data-label="Марка">{{ vehicle.brand }}</td>
+                                <td data-label="Модель">{{ vehicle.model|default:"-" }}</td>
+                                <td data-label="Тип ТС">{{ vehicle.get_vehicle_type_display }}</td>
+                                <td data-label="Тип владения">{{ vehicle.get_property_type_display }}</td>
+                                <td data-label="Действия">
+                                    <a href="{% url 'vehicles:edit' vehicle.pk %}" class="tms-btn tms-btn-secondary">
+                                        Редактировать
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-        <p class="no-vehicles">Нет транспортных средств</p>
+            <p class="no-vehicles">Нет транспортных средств</p>
         {% endif %}
     </div>
-</div>
+</section>
 {% endblock %}

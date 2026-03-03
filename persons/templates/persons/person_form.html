@@ -1,90 +1,242 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Добавить человека</h1>
+<style>
+    .person-form-page {
+        max-width: 760px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
 
-<form method="post">
-    {% csrf_token %}
-    {% if form.non_field_errors %}
-        <div class="form-errors">
-            {% for error in form.non_field_errors %}
-                <p class="error">{{ error }}</p>
-            {% endfor %}
+    .page-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+    }
+
+    .page-subtitle {
+        margin: 6px 0 0;
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+
+    .form-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 16px;
+    }
+
+    .form-errors {
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+    }
+
+    .form-errors .error {
+        margin: 0;
+        color: #991b1b;
+        font-size: 0.9rem;
+    }
+
+    .form-errors .error + .error {
+        margin-top: 6px;
+    }
+
+    .field {
+        margin-bottom: 12px;
+    }
+
+    .field:last-of-type {
+        margin-bottom: 0;
+    }
+
+    .field label {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+        color: #111827;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        transition: border-color .2s ease, box-shadow .2s ease;
+        box-sizing: border-box;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .errorlist {
+        list-style: none;
+        margin: 6px 0 0;
+        padding: 0;
+    }
+
+    .errorlist li {
+        color: #991b1b;
+        font-size: 0.84rem;
+        line-height: 1.3;
+    }
+
+    .hint {
+        margin-top: 6px;
+        color: #6b7280;
+        font-size: 0.84rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .tms-btn-primary {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .tms-btn-primary:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .tms-btn-secondary {
+        background: #fff;
+        color: #374151;
+        border-color: #e5e7eb;
+    }
+
+    .tms-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    @media (max-width: 640px) {
+        .form-card {
+            padding: 12px;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .tms-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="person-form-page">
+    <div>
+        <h1 class="page-title">Добавить человека</h1>
+        <p class="page-subtitle">Укажите ФИО и контактные данные</p>
+    </div>
+
+    <form method="post" id="person-form" class="form-card" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p class="error">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="field">
+            {{ form.surname.label_tag }}
+            {{ form.surname }}
+            {{ form.surname.errors }}
         </div>
-    {% endif %}
-    <p>
-        {{ form.surname.label_tag }}<br>
-        {{ form.surname }}
-        {{ form.surname.errors }}
-    </p>
-    
-    <p>
-        {{ form.name.label_tag }}<br>
-        {{ form.name }}
-        {{ form.name.errors }}
-    </p>
-    
-    <p>
-        {{ form.patronymic.label_tag }}<br>
-        {{ form.patronymic }}
-        {{ form.patronymic.errors }}
-    </p>
-    
-    <p>
-        {{ form.phone.label_tag }}<br>
-        {{ form.phone }}
-        {{ form.phone.errors }}
-    </p>
-    
-    <p>
-        {{ form.email.label_tag }}<br>
-        {{ form.email }}
-    </p>
-    
-    <button type="submit">Сохранить</button>
-    <a href="{% url 'persons:list' %}">Отмена</a>
-</form>
 
-<!---->
+        <div class="field">
+            {{ form.name.label_tag }}
+            {{ form.name }}
+            {{ form.name.errors }}
+        </div>
+
+        <div class="field">
+            {{ form.patronymic.label_tag }}
+            {{ form.patronymic }}
+            {{ form.patronymic.errors }}
+        </div>
+
+        <div class="field">
+            {{ form.phone.label_tag }}
+            {{ form.phone }}
+            {{ form.phone.errors }}
+            <div class="hint">Формат: +7(999)123-45-67</div>
+        </div>
+
+        <div class="field">
+            {{ form.email.label_tag }}
+            {{ form.email }}
+            {{ form.email.errors }}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+            <a href="{% url 'persons:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
+        </div>
+    </form>
+</section>
+
 <script src="https://unpkg.com/imask"></script>
 <script>
-console.log('=== СКРИПТ ЗАПУЩЕН ===');
+(function () {
+    const phoneInput = document.getElementById('id_phone');
+    const form = document.getElementById('person-form');
 
-var element = document.getElementById('id_phone');
+    if (!phoneInput || !form || typeof IMask === 'undefined') return;
 
-if (element) {
-    var maskOptions = {
+    const mask = IMask(phoneInput, {
         mask: '+7(000)000-00-00',
         lazy: false
-    } 
-    var mask = new IMask(element, maskOptions);
-    
-    window.addEventListener('submit', function(e) {
-        console.log('=== ОБРАБОТЧИК WINDOW ===');
-        
-        const phoneInput = document.getElementById('id_phone');
-        if (phoneInput) {
-            console.log('До преобразования:', phoneInput.value);
-            const rawValue = phoneInput.value.replace(/\D/g, '');
-            console.log('После преобразования:', rawValue);
-            
-            // Создаем скрытое поле с преобразованным значением
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'phone'; // то же имя, что у основного поля
-            hiddenInput.value = rawValue === '7' ? '' : rawValue;
-            
-            // Отключаем основное поле чтобы оно не отправлялось
-            phoneInput.disabled = true;
-            
-            // Добавляем скрытое поле в форму
-            phoneInput.parentNode.appendChild(hiddenInput);
-            
-            console.log('Отправляем через скрытое поле:', hiddenInput.value);
-        }
-    }, true);
-}
+    });
 
-console.log('=== СКРИПТ ЗАВЕРШЕН ===');
+    form.addEventListener('submit', function () {
+        // Перед отправкой превращаем маску в "чистые" цифры для backend
+        const rawValue = phoneInput.value.replace(/\D/g, '');
+        phoneInput.value = (rawValue === '7') ? '' : rawValue;
+    });
+})();
 </script>
 {% endblock %}

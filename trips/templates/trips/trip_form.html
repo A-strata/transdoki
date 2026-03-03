@@ -1,131 +1,432 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-<h1>{% if object %}Редактировать поездку{% else %}Создать поездку{% endif %}</h1>
+<style>
+    .trip-form-page {
+        max-width: 980px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
 
-<form method="post">
-    {% csrf_token %}
-    
-    {% if form.non_field_errors %}
-        <div style="color: red;">
-            {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
-            {% endfor %}
+    .page-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.7rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+    }
+
+    .page-subtitle {
+        margin: 6px 0 0;
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+
+    .form-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 16px;
+    }
+
+    .form-errors {
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+    }
+
+    .form-errors p {
+        margin: 0;
+        color: #991b1b;
+        font-size: 0.9rem;
+    }
+
+    .form-errors p + p {
+        margin-top: 6px;
+    }
+
+    .section {
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .section:last-of-type {
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        margin: 0 0 10px;
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .fields-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .field {
+        min-width: 0;
+    }
+
+    .field--full {
+        grid-column: 1 / -1;
+    }
+
+    /* Единообразно: label всегда сверху */
+    .field label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+        color: #111827;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        transition: border-color .2s ease, box-shadow .2s ease;
+        box-sizing: border-box;
+    }
+
+    .field textarea {
+        min-height: 84px;
+        resize: vertical;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .errorlist {
+        list-style: none;
+        margin: 6px 0 0;
+        padding: 0;
+    }
+
+    .errorlist li {
+        color: #991b1b;
+        font-size: 0.84rem;
+        line-height: 1.3;
+    }
+
+    /* Участники: слева заказчик, справа колонка перевозки */
+    .parties-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .parties-col {
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fcfcfd;
+    }
+
+    .parties-col-title {
+        margin: 0 0 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .parties-col .field {
+        margin-bottom: 10px;
+    }
+
+    .parties-col .field:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Погрузка/выгрузка */
+    .logistics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .logistics-col {
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fcfcfd;
+    }
+
+    .logistics-title {
+        margin: 0 0 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .logistics-col .field {
+        margin-bottom: 10px;
+    }
+
+    .logistics-col .field:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .tms-btn-primary {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .tms-btn-primary:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .tms-btn-secondary {
+        background: #fff;
+        color: #374151;
+        border-color: #e5e7eb;
+    }
+
+    .tms-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    @media (max-width: 760px) {
+        .form-card { padding: 12px; }
+        .section { padding: 10px; }
+
+        .fields-grid,
+        .parties-grid,
+        .logistics-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .field--full {
+            grid-column: auto;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .tms-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="trip-form-page">
+    <div>
+        <h1 class="page-title">{% if object %}Редактировать поездку{% else %}Создать поездку{% endif %}</h1>
+        <p class="page-subtitle">Заполните данные по заявке, участникам и условиям перевозки</p>
+    </div>
+
+    <form method="post" class="form-card" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="section">
+            <h2 class="section-title">Основная информация</h2>
+            <div class="fields-grid">
+                <div class="field">
+                    {{ form.num_of_trip.label_tag }}
+                    {{ form.num_of_trip }}
+                    {{ form.num_of_trip.errors }}
+                </div>
+                <div class="field">
+                    {{ form.date_of_trip.label_tag }}
+                    {{ form.date_of_trip }}
+                    {{ form.date_of_trip.errors }}
+                </div>
+            </div>
         </div>
-    {% endif %}
-    
-    <h2>Основная информация</h2>
-    <p>
-        {{ form.num_of_trip.label_tag }}<br>
-        {{ form.num_of_trip }}<br>
-        {{ form.num_of_trip.errors }}
-    </p>
-    <p>
-        {{ form.date_of_trip.label_tag }}<br>
-        {{ form.date_of_trip }}<br>
-        {{ form.date_of_trip.errors }}
-    </p>
-    <h2>Участники перевозки</h2>
-    <p>
-        {{ form.client.label_tag }}<br>
-        {{ form.client }}<br>
-        {{ form.client.errors }}
-    </p>
-    <p>
-        {{ form.consignor.label_tag }}<br>
-        {{ form.consignor }}<br>
-        {{ form.consignor.errors }}
-    </p>
-    <p>
-        {{ form.consignee.label_tag }}<br>
-        {{ form.consignee }}<br>
-        {{ form.consignee.errors }}
-    </p>
-    <p>
-        {{ form.carrier.label_tag }}<br>
-        {{ form.carrier }}<br>
-        {{ form.carrier.errors }}
-    </p>
-    <p>
-        {{ form.driver.label_tag }}<br>
-        {{ form.driver }}<br>
-        {{ form.driver.errors }}
-    </p>
-    <p>
-        {{ form.truck.label_tag }}<br>
-        {{ form.truck }}<br>
-        {{ form.truck.errors }}
-    </p>
-    <p>
-        {{ form.trailer.label_tag }}<br>
-        {{ form.trailer }}<br>
-        {{ form.trailer.errors }}
-    </p>
-    <h2>Детали перевозки</h2>
-    <p>
-        {{ form.cargo.label_tag }}<br>
-        {{ form.cargo }}<br>
-        {{ form.cargo.errors }}
-    </p>
-    <p>
-        {{ form.weight.label_tag }}<br>
-        {{ form.weight }}<br>
-        {{ form.weight.errors }}
-    </p>
-    <h2>Даты</h2>
-    <p>
-        {{ form.planned_loading_date.label_tag }}<br>
-        {{ form.planned_loading_date }}<br>
-        {{ form.planned_loading_date.errors }}
-    </p>
-    <p>
-        {{ form.planned_unloading_date.label_tag }}<br>
-        {{ form.planned_unloading_date }}<br>
-        {{ form.planned_unloading_date.errors }}
-    </p>
-    <p>
-        {{ form.client_cost.label_tag }}<br>
-        {{ form.client_cost }}
-        {{ form.client_cost.errors }}
-    </p>
-    <p>
-        {{ form.carrier_cost.label_tag }}<br>
-        {{ form.carrier_cost }}
-        {{ form.carrier_cost.errors }}
-    </p>
-    <p>
-        {{ form.comments.label_tag }}<br>
-        {{ form.comments }}
-        {{ form.comments.errors }}
-    </p>
-     <p>
-        {{ form.loading_type.label_tag }}<br>
-        {{ form.loading_type }}
-        {{ form.loading_type.errors }}
-    </p>
-    <p>
-        {{ form.unloading_type.label_tag }}<br>
-        {{ form.unloading_type }}
-        {{ form.unloading_type.errors }}
-    </p>
-    <p>
-        {{ form.payment_type.label_tag }}<br>
-        {{ form.payment_type }}
-        {{ form.payment_type.errors }} 
-    </p>
-    <p>
-        {{ form.payment_condition.label_tag }}<br>
-        {{ form.payment_condition }}
-        {{ form.payment_condition.errors }}
-    </p>
-    <p>
-        {{ form.payment_term.label_tag }}<br>
-        {{ form.payment_term }}
-        {{ form.payment_term.errors }}
-    </p>
-    
-    <button type="submit">Сохранить</button>
-    <a href="{% url 'trips:list' %}">Отмена</a>
-</form>
+
+        <div class="section">
+            <h2 class="section-title">Участники перевозки</h2>
+            <div class="parties-grid">
+                <div class="parties-col">
+                    <h3 class="parties-col-title">Заказчик</h3>
+                    <div class="field">
+                        {{ form.client.label_tag }}
+                        {{ form.client }}
+                        {{ form.client.errors }}
+                    </div>
+                </div>
+
+                <div class="parties-col">
+                    <h3 class="parties-col-title">Исполнение перевозки</h3>
+                    <div class="field">
+                        {{ form.carrier.label_tag }}
+                        {{ form.carrier }}
+                        {{ form.carrier.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.driver.label_tag }}
+                        {{ form.driver }}
+                        {{ form.driver.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.truck.label_tag }}
+                        {{ form.truck }}
+                        {{ form.truck.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.trailer.label_tag }}
+                        {{ form.trailer }}
+                        {{ form.trailer.errors }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Погрузка и выгрузка</h2>
+            <div class="logistics-grid">
+                <div class="logistics-col">
+                    <h3 class="logistics-title">Погрузка</h3>
+                    <div class="field">
+                        {{ form.consignor.label_tag }}
+                        {{ form.consignor }}
+                        {{ form.consignor.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.loading_type.label_tag }}
+                        {{ form.loading_type }}
+                        {{ form.loading_type.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.planned_loading_date.label_tag }}
+                        {{ form.planned_loading_date }}
+                        {{ form.planned_loading_date.errors }}
+                    </div>
+                </div>
+
+                <div class="logistics-col">
+                    <h3 class="logistics-title">Выгрузка</h3>
+                    <div class="field">
+                        {{ form.consignee.label_tag }}
+                        {{ form.consignee }}
+                        {{ form.consignee.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.unloading_type.label_tag }}
+                        {{ form.unloading_type }}
+                        {{ form.unloading_type.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.planned_unloading_date.label_tag }}
+                        {{ form.planned_unloading_date }}
+                        {{ form.planned_unloading_date.errors }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Груз</h2>
+            <div class="fields-grid">
+                <div class="field field--full">
+                    {{ form.cargo.label_tag }}
+                    {{ form.cargo }}
+                    {{ form.cargo.errors }}
+                </div>
+                <div class="field">
+                    {{ form.weight.label_tag }}
+                    {{ form.weight }}
+                    {{ form.weight.errors }}
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Финансы и оплата</h2>
+            <div class="fields-grid">
+                <div class="field">
+                    {{ form.client_cost.label_tag }}
+                    {{ form.client_cost }}
+                    {{ form.client_cost.errors }}
+                </div>
+                <div class="field">
+                    {{ form.carrier_cost.label_tag }}
+                    {{ form.carrier_cost }}
+                    {{ form.carrier_cost.errors }}
+                </div>
+                <div class="field">
+                    {{ form.payment_type.label_tag }}
+                    {{ form.payment_type }}
+                    {{ form.payment_type.errors }}
+                </div>
+                <div class="field">
+                    {{ form.payment_condition.label_tag }}
+                    {{ form.payment_condition }}
+                    {{ form.payment_condition.errors }}
+                </div>
+                <div class="field">
+                    {{ form.payment_term.label_tag }}
+                    {{ form.payment_term }}
+                    {{ form.payment_term.errors }}
+                </div>
+                <div class="field field--full">
+                    {{ form.comments.label_tag }}
+                    {{ form.comments }}
+                    {{ form.comments.errors }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+            <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
+        </div>
+    </form>
+</section>
+
 <script src="{% static 'trips/js/autocomplete.js' %}"></script>
 {% endblock %}

@@ -1,35 +1,252 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Люди</h1>
+<style>
+    .persons-page {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
 
-<table>
-    <thead>
-        <tr>
-            <th>Фамилия</th>
-            <th>Имя</th>
-            <th>Отчество</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for person in persons %}
-        <tr>
-            <td>{{ person.surname }}</td>
-            <td>{{ person.name }}</td>
-            <td>{{ person.patronymic }}</td>
-            <td>
-                <a href="{% url 'persons:edit' person.pk %}">Редактировать</a>
-                <a href="{% url 'persons:delete' person.pk %}" onclick="return confirm('Удалить {{ person }}?')">Удалить</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="5">Нет людей</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    .persons-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
 
-<a href="{% url 'persons:create' %}">Добавить человека</a>
+    .persons-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+    }
+
+    .persons-subtitle {
+        margin: 4px 0 0;
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+
+    .table-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .tms-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px;
+    }
+
+    .tms-table thead th {
+        text-align: left;
+        padding: 12px 14px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6b7280;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .tms-table tbody td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.93rem;
+        color: #111827;
+        vertical-align: top;
+    }
+
+    .tms-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .tms-table tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .person-name {
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.84rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+        white-space: nowrap;
+    }
+
+    .tms-btn-primary {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .tms-btn-primary:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .tms-btn-danger {
+        background: #fff;
+        color: #b91c1c;
+        border-color: #fecaca;
+    }
+
+    .tms-btn-danger:hover {
+        background: #fef2f2;
+        border-color: #fca5a5;
+    }
+
+    .tms-btn-add {
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    .empty-row td {
+        color: #6b7280;
+        text-align: center;
+        padding: 20px 14px;
+    }
+
+    @media (max-width: 760px) {
+        .table-wrap {
+            overflow: visible;
+        }
+
+        .tms-table {
+            min-width: 100%;
+        }
+
+        .tms-table thead {
+            display: none;
+        }
+
+        .tms-table tbody tr {
+            display: block;
+            margin: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .tms-table tbody td {
+            display: grid;
+            grid-template-columns: 110px 1fr;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .tms-table tbody td:last-child {
+            border-bottom: none;
+        }
+
+        .tms-table tbody td::before {
+            content: attr(data-label);
+            color: #6b7280;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .actions {
+            width: 100%;
+        }
+
+        .actions .tms-btn {
+            flex: 1;
+        }
+
+        .empty-row td {
+            display: block;
+            text-align: center;
+        }
+
+        .empty-row td::before {
+            content: none;
+        }
+
+        .persons-header .tms-btn-add {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="persons-page">
+    <div class="persons-header">
+        <div>
+            <h1 class="persons-title">Люди</h1>
+            <p class="persons-subtitle">Список сотрудников и контактных лиц</p>
+        </div>
+        <a href="{% url 'persons:create' %}" class="tms-btn tms-btn-primary tms-btn-add">Добавить человека</a>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap">
+            <table class="tms-table">
+                <thead>
+                    <tr>
+                        <th>Фамилия</th>
+                        <th>Имя</th>
+                        <th>Отчество</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in persons %}
+                    <tr>
+                        <td data-label="Фамилия"><span class="person-name">{{ person.surname }}</span></td>
+                        <td data-label="Имя">{{ person.name }}</td>
+                        <td data-label="Отчество">{{ person.patronymic|default:"—" }}</td>
+                        <td data-label="Действия">
+                            <div class="actions">
+                                <a href="{% url 'persons:edit' person.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
+                                <a href="{% url 'persons:delete' person.pk %}"
+                                   class="tms-btn tms-btn-danger"
+                                   onclick="return confirm('Удалить {{ person }}?')">
+                                    Удалить
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="4">Нет людей</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
 {% endblock %}

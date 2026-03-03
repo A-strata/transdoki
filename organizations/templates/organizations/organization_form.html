@@ -2,86 +2,404 @@
 {% load static %}
 
 {% block content %}
-<div class="organization-form">
-    <h1>
-        {% if form.instance.pk %}
-            Редактирование организации
-        {% else %}
-            Создание организации
-        {% endif %}
-    </h1>
+<style>
+    :root {
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --danger-bg: #fef2f2;
+        --danger-text: #991b1b;
+        --danger-border: #fecaca;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
 
-    <form method="post">
-        {% csrf_token %}
-        
-        {% if form.non_field_errors %}
-            <div class="form-errors">
-                {% for error in form.non_field_errors %}
-                    <p class="error">{{ error }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
+    .organization-page {
+        background: var(--bg);
+        min-height: calc(100vh - 120px);
+        padding: 24px 16px 40px;
+    }
 
-        <div class="form-section">
-            <h2>Основные данные</h2>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    {{ form.inn.label_tag }}
-                    {{ form.inn }}
-                    {{ form.inn.errors }}
-                    <button type="button" id="btn_fill_inn" class="btn-small">Заполнить по ИНН</button>
+    .organization-form {
+        max-width: 920px;
+        margin: 0 auto;
+        color: var(--text);
+    }
+
+    .page-header {
+        margin-bottom: 18px;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: clamp(1.35rem, 2vw, 1.8rem);
+        line-height: 1.25;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+
+    .page-subtitle {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+    }
+
+    .form-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 18px;
+    }
+
+    .form-errors {
+        margin-bottom: 18px;
+        padding: 12px 14px;
+        background: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        border-radius: var(--radius-sm);
+    }
+
+    .form-errors .error {
+        color: var(--danger-text);
+        margin: 0;
+        font-size: 0.92rem;
+    }
+
+    .form-errors .error + .error {
+        margin-top: 6px;
+    }
+
+    .form-section {
+        margin-bottom: 18px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: #fff;
+    }
+
+    .form-section:last-of-type {
+        margin-bottom: 0;
+    }
+
+    .form-section h2 {
+        margin: 0 0 14px;
+        font-size: 1rem;
+        font-weight: 650;
+        color: var(--text);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+        min-width: 0;
+    }
+
+    .form-row .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-group label {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group input[type="email"],
+    .form-group input[type="tel"],
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--text);
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        transition: border-color .2s ease, box-shadow .2s ease;
+        box-sizing: border-box;
+    }
+
+    .form-group textarea {
+        min-height: 86px;
+        resize: vertical;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .form-group-inn {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .form-group-inn .input-wrap {
+        min-width: 0;
+    }
+
+    .btn-small {
+        height: 40px;
+        padding: 0 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #f9fafb;
+        color: #374151;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, transform .04s ease;
+        white-space: nowrap;
+    }
+
+    .btn-small:hover {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+    }
+
+    .btn-small:active {
+        transform: translateY(1px);
+    }
+
+    .form-group-checkbox {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .form-group-checkbox input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--primary);
+        cursor: pointer;
+    }
+
+    .form-group-checkbox label {
+        margin: 0;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .help-text {
+        width: 100%;
+        color: var(--muted);
+        font-size: 0.86rem;
+        margin-top: 4px;
+        line-height: 1.35;
+    }
+
+    .errorlist {
+        list-style: none;
+        margin: 6px 0 0;
+        padding: 0;
+    }
+
+    .errorlist li {
+        color: var(--danger-text);
+        font-size: 0.84rem;
+        line-height: 1.3;
+    }
+
+    .form-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 16px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 650;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease, transform .04s ease;
+    }
+
+    .tms-btn:active {
+        transform: translateY(1px);
+    }
+
+    .tms-btn-primary {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+    }
+
+    .tms-btn-primary:hover {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+    }
+
+    .tms-btn-secondary {
+        background: #fff;
+        color: #374151;
+        border-color: var(--border);
+    }
+
+    .tms-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    @media (max-width: 768px) {
+        .organization-page {
+            padding: 16px 12px 24px;
+        }
+
+        .form-card {
+            padding: 14px;
+        }
+
+        .form-section {
+            padding: 12px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .form-group-inn {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-small {
+            width: 100%;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .tms-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="organization-page">
+    <div class="organization-form">
+        <header class="page-header">
+            <h1 class="page-title">
+                {% if form.instance.pk %}
+                    Редактирование организации
+                {% else %}
+                    Создание организации
+                {% endif %}
+            </h1>
+            <p class="page-subtitle">Заполните реквизиты и параметры организации</p>
+        </header>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-card">
+                {% if form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <section class="form-section">
+                    <h2>Основные данные</h2>
+
+                    <div class="form-group form-group-inn">
+                        <div class="input-wrap">
+                            {{ form.inn.label_tag }}
+                            {{ form.inn }}
+                            {{ form.inn.errors }}
+                        </div>
+                        <button type="button" id="btn_fill_inn" class="btn-small">Заполнить по ИНН</button>
+                    </div>
+
+                    <div class="form-group">
+                        {{ form.full_name.label_tag }}
+                        {{ form.full_name }}
+                        {{ form.full_name.errors }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form.short_name.label_tag }}
+                        {{ form.short_name }}
+                        {{ form.short_name.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            {{ form.ogrn.label_tag }}
+                            {{ form.ogrn }}
+                            {{ form.ogrn.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.kpp.label_tag }}
+                            {{ form.kpp }}
+                            {{ form.kpp.errors }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        {{ form.address.label_tag }}
+                        {{ form.address }}
+                        {{ form.address.errors }}
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Тип организации</h2>
+
+                    <div class="form-group form-group-checkbox">
+                        {{ form.is_own_company }}
+                        {{ form.is_own_company.label_tag }}
+                        {{ form.is_own_company.errors }}
+                        <span class="help-text">Отметьте, если эта организация принадлежит вашей компании</span>
+                    </div>
+                </section>
+
+                <div class="form-actions">
+                    <button type="submit" class="tms-btn tms-btn-primary">
+                        {% if form.instance.pk %}Сохранить{% else %}Создать{% endif %} организацию
+                    </button>
+
+                    {% if form.instance.pk %}
+                        <a href="{% url 'organizations:detail' form.instance.pk %}" class="tms-btn tms-btn-secondary">Отмена</a>
+                    {% endif %}
                 </div>
-                
-                <div class="form-group">
-                    {{ form.is_own_company.label_tag }}
-                    {{ form.is_own_company }}
-                    {{ form.is_own_company.errors }}
-                </div>
             </div>
-
-            <div class="form-group">
-                {{ form.full_name.label_tag }}
-                {{ form.full_name }}
-                {{ form.full_name.errors }}
-            </div>
-
-            <div class="form-group">
-                {{ form.short_name.label_tag }}
-                {{ form.short_name }}
-                {{ form.short_name.errors }}
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    {{ form.ogrn.label_tag }}
-                    {{ form.ogrn }}
-                    {{ form.ogrn.errors }}
-                </div>
-                
-                <div class="form-group">
-                    {{ form.kpp.label_tag }}
-                    {{ form.kpp }}
-                    {{ form.kpp.errors }}
-                </div>
-            </div>
-
-            <div class="form-group">
-                {{ form.address.label_tag }}
-                {{ form.address }}
-                {{ form.address.errors }}
-            </div>
-        </div>
-
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
-                {% if form.instance.pk %}Сохранить{% else %}Создать{% endif %} организацию
-            </button>
-            {% if form.instance.pk %}
-                <a href="{% url 'organizations:detail' form.instance.pk %}" class="btn btn-secondary">Отмена</a>
-            {% endif %}
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
 <script src="{% static 'organizations/js/suggestions_by_inn.js' %}"></script>
