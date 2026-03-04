@@ -100,12 +100,10 @@ class Trip(UserOwnedModel):
     loading_address = models.CharField(
         max_length=ADDRESS_LENGTH,
         verbose_name='Адрес погрузки',
-        default='Адрес не указан'
     )
     unloading_address = models.CharField(
         max_length=ADDRESS_LENGTH,
         verbose_name='Адрес выгрузки',
-        default='Адрес не указан'
     )
     cargo = models.CharField(
         max_length=CARGO_LENGTH,
