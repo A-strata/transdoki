@@ -171,9 +171,9 @@
                         <th>№ заявки</th>
                         <th>Дата</th>
                         <th>Заказчик</th>
+                        <th>Перевозчик</th>
                         <th>Отправитель</th>
                         <th>Получатель</th>
-                        <th>Перевозчик</th>
                         <th>Водитель</th>
                         <th>Груз</th>
                         <th>Вес, кг</th>
@@ -186,9 +186,9 @@
                         <td><span class="trip-number">{{ trip.num_of_trip }}</span></td>
                         <td><span class="trip-date">{{ trip.date_of_trip|date:"d.m.Y" }}</span></td>
                         <td>{{ trip.client.short_name }}</td>
+                        <td>{{ trip.carrier.short_name }}</td>
                         <td>{{ trip.consignor.short_name }}</td>
                         <td>{{ trip.consignee.short_name }}</td>
-                        <td>{{ trip.carrier.short_name }}</td>
                         <td class="driver-name">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
                         <td>{{ trip.cargo }}</td>
                         <td><span class="trip-weight">{{ trip.weight }}</span></td>
