@@ -9,6 +9,7 @@ CARGO_LENGTH = 20
 LOADING_TYPE_LENGTH = 20
 TERM_OF_PAYMENT_LENGTH = 100
 PAYMENT_TYPE_LENGTH = 50
+ADDRESS_LENGTH = 200
 
 
 class LoadingType(models.TextChoices):
@@ -95,6 +96,16 @@ class Trip(UserOwnedModel):
         verbose_name='Фактическая дата и время выгрузки',
         null=True,
         blank=True
+    )
+    loading_address = models.CharField(
+        max_length=ADDRESS_LENGTH,
+        verbose_name='Адрес погрузки',
+        default='Адрес не указан'
+    )
+    unloading_address = models.CharField(
+        max_length=ADDRESS_LENGTH,
+        verbose_name='Адрес выгрузки',
+        default='Адрес не указан'
     )
     cargo = models.CharField(
         max_length=CARGO_LENGTH,
