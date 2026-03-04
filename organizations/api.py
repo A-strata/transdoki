@@ -9,6 +9,7 @@ load_dotenv()
 DADATA_TOKEN = os.getenv('DADATA_TOKEN')
 DADATA_SECRET = os.getenv('DADATA_SECRET')
 
+
 def get_org_data(request):
     if request.method == 'GET' and 'inn' in request.GET:
         inn = request.GET['inn']

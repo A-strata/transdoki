@@ -332,6 +332,11 @@
                 <div class="logistics-col">
                     <h3 class="logistics-title">Погрузка</h3>
                     <div class="field">
+                        {{ form.loading_address.label_tag }}
+                        {{ form.loading_address }}
+                        {{ form.loading_address.errors }}
+                    </div>
+                    <div class="field">
                         {{ form.consignor.label_tag }}
                         {{ form.consignor }}
                         {{ form.consignor.errors }}
@@ -350,6 +355,11 @@
 
                 <div class="logistics-col">
                     <h3 class="logistics-title">Выгрузка</h3>
+                    <div class="field">
+                        {{ form.unloading_address.label_tag }}
+                        {{ form.unloading_address }}
+                        {{ form.unloading_address.errors }}
+                    </div>
                     <div class="field">
                         {{ form.consignee.label_tag }}
                         {{ form.consignee }}
@@ -429,4 +439,159 @@
 </section>
 
 <script src="{% static 'trips/js/autocomplete.js' %}"></script>
+<style>
+.address-suggest-wrap {
+    position: relative;
+}
+.address-suggest-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 30;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+}
+.address-suggest-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.92rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+.address-suggest-item:last-child {
+    border-bottom: none;
+}
+.address-suggest-item:hover,
+.address-suggest-item.active {
+    background: #f9fafb;
+}
+</style>
+
+<script>
+(function () {
+    const endpoint = "{% url 'trips:address_suggest' %}";
+
+    function debounce(fn, delay = 300) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), delay);
+        };
+    }
+
+    function initAddressSuggest(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        // Оборачиваем input, чтобы список позиционировался корректно
+        const wrapper = document.createElement("div");
+        wrapper.className = "address-suggest-wrap";
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+
+        const list = document.createElement("div");
+        list.className = "address-suggest-list";
+        wrapper.appendChild(list);
+
+        let currentItems = [];
+        let activeIndex = -1;
+        let controller = null;
+
+        function closeList() {
+            list.style.display = "none";
+            list.innerHTML = "";
+            currentItems = [];
+            activeIndex = -1;
+        }
+
+        function render(items) {
+            list.innerHTML = "";
+            currentItems = items;
+            activeIndex = -1;
+
+            if (!items.length) {
+                closeList();
+                return;
+            }
+
+            items.forEach((item, idx) => {
+                const el = document.createElement("div");
+                el.className = "address-suggest-item";
+                el.textContent = item.value;
+                el.addEventListener("mousedown", (e) => {
+                    e.preventDefault();
+                    input.value = item.value;
+                    closeList();
+                });
+                list.appendChild(el);
+            });
+
+            list.style.display = "block";
+        }
+
+        const loadSuggestions = debounce(async () => {
+            const q = input.value.trim();
+            if (q.length < 3) {
+                closeList();
+                return;
+            }
+
+            if (controller) controller.abort();
+            controller = new AbortController();
+
+            try {
+                const url = `${endpoint}?q=${encodeURIComponent(q)}`;
+                const resp = await fetch(url, { signal: controller.signal });
+                if (!resp.ok) throw new Error("Request failed");
+                const data = await resp.json();
+                render((data && data.suggestions) ? data.suggestions.slice(0, 5) : []);
+            } catch (e) {
+                if (e.name !== "AbortError") closeList();
+            }
+        }, 300);
+
+        input.addEventListener("input", loadSuggestions);
+
+        input.addEventListener("keydown", (e) => {
+            if (!currentItems.length) return;
+
+            const nodes = list.querySelectorAll(".address-suggest-item");
+            if (!nodes.length) return;
+
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                activeIndex = (activeIndex + 1) % nodes.length;
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                activeIndex = (activeIndex - 1 + nodes.length) % nodes.length;
+            } else if (e.key === "Enter" && activeIndex >= 0) {
+                e.preventDefault();
+                input.value = currentItems[activeIndex].value;
+                closeList();
+                return;
+            } else if (e.key === "Escape") {
+                closeList();
+                return;
+            } else {
+                return;
+            }
+
+            nodes.forEach((n, i) => n.classList.toggle("active", i === activeIndex));
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!wrapper.contains(e.target)) closeList();
+        });
+    }
+
+    // Django id по умолчанию: id_<имя_поля>
+    initAddressSuggest("id_loading_address");
+    initAddressSuggest("id_unloading_address");
+})();
+</script>
 {% endblock %}

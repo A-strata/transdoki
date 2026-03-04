@@ -6,6 +6,17 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView
 
+import os
+from django.http import JsonResponse
+import requests
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET
+from dotenv import load_dotenv
+load_dotenv()
+DADATA_TOKEN = os.getenv('DADATA_TOKEN')
+DADATA_SECRET = os.getenv('DADATA_SECRET')
+DADATA_URL="https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
+
 from .forms import TripForm
 from .models import Trip
 from .services import TNGenerator
@@ -85,3 +96,31 @@ def print_tn(request, pk):
 
     file_path = TNGenerator.generate_tn(trip)
     return TNGenerator.create_file_response(file_path, trip)
+
+
+@login_required
+@require_GET
+def address_suggest(request):
+    q = (request.GET.get("q") or "").strip()
+    if len(q) < 3:
+        return JsonResponse({"suggestions": []})
+
+    headers = {
+        "Authorization": f"Token {DADATA_TOKEN}",
+        "X-Secret": DADATA_SECRET,
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "query": q,
+        "count": 5,  # максимум 5 вариантов
+    }
+
+    try:
+        resp = requests.post(DADATA_URL, json=payload, headers=headers, timeout=3)
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException:
+        return JsonResponse({"suggestions": []})
+
+    result = [{"value": s.get("value", "")} for s in data.get("suggestions", [])]
+    return JsonResponse({"suggestions": result})
