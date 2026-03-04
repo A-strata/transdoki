@@ -225,6 +225,11 @@
                 <span class="brand">TMS</span>
 
                 {% if user.is_authenticated %}
+                    {% url 'trips:list' as trips_url %}
+                    <a href="{{ trips_url }}"
+                       class="nav-link {% if request.path == trips_url %}active{% endif %}">
+                        Поездки
+                    </a>
                     {% url 'organizations:list' as organizations_url %}
                     <a href="{{ organizations_url }}"
                        class="nav-link {% if request.path == organizations_url %}active{% endif %}">
@@ -234,19 +239,13 @@
                     {% url 'persons:list' as persons_url %}
                     <a href="{{ persons_url }}"
                        class="nav-link {% if request.path == persons_url %}active{% endif %}">
-                        Люди
+                        Водители
                     </a>
 
                     {% url 'vehicles:list' as vehicles_url %}
                     <a href="{{ vehicles_url }}"
                        class="nav-link {% if request.path == vehicles_url %}active{% endif %}">
                         Транспорт
-                    </a>
-
-                    {% url 'trips:list' as trips_url %}
-                    <a href="{{ trips_url }}"
-                       class="nav-link {% if request.path == trips_url %}active{% endif %}">
-                        Поездки
                     </a>
                 {% endif %}
             </div>
