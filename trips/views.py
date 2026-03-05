@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, DetailView
 
 import os
 from django.http import JsonResponse
@@ -67,6 +67,11 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         # Управляет обновлением объекта (created_by уже установлен)
         return super().form_valid(form)  # Делегирует сохранение
+
+
+class TripDetailView(LoginRequiredMixin, DetailView):
+    model = Trip
+    template_name = 'trips/trip_detail.html'
 
 
 class TripListView(UserOwnedListView):

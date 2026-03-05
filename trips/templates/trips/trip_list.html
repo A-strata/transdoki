@@ -34,12 +34,19 @@
         border: 1px solid #e5e7eb;
         border-radius: 12px;
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        overflow: hidden;
+        overflow: visible;
     }
 
     .table-wrap {
         width: 100%;
         overflow-x: auto;
+        overflow-y: visible;
+        cursor: grab;
+    }
+
+    .table-wrap.is-dragging {
+        cursor: grabbing;
+        user-select: none;
     }
 
     .tms-table {
@@ -58,6 +65,11 @@
         background: #f9fafb;
         border-bottom: 1px solid #e5e7eb;
         white-space: nowrap;
+
+        /* Закрепляем шапку */
+        position: sticky;
+        top: 0;
+        z-index: 30;
     }
 
     .tms-table tbody td {
@@ -90,10 +102,9 @@
     }
 
     .actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
         min-width: 180px;
+        position: relative;
+        display: inline-block;
     }
 
     .tms-btn {
@@ -141,6 +152,50 @@
         font-size: 0.9rem;
     }
 
+    .actions-toggle {
+        min-width: 110px;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .actions-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px); /* по умолчанию вниз */
+        bottom: auto;
+        min-width: 190px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+        padding: 6px;
+        display: none;
+        z-index: 1000;
+    }
+
+    .actions-menu.open-up {
+        top: auto;
+        bottom: calc(100% + 6px); /* если снизу не хватает места */
+    }
+
+    .actions-menu.is-open {
+        display: block;
+    }
+
+    .actions-menu a {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #111827;
+        font-size: 0.88rem;
+        font-weight: 500;
+    }
+
+    .actions-menu a:hover {
+        background: #f3f4f6;
+    }
+
     .empty-row td {
         color: #6b7280;
         text-align: center;
@@ -164,7 +219,7 @@
     </div>
 
     <div class="table-card">
-        <div class="table-wrap">
+        <div class="table-wrap" data-drag-scroll>
             <table class="tms-table">
                 <thead>
                     <tr>
@@ -193,9 +248,20 @@
                         <td>{{ trip.cargo }}</td>
                         <td><span class="trip-weight">{{ trip.weight }}</span></td>
                         <td>
-                            <div class="actions">
-                                <a href="{% url 'trips:print_tn' trip.pk %}" class="tms-btn tms-btn-secondary" download>Скачать ТН</a>
-                                <a href="{% url 'trips:edit' trip.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
+                            <div class="actions" data-actions-dropdown>
+                                <button
+                                    type="button"
+                                    class="tms-btn tms-btn-secondary actions-toggle"
+                                    data-actions-toggle
+                                    aria-expanded="false"
+                                >
+                                    Действия <span>▾</span>
+                                </button>
+                                <div class="actions-menu" data-actions-menu>
+                                    <a href="{% url 'trips:detail' trip.pk %}">Просмотр</a>
+                                    <a href="{% url 'trips:print_tn' trip.pk %}" download>Скачать ТН</a>
+                                    <a href="{% url 'trips:edit' trip.pk %}">Редактировать</a>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -209,4 +275,129 @@
         </div>
     </div>
 </section>
+
+<script>
+(function () {
+    const dropdowns = document.querySelectorAll('[data-actions-dropdown]');
+
+    function closeAll() {
+        dropdowns.forEach((dd) => {
+            const menu = dd.querySelector('[data-actions-menu]');
+            const btn = dd.querySelector('[data-actions-toggle]');
+            menu.classList.remove('is-open', 'open-up');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function shouldOpenUp(btn, menu) {
+        menu.classList.remove('open-up');
+        menu.classList.add('is-open');
+        menu.style.visibility = 'hidden';
+
+        const menuHeight = menu.offsetHeight;
+        const btnRect = btn.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - btnRect.bottom;
+        const spaceAbove = btnRect.top;
+
+        menu.classList.remove('is-open');
+        menu.style.visibility = '';
+
+        return (spaceBelow < menuHeight + 12) && (spaceAbove > spaceBelow);
+    }
+
+    dropdowns.forEach((dd) => {
+        const btn = dd.querySelector('[data-actions-toggle]');
+        const menu = dd.querySelector('[data-actions-menu]');
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const isOpen = menu.classList.contains('is-open');
+            closeAll();
+
+            if (!isOpen) {
+                if (shouldOpenUp(btn, menu)) {
+                    menu.classList.add('open-up');
+                } else {
+                    menu.classList.remove('open-up');
+                }
+
+                menu.classList.add('is-open');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        menu.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+    });
+
+    document.addEventListener('click', closeAll);
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeAll();
+    });
+})();
+
+/* Drag-scroll ЛКМ для таблицы */
+(function () {
+    const wrap = document.querySelector('[data-drag-scroll]');
+    if (!wrap) return;
+
+    let isDown = false;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    let startWindowY = 0;
+    let moved = false;
+
+    function isInteractive(el) {
+        return !!el.closest('a, button, input, textarea, select, label');
+    }
+
+    wrap.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) return;
+        if (isInteractive(e.target)) return;
+
+        isDown = true;
+        moved = false;
+        wrap.classList.add('is-dragging');
+
+        startX = e.clientX;
+        startY = e.clientY;
+        startScrollLeft = wrap.scrollLeft;
+        startWindowY = window.scrollY;
+    });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!isDown) return;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+
+        wrap.scrollLeft = startScrollLeft - dx;
+        window.scrollTo({ top: startWindowY - dy, behavior: 'auto' });
+
+        e.preventDefault();
+    });
+
+    document.addEventListener('mouseup', function () {
+        if (!isDown) return;
+        isDown = false;
+        wrap.classList.remove('is-dragging');
+    });
+
+    wrap.addEventListener('dragstart', function (e) {
+        e.preventDefault();
+    });
+
+    wrap.addEventListener('click', function (e) {
+        if (moved) {
+            e.preventDefault();
+            e.stopPropagation();
+            moved = false;
+        }
+    }, true);
+})();
+</script>
 {% endblock %}

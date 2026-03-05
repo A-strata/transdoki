@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .trip-detail-page {
+        max-width: 980px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .page-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.7rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+    }
+
+    .page-subtitle {
+        margin: 6px 0 0;
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+
+    .card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 16px;
+    }
+
+    .section {
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .section:last-child {
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        margin: 0 0 10px;
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .kv-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 16px;
+    }
+
+    .kv {
+        min-width: 0;
+    }
+
+    .kv--full {
+        grid-column: 1 / -1;
+    }
+
+    .kv-label {
+        margin: 0 0 4px;
+        color: #6b7280;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .kv-value {
+        margin: 0;
+        color: #111827;
+        font-size: 0.95rem;
+        word-break: break-word;
+    }
+
+    .two-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .sub-card {
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fcfcfd;
+    }
+
+    .sub-title {
+        margin: 0 0 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .tms-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .tms-btn-primary {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .tms-btn-primary:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .tms-btn-secondary {
+        background: #fff;
+        color: #374151;
+        border-color: #e5e7eb;
+    }
+
+    .tms-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .tms-btn-disabled {
+        background: #f3f4f6;
+        color: #9ca3af;
+        border-color: #e5e7eb;
+        cursor: not-allowed;
+    }
+
+    .entity-link {
+        color: #1d4ed8;
+        text-decoration: none;
+        border-bottom: 1px dashed rgba(29, 78, 216, 0.35);
+    }
+
+    .entity-link:hover {
+        color: #1e40af;
+        border-bottom-color: rgba(30, 64, 175, 0.5);
+    }
+
+    @media (max-width: 760px) {
+        .card { padding: 12px; }
+        .section { padding: 10px; }
+
+        .kv-grid,
+        .two-cols {
+            grid-template-columns: 1fr;
+        }
+
+        .kv--full {
+            grid-column: auto;
+        }
+
+        .actions .tms-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+{% with trip=object %}
+<section class="trip-detail-page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Рейс №{{ trip.num_of_trip }}</h1>
+            <p class="page-subtitle">
+                Дата заявки:
+                {% if trip.date_of_trip %}{{ trip.date_of_trip|date:"d.m.Y" }}{% else %}—{% endif %}
+            </p>
+        </div>
+
+        <div class="actions">
+            <a href="{% url 'trips:edit' trip.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
+
+            {# Если у тебя другое имя маршрута - замени trips:download_tn #}
+            <a href="{% url 'trips:print_tn' trip.pk %}" class="tms-btn tms-btn-secondary">Скачать ТН</a>
+
+            <button type="button" class="tms-btn tms-btn-disabled" disabled title="Скоро будет доступно">
+                Скачать договор-заявку
+            </button>
+
+            <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary">К списку</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section">
+            <h2 class="section-title">Основная информация</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Номер заявки</p>
+                    <p class="kv-value">{{ trip.num_of_trip|default:"—" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Дата заявки</p>
+                    <p class="kv-value">{% if trip.date_of_trip %}{{ trip.date_of_trip|date:"d.m.Y" }}{% else %}—{% endif %}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Участники перевозки</h2>
+            <div class="two-cols">
+                <div class="sub-card">
+                    <h3 class="sub-title">Заказчик</h3>
+                    <div class="kv">
+                        <p class="kv-label">Организация</p>
+                        <p class="kv-value">
+                            {% if trip.client %}
+                                <a class="entity-link"
+                                href="{% url 'organizations:detail' trip.client.pk %}?next={% url 'trips:detail' trip.pk %}">
+                                    {{ trip.client }}
+                                </a>
+                            {% else %}—{% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="sub-card">
+                    <h3 class="sub-title">Исполнение перевозки</h3>
+                    <div class="kv-grid">
+                        <div class="kv kv--full">
+                            <p class="kv-label">Перевозчик</p>
+                            <p class="kv-value">
+                                {% if trip.carrier %}
+                                    <a class="entity-link" 
+                                    href="{% url 'organizations:detail' trip.carrier.pk %}?next={% url 'trips:detail' trip.pk %}">{{ trip.carrier }}</a>
+                                    {% else %}—{% endif %}
+                            </p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Водитель</p>
+                            <p class="kv-value">{{ trip.driver|default:"—" }}, {{ trip.driver.phone|default:"—" }}</p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Тягач</p>
+                            <p class="kv-value">
+                                {% if trip.truck %}
+                                    {{ trip.truck.brand }}{% if trip.truck.model %} {{ trip.truck.model }}{% endif %}, {{ trip.truck.grn }}
+                                {% else %}—{% endif %}
+                            </p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Прицеп</p>
+                            <p class="kv-value">
+                                {% if trip.trailer %}
+                                    {{ trip.trailer.brand }}{% if trip.trailer.model %} {{ trip.trailer.model }}{% endif %}, {{ trip.trailer.grn }}
+                                {% else %}—{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Погрузка и выгрузка</h2>
+            <div class="two-cols">
+                <div class="sub-card">
+                    <h3 class="sub-title">Погрузка</h3>
+                    <div class="kv-grid">
+                        <div class="kv kv--full">
+                            <p class="kv-label">Отправитель</p>
+                            <p class="kv-value">
+                                {% if trip.consignor %}
+                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignor.pk %}?next={% url 'trips:detail' trip.pk %}">{{ trip.consignor }}</a>
+                                {% else %}—{% endif %}
+                            </p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Адрес погрузки</p>
+                            <p class="kv-value">{{ trip.loading_address|default:"—" }}</p>
+                        </div>
+                        <div class="kv">
+                            <p class="kv-label">Тип погрузки</p>
+                            <p class="kv-value">{{ trip.get_loading_type_display|default:"—" }}</p>
+                        </div>
+                        <div class="kv">
+                            <p class="kv-label">Заявленные дата и время</p>
+                            <p class="kv-value">{% if trip.planned_loading_date %}{{ trip.planned_loading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Фактическая дата и время</p>
+                            <p class="kv-value">{% if trip.actual_loading_date %}{{ trip.actual_loading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sub-card">
+                    <h3 class="sub-title">Выгрузка</h3>
+                    <div class="kv-grid">
+                        <div class="kv kv--full">
+                            <p class="kv-label">Получатель</p>
+                            <p class="kv-value">
+                                {% if trip.consignee %}
+                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignee.pk %}?next={% url 'trips:detail' trip.pk %}">{{ trip.consignee }}</a>
+                                {% else %}—{% endif %}
+                            </p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Адрес выгрузки</p>
+                            <p class="kv-value">{{ trip.unloading_address|default:"—" }}</p>
+                        </div>
+                        <div class="kv">
+                            <p class="kv-label">Тип выгрузки</p>
+                            <p class="kv-value">{{ trip.get_unloading_type_display|default:"—" }}</p>
+                        </div>
+                        <div class="kv">
+                            <p class="kv-label">Заявленные дата и время</p>
+                            <p class="kv-value">{% if trip.planned_unloading_date %}{{ trip.planned_unloading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Фактическая дата и время</p>
+                            <p class="kv-value">{% if trip.actual_unloading_date %}{{ trip.actual_unloading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Груз</h2>
+            <div class="kv-grid">
+                <div class="kv kv--full">
+                    <p class="kv-label">Груз</p>
+                    <p class="kv-value">{{ trip.cargo|default:"—" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Вес</p>
+                    <p class="kv-value">{{ trip.weight|default:"—" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Финансы и оплата</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Стоимость для клиента</p>
+                    <p class="kv-value">{{ trip.client_cost|default:"—" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Стоимость для перевозчика</p>
+                    <p class="kv-value">{{ trip.carrier_cost|default:"—" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Форма оплаты</p>
+                    <p class="kv-value">{{ trip.get_payment_type_display|default:"—" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Условия оплаты</p>
+                    <p class="kv-value">{{ trip.get_payment_condition_display|default:"—" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Срок оплаты (дней)</p>
+                    <p class="kv-value">{{ trip.payment_term|default:"—" }}</p>
+                </div>
+                <div class="kv kv--full">
+                    <p class="kv-label">Комментарии</p>
+                    <p class="kv-value">{{ trip.comments|default:"—" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endwith %}
+{% endblock %}
