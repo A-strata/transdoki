@@ -3,6 +3,7 @@ from django.db import models
 from organizations.models import Organization, UserOwnedModel
 from persons.models import Person
 from vehicles.models import Vehicle
+
 from .validators import RussianMinValueValidator
 
 CARGO_LENGTH = 20

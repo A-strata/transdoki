@@ -2,11 +2,11 @@ from django import forms
 
 from .models import Trip
 from .validators import (validate_client_cannot_be_carrier,
+                         validate_costs_by_our_company_role,
                          validate_our_company_participation,
                          validate_trailer_for_truck,
                          validate_unique_trip_number_and_date,
-                         validate_vehicles_belong_to_carrier,
-                         validate_costs_by_our_company_role)
+                         validate_vehicles_belong_to_carrier)
 
 
 class TripForm(forms.ModelForm):

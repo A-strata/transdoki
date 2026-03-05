@@ -261,6 +261,7 @@
                                     <a href="{% url 'trips:detail' trip.pk %}">Просмотр</a>
                                     <a href="{% url 'trips:print_tn' trip.pk %}" download>Скачать ТН</a>
                                     <a href="{% url 'trips:edit' trip.pk %}">Редактировать</a>
+                                    <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}">Дублировать</a>
                                 </div>
                             </div>
                         </td>

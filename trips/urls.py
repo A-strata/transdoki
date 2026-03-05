@@ -1,6 +1,7 @@
 from django.urls import path
 
-from .views import TripCreateView, TripListView, TripUpdateView, TripDetailView, print_tn, address_suggest
+from .views import (TripCreateView, TripDetailView, TripListView,
+                    TripUpdateView, address_suggest, print_tn)
 
 app_name = 'trips'
 

@@ -1,25 +1,26 @@
 import logging
-
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, ListView, UpdateView, DetailView
-
 import os
-from django.http import JsonResponse
+
 import requests
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from django.forms.models import model_to_dict
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.urls import reverse_lazy
 from django.views.decorators.http import require_GET
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from dotenv import load_dotenv
-load_dotenv()
-DADATA_TOKEN = os.getenv('DADATA_TOKEN')
-DADATA_SECRET = os.getenv('DADATA_SECRET')
-DADATA_URL="https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
 
 from .forms import TripForm
 from .models import Trip
 from .services import TNGenerator
+
+load_dotenv()
+DADATA_TOKEN = os.getenv('DADATA_TOKEN')
+DADATA_SECRET = os.getenv('DADATA_SECRET')
+DADATA_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
 
 logger = logging.getLogger('security')
 
@@ -30,7 +31,7 @@ class UserOwnedListView(LoginRequiredMixin, ListView):
         return self.model.objects.filter(created_by=self.request.user)
 
 
-class TripCreateView(LoginRequiredMixin, CreateView):
+class TripCreateView0(LoginRequiredMixin, CreateView):
     model = Trip
     form_class = TripForm
     template_name = 'trips/trip_form.html'
@@ -46,6 +47,62 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         # Управляет созданием объекта
         form.instance.created_by = self.request.user  # Устанавливает создателя
         return super().form_valid(form)  # Делегирует сохранение
+
+
+class TripCreateView(LoginRequiredMixin, CreateView):
+    model = Trip
+    form_class = TripForm
+    template_name = 'trips/trip_form.html'
+    success_url = reverse_lazy('trips:list')
+
+    # Поля, которые НЕ копируем
+    COPY_EXCLUDE_FIELDS = {
+        'created_by',
+        'created_at',
+        'updated_at',
+        'num_of_trip',
+        'date_of_trip',
+        'planned_loading_date',
+        'planned_unloading_date',
+        'actual_loading_date',
+        'actual_unloading_date',
+        'weight',
+        'client_cost',
+        'carrier_cost',
+        'comments',
+    }
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        copy_from_id = self.request.GET.get('copy_from')
+        if not copy_from_id:
+            return initial
+
+        # Чтобы пользователь не мог копировать чужие рейсы
+        source_trip = Trip.objects.filter(
+            pk=copy_from_id,
+            created_by=self.request.user
+        ).first()
+        if not source_trip:
+            return initial
+
+        # Копируем только поля, которые реально есть в форме
+        form_fields = set(self.form_class.base_fields.keys())
+        fields_to_copy = [
+            f for f in form_fields if f not in self.COPY_EXCLUDE_FIELDS
+        ]
+
+        initial.update(model_to_dict(source_trip, fields=fields_to_copy))
+        return initial
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
 
 class TripUpdateView(LoginRequiredMixin, UpdateView):
@@ -121,11 +178,15 @@ def address_suggest(request):
     }
 
     try:
-        resp = requests.post(DADATA_URL, json=payload, headers=headers, timeout=3)
+        resp = requests.post(
+            DADATA_URL, json=payload, headers=headers, timeout=3
+        )
         resp.raise_for_status()
         data = resp.json()
     except requests.RequestException:
         return JsonResponse({"suggestions": []})
 
-    result = [{"value": s.get("value", "")} for s in data.get("suggestions", [])]
+    result = [
+        {"value": s.get("value", "")} for s in data.get("suggestions", [])
+    ]
     return JsonResponse({"suggestions": result})

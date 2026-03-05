@@ -126,7 +126,13 @@ def _is_filled(value):
     return value is not None and value != ''
 
 
-def validate_costs_by_our_company_role(*, client, carrier, client_cost, carrier_cost):
+def validate_costs_by_our_company_role(
+    *,
+    client,
+    carrier,
+    client_cost,
+    carrier_cost
+):
     """
     Правило:
     - Если наша фирма = перевозчик (carrier.is_own_company=True),
