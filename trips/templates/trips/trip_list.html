@@ -3,10 +3,16 @@
 {% block content %}
 <style>
     .trips-page {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    /* Растягиваем страницу почти на всю ширину окна,
+       даже если родительский контейнер узкий */
+    width: calc(100vw - 24px);              /* маленькие боковые отступы */
+    margin-left: calc(50% - 50vw + 12px);
+    margin-right: calc(50% - 50vw + 12px);
+}
 
     .trips-header {
         display: flex;
@@ -207,6 +213,52 @@
             width: 100%;
         }
     }
+    .filters-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+    .filter-input,
+    .filter-select {
+        min-height: 36px;
+        padding: 0 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        background: #fff;
+        color: #111827;
+    }
+
+    .filter-input[type="search"] {
+        min-width: 240px;
+    }
+
+    .filter-input[type="date"] {
+        min-width: 150px;
+    }
+
+    .filter-meta {
+        margin-left: auto;
+        color: #6b7280;
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+        .filters-bar {
+            width: 100%;
+        }
+        .filter-input,
+        .filter-select,
+        .filters-bar .tms-btn {
+            width: 100%;
+        }
+        .filter-meta {
+            margin-left: 0;
+            width: 100%;
+        }
+    }
 </style>
 
 <section class="trips-page">
@@ -216,6 +268,24 @@
             <p class="trips-subtitle">Управление заявками и транспортными накладными</p>
         </div>
         <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">Создать поездку</a>
+    </div>
+
+    <div class="filters-bar" data-trip-filters>
+        <input type="search" class="filter-input" placeholder="Поиск: №, груз, водитель..." data-filter="q">
+
+        <select class="filter-select" data-filter="client">
+            <option value="">Все заказчики</option>
+        </select>
+
+        <select class="filter-select" data-filter="carrier">
+            <option value="">Все перевозчики</option>
+        </select>
+
+        <input type="date" class="filter-input" data-filter="date_from" title="Дата от">
+        <input type="date" class="filter-input" data-filter="date_to" title="Дата до">
+
+        <button type="button" class="tms-btn tms-btn-secondary" data-filter="reset">Сбросить</button>
+        <span class="filter-meta" data-filter="meta"></span>
     </div>
 
     <div class="table-card">
@@ -400,6 +470,123 @@
             moved = false;
         }
     }, true);
+})();
+</script>
+<script>
+(function () {
+    const table = document.querySelector('.tms-table');
+    const filtersBar = document.querySelector('[data-trip-filters]');
+    if (!table || !filtersBar) return;
+
+    const tbody = table.querySelector('tbody');
+    const allRows = Array.from(tbody.querySelectorAll('tr')).filter(r => !r.classList.contains('empty-row'));
+    if (!allRows.length) return;
+
+    const qInput = filtersBar.querySelector('[data-filter="q"]');
+    const clientSelect = filtersBar.querySelector('[data-filter="client"]');
+    const carrierSelect = filtersBar.querySelector('[data-filter="carrier"]');
+    const dateFromInput = filtersBar.querySelector('[data-filter="date_from"]');
+    const dateToInput = filtersBar.querySelector('[data-filter="date_to"]');
+    const resetBtn = filtersBar.querySelector('[data-filter="reset"]');
+    const meta = filtersBar.querySelector('[data-filter="meta"]');
+
+    function cellText(row, index) {
+        return (row.children[index]?.textContent || '').trim();
+    }
+
+    function normalize(s) {
+        return (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    function parseRuDate(str) {
+        // dd.mm.yyyy -> Date
+        const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec((str || '').trim());
+        if (!m) return null;
+        return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    }
+
+    function toDateInputValueDate(v) {
+        if (!v) return null; // yyyy-mm-dd
+        const [y, m, d] = v.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    function fillSelect(selectEl, values) {
+        values.sort((a, b) => a.localeCompare(b, 'ru'));
+        for (const val of values) {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = val;
+            selectEl.appendChild(opt);
+        }
+    }
+
+    // Заполняем списки заказчиков/перевозчиков из таблицы
+    fillSelect(clientSelect, [...new Set(allRows.map(r => cellText(r, 2)).filter(Boolean))]);
+    fillSelect(carrierSelect, [...new Set(allRows.map(r => cellText(r, 3)).filter(Boolean))]);
+
+    // Строка "Нет результатов"
+    const noResultsRow = document.createElement('tr');
+    noResultsRow.className = 'empty-row';
+    noResultsRow.style.display = 'none';
+    noResultsRow.innerHTML = '<td colspan="10">Ничего не найдено по текущим фильтрам</td>';
+    tbody.appendChild(noResultsRow);
+
+    function applyFilters() {
+        const q = normalize(qInput.value);
+        const client = clientSelect.value;
+        const carrier = carrierSelect.value;
+        const dateFrom = toDateInputValueDate(dateFromInput.value);
+        const dateTo = toDateInputValueDate(dateToInput.value);
+
+        let visibleCount = 0;
+
+        allRows.forEach(row => {
+            const num = cellText(row, 0);
+            const dateText = cellText(row, 1);
+            const rowClient = cellText(row, 2);
+            const rowCarrier = cellText(row, 3);
+            const consignor = cellText(row, 4);
+            const consignee = cellText(row, 5);
+            const driver = cellText(row, 6);
+            const cargo = cellText(row, 7);
+            const weight = cellText(row, 8);
+
+            const rowDate = parseRuDate(dateText);
+
+            const haystack = normalize([num, rowClient, rowCarrier, consignor, consignee, driver, cargo, weight].join(' '));
+
+            const matchQ = !q || haystack.includes(q);
+            const matchClient = !client || rowClient === client;
+            const matchCarrier = !carrier || rowCarrier === carrier;
+
+            const matchDateFrom = !dateFrom || (rowDate && rowDate >= dateFrom);
+            const matchDateTo = !dateTo || (rowDate && rowDate <= dateTo);
+
+            const isVisible = matchQ && matchClient && matchCarrier && matchDateFrom && matchDateTo;
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
+        });
+
+        noResultsRow.style.display = visibleCount ? 'none' : '';
+        meta.textContent = `Показано: ${visibleCount} из ${allRows.length}`;
+    }
+
+    [qInput, clientSelect, carrierSelect, dateFromInput, dateToInput].forEach(el => {
+        el.addEventListener('input', applyFilters);
+        el.addEventListener('change', applyFilters);
+    });
+
+    resetBtn.addEventListener('click', function () {
+        qInput.value = '';
+        clientSelect.value = '';
+        carrierSelect.value = '';
+        dateFromInput.value = '';
+        dateToInput.value = '';
+        applyFilters();
+    });
+
+    applyFilters();
 })();
 </script>
 {% endblock %}
