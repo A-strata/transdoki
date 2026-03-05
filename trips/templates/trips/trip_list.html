@@ -246,7 +246,7 @@
                         <td>{{ trip.consignee.short_name }}</td>
                         <td class="driver-name">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
                         <td>{{ trip.cargo }}</td>
-                        <td><span class="trip-weight">{{ trip.weight }}</span></td>
+                        <td><span class="trip-weight">{{ trip.weight|default:"—" }}</span></td>
                         <td>
                             <div class="actions" data-actions-dropdown>
                                 <button

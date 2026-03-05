@@ -116,3 +116,44 @@ class RussianMinValueValidator(MinValueValidator):
         if message is None:
             message = self.message
         super().__init__(limit_value, message)
+
+
+def _is_filled(value):
+    """
+    Поле считается заполненным, если там не None и не пустая строка.
+    Важно: 0 считается заполненным значением.
+    """
+    return value is not None and value != ''
+
+
+def validate_costs_by_our_company_role(*, client, carrier, client_cost, carrier_cost):
+    """
+    Правило:
+    - Если наша фирма = перевозчик (carrier.is_own_company=True),
+      то можно указывать только client_cost.
+      => carrier_cost должен быть пустым.
+    - Если наша фирма = заказчик (client.is_own_company=True),
+      то можно указывать только carrier_cost.
+      => client_cost должен быть пустым.
+
+    Оба поля остаются необязательными.
+    """
+    errors = {}
+
+    we_are_carrier = bool(carrier and carrier.is_own_company)
+    we_are_client = bool(client and client.is_own_company)
+
+    if we_are_carrier and _is_filled(carrier_cost):
+        errors['carrier_cost'] = (
+            'Когда наша фирма выступает перевозчиком, '
+            'поле "Стоимость для перевозчика" должно быть пустым.'
+        )
+
+    if we_are_client and _is_filled(client_cost):
+        errors['client_cost'] = (
+            'Когда наша фирма выступает заказчиком, '
+            'поле "Стоимость для клиента" должно быть пустым.'
+        )
+
+    if errors:
+        raise ValidationError(errors)

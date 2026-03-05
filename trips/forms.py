@@ -5,7 +5,8 @@ from .validators import (validate_client_cannot_be_carrier,
                          validate_our_company_participation,
                          validate_trailer_for_truck,
                          validate_unique_trip_number_and_date,
-                         validate_vehicles_belong_to_carrier)
+                         validate_vehicles_belong_to_carrier,
+                         validate_costs_by_our_company_role)
 
 
 class TripForm(forms.ModelForm):
@@ -96,6 +97,12 @@ class TripForm(forms.ModelForm):
                 truck=cleaned_data.get('truck'),
                 trailer=cleaned_data.get('trailer'),
                 carrier=cleaned_data.get('carrier')
+            )
+            validate_costs_by_our_company_role(
+                client=cleaned_data.get('client'),
+                carrier=cleaned_data.get('carrier'),
+                client_cost=cleaned_data.get('client_cost'),
+                carrier_cost=cleaned_data.get('carrier_cost'),
             )
 
         return cleaned_data
