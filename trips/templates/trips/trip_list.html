@@ -259,7 +259,8 @@
                                 </button>
                                 <div class="actions-menu" data-actions-menu>
                                     <a href="{% url 'trips:detail' trip.pk %}">Просмотр</a>
-                                    <a href="{% url 'trips:print_tn' trip.pk %}" download>Скачать ТН</a>
+                                    <a class="dropdown-item" href="{% url 'trips:download_agreement' trip.pk %}">Скачать договор-заявку</a>
+                                    <a class="dropdown-item" href="{% url 'trips:download_tn' trip.pk %}">Скачать ТН</a>
                                     <a href="{% url 'trips:edit' trip.pk %}">Редактировать</a>
                                     <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}">Дублировать</a>
                                 </div>

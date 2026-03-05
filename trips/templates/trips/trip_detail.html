@@ -199,11 +199,8 @@
             <a href="{% url 'trips:edit' trip.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
 
             {# Если у тебя другое имя маршрута - замени trips:download_tn #}
-            <a href="{% url 'trips:print_tn' trip.pk %}" class="tms-btn tms-btn-secondary">Скачать ТН</a>
-
-            <button type="button" class="tms-btn tms-btn-disabled" disabled title="Скоро будет доступно">
-                Скачать договор-заявку
-            </button>
+            <a href="{% url 'trips:download_tn' trip.pk %}" class="tms-btn tms-btn-secondary">Скачать ТН</a>
+            <a href="{% url 'trips:download_agreement' trip.pk %}" class="tms-btn tms-btn-secondary">Скачать договор-заявку</a>
 
             <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary">К списку</a>
         </div>

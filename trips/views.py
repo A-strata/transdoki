@@ -4,23 +4,25 @@ import os
 import requests
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.forms.models import model_to_dict
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_GET
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views import View
 from dotenv import load_dotenv
 
 from .forms import TripForm
 from .models import Trip
-from .services import TNGenerator
+from .services import TNGenerator, AgreementRequestGenerator
 
 load_dotenv()
 DADATA_TOKEN = os.getenv('DADATA_TOKEN')
 DADATA_SECRET = os.getenv('DADATA_SECRET')
-DADATA_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
+DADATA_URL = (
+    "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
+)
 
 logger = logging.getLogger('security')
 
@@ -137,27 +139,16 @@ class TripListView(UserOwnedListView):
     context_object_name = 'trips'  # опционально, для ясности в шаблоне
 
 
-def print_tn(request, pk):
-    """View для генерации ТН"""
-    trip = get_object_or_404(Trip, id=pk)
-    file_path = TNGenerator.generate_tn(trip)
+class TripTNDownloadView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        trip = get_object_or_404(Trip, pk=pk, created_by=request.user)
+        return TNGenerator.generate_response(trip)
 
-    if trip.created_by != request.user:
 
-        logger.warning(
-            f"Unauthorized TN access attempt: "
-            f"user={request.user.username}({request.user.id}) "
-            f"tried to access trip={trip.id} "
-            f"owned by user={trip.created_by.username}({trip.created_by.id}) "
-            f"IP={request.META.get('REMOTE_ADDR')}"
-        )
-
-        raise PermissionDenied(
-            "У вас нет доступа к этой транспортной накладной"
-        )
-
-    file_path = TNGenerator.generate_tn(trip)
-    return TNGenerator.create_file_response(file_path, trip)
+class TripAgreementDownloadView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        trip = get_object_or_404(Trip, pk=pk, created_by=request.user)
+        return AgreementRequestGenerator.generate_response(trip)
 
 
 @login_required
