@@ -88,6 +88,3 @@ docker-compose.override.yml
 secrets/
 backups/
 
-# Word
-*.docx
-*.doc
