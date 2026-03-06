@@ -351,6 +351,16 @@
                         {{ form.planned_loading_date }}
                         {{ form.planned_loading_date.errors }}
                     </div>
+                    <div class="field">
+                        {{ form.loading_contact_name.label_tag }}
+                        {{ form.loading_contact_name }}
+                        {{ form.loading_contact_name.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.loading_contact_phone.label_tag }}
+                        {{ form.loading_contact_phone }}
+                        {{ form.loading_contact_phone.errors }}
+                    </div>
                 </div>
 
                 <div class="logistics-col">
@@ -374,6 +384,16 @@
                         {{ form.planned_unloading_date.label_tag }}
                         {{ form.planned_unloading_date }}
                         {{ form.planned_unloading_date.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.unloading_contact_name.label_tag }}
+                        {{ form.unloading_contact_name }}
+                        {{ form.unloading_contact_name.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.unloading_contact_phone.label_tag }}
+                        {{ form.unloading_contact_phone }}
+                        {{ form.unloading_contact_phone.errors }}
                     </div>
                 </div>
             </div>
@@ -592,6 +612,34 @@
     // Django id по умолчанию: id_<имя_поля>
     initAddressSuggest("id_loading_address");
     initAddressSuggest("id_unloading_address");
+})();
+</script>
+<script src="https://unpkg.com/imask"></script>
+<script>
+(function () {
+    const form = document.querySelector('form.form-card');
+    if (!form || typeof IMask === 'undefined') return;
+
+    const phoneInputs = [
+        document.getElementById('id_loading_contact_phone'),
+        document.getElementById('id_unloading_contact_phone')
+    ].filter(Boolean);
+
+    if (!phoneInputs.length) return;
+
+    phoneInputs.forEach((input) => {
+        IMask(input, {
+            mask: '+7(000)000-00-00',
+            lazy: false
+        });
+    });
+
+    form.addEventListener('submit', function () {
+        phoneInputs.forEach((input) => {
+            const rawValue = input.value.replace(/\D/g, '');
+            input.value = (rawValue === '7') ? '' : rawValue;
+        });
+    });
 })();
 </script>
 {% endblock %}

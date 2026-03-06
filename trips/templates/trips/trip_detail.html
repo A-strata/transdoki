@@ -306,6 +306,14 @@
                             <p class="kv-label">Фактическая дата и время</p>
                             <p class="kv-value">{% if trip.actual_loading_date %}{{ trip.actual_loading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
                         </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Контакт на погрузке (имя)</p>
+                            <p class="kv-value">{% if trip.loading_contact_name %}{{ trip.loading_contact_name }}{% else %}—{% endif %}</p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Контакт на погрузке (телефон)</p>
+                            <p class="kv-value">{% if trip.loading_contact_phone %}{{ trip.loading_contact_phone }}{% else %}—{% endif %}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -335,6 +343,14 @@
                         <div class="kv kv--full">
                             <p class="kv-label">Фактическая дата и время</p>
                             <p class="kv-value">{% if trip.actual_unloading_date %}{{ trip.actual_unloading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Контакт на выгрузке (имя)</p>
+                            <p class="kv-value">{% if trip.unloading_contact_name %}{{ trip.unloading_contact_name }}{% else %}—{% endif %}</p>
+                        </div>
+                        <div class="kv kv--full">
+                            <p class="kv-label">Контакт на выгрузке (телефон)</p>
+                            <p class="kv-value">{% if trip.unloading_contact_phone %}{{ trip.unloading_contact_phone }}{% else %}—{% endif %}</p>
                         </div>
                     </div>
                 </div>

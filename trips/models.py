@@ -1,4 +1,5 @@
 from django.db import models
+from persons.validators import validate_phone_number
 
 from organizations.models import Organization, UserOwnedModel
 from persons.models import Person
@@ -105,6 +106,32 @@ class Trip(UserOwnedModel):
     unloading_address = models.CharField(
         max_length=ADDRESS_LENGTH,
         verbose_name='Адрес выгрузки',
+    )
+    loading_contact_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default='',
+        verbose_name='Контакт на погрузке (имя)'
+    )
+    loading_contact_phone = models.CharField(
+        max_length=25,
+        blank=True,
+        default='',
+        verbose_name='Контакт на погрузке (телефон)',
+        validators=[validate_phone_number],
+    )
+    unloading_contact_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default='',
+        verbose_name='Контакт на выгрузке (имя)'
+    )
+    unloading_contact_phone = models.CharField(
+        max_length=25,
+        blank=True,
+        default='',
+        verbose_name='Контакт на выгрузке (телефон)',
+        validators=[validate_phone_number],
     )
     cargo = models.CharField(
         max_length=CARGO_LENGTH,

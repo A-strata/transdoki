@@ -69,8 +69,37 @@ class TripForm(forms.ModelForm):
                 pk=current_value.pk)
         return base_queryset
 
+    # ✅ ДОБАВЛЕНО: парная валидация контактов
+    def _validate_contact_pair(
+            self, cleaned_data, name_field, phone_field, place_label):
+        name = (cleaned_data.get(name_field) or '').strip()
+        phone = (cleaned_data.get(phone_field) or '').strip()
+
+        # нормализуем значения после strip
+        cleaned_data[name_field] = name
+        cleaned_data[phone_field] = phone
+
+        if bool(name) ^ bool(phone):
+            msg = f'Для контакта на {place_label} заполните и имя, и телефон.'
+            self.add_error(name_field, msg)
+            self.add_error(phone_field, msg)
+
     def clean(self):
         cleaned_data = super().clean()
+
+        # ✅ ДОБАВЛЕНО: валидация новых 4 полей (вне зависимости от user)
+        self._validate_contact_pair(
+            cleaned_data,
+            'loading_contact_name',
+            'loading_contact_phone',
+            'погрузке'
+        )
+        self._validate_contact_pair(
+            cleaned_data,
+            'unloading_contact_name',
+            'unloading_contact_phone',
+            'выгрузке'
+        )
 
         if self.user:
             validate_unique_trip_number_and_date(

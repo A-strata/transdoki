@@ -105,8 +105,11 @@ class TNGenerator(BaseDocxGenerator):
             "loading_address": trip.loading_address or "—",
             "unloading_address": trip.unloading_address or "—",
             "client_cost": trip.client_cost or "—",
-
             "payment_term": trip.payment_condition or "—",
+            "loading_contact_name": trip.loading_contact_name or "—",
+            "loading_contact_phone": trip.loading_contact_phone or "—",
+            "unloading_contact_name": trip.unloading_contact_name or "—",
+            "unloading_contact_phone": trip.unloading_contact_phone or "—",
             "planned_loading_date": fmt_date(
                 trip.planned_loading_date, "%d.%m.%Y %H:%M"),
             "planned_unloading_date": fmt_date(
