@@ -1,5 +1,6 @@
 from django.db import models
 from persons.validators import validate_phone_number
+from django.db import transaction, IntegrityError
 
 from organizations.models import Organization, UserOwnedModel
 from persons.models import Person
@@ -32,7 +33,8 @@ class PaymentType(models.TextChoices):
 
 class Trip(UserOwnedModel):
     num_of_trip = models.PositiveSmallIntegerField(
-        verbose_name='Номер заявки'
+        verbose_name='Номер заявки',
+        editable=False
     )
     date_of_trip = models.DateField(
         verbose_name='Дата заявки',
@@ -198,6 +200,39 @@ class Trip(UserOwnedModel):
         null=True,
         verbose_name='Срок оплаты',
     )
+
+    def save(self, *args, **kwargs):
+        # Для существующего рейса номер не пересчитываем
+        if self.pk:
+            return super().save(*args, **kwargs)
+
+        # created_by обязателен: нумерация идёт отдельно для каждого польз-ля
+        if not self.created_by_id:
+            raise ValueError("created_by must be set before saving Trip")
+
+        # Несколько попыток на случай гонки параллельных запросов
+        for _ in range(5):
+            try:
+                # ВАЖНО: и вычисление номера, и сам save в одной транзакции
+                with transaction.atomic():
+                    # Блокируем последнюю запись пользователя до конца тр-ции
+                    last_trip = Trip.objects.select_for_update().filter(
+                        created_by=self.created_by
+                    ).order_by('-num_of_trip').first()
+
+                    # Если рейсы уже есть -> +1, иначе стартуем с 1
+                    self.num_of_trip = (
+                        last_trip.num_of_trip + 1) if last_trip else 1
+
+                    # Сохраняем внутри той же транзакции
+                    return super().save(*args, **kwargs)
+
+            except IntegrityError:
+                # Если кто-то успел занять номер раньше — пробуем ещё раз
+                continue
+
+        # Если после нескольких попыток не вышло — отдаем ошибку выше
+        raise IntegrityError("Не удалось сгенерировать уникальный номер рейса")
 
     class Meta:
         verbose_name = "Рейс"

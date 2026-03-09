@@ -55,7 +55,6 @@ class TripCreateView(LoginRequiredMixin, CreateView):
     model = Trip
     form_class = TripForm
     template_name = 'trips/trip_form.html'
-    success_url = reverse_lazy('trips:list')
 
     # Поля, которые НЕ копируем
     COPY_EXCLUDE_FIELDS = {
@@ -106,12 +105,14 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         form.instance.created_by = self.request.user
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return reverse_lazy('trips:detail', kwargs={'pk': self.object.pk})
+
 
 class TripUpdateView(LoginRequiredMixin, UpdateView):
     model = Trip
     form_class = TripForm
     template_name = 'trips/trip_form.html'
-    success_url = reverse_lazy('trips:list')
 
     def get_queryset(self):
         # Ограничивает доступ только к своим рейсам
@@ -126,6 +127,9 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         # Управляет обновлением объекта (created_by уже установлен)
         return super().form_valid(form)  # Делегирует сохранение
+
+    def get_success_url(self):
+        return reverse_lazy('trips:detail', kwargs={'pk': self.object.pk})
 
 
 class TripDetailView(LoginRequiredMixin, DetailView):

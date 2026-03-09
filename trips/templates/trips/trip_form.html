@@ -116,7 +116,16 @@
         border-color: #2563eb;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
-
+    .form-note {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #f9fafb;
+        color: #6b7280;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+    }
     .errorlist {
         list-style: none;
         margin: 6px 0 0;
@@ -230,7 +239,21 @@
         background: #f9fafb;
         border-color: #d1d5db;
     }
-
+    .field input:disabled,
+    .field select:disabled,
+    .field textarea:disabled {
+        background: #f3f4f6;
+        color: #6b7280;
+        cursor: not-allowed;
+        border-color: #d1d5db;
+        opacity: 1; /* чтобы текст не был слишком бледным */
+    }
+    .field-help {
+    margin-top: 6px;
+    font-size: 0.84rem;
+    color: #6b7280;
+    line-height: 1.35;
+    }
     @media (max-width: 760px) {
         .form-card { padding: 12px; }
         .section { padding: 10px; }
@@ -275,10 +298,21 @@
         <div class="section">
             <h2 class="section-title">Основная информация</h2>
             <div class="fields-grid">
-                <div class="field">
+                <!--<div class="field">
                     {{ form.num_of_trip.label_tag }}
                     {{ form.num_of_trip }}
                     {{ form.num_of_trip.errors }}
+                </div>-->
+                <div class="field">
+                    {% if object %}
+                        {{ form.num_of_trip.label_tag }}
+                        {{ form.num_of_trip }}
+                        <div class="field-help">Номер заявки нельзя изменить после создания.</div>
+                        {{ form.num_of_trip.errors }}
+                    {% else %}
+                        <label>Номер заявки</label>
+                        <div class="form-note">Будет присвоен автоматически после сохранения</div>
+                    {% endif %}
                 </div>
                 <div class="field">
                     {{ form.date_of_trip.label_tag }}

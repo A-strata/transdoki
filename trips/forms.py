@@ -10,6 +10,12 @@ from .validators import (validate_client_cannot_be_carrier,
 
 
 class TripForm(forms.ModelForm):
+    num_of_trip = forms.IntegerField(
+        label='Номер заявки',
+        required=False,
+        disabled=True
+    )
+
     class Meta:
         model = Trip
         exclude = ['created_by', 'created_at', 'updated_at']
@@ -28,6 +34,12 @@ class TripForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        # Показываем номер рейса только при редактировании
+        if self.instance and self.instance.pk:
+            self.fields['num_of_trip'].initial = self.instance.num_of_trip
+        else:
+            self.fields.pop('num_of_trip', None)
 
         if self.user and self.user.is_authenticated:
             self._apply_queryset_filters()
@@ -118,11 +130,11 @@ class TripForm(forms.ModelForm):
                 consignee=cleaned_data.get('consignee'),
                 carrier=cleaned_data.get('carrier')
             )
-            validate_trailer_for_truck(  # ✅ Добавляем новый валидатор
+            validate_trailer_for_truck(
                 truck=cleaned_data.get('truck'),
                 trailer=cleaned_data.get('trailer')
             )
-            validate_vehicles_belong_to_carrier(  # ✅ Новый валидатор
+            validate_vehicles_belong_to_carrier(
                 truck=cleaned_data.get('truck'),
                 trailer=cleaned_data.get('trailer'),
                 carrier=cleaned_data.get('carrier')
