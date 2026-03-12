@@ -1,0 +1,324 @@
+/* 1) Лейаут */
+.trips-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: calc(100vw - 24px);
+    margin-left: calc(50% - 50vw + 12px);
+    margin-right: calc(50% - 50vw + 12px);
+}
+
+.trips-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.trips-title {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.trips-subtitle {
+    margin: 4px 0 0;
+    color: #6b7280;
+    font-size: 0.92rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* 2) Кнопки */
+.tms-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    font-size: 0.83rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, border-color .2s ease, color .2s ease;
+    white-space: nowrap;
+}
+
+.tms-btn-primary {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+.tms-btn-primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.tms-btn-secondary {
+    background: #fff;
+    color: #374151;
+    border-color: #e5e7eb;
+}
+.tms-btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.tms-btn-add {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+/* 3) Настройка колонок */
+.columns-settings { position: relative; }
+.columns-settings > summary { list-style: none; }
+.columns-settings > summary::-webkit-details-marker { display: none; }
+
+.columns-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 1300;
+    width: 320px;
+    max-width: calc(100vw - 24px);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+    padding: 10px;
+}
+
+.columns-title {
+    margin: 0 0 8px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #111827;
+}
+
+.columns-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 300px;
+    overflow: auto;
+}
+
+.columns-item {
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    padding: 6px 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.columns-item-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.columns-item-label {
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.columns-item-actions { display: inline-flex; gap: 4px; }
+
+.columns-mini-btn {
+    min-height: 28px;
+    min-width: 28px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    cursor: pointer;
+}
+.columns-mini-btn:hover { background: #f9fafb; }
+.columns-mini-btn:disabled { opacity: .45; cursor: default; }
+
+.columns-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+/* 4) Фильтры */
+.filters-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-input, .filter-select {
+    min-height: 36px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    background: #fff;
+    color: #111827;
+}
+
+.filter-input[type="search"] { min-width: 240px; }
+.filter-input[type="date"] { min-width: 150px; }
+
+.filter-meta {
+    margin-left: auto;
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+/* 5) Таблица */
+.table-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    overflow: visible;
+}
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    cursor: grab;
+}
+
+.table-wrap.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+}
+
+.tms-table {
+    width: 100%;
+    min-width: 1280px;
+    border-collapse: collapse;
+}
+
+.tms-table thead th {
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6b7280;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+
+.tms-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.92rem;
+    color: #111827;
+    vertical-align: top;
+}
+
+.tms-table tbody tr:last-child td { border-bottom: none; }
+.tms-table tbody tr:hover { background: #fcfcfd; }
+
+.trip-number { font-weight: 700; white-space: nowrap; }
+.trip-date, .trip-weight { white-space: nowrap; }
+.driver-name { white-space: nowrap; }
+
+.empty-row td {
+    color: #6b7280;
+    text-align: center;
+    padding: 20px 14px;
+}
+
+/* 6) Дропдаун действий */
+.actions {
+    min-width: 180px;
+    position: relative;
+    display: inline-block;
+}
+
+.actions-toggle {
+    min-width: 110px;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.actions-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    bottom: auto;
+    min-width: 190px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+    padding: 6px;
+    display: none;
+    z-index: 1000;
+}
+
+.actions-menu.open-up {
+    top: auto;
+    bottom: calc(100% + 6px);
+}
+.actions-menu.is-open { display: block; }
+
+.actions-menu a {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #111827;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+.actions-menu a:hover { background: #f3f4f6; }
+
+
+
+.columns-settings { position: relative; }
+.columns-panel.is-hidden { display: none; }
+
+
+
+/* 7) Адаптив */
+@media (max-width: 768px) {
+    .header-actions,
+    .header-actions .tms-btn,
+    .header-actions details { width: 100%; }
+
+    .trips-header .tms-btn-add { width: 100%; }
+
+    .columns-panel {
+        right: auto;
+        left: 0;
+    }
+
+    .filters-bar { width: 100%; }
+    .filter-input, .filter-select, .filters-bar .tms-btn { width: 100%; }
+    .filter-meta {
+        margin-left: 0;
+        width: 100%;
+    }
+}

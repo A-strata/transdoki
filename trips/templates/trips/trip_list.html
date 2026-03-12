@@ -1,275 +1,39 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<style>
-    .trips-page {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-
-    /* Растягиваем страницу почти на всю ширину окна,
-       даже если родительский контейнер узкий */
-    width: calc(100vw - 24px);              /* маленькие боковые отступы */
-    margin-left: calc(50% - 50vw + 12px);
-    margin-right: calc(50% - 50vw + 12px);
-}
-
-    .trips-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .trips-title {
-        margin: 0;
-        font-size: clamp(1.25rem, 1.8vw, 1.6rem);
-        line-height: 1.2;
-        letter-spacing: -0.01em;
-    }
-
-    .trips-subtitle {
-        margin: 4px 0 0;
-        color: #6b7280;
-        font-size: 0.92rem;
-    }
-
-    .table-card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        overflow: visible;
-    }
-
-    .table-wrap {
-        width: 100%;
-        overflow-x: auto;
-        overflow-y: visible;
-        cursor: grab;
-    }
-
-    .table-wrap.is-dragging {
-        cursor: grabbing;
-        user-select: none;
-    }
-
-    .tms-table {
-        width: 100%;
-        min-width: 1280px;
-        border-collapse: collapse;
-    }
-
-    .tms-table thead th {
-        text-align: left;
-        padding: 12px 14px;
-        font-size: 0.82rem;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: #6b7280;
-        background: #f9fafb;
-        border-bottom: 1px solid #e5e7eb;
-        white-space: nowrap;
-
-        /* Закрепляем шапку */
-        position: sticky;
-        top: 0;
-        z-index: 30;
-    }
-
-    .tms-table tbody td {
-        padding: 12px 14px;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 0.92rem;
-        color: #111827;
-        vertical-align: top;
-    }
-
-    .tms-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .tms-table tbody tr:hover {
-        background: #fcfcfd;
-    }
-
-    .trip-number {
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .trip-date, .trip-weight {
-        white-space: nowrap;
-    }
-
-    .driver-name {
-        white-space: nowrap;
-    }
-
-    .actions {
-        min-width: 180px;
-        position: relative;
-        display: inline-block;
-    }
-
-    .tms-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 34px;
-        padding: 0 10px;
-        border-radius: 8px;
-        border: 1px solid transparent;
-        text-decoration: none;
-        font-size: 0.83rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background .2s ease, border-color .2s ease, color .2s ease;
-        white-space: nowrap;
-    }
-
-    .tms-btn-primary {
-        background: #2563eb;
-        color: #fff;
-        border-color: #2563eb;
-    }
-
-    .tms-btn-primary:hover {
-        background: #1d4ed8;
-        border-color: #1d4ed8;
-    }
-
-    .tms-btn-secondary {
-        background: #fff;
-        color: #374151;
-        border-color: #e5e7eb;
-    }
-
-    .tms-btn-secondary:hover {
-        background: #f9fafb;
-        border-color: #d1d5db;
-    }
-
-    .tms-btn-add {
-        min-height: 40px;
-        padding: 0 14px;
-        border-radius: 10px;
-        font-size: 0.9rem;
-    }
-
-    .actions-toggle {
-        min-width: 110px;
-        justify-content: space-between;
-        gap: 8px;
-    }
-
-    .actions-menu {
-        position: absolute;
-        right: 0;
-        top: calc(100% + 6px); /* по умолчанию вниз */
-        bottom: auto;
-        min-width: 190px;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
-        padding: 6px;
-        display: none;
-        z-index: 1000;
-    }
-
-    .actions-menu.open-up {
-        top: auto;
-        bottom: calc(100% + 6px); /* если снизу не хватает места */
-    }
-
-    .actions-menu.is-open {
-        display: block;
-    }
-
-    .actions-menu a {
-        display: block;
-        padding: 8px 10px;
-        border-radius: 8px;
-        text-decoration: none;
-        color: #111827;
-        font-size: 0.88rem;
-        font-weight: 500;
-    }
-
-    .actions-menu a:hover {
-        background: #f3f4f6;
-    }
-
-    .empty-row td {
-        color: #6b7280;
-        text-align: center;
-        padding: 20px 14px;
-    }
-
-    @media (max-width: 768px) {
-        .trips-header .tms-btn-add {
-            width: 100%;
-        }
-    }
-    .filters-bar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-    .filter-input,
-    .filter-select {
-        min-height: 36px;
-        padding: 0 10px;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        font-size: 0.88rem;
-        background: #fff;
-        color: #111827;
-    }
-
-    .filter-input[type="search"] {
-        min-width: 240px;
-    }
-
-    .filter-input[type="date"] {
-        min-width: 150px;
-    }
-
-    .filter-meta {
-        margin-left: auto;
-        color: #6b7280;
-        font-size: 0.85rem;
-    }
-
-    @media (max-width: 768px) {
-        .filters-bar {
-            width: 100%;
-        }
-        .filter-input,
-        .filter-select,
-        .filters-bar .tms-btn {
-            width: 100%;
-        }
-        .filter-meta {
-            margin-left: 0;
-            width: 100%;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'trips/css/trips_list.css' %}">
 
 <section class="trips-page">
+    <!-- Шапка страницы -->
     <div class="trips-header">
         <div>
             <h1 class="trips-title">Поездки</h1>
             <p class="trips-subtitle">Управление заявками и транспортными накладными</p>
         </div>
-        <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">Создать поездку</a>
+
+        <div class="header-actions">
+            <!-- Панель настройки колонок -->
+            <div class="columns-settings" data-columns-settings>
+                <button type="button" class="tms-btn tms-btn-secondary" data-columns-toggle>
+                    Колонки
+                </button>
+
+                <div class="columns-panel is-hidden" data-columns-panel>
+                    <p class="columns-title">Настройка колонок</p>
+                    <ul class="columns-list" data-columns-list></ul>
+                    <div class="columns-footer">
+                        <button type="button" class="tms-btn tms-btn-secondary" data-columns-reset>Сбросить</button>
+                    </div>
+                </div>
+            </div>
+
+
+            <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">Создать поездку</a>
+        </div>
     </div>
 
+    <!-- Фильтры -->
     <div class="filters-bar" data-trip-filters>
         <input type="search" class="filter-input" placeholder="Поиск: №, груз, водитель..." data-filter="q">
 
@@ -288,49 +52,88 @@
         <span class="filter-meta" data-filter="meta"></span>
     </div>
 
+    <!-- Таблица -->
     <div class="table-card">
         <div class="table-wrap" data-drag-scroll>
-            <table class="tms-table">
+            <table class="tms-table" data-trips-table>
                 <thead>
                     <tr>
-                        <th>№ заявки</th>
-                        <th>Дата</th>
-                        <th>Заказчик</th>
-                        <th>Перевозчик</th>
-                        <th>Отправитель</th>
-                        <th>Получатель</th>
-                        <th>Водитель</th>
-                        <th>Груз</th>
-                        <th>Вес, кг</th>
-                        <th>Действия</th>
+                    <th data-col="num_of_trip">Номер</th>
+                    <th data-col="date_of_trip">Дата</th>
+                    <th data-col="client">Заказчик</th>
+                    <th data-col="carrier">Перевозчик</th>
+                    <th data-col="consignor">Отправитель</th>
+                    <th data-col="consignee">Получатель</th>
+                    <th data-col="driver">Водитель</th>
+                    <th data-col="truck">Автомобиль</th>
+                    <th data-col="trailer">Прицеп</th>
+                    <th data-col="planned_loading_date">Дата погрузки</th>
+                    <th data-col="planned_unloading_date">Дата выгрузки</th>
+                    <!--<th data-col="actual_loading_date">Погрузка (факт)</th>-->
+                    <!--<th data-col="actual_unloading_date">Выгрузка (факт)</th>-->
+                    <th data-col="loading_address">Адрес погрузки</th>
+                    <th data-col="unloading_address">Адрес выгрузки</th>
+                    <!--<th data-col="loading_contact_name">Контакт погрузки (имя)</th>-->
+                    <!--<th data-col="loading_contact_phone">Контакт погрузки (тел.)</th>-->
+                    <!--<th data-col="unloading_contact_name">Контакт выгрузки (имя)</th>-->
+                    <!--<th data-col="unloading_contact_phone">Контакт выгрузки (тел.)</th>-->
+                    <th data-col="cargo">Груз</th>
+                    <th data-col="weight">Вес, кг</th>
+                    <th data-col="client_cost">Стоимость клиенту</th>
+                    <th data-col="carrier_cost">Стоимость перевозчику</th>
+                    <!--<th data-col="loading_type">Тип погрузки</th>-->
+                    <!--<th data-col="unloading_type">Тип выгрузки</th>-->
+                    <th data-col="payment_type">Форма оплаты</th>
+                    <th data-col="payment_condition">Условия оплаты</th>
+                    <th data-col="payment_term">Срок оплаты (дн.)</th>
+                    <th data-col="comments">Комментарии</th>
+                    <th data-col="actions">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for trip in trips %}
-                    <tr>
-                        <td><span class="trip-number">{{ trip.num_of_trip }}</span></td>
-                        <td><span class="trip-date">{{ trip.date_of_trip|date:"d.m.Y" }}</span></td>
-                        <td>{{ trip.client.short_name }}</td>
-                        <td>{{ trip.carrier.short_name }}</td>
-                        <td>{{ trip.consignor.short_name }}</td>
-                        <td>{{ trip.consignee.short_name }}</td>
-                        <td class="driver-name">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
-                        <td>{{ trip.cargo }}</td>
-                        <td><span class="trip-weight">{{ trip.weight|default:"—" }}</span></td>
-                        <td>
+                    <tr data-trip-row>
+                        <td data-col="num_of_trip">{{ trip.num_of_trip }}</td>
+                        <td data-col="date_of_trip">{{ trip.date_of_trip|date:"d.m.Y" }}</td>
+                        <td data-col="client">{{ trip.client.short_name }}</td>
+                        <td data-col="carrier">{{ trip.carrier.short_name }}</td>
+                        <td data-col="consignor">{{ trip.consignor.short_name }}</td>
+                        <td data-col="consignee">{{ trip.consignee.short_name }}</td>
+                        <td data-col="driver">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
+                        <td data-col="truck">{{ trip.truck.grn }}</td>
+                        <td data-col="trailer">{{ trip.trailer.grn|default:"—" }}</td>
+                        <td data-col="planned_loading_date">{{ trip.planned_loading_date|date:"d.m.Y" }}</td><!--{{ trip.planned_loading_date|date:"d.m.Y H:i" }}-->
+                        <td data-col="planned_unloading_date">{{ trip.planned_unloading_date|date:"d.m.Y" }}</td><!--{{ trip.planned_unloading_date|date:"d.m.Y H:i" }}-->
+                        <!--<td data-col="actual_loading_date">{{ trip.actual_loading_date|date:"d.m.Y H:i"|default:"—" }}</td>-->
+                        <!--<td data-col="actual_unloading_date">{{ trip.actual_unloading_date|date:"d.m.Y H:i"|default:"—" }}</td>-->
+                        <td data-col="loading_address">{{ trip.loading_address }}</td>
+                        <td data-col="unloading_address">{{ trip.unloading_address }}</td>
+                        <!--<td data-col="loading_contact_name">{{ trip.loading_contact_name|default:"—" }}</td>-->
+                        <!--<td data-col="loading_contact_phone">{{ trip.loading_contact_phone|default:"—" }}</td>-->
+                        <!--<td data-col="unloading_contact_name">{{ trip.unloading_contact_name|default:"—" }}</td>-->
+                        <!--<td data-col="unloading_contact_phone">{{ trip.unloading_contact_phone|default:"—" }}</td>-->
+                        <td data-col="cargo">{{ trip.cargo }}</td>
+                        <td data-col="weight">{{ trip.weight|default:"—" }}</td>
+                        <td data-col="client_cost">{{ trip.client_cost|default:"—" }}</td>
+                        <td data-col="carrier_cost">{{ trip.carrier_cost|default:"—" }}</td>
+                        <!--<td data-col="loading_type">{{ trip.get_loading_type_display|default:"—" }}</td>-->
+                        <!--<td data-col="unloading_type">{{ trip.get_unloading_type_display|default:"—" }}</td>-->
+                        <td data-col="payment_type">{{ trip.get_payment_type_display|default:"—" }}</td>
+                        <td data-col="payment_condition">{{ trip.get_payment_condition_display|default:"—" }}</td>
+                        <td data-col="payment_term">{{ trip.payment_term|default:"—" }}</td>
+                        <td data-col="comments">{{ trip.comments|default:"—" }}</td>
+                        <td data-col="actions">
                             <div class="actions" data-actions-dropdown>
-                                <button
-                                    type="button"
-                                    class="tms-btn tms-btn-secondary actions-toggle"
-                                    data-actions-toggle
-                                    aria-expanded="false"
-                                >
+                                <button type="button"
+                                        class="tms-btn tms-btn-secondary actions-toggle"
+                                        data-actions-toggle
+                                        aria-expanded="false">
                                     Действия <span>▾</span>
                                 </button>
                                 <div class="actions-menu" data-actions-menu>
                                     <a href="{% url 'trips:detail' trip.pk %}">Просмотр</a>
-                                    <a class="dropdown-item" href="{% url 'trips:download_agreement' trip.pk %}">Скачать договор-заявку</a>
-                                    <a class="dropdown-item" href="{% url 'trips:download_tn' trip.pk %}">Скачать ТН</a>
+                                    <a href="{% url 'trips:download_agreement' trip.pk %}">Скачать договор-заявку</a>
+                                    <a href="{% url 'trips:download_tn' trip.pk %}">Скачать ТН</a>
                                     <a href="{% url 'trips:edit' trip.pk %}">Редактировать</a>
                                     <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}">Дублировать</a>
                                 </div>
@@ -348,245 +151,9 @@
     </div>
 </section>
 
-<script>
-(function () {
-    const dropdowns = document.querySelectorAll('[data-actions-dropdown]');
-
-    function closeAll() {
-        dropdowns.forEach((dd) => {
-            const menu = dd.querySelector('[data-actions-menu]');
-            const btn = dd.querySelector('[data-actions-toggle]');
-            menu.classList.remove('is-open', 'open-up');
-            btn.setAttribute('aria-expanded', 'false');
-        });
-    }
-
-    function shouldOpenUp(btn, menu) {
-        menu.classList.remove('open-up');
-        menu.classList.add('is-open');
-        menu.style.visibility = 'hidden';
-
-        const menuHeight = menu.offsetHeight;
-        const btnRect = btn.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - btnRect.bottom;
-        const spaceAbove = btnRect.top;
-
-        menu.classList.remove('is-open');
-        menu.style.visibility = '';
-
-        return (spaceBelow < menuHeight + 12) && (spaceAbove > spaceBelow);
-    }
-
-    dropdowns.forEach((dd) => {
-        const btn = dd.querySelector('[data-actions-toggle]');
-        const menu = dd.querySelector('[data-actions-menu]');
-
-        btn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            const isOpen = menu.classList.contains('is-open');
-            closeAll();
-
-            if (!isOpen) {
-                if (shouldOpenUp(btn, menu)) {
-                    menu.classList.add('open-up');
-                } else {
-                    menu.classList.remove('open-up');
-                }
-
-                menu.classList.add('is-open');
-                btn.setAttribute('aria-expanded', 'true');
-            }
-        });
-
-        menu.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
-    });
-
-    document.addEventListener('click', closeAll);
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeAll();
-    });
-})();
-
-/* Drag-scroll ЛКМ для таблицы */
-(function () {
-    const wrap = document.querySelector('[data-drag-scroll]');
-    if (!wrap) return;
-
-    let isDown = false;
-    let startX = 0;
-    let startY = 0;
-    let startScrollLeft = 0;
-    let startWindowY = 0;
-    let moved = false;
-
-    function isInteractive(el) {
-        return !!el.closest('a, button, input, textarea, select, label');
-    }
-
-    wrap.addEventListener('mousedown', function (e) {
-        if (e.button !== 0) return;
-        if (isInteractive(e.target)) return;
-
-        isDown = true;
-        moved = false;
-        wrap.classList.add('is-dragging');
-
-        startX = e.clientX;
-        startY = e.clientY;
-        startScrollLeft = wrap.scrollLeft;
-        startWindowY = window.scrollY;
-    });
-
-    document.addEventListener('mousemove', function (e) {
-        if (!isDown) return;
-
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
-
-        wrap.scrollLeft = startScrollLeft - dx;
-        window.scrollTo({ top: startWindowY - dy, behavior: 'auto' });
-
-        e.preventDefault();
-    });
-
-    document.addEventListener('mouseup', function () {
-        if (!isDown) return;
-        isDown = false;
-        wrap.classList.remove('is-dragging');
-    });
-
-    wrap.addEventListener('dragstart', function (e) {
-        e.preventDefault();
-    });
-
-    wrap.addEventListener('click', function (e) {
-        if (moved) {
-            e.preventDefault();
-            e.stopPropagation();
-            moved = false;
-        }
-    }, true);
-})();
-</script>
-<script>
-(function () {
-    const table = document.querySelector('.tms-table');
-    const filtersBar = document.querySelector('[data-trip-filters]');
-    if (!table || !filtersBar) return;
-
-    const tbody = table.querySelector('tbody');
-    const allRows = Array.from(tbody.querySelectorAll('tr')).filter(r => !r.classList.contains('empty-row'));
-    if (!allRows.length) return;
-
-    const qInput = filtersBar.querySelector('[data-filter="q"]');
-    const clientSelect = filtersBar.querySelector('[data-filter="client"]');
-    const carrierSelect = filtersBar.querySelector('[data-filter="carrier"]');
-    const dateFromInput = filtersBar.querySelector('[data-filter="date_from"]');
-    const dateToInput = filtersBar.querySelector('[data-filter="date_to"]');
-    const resetBtn = filtersBar.querySelector('[data-filter="reset"]');
-    const meta = filtersBar.querySelector('[data-filter="meta"]');
-
-    function cellText(row, index) {
-        return (row.children[index]?.textContent || '').trim();
-    }
-
-    function normalize(s) {
-        return (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
-    }
-
-    function parseRuDate(str) {
-        // dd.mm.yyyy -> Date
-        const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec((str || '').trim());
-        if (!m) return null;
-        return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-    }
-
-    function toDateInputValueDate(v) {
-        if (!v) return null; // yyyy-mm-dd
-        const [y, m, d] = v.split('-').map(Number);
-        return new Date(y, m - 1, d);
-    }
-
-    function fillSelect(selectEl, values) {
-        values.sort((a, b) => a.localeCompare(b, 'ru'));
-        for (const val of values) {
-            const opt = document.createElement('option');
-            opt.value = val;
-            opt.textContent = val;
-            selectEl.appendChild(opt);
-        }
-    }
-
-    // Заполняем списки заказчиков/перевозчиков из таблицы
-    fillSelect(clientSelect, [...new Set(allRows.map(r => cellText(r, 2)).filter(Boolean))]);
-    fillSelect(carrierSelect, [...new Set(allRows.map(r => cellText(r, 3)).filter(Boolean))]);
-
-    // Строка "Нет результатов"
-    const noResultsRow = document.createElement('tr');
-    noResultsRow.className = 'empty-row';
-    noResultsRow.style.display = 'none';
-    noResultsRow.innerHTML = '<td colspan="10">Ничего не найдено по текущим фильтрам</td>';
-    tbody.appendChild(noResultsRow);
-
-    function applyFilters() {
-        const q = normalize(qInput.value);
-        const client = clientSelect.value;
-        const carrier = carrierSelect.value;
-        const dateFrom = toDateInputValueDate(dateFromInput.value);
-        const dateTo = toDateInputValueDate(dateToInput.value);
-
-        let visibleCount = 0;
-
-        allRows.forEach(row => {
-            const num = cellText(row, 0);
-            const dateText = cellText(row, 1);
-            const rowClient = cellText(row, 2);
-            const rowCarrier = cellText(row, 3);
-            const consignor = cellText(row, 4);
-            const consignee = cellText(row, 5);
-            const driver = cellText(row, 6);
-            const cargo = cellText(row, 7);
-            const weight = cellText(row, 8);
-
-            const rowDate = parseRuDate(dateText);
-
-            const haystack = normalize([num, rowClient, rowCarrier, consignor, consignee, driver, cargo, weight].join(' '));
-
-            const matchQ = !q || haystack.includes(q);
-            const matchClient = !client || rowClient === client;
-            const matchCarrier = !carrier || rowCarrier === carrier;
-
-            const matchDateFrom = !dateFrom || (rowDate && rowDate >= dateFrom);
-            const matchDateTo = !dateTo || (rowDate && rowDate <= dateTo);
-
-            const isVisible = matchQ && matchClient && matchCarrier && matchDateFrom && matchDateTo;
-            row.style.display = isVisible ? '' : 'none';
-            if (isVisible) visibleCount++;
-        });
-
-        noResultsRow.style.display = visibleCount ? 'none' : '';
-        meta.textContent = `Показано: ${visibleCount} из ${allRows.length}`;
-    }
-
-    [qInput, clientSelect, carrierSelect, dateFromInput, dateToInput].forEach(el => {
-        el.addEventListener('input', applyFilters);
-        el.addEventListener('change', applyFilters);
-    });
-
-    resetBtn.addEventListener('click', function () {
-        qInput.value = '';
-        clientSelect.value = '';
-        carrierSelect.value = '';
-        dateFromInput.value = '';
-        dateToInput.value = '';
-        applyFilters();
-    });
-
-    applyFilters();
-})();
-</script>
+<!-- Скрипты страницы -->
+<script defer src="{% static 'trips/js/trips_actions_dropdown.js' %}"></script>
+<script defer src="{% static 'trips/js/trips_drag_scroll.js' %}"></script>
+<script defer src="{% static 'trips/js/trips_columns_settings.js' %}"></script>
+<script defer src="{% static 'trips/js/trips_filters.js' %}"></script>
 {% endblock %}

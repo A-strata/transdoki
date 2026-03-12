@@ -33,24 +33,6 @@ class UserOwnedListView(LoginRequiredMixin, ListView):
         return self.model.objects.filter(created_by=self.request.user)
 
 
-class TripCreateView0(LoginRequiredMixin, CreateView):
-    model = Trip
-    form_class = TripForm
-    template_name = 'trips/trip_form.html'
-    success_url = reverse_lazy('trips:list')
-
-    def get_form_kwargs(self):
-        # Готовит контекст для формы
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user  # Передает user для фильтрации
-        return kwargs
-
-    def form_valid(self, form):
-        # Управляет созданием объекта
-        form.instance.created_by = self.request.user  # Устанавливает создателя
-        return super().form_valid(form)  # Делегирует сохранение
-
-
 class TripCreateView(LoginRequiredMixin, CreateView):
     model = Trip
     form_class = TripForm
