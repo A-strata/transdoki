@@ -69,7 +69,7 @@ class Organization(UserOwnedModel):
         verbose_name="Моя компания"
     )
     petrolplus_integration_enabled = models.BooleanField(
-        'Подключить интеграцию',
+        'ППР (Petrol Plus)',
         default=False)
     petrolplus_client_id = models.CharField(
         max_length=255,
