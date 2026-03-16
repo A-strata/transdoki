@@ -26,6 +26,11 @@ class PropertyType(models.TextChoices):
 class Vehicle(UserOwnedModel):
     """Машины и прицепы."""
 
+    class Status(models.TextChoices):
+        AT_PARK = "AT_PARK", "В парке"
+        ON_LINE = "ON_LINE", "На линии"
+        TRANSFER = "TRANSFER", "Пересмена"
+
     grn = models.CharField(
         max_length=GRN_LENTH,
         verbose_name='Регистрационный номер'
@@ -55,6 +60,16 @@ class Vehicle(UserOwnedModel):
         on_delete=models.CASCADE,
         verbose_name='Cобственник ТС',
         default=1
+    )
+    current_odometer = models.PositiveIntegerField(
+        "Текущий одометр",
+        default=0
+    )
+    status = models.CharField(
+        "Статус",
+        max_length=20,
+        choices=Status.choices,
+        default=Status.AT_PARK,
     )
 
     def __str__(self):

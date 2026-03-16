@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import UniqueConstraint
+from django_cryptography.fields import encrypt
 from django.urls import reverse
 
 from .validators import validate_inn
@@ -66,6 +67,24 @@ class Organization(UserOwnedModel):
     is_own_company = models.BooleanField(
         default=False,
         verbose_name="Моя компания"
+    )
+    petrolplus_integration_enabled = models.BooleanField(
+        'Подключить интеграцию',
+        default=False)
+    petrolplus_client_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+    petrolplus_client_secret = encrypt(
+        models.CharField(
+            max_length=512,
+            blank=True,
+            null=True,
+        ))
+    petrolplus_credentials_updated_at = models.DateTimeField(
+        blank=True,
+        null=True,
     )
 
     def get_absolute_url(self):

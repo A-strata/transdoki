@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'persons',
     'vehicles',
     'trips',
+    'waybills',
 ]
 
 MIDDLEWARE = [
@@ -171,3 +172,11 @@ LOGGING = {
         },
     },
 }
+
+# integrations
+PETROLPLUS_AUTH_BASE_URL = os.getenv("PETROLPLUS_AUTH_BASE_URL", os.getenv("PETROLPLUS_BASE_URL"))
+PETROLPLUS_DATA_URL = os.getenv("PETROLPLUS_DATA_URL")
+PETROLPLUS_TOKEN_PATH = os.getenv("PETROLPLUS_TOKEN_PATH", "/realms/customers/protocol/openid-connect/token")
+PETROLPLUS_CLIENT_ID = os.getenv("PETROLPLUS_CLIENT_ID")
+PETROLPLUS_CLIENT_SECRET = os.getenv("PETROLPLUS_CLIENT_SECRET")
+PETROLPLUS_TIMEOUT = int(os.getenv("PETROLPLUS_TIMEOUT", "15"))

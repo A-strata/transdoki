@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'waybills/css/waybill_form.css' %}">
+
+<section class="waybill-form-page">
+    <div>
+        <h1 class="page-title">Создать путевой лист</h1>
+        <p class="page-subtitle">Заполните основные данные по путевому листу</p>
+    </div>
+
+    <form method="post" class="form-card" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="section">
+            <h2 class="section-title">Основная информация</h2>
+
+            <div class="fields-grid">
+                <div class="field">
+                    <label>Номер</label>
+                    <div class="form-note">Будет присвоен автоматически после сохранения</div>
+                </div>
+
+                <div class="field">
+                    {{ form.date.label_tag }}
+                    {{ form.date }}
+                    {{ form.date.errors }}
+                </div>
+
+                <div class="field field--full">
+                    {{ form.organization.label_tag }}
+                    {{ form.organization }}
+                    {{ form.organization.errors }}
+                </div>
+
+                <div class="field fied">
+                    {{ form.driver.label_tag }}
+                    {{ form.driver }}
+                    {{ form.driver.errors }}
+                </div>
+
+                <div class="field">
+                    {{ form.truck.label_tag }}
+                    {{ form.truck }}
+                    {{ form.truck.errors }}
+                </div>
+
+                <div class="field">
+                    {{ form.trailer.label_tag }}
+                    {{ form.trailer }}
+                    {{ form.trailer.errors }}
+                    <div class="field-help">Необязательно. Укажите только если используется прицеп.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+            
+        </div>
+    </form>
+</section>
+{% endblock %}
