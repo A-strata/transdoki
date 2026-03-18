@@ -1,5 +1,3 @@
-// trips/js/trips_drag_scroll.js
-// Drag-scroll таблицы ЛКМ (горизонтально таблица + вертикально окно)
 (function () {
     function init() {
         const wrap = document.querySelector('[data-drag-scroll]');
@@ -9,11 +7,19 @@
         let startX = 0;
         let startY = 0;
         let startScrollLeft = 0;
-        let startWindowY = 0;
+        let startScrollTop = 0;
         let moved = false;
+        let dragRow = null;
 
         function isInteractive(el) {
             return !!el.closest('a, button, input, textarea, select, label, summary');
+        }
+
+        function clearDragRow() {
+            if (dragRow) {
+                dragRow.classList.remove('is-drag-source');
+                dragRow = null;
+            }
         }
 
         wrap.addEventListener('mousedown', function (e) {
@@ -27,7 +33,13 @@
             startX = e.clientX;
             startY = e.clientY;
             startScrollLeft = wrap.scrollLeft;
-            startWindowY = window.scrollY;
+            startScrollTop = wrap.scrollTop;
+
+            clearDragRow();
+            dragRow = e.target.closest('tr[data-trip-row]');
+            if (dragRow) {
+                dragRow.classList.add('is-drag-source');
+            }
         });
 
         document.addEventListener('mousemove', function (e) {
@@ -39,15 +51,21 @@
             if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
 
             wrap.scrollLeft = startScrollLeft - dx;
-            window.scrollTo({ top: startWindowY - dy, behavior: 'auto' });
+            wrap.scrollTop = startScrollTop - dy;
 
             e.preventDefault();
         });
 
         document.addEventListener('mouseup', function () {
             if (!isDown) return;
+
             isDown = false;
             wrap.classList.remove('is-dragging');
+            clearDragRow();
+        });
+
+        wrap.addEventListener('mouseleave', function () {
+            if (!isDown) return;
         });
 
         wrap.addEventListener('dragstart', function (e) {
