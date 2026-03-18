@@ -1,6 +1,7 @@
 // Управление колонками:
 // - изменение ширины перетаскиванием границы
 // - показ / скрытие колонок через меню "Вид"
+// - изменение порядка через кнопки ↑ / ↓
 // - колонка actions всегда справа и не скрывается
 (function () {
     function init() {
@@ -15,7 +16,7 @@
             return;
         }
 
-        const STORAGE_KEY = 'tms_trips_columns_v4';
+        const STORAGE_KEY = 'tms_trips_columns_v5';
         const LOCK_RIGHT = 'actions';
         const MIN_COL_WIDTH = 80;
         const ACTIONS_WIDTH = 190;
@@ -114,6 +115,17 @@
             });
         }
 
+        function applyOrder() {
+            const rows = Array.from(table.querySelectorAll('tr'));
+
+            rows.forEach(row => {
+                state.order.forEach(key => {
+                    const cell = row.querySelector(`[data-col="${key}"]`);
+                    if (cell) row.appendChild(cell);
+                });
+            });
+        }
+
         function applyWidths() {
             state.order.forEach(key => {
                 const width = key === LOCK_RIGHT
@@ -138,23 +150,44 @@
             });
         }
 
-        // Пока порядок не меняем, просто обновляем видимость и ширину
         function applyAll() {
             ensureDefaultWidths();
+            applyOrder();
             applyVisibility();
             applyWidths();
             updateEmptyRowsColspan();
             document.dispatchEvent(new Event('tms:columns-updated'));
         }
 
+        function moveColumn(key, direction) {
+            if (key === LOCK_RIGHT) return;
+
+            const movable = state.order.filter(col => col !== LOCK_RIGHT);
+            const index = movable.indexOf(key);
+            if (index === -1) return;
+
+            const nextIndex = index + direction;
+            if (nextIndex < 0 || nextIndex >= movable.length) return;
+
+            [movable[index], movable[nextIndex]] = [movable[nextIndex], movable[index]];
+            state.order = movable.concat([LOCK_RIGHT]);
+
+            saveState();
+            renderVisibilityMenu();
+            applyAll();
+        }
+
         function renderVisibilityMenu() {
             visibilityList.innerHTML = '';
 
-            state.order.forEach(key => {
-                if (key === LOCK_RIGHT) return;
+            const movable = state.order.filter(key => key !== LOCK_RIGHT);
 
+            movable.forEach((key, index) => {
                 const li = document.createElement('li');
                 li.className = 'visibility-item';
+
+                const row = document.createElement('div');
+                row.className = 'visibility-row';
 
                 const label = document.createElement('label');
                 label.className = 'visibility-label';
@@ -181,7 +214,34 @@
 
                 label.appendChild(checkbox);
                 label.appendChild(text);
-                li.appendChild(label);
+
+                const actions = document.createElement('div');
+                actions.className = 'visibility-item-actions';
+
+                const upBtn = document.createElement('button');
+                upBtn.type = 'button';
+                upBtn.className = 'visibility-move-btn';
+                upBtn.textContent = '↑';
+                upBtn.disabled = index === 0;
+                upBtn.addEventListener('click', function () {
+                    moveColumn(key, -1);
+                });
+
+                const downBtn = document.createElement('button');
+                downBtn.type = 'button';
+                downBtn.className = 'visibility-move-btn';
+                downBtn.textContent = '↓';
+                downBtn.disabled = index === movable.length - 1;
+                downBtn.addEventListener('click', function () {
+                    moveColumn(key, 1);
+                });
+
+                actions.appendChild(upBtn);
+                actions.appendChild(downBtn);
+
+                row.appendChild(label);
+                row.appendChild(actions);
+                li.appendChild(row);
                 visibilityList.appendChild(li);
             });
         }
@@ -189,7 +249,23 @@
         // Панель "Вид"
         visibilityToggle.addEventListener('click', function (e) {
             e.stopPropagation();
-            const hidden = visibilityPanel.classList.toggle('is-hidden');
+
+            const willOpen = visibilityPanel.classList.contains('is-hidden');
+
+            if (willOpen) {
+                visibilityPanel.classList.remove('align-left');
+
+                visibilityPanel.classList.remove('is-hidden');
+                const rect = visibilityPanel.getBoundingClientRect();
+
+                if (rect.left < 8 || rect.right > window.innerWidth - 8) {
+                    visibilityPanel.classList.add('align-left');
+                }
+            } else {
+                visibilityPanel.classList.add('is-hidden');
+            }
+
+            const hidden = visibilityPanel.classList.contains('is-hidden');
             visibilityToggle.setAttribute('aria-expanded', hidden ? 'false' : 'true');
         });
 
@@ -206,13 +282,10 @@
 
         visibilityReset.addEventListener('click', function () {
             state = {
-                order: [...defaultOrder],
+                order: [...defaultOrder.filter(key => key !== LOCK_RIGHT), LOCK_RIGHT],
                 hidden: [],
                 widths: {}
             };
-
-            state.order = state.order.filter(key => key !== LOCK_RIGHT);
-            state.order.push(LOCK_RIGHT);
 
             saveState();
             renderVisibilityMenu();

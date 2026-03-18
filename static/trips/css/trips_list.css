@@ -142,6 +142,43 @@
     width: 100%;
 }
 
+.visibility-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.visibility-item-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.visibility-move-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #374151;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.visibility-move-btn:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.visibility-move-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 /* 4) Фильтры */
 .filters-bar {
     display: flex;
