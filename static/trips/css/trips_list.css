@@ -1,5 +1,6 @@
 /* 1) Лейаут */
 .trips-page {
+    /* Основной контейнер страницы — вертикальная стопка с отступами */
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -11,6 +12,7 @@
 }
 
 .trips-header {
+    /* Шапка страницы с заголовком и кнопкой действия */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -20,6 +22,7 @@
 }
 
 .trips-title {
+    /* Заголовок страницы с адаптивным размером */
     margin: 0;
     font-size: clamp(1.25rem, 1.8vw, 1.6rem);
     line-height: 1.2;
@@ -27,12 +30,14 @@
 }
 
 .trips-subtitle {
+    /* Подзаголовок-пояснение */
     margin: 4px 0 0;
     color: #6b7280;
     font-size: 0.92rem;
 }
 
 .header-actions {
+    /* Контейнер для действий в шапке (кнопка "Создать") */
     display: flex;
     align-items: center;
     gap: 8px;
@@ -41,6 +46,7 @@
 
 /* 2) Кнопки */
 .tms-btn {
+    /* Базовая стилизация всех кнопок системы */
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -52,22 +58,25 @@
     font-size: 0.83rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background .2s ease, border-color .2s ease, color .2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     white-space: nowrap;
 }
 
 .tms-btn-primary {
+    /* Главная синяя кнопка */
     background: #2563eb;
     color: #fff;
     border-color: #2563eb;
 }
 
 .tms-btn-primary:hover {
+    /* Состояние при наведении */
     background: #1d4ed8;
     border-color: #1d4ed8;
 }
 
 .tms-btn-secondary {
+    /* Второстепенная серая кнопка */
     background: #fff;
     color: #374151;
     border-color: #e5e7eb;
@@ -79,18 +88,166 @@
 }
 
 .tms-btn-add {
+    /* Крупная кнопка создания новой записи */
     min-height: 40px;
     padding: 0 14px;
     border-radius: 10px;
     font-size: 0.9rem;
 }
 
-/* 3) Панель видимости колонок */
+/* 3) Фильтры */
+.filters-panel {
+    /* Контейнер для всех фильтров */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.filters-bar {
+    /* Строка с группой фильтров */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    width: 100%;
+}
+
+.filter-field {
+    /* Отдельное поле фильтра с лейблом и инпутом */
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 160px;
+}
+
+.filter-field-period {
+    /* Поле выбора периода (чуть шире) */
+    min-width: 180px;
+}
+
+.filter-field-date {
+    /* Поле для ввода даты */
+    min-width: 155px;
+}
+
+.filter-field-address {
+    /* Поле адреса — занимает больше места */
+    flex: 1 1 320px;
+    min-width: 260px;
+}
+
+.filter-label {
+    /* Заголовок поля фильтра */
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    line-height: 1.2;
+}
+
+.filter-input,
+.filter-select {
+    /* Единый стиль для полей ввода и селектов */
+    min-height: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    background: #fff;
+    color: #111827;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.filter-input::placeholder {
+    /* Плейсхолдер в полях ввода */
+    color: #9ca3af;
+}
+
+.filter-input:focus,
+.filter-select:focus,
+.tms-btn:focus {
+    /* Единый стиль фокуса для всех интерактивных элементов */
+    outline: none;
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.filter-field.is-disabled {
+    /* Затемнение отключенного поля (для кастомного периода) */
+    opacity: 0.55;
+}
+
+.filters-actions {
+    /* Контейнер для кнопок применения/сброса фильтров */
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* 4) Тулбар */
+.table-toolbar {
+    /* Панель инструментов над таблицей */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.toolbar-left,
+.toolbar-right {
+    /* Левая и правая части тулбара */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.toolbar-right {
+    /* Правая часть прижата к правому краю */
+    margin-left: auto;
+}
+
+.filter-meta {
+    /* Текст с количеством найденных записей */
+    color: #6b7280;
+    font-size: 0.88rem;
+    white-space: nowrap;
+}
+
+.page-size-control {
+    /* Элемент управления размером страницы */
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+    font-size: 0.88rem;
+}
+
+.page-size-label {
+    /* Подпись к селекту размера страницы */
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.page-size-select {
+    /* Селект выбора размера страницы */
+    min-width: 88px;
+    width: auto;
+}
+
+/* 5) Панель видимости колонок */
 .columns-visibility {
+    /* Контейнер для выпадающей панели видимости колонок */
     position: relative;
 }
 
 .visibility-panel {
+    /* Выпадающая панель с настройками колонок */
     position: absolute;
     left: 0;
     top: calc(100% + 6px);
@@ -105,15 +262,18 @@
 }
 
 .visibility-panel.align-left {
-    right: auto;
+    /* Выравнивание панели по левому краю */
     left: 0;
+    right: auto;
 }
 
 .visibility-panel.is-hidden {
+    /* Скрытое состояние панели */
     display: none;
 }
 
 .visibility-title {
+    /* Заголовок панели видимости */
     margin: 0 0 8px;
     font-weight: 700;
     font-size: 0.92rem;
@@ -121,6 +281,7 @@
 }
 
 .visibility-list {
+    /* Список колонок для настройки видимости */
     list-style: none;
     margin: 0;
     padding: 0;
@@ -132,12 +293,14 @@
 }
 
 .visibility-item {
+    /* Отдельный пункт в списке колонок */
     border: 1px solid #f1f5f9;
     border-radius: 8px;
     padding: 8px 10px;
 }
 
 .visibility-label {
+    /* Лейбл с чекбоксом для колонки */
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -147,6 +310,7 @@
 }
 
 .visibility-row {
+    /* Строка с чекбоксом и кнопками перемещения */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -154,6 +318,7 @@
 }
 
 .visibility-item-actions {
+    /* Кнопки перемещения колонки вверх/вниз */
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -161,7 +326,9 @@
 }
 
 .visibility-move-btn {
+    /* Кнопка перемещения колонки */
     min-width: 28px;
+    width: 28px;
     height: 28px;
     padding: 0;
     border: 1px solid #e5e7eb;
@@ -179,46 +346,21 @@
 }
 
 .visibility-move-btn:disabled {
+    /* Отключенная кнопка (крайняя позиция) */
     opacity: 0.45;
     cursor: default;
 }
 
-/* 4) Фильтры */
-.filters-bar {
+.visibility-footer {
+    /* Подвал панели с кнопкой сброса */
+    margin-top: 10px;
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
-    flex-shrink: 0;
+    justify-content: flex-end;
 }
 
-.filter-input,
-.filter-select {
-    min-height: 36px;
-    padding: 0 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    background: #fff;
-    color: #111827;
-}
-
-.filter-input[type="search"] {
-    min-width: 240px;
-}
-
-.filter-input[type="date"] {
-    min-width: 150px;
-}
-
-.filter-meta {
-    margin-left: auto;
-    color: #6b7280;
-    font-size: 0.85rem;
-}
-
-/* 5) Таблица */
+/* 6) Карточка таблицы */
 .table-card {
+    /* Белая карточка с тенью, обрамляющая таблицу */
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
@@ -231,13 +373,16 @@
 }
 
 .table-wrap {
+    /* Обертка для скролла таблицы */
     width: 100%;
     height: 100%;
     min-height: 0;
     overflow: auto;
 }
 
+/* 7) Таблица */
 .tms-table {
+    /* Базовая таблица с фиксированной шириной колонок */
     width: max-content;
     min-width: 100%;
     border-collapse: separate;
@@ -247,6 +392,7 @@
 
 .tms-table thead th,
 .tms-table tbody td {
+    /* Единая высота ячеек и обработка переполнения */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -257,6 +403,10 @@
 }
 
 .tms-table thead th {
+    /* Заголовки таблицы — прижаты к верху при скролле */
+    position: sticky;
+    top: 0;
+    z-index: 30;
     text-align: left;
     padding: 12px 14px;
     font-size: 0.82rem;
@@ -265,56 +415,62 @@
     color: #6b7280;
     background: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
-    position: sticky;
-    top: 0;
-    z-index: 30;
     user-select: none;
 }
 
 .tms-table tbody td {
+    /* Ячейки тела таблицы */
     padding: 12px 14px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.92rem;
     color: #111827;
     vertical-align: middle;
     background: #fff;
-    cursor: grab;
+    cursor: grab; /* Для drag-скролла */
 }
 
 .tms-table tbody td:active {
+    /* Активное состояние при перетаскивании */
     cursor: grabbing;
 }
 
 .tms-table tbody tr:last-child td {
+    /* Убираем нижнюю границу у последней строки */
     border-bottom: none;
 }
 
+.tms-table tbody tr {
+    transition: background 0.12s ease;
+}
+
 .tms-table tbody tr:hover td {
+    /* Подсветка строки при наведении */
     background: #f8fafc;
 }
 
-.tms-table tbody tr {
-    transition: background .12s ease;
-}
-
-/* Во время drag-scroll не даём выделять текст */
+/* drag-scroll */
 .table-wrap.is-dragging,
 .table-wrap.is-dragging * {
+    /* Отключаем выделение при перетаскивании */
     user-select: none;
 }
 
-/* Во время drag отключаем обычный hover */
 .table-wrap.is-dragging .tms-table tbody tr:hover td {
+    /* Убираем ховер при перетаскивании */
     background: #fff;
 }
 
-/* Строка, на которой начался drag, остаётся подсвеченной */
 .table-wrap.is-dragging .tms-table tbody tr.is-drag-source td,
 .table-wrap.is-dragging .tms-table tbody tr.is-drag-source:hover td {
+    /* Подсветка исходной строки при перетаскивании */
     background: #eef6ff;
 }
 
-/* Над интерактивными элементами — нормальный UX */
+.table-wrap.is-dragging .tms-table tbody td {
+    cursor: grabbing;
+}
+
+/* интерактив внутри ячеек */
 .tms-table tbody td a,
 .tms-table tbody td button,
 .tms-table tbody td input,
@@ -324,48 +480,34 @@
     cursor: pointer;
 }
 
-/* Если внутри ячейки просто текст выделяется/редактируется */
 .tms-table tbody td input,
 .tms-table tbody td textarea {
     cursor: text;
 }
 
-/* Для resize-ручки приоритетно показываем изменение ширины */
-.col-resize-handle {
-    cursor: col-resize;
-}
-
 .empty-row td {
+    /* Строка "Нет данных" */
     color: #6b7280;
     text-align: center;
     padding: 20px 14px;
     white-space: normal;
     height: auto;
     max-height: none;
+    cursor: default;
 }
 
-/* Resize колонок */
+/* 8) Resize колонок */
+.tms-table thead th[data-col] {
+    position: sticky;
+}
+
 .tms-table thead th[data-col]:not([data-col="actions"]) {
+    /* Отступ справа для хендла изменения размера */
     padding-right: 24px;
 }
 
-.table-wrap.is-dragging .tms-table tbody td {
-    cursor: grabbing;
-}
-
-.table-toolbar {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    width: 100%;
-    justify-content: stretch;
-}
-
-.table-toolbar .tms-btn {
-    width: 100%;
-}
-
 .col-resize-handle {
+    /* Хендл для изменения ширины колонки */
     position: absolute;
     top: 0;
     right: -3px;
@@ -376,6 +518,7 @@
 }
 
 .col-resize-handle::after {
+    /* Вертикальная полоска хендла */
     content: "";
     position: absolute;
     top: 8px;
@@ -384,63 +527,71 @@
     width: 2px;
     background: transparent;
     border-radius: 2px;
-    transition: background .15s ease;
+    transition: background 0.15s ease;
 }
 
 .tms-table thead th:hover .col-resize-handle::after,
 .tms-table thead th.is-resizing .col-resize-handle::after {
+    /* Показываем полоску при наведении или ресайзе */
     background: #cbd5e1;
 }
 
-/* Колонка действий всегда справа */
+/* 9) Sticky actions column */
 .tms-table thead th[data-col="actions"],
 .tms-table tbody td[data-col="actions"] {
+    /* Колонка действий всегда видна справа */
     position: sticky;
     right: 0;
-    background: #fff;
-    box-shadow: -1px 0 0 #e5e7eb;
 }
 
 .tms-table thead th[data-col="actions"] {
-    z-index: 45;
+    z-index: 40;
     background: #f9fafb;
-    min-width: 190px;
-    width: 190px;
-    max-width: 190px;
+    box-shadow: -1px 0 0 #e5e7eb;
 }
 
 .tms-table tbody td[data-col="actions"] {
     z-index: 20;
-    min-width: 190px;
-    width: 190px;
-    max-width: 190px;
+    background: #fff;
+    box-shadow: -1px 0 0 #e5e7eb;
 }
 
-/* 6) Дропдаун действий */
+.tms-table tbody tr:hover td[data-col="actions"] {
+    background: #f8fafc;
+}
+
+.table-wrap.is-dragging .tms-table tbody tr.is-drag-source td[data-col="actions"],
+.table-wrap.is-dragging .tms-table tbody tr.is-drag-source:hover td[data-col="actions"] {
+    background: #eef6ff;
+}
+
+/* 10) Actions dropdown */
 .actions {
-    min-width: 180px;
+    /* Контейнер для выпадающего меню действий */
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
 }
 
 .actions-toggle {
-    min-width: 110px;
-    justify-content: space-between;
-    gap: 8px;
+    /* Кнопка открытия меню действий */
+    min-height: 32px;
+    padding: 0 10px;
 }
 
 .actions-menu {
-    position: fixed;
-    top: 0;
-    left: 0;
-    min-width: 190px;
+    /* Выпадающее меню с действиями над записью */
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 1400;
+    min-width: 220px;
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
     padding: 6px;
     display: none;
-    z-index: 3000;
 }
 
 .actions-menu.is-open {
@@ -448,47 +599,221 @@
 }
 
 .actions-menu a {
+    /* Пункты меню действий */
     display: block;
-    padding: 8px 10px;
+    padding: 9px 10px;
     border-radius: 8px;
-    text-decoration: none;
     color: #111827;
+    text-decoration: none;
     font-size: 0.88rem;
-    font-weight: 500;
 }
 
 .actions-menu a:hover {
     background: #f3f4f6;
 }
 
-/* 7) Адаптив */
-@media (max-width: 768px) {
-    .header-actions,
-    .header-actions .tms-btn {
-        width: 100%;
+/* 11) Пагинация */
+.pagination {
+    /* Навигация по страницам */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 4px 0 0;
+}
+
+.pagination-link,
+.pagination-ellipsis {
+    /* Элементы пагинации (ссылки и многоточия) */
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.pagination-link {
+    /* Ссылки на страницы */
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #374151;
+}
+
+.pagination-link:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.pagination-link.is-current {
+    /* Текущая страница */
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+    font-weight: 700;
+}
+
+.pagination-link.is-disabled {
+    /* Отключенная ссылка пагинации */
+    color: #9ca3af;
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    pointer-events: none;
+}
+
+.pagination-ellipsis {
+    /* Многоточие в пагинации */
+    color: #9ca3af;
+}
+
+/* 12) Адаптив */
+@media (max-width: 1100px) {
+    /* Планшеты и маленькие десктопы */
+    .table-toolbar {
+        align-items: flex-start;
     }
 
-    .trips-header .tms-btn-add {
-        width: 100%;
-    }
-
-    .visibility-panel {
-        right: auto;
-        left: 0;
-    }
-
-    .filters-bar {
-        width: 100%;
-    }
-
-    .filter-input,
-    .filter-select,
-    .filters-bar .tms-btn {
-        width: 100%;
-    }
-
-    .filter-meta {
+    .toolbar-right {
         margin-left: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Мобильные устройства */
+    .trips-page {
+        gap: 12px;
+    }
+
+    .filters-actions {
         width: 100%;
     }
+
+    .filters-actions .tms-btn {
+        flex: 1 1 auto;
+    }
+
+    .page-size-control {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .page-size-select {
+        width: 110px;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+        width: 100%;
+    }
+}
+/* 13) Новые блоки фильтров */
+.filters-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.filters-block-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.filters-bar-chronology,
+.filters-bar-contractors {
+    align-items: flex-end;
+}
+
+.filter-field-compact {
+    min-width: 180px;
+}
+
+.filter-field-contractor-query {
+    flex: 1 1 360px;
+    min-width: 260px;
+}
+
+.quick-date-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 36px;
+    padding-bottom: 1px;
+}
+
+.quick-date-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.quick-date-chip {
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid #dbe3ee;
+    border-radius: 999px;
+    background: #fff;
+    color: #374151;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+
+.quick-date-chip:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.quick-date-chip:focus {
+    outline: none;
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+@media (max-width: 768px) {
+    .filters-block {
+        padding: 10px;
+    }
+
+    .quick-date-actions {
+        width: 100%;
+    }
+}
+/* 14) Активные фильтры */
+.filter-field.is-active .filter-label {
+    color: #1d4ed8;
+}
+
+.filter-field.is-active .filter-input,
+.filter-field.is-active .filter-select {
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.quick-date-chip.is-active {
+    color: #1d4ed8;
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+.filters-actions-placeholder {
+    display: none;
+}
+
+.filters-actions-toolbar {
+    align-items: center;
 }

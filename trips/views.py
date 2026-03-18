@@ -17,6 +17,18 @@ from .forms import TripForm
 from .models import Trip
 from .services import TNGenerator, AgreementRequestGenerator
 
+from django.db.models import Q
+from django.views.generic import ListView
+
+from organizations.models import Organization
+from persons.models import Person
+from vehicles.models import Vehicle
+from .models import Trip
+
+from datetime import timedelta
+
+from django.utils import timezone
+
 load_dotenv()
 DADATA_TOKEN = os.getenv('DADATA_TOKEN')
 DADATA_SECRET = os.getenv('DADATA_SECRET')
@@ -119,10 +131,184 @@ class TripDetailView(LoginRequiredMixin, DetailView):
     template_name = 'trips/trip_detail.html'
 
 
+from datetime import timedelta
+
+from django.utils import timezone
+
+from organizations.models import Organization
+from persons.models import Person
+from vehicles.models import Vehicle
+
+from .models import Trip
+
+
 class TripListView(UserOwnedListView):
     model = Trip
     template_name = 'trips/trip_list.html'
-    context_object_name = 'trips'  # опционально, для ясности в шаблоне
+    context_object_name = 'trips'
+    paginate_by = 50
+    page_size_options = [2, 25, 50, 100]
+
+    date_mode_options = [
+        ('loading', 'Погрузка'),
+        ('unloading', 'Выгрузка'),
+    ]
+
+    contractor_role_options = [
+        ('client', 'Заказчик'),
+        ('carrier', 'Перевозчик'),
+        ('consignor', 'Отправитель'),
+        ('consignee', 'Получатель'),
+        ('driver', 'Водитель'),
+    ]
+
+    def get_paginate_by(self, queryset):
+        raw_value = (self.request.GET.get('page_size') or '').strip()
+
+        if raw_value.isdigit():
+            value = int(raw_value)
+            if value in self.page_size_options:
+                return value
+
+        return self.paginate_by
+
+    def get_page_number(self):
+        raw_page = (self.request.GET.get('page') or '').strip()
+        if raw_page.isdigit() and int(raw_page) > 0:
+            return int(raw_page)
+        return 1
+
+    def _normalize_date_value(self, value):
+        value = (value or '').strip()
+        return value or None
+
+    def _apply_date_filters(self, qs):
+        date_mode = (self.request.GET.get('date_mode') or 'loading').strip()
+        date_from = self._normalize_date_value(self.request.GET.get('date_from'))
+        date_to = self._normalize_date_value(self.request.GET.get('date_to'))
+
+        field_name = 'planned_loading_date'
+        if date_mode == 'unloading':
+            field_name = 'planned_unloading_date'
+
+        if date_from:
+            qs = qs.filter(**{f'{field_name}__date__gte': date_from})
+
+        if date_to:
+            qs = qs.filter(**{f'{field_name}__date__lte': date_to})
+
+        return qs
+
+    def _apply_contractor_filter(self, qs):
+        contractor_role = (self.request.GET.get('contractor_role') or '').strip()
+        contractor_query = (self.request.GET.get('contractor_query') or '').strip()
+
+        if not contractor_role or not contractor_query:
+            return qs
+
+        if contractor_role in ['client', 'carrier', 'consignor', 'consignee']:
+            return qs.filter(**{f'{contractor_role}__short_name__icontains': contractor_query})
+
+        if contractor_role == 'driver':
+            parts = [part for part in contractor_query.split() if part]
+
+            for part in parts:
+                qs = qs.filter(
+                    driver__surname__icontains=part
+                ) | qs.filter(
+                    driver__name__icontains=part
+                ) | qs.filter(
+                    driver__patronymic__icontains=part
+                )
+
+            return qs.distinct()
+
+        return qs
+
+    def get_queryset(self):
+        qs = (
+            super()
+            .get_queryset()
+            .select_related(
+                'client',
+                'carrier',
+                'consignor',
+                'consignee',
+                'driver',
+                'truck',
+                'trailer',
+            )
+        )
+
+        qs = self._apply_date_filters(qs)
+        qs = self._apply_contractor_filter(qs)
+
+        return qs.order_by('-date_of_trip', '-num_of_trip', '-pk')
+
+    def _build_pagination_items(self, page_obj):
+        current = page_obj.number
+        total = page_obj.paginator.num_pages
+
+        if total <= 7:
+            return [{'type': 'page', 'number': n, 'current': n == current} for n in range(1, total + 1)]
+
+        pages = {1, total, current - 2, current - 1, current, current + 1, current + 2}
+        pages = sorted(n for n in pages if 1 <= n <= total)
+
+        items = []
+        prev = None
+
+        for n in pages:
+            if prev is not None and n - prev > 1:
+                items.append({'type': 'ellipsis'})
+            items.append({'type': 'page', 'number': n, 'current': n == current})
+            prev = n
+
+        return items
+
+    def _get_adjusted_page_for_page_size(self):
+        old_page_size_raw = (self.request.GET.get('current_page_size') or '').strip()
+        new_page_size = self.get_paginate_by(None)
+        current_page = self.get_page_number()
+
+        if old_page_size_raw.isdigit():
+            old_page_size = int(old_page_size_raw)
+            if old_page_size > 0:
+                offset = (current_page - 1) * old_page_size
+                return (offset // new_page_size) + 1
+
+        return current_page
+
+    def paginate_queryset(self, queryset, page_size):
+        adjusted_page = self._get_adjusted_page_for_page_size()
+        mutable_get = self.request.GET.copy()
+        mutable_get['page'] = str(adjusted_page)
+        self.request.GET = mutable_get
+        return super().paginate_queryset(queryset, page_size)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        current_page_size = self.get_paginate_by(self.object_list)
+
+        context['page_size_options'] = self.page_size_options
+        context['date_mode_options'] = self.date_mode_options
+        context['contractor_role_options'] = self.contractor_role_options
+
+        context['filters'] = {
+            'date_mode': (self.request.GET.get('date_mode') or 'loading').strip(),
+            'date_from': (self.request.GET.get('date_from') or '').strip(),
+            'date_to': (self.request.GET.get('date_to') or '').strip(),
+            'contractor_role': (self.request.GET.get('contractor_role') or '').strip(),
+            'contractor_query': (self.request.GET.get('contractor_query') or '').strip(),
+            'page_size': str(current_page_size),
+        }
+
+        page_obj = context.get('page_obj')
+        context['pagination_items'] = self._build_pagination_items(page_obj) if page_obj else []
+
+        return context
+
 
 
 class TripTNDownloadView(LoginRequiredMixin, View):
