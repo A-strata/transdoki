@@ -5,7 +5,6 @@
 <link rel="stylesheet" href="{% static 'trips/css/trips_list.css' %}">
 
 <section class="trips-page">
-    <!-- Шапка страницы -->
     <div class="trips-header">
         <div>
             <h1 class="trips-title">Поездки</h1>
@@ -13,27 +12,28 @@
         </div>
 
         <div class="header-actions">
-            <!-- Панель настройки колонок -->
-            <div class="columns-settings" data-columns-settings>
-                <button type="button" class="tms-btn tms-btn-secondary" data-columns-toggle>
-                    Колонки
+            <!-- Выбор отображаемых колонок 
+            <div class="columns-visibility" data-columns-visibility>
+                <button type="button" class="tms-btn tms-btn-secondary" data-visibility-toggle aria-expanded="false">
+                    Вид
                 </button>
 
-                <div class="columns-panel is-hidden" data-columns-panel>
-                    <p class="columns-title">Настройка колонок</p>
-                    <ul class="columns-list" data-columns-list></ul>
-                    <div class="columns-footer">
-                        <button type="button" class="tms-btn tms-btn-secondary" data-columns-reset>Сбросить</button>
+                <div class="visibility-panel is-hidden" data-visibility-panel>
+                    <p class="visibility-title">Показать / скрыть колонки</p>
+                    <ul class="visibility-list" data-visibility-list></ul>
+
+                    <div class="visibility-footer">
+                        <button type="button" class="tms-btn tms-btn-secondary" data-visibility-reset>
+                            Сбросить
+                        </button>
                     </div>
                 </div>
-            </div>
-
+            </div>-->
 
             <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">Создать поездку</a>
         </div>
     </div>
 
-    <!-- Фильтры -->
     <div class="filters-bar" data-trip-filters>
         <input type="search" class="filter-input" placeholder="Поиск: №, груз, водитель..." data-filter="q">
 
@@ -51,43 +51,51 @@
         <button type="button" class="tms-btn tms-btn-secondary" data-filter="reset">Сбросить</button>
         <span class="filter-meta" data-filter="meta"></span>
     </div>
+    <div class="table-toolbar">
+        <div class="columns-visibility" data-columns-visibility>
+            <button type="button" class="tms-btn tms-btn-secondary" data-visibility-toggle aria-expanded="false">
+                Вид
+            </button>
 
-    <!-- Таблица -->
+            <div class="visibility-panel is-hidden" data-visibility-panel>
+                <p class="visibility-title">Показать / скрыть колонки</p>
+                <ul class="visibility-list" data-visibility-list></ul>
+
+                <div class="visibility-footer">
+                    <button type="button" class="tms-btn tms-btn-secondary" data-visibility-reset>
+                        Сбросить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="table-card">
         <div class="table-wrap" data-drag-scroll>
             <table class="tms-table" data-trips-table>
                 <thead>
                     <tr>
-                    <th data-col="num_of_trip">Номер</th>
-                    <th data-col="date_of_trip">Дата</th>
-                    <th data-col="client">Заказчик</th>
-                    <th data-col="carrier">Перевозчик</th>
-                    <th data-col="consignor">Отправитель</th>
-                    <th data-col="consignee">Получатель</th>
-                    <th data-col="driver">Водитель</th>
-                    <th data-col="truck">Автомобиль</th>
-                    <th data-col="trailer">Прицеп</th>
-                    <th data-col="planned_loading_date">Дата погрузки</th>
-                    <th data-col="planned_unloading_date">Дата выгрузки</th>
-                    <!--<th data-col="actual_loading_date">Погрузка (факт)</th>-->
-                    <!--<th data-col="actual_unloading_date">Выгрузка (факт)</th>-->
-                    <th data-col="loading_address">Адрес погрузки</th>
-                    <th data-col="unloading_address">Адрес выгрузки</th>
-                    <!--<th data-col="loading_contact_name">Контакт погрузки (имя)</th>-->
-                    <!--<th data-col="loading_contact_phone">Контакт погрузки (тел.)</th>-->
-                    <!--<th data-col="unloading_contact_name">Контакт выгрузки (имя)</th>-->
-                    <!--<th data-col="unloading_contact_phone">Контакт выгрузки (тел.)</th>-->
-                    <th data-col="cargo">Груз</th>
-                    <th data-col="weight">Вес, кг</th>
-                    <th data-col="client_cost">Стоимость клиенту</th>
-                    <th data-col="carrier_cost">Стоимость перевозчику</th>
-                    <!--<th data-col="loading_type">Тип погрузки</th>-->
-                    <!--<th data-col="unloading_type">Тип выгрузки</th>-->
-                    <th data-col="payment_type">Форма оплаты</th>
-                    <th data-col="payment_condition">Условия оплаты</th>
-                    <th data-col="payment_term">Срок оплаты (дн.)</th>
-                    <th data-col="comments">Комментарии</th>
-                    <th data-col="actions">Действия</th>
+                        <th data-col="num_of_trip">Номер</th>
+                        <th data-col="date_of_trip">Дата</th>
+                        <th data-col="client">Заказчик</th>
+                        <th data-col="carrier">Перевозчик</th>
+                        <th data-col="consignor">Отправитель</th>
+                        <th data-col="consignee">Получатель</th>
+                        <th data-col="driver">Водитель</th>
+                        <th data-col="truck">Автомобиль</th>
+                        <th data-col="trailer">Прицеп</th>
+                        <th data-col="planned_loading_date">Дата погрузки</th>
+                        <th data-col="planned_unloading_date">Дата выгрузки</th>
+                        <th data-col="loading_address">Адрес погрузки</th>
+                        <th data-col="unloading_address">Адрес выгрузки</th>
+                        <th data-col="cargo">Груз</th>
+                        <th data-col="weight">Вес, кг</th>
+                        <th data-col="client_cost">Стоимость клиенту</th>
+                        <th data-col="carrier_cost">Стоимость перевозчику</th>
+                        <th data-col="payment_type">Форма оплаты</th>
+                        <th data-col="payment_condition">Условия оплаты</th>
+                        <th data-col="payment_term">Срок оплаты (дн.)</th>
+                        <th data-col="comments">Комментарии</th>
+                        <th data-col="actions">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,22 +110,14 @@
                         <td data-col="driver">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
                         <td data-col="truck">{{ trip.truck.grn }}</td>
                         <td data-col="trailer">{{ trip.trailer.grn|default:"—" }}</td>
-                        <td data-col="planned_loading_date">{{ trip.planned_loading_date|date:"d.m.Y" }}</td><!--{{ trip.planned_loading_date|date:"d.m.Y H:i" }}-->
-                        <td data-col="planned_unloading_date">{{ trip.planned_unloading_date|date:"d.m.Y" }}</td><!--{{ trip.planned_unloading_date|date:"d.m.Y H:i" }}-->
-                        <!--<td data-col="actual_loading_date">{{ trip.actual_loading_date|date:"d.m.Y H:i"|default:"—" }}</td>-->
-                        <!--<td data-col="actual_unloading_date">{{ trip.actual_unloading_date|date:"d.m.Y H:i"|default:"—" }}</td>-->
+                        <td data-col="planned_loading_date">{{ trip.planned_loading_date|date:"d.m.Y" }}</td>
+                        <td data-col="planned_unloading_date">{{ trip.planned_unloading_date|date:"d.m.Y" }}</td>
                         <td data-col="loading_address">{{ trip.loading_address }}</td>
                         <td data-col="unloading_address">{{ trip.unloading_address }}</td>
-                        <!--<td data-col="loading_contact_name">{{ trip.loading_contact_name|default:"—" }}</td>-->
-                        <!--<td data-col="loading_contact_phone">{{ trip.loading_contact_phone|default:"—" }}</td>-->
-                        <!--<td data-col="unloading_contact_name">{{ trip.unloading_contact_name|default:"—" }}</td>-->
-                        <!--<td data-col="unloading_contact_phone">{{ trip.unloading_contact_phone|default:"—" }}</td>-->
                         <td data-col="cargo">{{ trip.cargo }}</td>
                         <td data-col="weight">{{ trip.weight|default:"—" }}</td>
                         <td data-col="client_cost">{{ trip.client_cost|default:"—" }}</td>
                         <td data-col="carrier_cost">{{ trip.carrier_cost|default:"—" }}</td>
-                        <!--<td data-col="loading_type">{{ trip.get_loading_type_display|default:"—" }}</td>-->
-                        <!--<td data-col="unloading_type">{{ trip.get_unloading_type_display|default:"—" }}</td>-->
                         <td data-col="payment_type">{{ trip.get_payment_type_display|default:"—" }}</td>
                         <td data-col="payment_condition">{{ trip.get_payment_condition_display|default:"—" }}</td>
                         <td data-col="payment_term">{{ trip.payment_term|default:"—" }}</td>
@@ -142,7 +142,7 @@
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="10">Нет поездок</td>
+                        <td colspan="22">Нет поездок</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -151,9 +151,8 @@
     </div>
 </section>
 
-<!-- Скрипты страницы -->
 <script defer src="{% static 'trips/js/trips_actions_dropdown.js' %}"></script>
 <script defer src="{% static 'trips/js/trips_drag_scroll.js' %}"></script>
-<script defer src="{% static 'trips/js/trips_columns_settings.js' %}"></script>
+<script defer src="{% static 'trips/js/trips_table_columns.js' %}"></script>
 <script defer src="{% static 'trips/js/trips_filters.js' %}"></script>
 {% endblock %}

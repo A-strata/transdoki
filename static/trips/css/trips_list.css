@@ -1,12 +1,13 @@
-/* static 'trips/css/trips_list.css */
 /* 1) Лейаут */
 .trips-page {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    width: calc(100vw - 24px);
-    margin-left: calc(50% - 50vw + 12px);
-    margin-right: calc(50% - 50vw + 12px);
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    height: 100%;
+    min-height: 0;
 }
 
 .trips-header {
@@ -15,6 +16,7 @@
     justify-content: space-between;
     gap: 10px;
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 .trips-title {
@@ -81,84 +83,63 @@
     font-size: 0.9rem;
 }
 
-/* 3) Настройка колонок */
-.columns-settings { position: relative; }
-.columns-settings > summary { list-style: none; }
-.columns-settings > summary::-webkit-details-marker { display: none; }
+/* 3) Панель видимости колонок */
+.columns-visibility {
+    position: relative;
+}
 
-.columns-panel {
+.visibility-panel {
     position: absolute;
-    right: 0;
+    left: 0;  /* Прижимаем к левому краю */
     top: calc(100% + 6px);
     z-index: 1300;
     width: 320px;
-    max-width: calc(100vw - 24px);
+    max-width: min(320px, calc(100vw - 16px));
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
     padding: 10px;
 }
+.visibility-panel.align-left {
+    right: auto;
+    left: 0;
+}
+.visibility-panel.is-hidden {
+    display: none;
+}
 
-.columns-title {
+.visibility-title {
     margin: 0 0 8px;
     font-weight: 700;
     font-size: 0.92rem;
     color: #111827;
 }
 
-.columns-list {
+.visibility-list {
     list-style: none;
     margin: 0;
     padding: 0;
+    max-height: 320px;
+    overflow: auto;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    max-height: 300px;
-    overflow: auto;
 }
 
-.columns-item {
+.visibility-item {
     border: 1px solid #f1f5f9;
     border-radius: 8px;
-    padding: 6px 8px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    align-items: center;
+    padding: 8px 10px;
 }
 
-.columns-item-left {
+.visibility-label {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-width: 0;
-}
-
-.columns-item-label {
     font-size: 0.88rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.columns-item-actions { display: inline-flex; gap: 4px; }
-
-.columns-mini-btn {
-    min-height: 28px;
-    min-width: 28px;
-    border-radius: 6px;
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    cursor: pointer;
-}
-.columns-mini-btn:hover { background: #f9fafb; }
-.columns-mini-btn:disabled { opacity: .45; cursor: default; }
-
-.columns-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 8px;
+    color: #111827;
+    width: 100%;
 }
 
 /* 4) Фильтры */
@@ -167,6 +148,7 @@
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .filter-input, .filter-select {
@@ -194,25 +176,37 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    overflow: visible;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .table-wrap {
     width: 100%;
-    overflow-x: auto;
-    overflow-y: visible;
-    cursor: grab;
-}
-
-.table-wrap.is-dragging {
-    cursor: grabbing;
-    user-select: none;
+    height: 100%;
+    min-height: 0;
+    overflow: auto; /* скролл только здесь */
 }
 
 .tms-table {
-    width: 100%;
-    min-width: 1280px;
-    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+
+.tms-table thead th,
+.tms-table tbody td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 44px;
+    max-height: 44px;
+    line-height: 20px;
+    box-sizing: border-box;
 }
 
 .tms-table thead th {
@@ -224,10 +218,10 @@
     color: #6b7280;
     background: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
-    white-space: nowrap;
     position: sticky;
     top: 0;
     z-index: 30;
+    user-select: none;
 }
 
 .tms-table tbody td {
@@ -235,20 +229,133 @@
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.92rem;
     color: #111827;
-    vertical-align: top;
+    vertical-align: middle;
+    background: #fff;
 }
 
 .tms-table tbody tr:last-child td { border-bottom: none; }
-.tms-table tbody tr:hover { background: #fcfcfd; }
+.tms-table tbody tr:hover td {
+    background: #f8fafc;
+}
+.tms-table tbody tr {
+    transition: background .12s ease;
+}
 
-.trip-number { font-weight: 700; white-space: nowrap; }
-.trip-date, .trip-weight { white-space: nowrap; }
-.driver-name { white-space: nowrap; }
+/* Во время drag-scroll не даём выделять текст */
+.table-wrap.is-dragging,
+.table-wrap.is-dragging * {
+    user-select: none;
+}
+
+/* Курсор для тела таблицы */
+.tms-table tbody td {
+    cursor: grab;
+}
+
+.tms-table tbody td:active {
+    cursor: grabbing;
+}
+
+/* Над интерактивными элементами — нормальный UX */
+.tms-table tbody td a,
+.tms-table tbody td button,
+.tms-table tbody td input,
+.tms-table tbody td select,
+.tms-table tbody td textarea,
+.tms-table tbody td label {
+    cursor: pointer;
+}
+
+/* Если внутри ячейки просто текст выделяется/редактируется */
+.tms-table tbody td input,
+.tms-table tbody td textarea {
+    cursor: text;
+}
+
+/* Для resize-ручки приоритетно показываем изменение ширины */
+.col-resize-handle {
+    cursor: col-resize;
+}
 
 .empty-row td {
     color: #6b7280;
     text-align: center;
     padding: 20px 14px;
+    white-space: normal;
+    height: auto;
+    max-height: none;
+}
+
+/* Resize колонок */
+.tms-table thead th[data-col]:not([data-col="actions"]) {
+    padding-right: 24px;
+}
+.table-wrap.is-dragging .tms-table tbody td {
+    cursor: grabbing;
+}
+.table-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+}
+.table-toolbar {
+    width: 100%;
+    justify-content: stretch;
+}
+
+.table-toolbar .tms-btn {
+    width: 100%;
+}
+.col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 10px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 35;
+}
+
+.col-resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 4px;
+    width: 2px;
+    background: transparent;
+    border-radius: 2px;
+    transition: background .15s ease;
+}
+
+.tms-table thead th:hover .col-resize-handle::after,
+.tms-table thead th.is-resizing .col-resize-handle::after {
+    background: #cbd5e1;
+}
+
+/* Колонка действий всегда справа */
+.tms-table thead th[data-col="actions"],
+.tms-table tbody td[data-col="actions"] {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    box-shadow: -1px 0 0 #e5e7eb;
+}
+
+.tms-table thead th[data-col="actions"] {
+    z-index: 45;
+    background: #f9fafb;
+    min-width: 190px;
+    width: 190px;
+    max-width: 190px;
+}
+
+.tms-table tbody td[data-col="actions"] {
+    z-index: 20;
+    min-width: 190px;
+    width: 190px;
+    max-width: 190px;
 }
 
 /* 6) Дропдаун действий */
@@ -265,10 +372,9 @@
 }
 
 .actions-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 6px);
-    bottom: auto;
+    position: fixed; /* меню поверх таблицы и строк */
+    top: 0;
+    left: 0;
     min-width: 190px;
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -276,14 +382,12 @@
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
     padding: 6px;
     display: none;
-    z-index: 1000;
+    z-index: 3000;
 }
 
-.actions-menu.open-up {
-    top: auto;
-    bottom: calc(100% + 6px);
+.actions-menu.is-open {
+    display: block;
 }
-.actions-menu.is-open { display: block; }
 
 .actions-menu a {
     display: block;
@@ -296,22 +400,18 @@
 }
 .actions-menu a:hover { background: #f3f4f6; }
 
-
-
-.columns-settings { position: relative; }
-.columns-panel.is-hidden { display: none; }
-
-
-
 /* 7) Адаптив */
 @media (max-width: 768px) {
     .header-actions,
-    .header-actions .tms-btn,
-    .header-actions details { width: 100%; }
+    .header-actions .tms-btn {
+        width: 100%;
+    }
 
-    .trips-header .tms-btn-add { width: 100%; }
+    .trips-header .tms-btn-add {
+        width: 100%;
+    }
 
-    .columns-panel {
+    .visibility-panel {
         right: auto;
         left: 0;
     }
