@@ -1,3 +1,4 @@
+// trips/js/trips_drag_scroll.js
 // Drag-scroll таблицы ЛКМ (горизонтально таблица + вертикально окно)
 (function () {
     function init() {

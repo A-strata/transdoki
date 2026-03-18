@@ -20,7 +20,7 @@ class PetrolPlusAuthClient:
         client_id: str,
         client_secret: str,
         timeout: int = 15,
-        cache_key: str = "petrolplus:access_token",
+        cache_key: str | None = None,
         ttl_safety_buffer: int = 30,
     ) -> None:
         self.auth_base_url = auth_base_url.rstrip("/") + "/"
@@ -28,8 +28,12 @@ class PetrolPlusAuthClient:
         self.client_id = client_id
         self.client_secret = client_secret
         self.timeout = timeout
-        self.cache_key = cache_key
         self.ttl_safety_buffer = ttl_safety_buffer
+
+        # Важно: для org-уровня ключ кэша должен быть уникален для организации.
+        # Рекомендуется передавать cache_key явно из factory/service:
+        # petrolplus:access_token:org:{org.id}
+        self.cache_key = cache_key or f"petrolplus:access_token:client:{self.client_id}"
 
     def get_access_token(self, force_refresh: bool = False) -> str:
         if not force_refresh:
@@ -50,7 +54,6 @@ class PetrolPlusAuthClient:
             "client_id": self.client_id,
             "client_secret": self.client_secret,
         }
-
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json",
@@ -58,11 +61,16 @@ class PetrolPlusAuthClient:
 
         try:
             response = requests.post(
-                url, data=data, headers=headers, timeout=self.timeout)
+                url,
+                data=data,
+                headers=headers,
+                timeout=self.timeout,
+            )
         except requests.RequestException as exc:
             logger.exception("PetrolPlus auth request failed")
             raise PetrolPlusAuthError(
-                "Не удалось выполнить запрос к auth API PetrolPlus") from exc
+                "Не удалось выполнить запрос к auth API PetrolPlus"
+            ) from exc
 
         if response.status_code != 200:
             payload = {}
@@ -70,9 +78,9 @@ class PetrolPlusAuthClient:
                 payload = response.json()
             except ValueError:
                 pass
+
             raise PetrolPlusAuthError(
-                ("Ошибка авторизации PetrolPlus: HTTP "
-                 F"{response.status_code}, payload={payload}")
+                f"Ошибка авторизации PetrolPlus: HTTP {response.status_code}, payload={payload}"
             )
 
         try:
@@ -81,6 +89,7 @@ class PetrolPlusAuthClient:
             expires_in = int(payload.get("expires_in", 300))
         except (ValueError, KeyError, TypeError) as exc:
             raise PetrolPlusAuthError(
-                "Некорректный формат ответа auth API PetrolPlus") from exc
+                "Некорректный формат ответа auth API PetrolPlus"
+            ) from exc
 
         return token, expires_in

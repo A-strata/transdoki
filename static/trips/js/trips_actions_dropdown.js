@@ -1,3 +1,4 @@
+//trips/js/trips_actions_dropdown.js
 // Открытие/закрытие dropdown "Действия", авто-открытие вверх при нехватке места
 (function () {
     function init() {

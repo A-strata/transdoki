@@ -9,7 +9,6 @@ from persons.models import Person
 from vehicles.models import Vehicle
 
 
-
 class Waybill(UserOwnedModel):
     # Порядковый номер путевого листа в пределах года.
     # Заполняется автоматически в service-слое.
@@ -23,20 +22,30 @@ class Waybill(UserOwnedModel):
         editable=False,
         help_text='Генерируется автоматически в пределах года'
     )
-
     # Дата документа.
     date = models.DateField(
         verbose_name='Дата',
         default=localdate,
     )
-
     # Год храним отдельно для нумерации и ограничения уникальности.
     year = models.PositiveIntegerField(
         verbose_name='Год',
         editable=False,
         db_index=True,
     )
-
+    # Организация, к которой относится путевой лист.
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT,
+        related_name='waybills',
+        verbose_name='Организация'
+    )
+    driver = models.ForeignKey(
+        Person,
+        on_delete=models.PROTECT,
+        related_name='waybills',
+        verbose_name='Водитель'
+    )
     # Основной автомобиль.
     truck = models.ForeignKey(
         Vehicle,
@@ -53,21 +62,6 @@ class Waybill(UserOwnedModel):
         verbose_name='Прицеп',
         blank=True,
         null=True
-    )
-
-    # Организация, к которой относится путевой лист.
-    organization = models.ForeignKey(
-        Organization,
-        on_delete=models.PROTECT,
-        related_name='waybills',
-        verbose_name='Организация'
-    )
-
-    driver = models.ForeignKey(
-        Person,
-        on_delete=models.PROTECT,
-        related_name='waybills',
-        verbose_name='Водитель'
     )
     status = models.CharField(
         "Статус",
@@ -123,6 +117,7 @@ class Waybill(UserOwnedModel):
 
 
 class WaybillEvent(models.Model):
+    '''Отвечает за эксплуатационное состояние ТС и сменную логику'''
     class Type(models.TextChoices):
         OUT = "OUT", "Выпуск на линию"
         GIVE = "GIVE", "Сдача ТС"
@@ -146,13 +141,6 @@ class WaybillEvent(models.Model):
     )
     odometer = models.PositiveIntegerField("Одометр")
 
-    # Разница относительно предыдущего события по машине
-    odometer_delta = models.IntegerField(
-        "Δ пробега",
-        default=0,
-        editable=False
-    )
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -169,3 +157,52 @@ class WaybillEvent(models.Model):
     def __str__(self):
         return (f"{self.get_event_type_display()} /"
                 " {self.waybill} / {self.timestamp}")
+
+
+class RoutePoint(models.Model):
+    class Type(models.TextChoices):
+        LOAD = "LOAD", "Погрузка"
+        UNLOAD = "UNLOAD", "Выгрузка"
+
+    waybill = models.ForeignKey(
+        Waybill,
+        on_delete=models.CASCADE,
+        related_name="route_points",
+        verbose_name="Путевой лист",
+    )
+    point_type = models.CharField(
+        "Тип точки",
+        max_length=10,
+        choices=Type.choices
+    )
+    sequence = models.PositiveSmallIntegerField("Порядок")
+    timestamp = models.DateTimeField(
+        "Время",
+        default=timezone.now,
+        db_index=True
+    )
+    address = models.CharField(
+        "Адрес",
+        max_length=500,
+        blank=True
+    )
+    odometer = models.PositiveIntegerField("Одометр")
+
+    class Meta:
+        ordering = ["timestamp", "id"]
+        indexes = [
+            models.Index(fields=["waybill", "timestamp"]),
+            models.Index(fields=["point_type", "timestamp"]),
+            models.Index(fields=["waybill", "sequence"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["waybill", "sequence"],
+                name="uniq_route_point_sequence_per_waybill",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.get_point_type_display()} / "
+            f"{self.waybill.number} / #{self.sequence}")

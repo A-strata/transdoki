@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'waybills/css/waybill_detail.css' %}">
+
+<section class="waybill-detail-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                Путевой лист
+                {% if waybill.number %}
+                    № {{ waybill.number }}
+                {% else %}
+                    № {{ waybill.pk }}
+                {% endif %}
+            </h1>
+            <p class="page-subtitle">
+                Дата: {{ waybill.date|date:"d.m.Y" }}
+            </p>
+        </div>
+
+        <div class="page-actions">
+            <a href="{% url 'waybills:waybill-update' waybill.pk %}" class="tms-btn tms-btn-secondary">
+                Редактировать шапку
+            </a>
+            <a href="{% url 'waybills:waybill-list' %}" class="tms-btn tms-btn-light">
+                К списку
+            </a>
+        </div>
+    </div>
+
+    {% if is_closed %}
+        <div class="status-banner status-banner--closed">
+            Путевой лист закрыт. Добавление новых записей запрещено.
+        </div>
+    {% endif %}
+
+    <div class="detail-layout">
+        <div class="detail-main">
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Шапка путевого листа</h2>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Номер</div>
+                        <div class="info-value">
+                            {% if waybill.number %}{{ waybill.number }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Дата</div>
+                        <div class="info-value">{{ waybill.date|date:"d.m.Y" }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Организация</div>
+                        <div class="info-value">
+                            {% if waybill.organization %}{{ waybill.organization }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Водитель</div>
+                        <div class="info-value">
+                            {% if waybill.driver %}{{ waybill.driver }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Грузовик</div>
+                        <div class="info-value">
+                            {% if waybill.truck %}{{ waybill.truck }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Прицеп</div>
+                        <div class="info-value">
+                            {% if waybill.trailer %}{{ waybill.trailer }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Статус</div>
+                        <div class="info-value">
+                            {% if waybill.get_status_display %}
+                                {{ waybill.get_status_display }}
+                            {% else %}
+                                {{ waybill.status|default:"—" }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Открыт</div>
+                        <div class="info-value">
+                            {% if waybill.opened_at %}
+                                {{ waybill.opened_at|date:"d.m.Y H:i" }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Закрыт</div>
+                        <div class="info-value">
+                            {% if waybill.closed_at %}
+                                {{ waybill.closed_at|date:"d.m.Y H:i" }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Хронология</h2>
+                    <p class="card-subtitle">События путевого листа и маршрутные точки в единой ленте</p>
+                </div>
+
+                {% if timeline %}
+                    <div class="timeline-table-wrap">
+                        <table class="timeline-table">
+                            <thead>
+                                <tr>
+                                    <th>Время</th>
+                                    <th>Вид записи</th>
+                                    <th>Операция</th>
+                                    <th>Адрес</th>
+                                    <th>Одометр</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in timeline %}
+                                    <tr class="timeline-row timeline-row--{{ item.kind }}">
+                                        <td>
+                                            {% if item.timestamp %}
+                                                {{ item.timestamp|date:"d.m.Y H:i" }}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.kind == "event" %}
+                                                <span class="badge badge--event">Событие</span>
+                                            {% else %}
+                                                <span class="badge badge--route">Точка маршрута</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ item.label }}</strong>
+                                            {% if item.kind == "route_point" and item.sequence %}
+                                                <div class="muted">Точка #{{ item.sequence }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.address %}
+                                                {{ item.address }}
+                                            {% else %}
+                                                <span class="muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.odometer is not None %}
+                                                {{ item.odometer }}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <p>Записей по путевому листу пока нет.</p>
+                        <p class="muted">Добавьте событие или маршрутную точку.</p>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+
+        <aside class="detail-sidebar">
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Добавить событие</h2>
+                    <p class="card-subtitle">Выезд, приём, сдача, заезд</p>
+                </div>
+
+                {% if event_form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in event_form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" class="stack-form" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_event">
+
+                    <div class="field">
+                        {{ event_form.event_type.label_tag }}
+                        {{ event_form.event_type }}
+                        {{ event_form.event_type.errors }}
+                    </div>
+
+                    <div class="field">
+                        {{ event_form.timestamp.label_tag }}
+                        {{ event_form.timestamp }}
+                        {{ event_form.timestamp.errors }}
+                    </div>
+
+                    <div class="field">
+                        {{ event_form.odometer.label_tag }}
+                        {{ event_form.odometer }}
+                        {{ event_form.odometer.errors }}
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="tms-btn tms-btn-primary" {% if is_closed %}disabled{% endif %}>
+                            Добавить событие
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Добавить точку маршрута</h2>
+                    <p class="card-subtitle">Погрузка или выгрузка</p>
+                </div>
+
+                {% if route_point_form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in route_point_form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" class="stack-form" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_route_point">
+
+                    <div class="field">
+                        {{ route_point_form.point_type.label_tag }}
+                        {{ route_point_form.point_type }}
+                        {{ route_point_form.point_type.errors }}
+                    </div>
+
+                    <div class="field">
+                        {{ route_point_form.timestamp.label_tag }}
+                        {{ route_point_form.timestamp }}
+                        {{ route_point_form.timestamp.errors }}
+                    </div>
+
+                    <div class="field">
+                        {{ route_point_form.address.label_tag }}
+                        {{ route_point_form.address }}
+                        {{ route_point_form.address.errors }}
+                    </div>
+
+                    <div class="field">
+                        {{ route_point_form.odometer.label_tag }}
+                        {{ route_point_form.odometer }}
+                        {{ route_point_form.odometer.errors }}
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="tms-btn tms-btn-primary" {% if is_closed %}disabled{% endif %}>
+                            Добавить точку
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </aside>
+    </div>
+</section>
+{% endblock %}

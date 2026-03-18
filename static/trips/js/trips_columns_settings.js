@@ -1,3 +1,4 @@
+// trips/js/trips_columns_settings.js
 (function () {
     function init() {
         const table = document.querySelector('[data-trips-table]');
