@@ -4,6 +4,7 @@ import os
 import requests
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.forms.models import model_to_dict
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -119,7 +120,7 @@ class TripListView(UserOwnedListView):
     model = Trip
     template_name = "trips/trip_list.html"
     context_object_name = "trips"
-    paginate_by = 50
+    paginate_by = 25
     page_size_options = [2, 25, 50, 100]
 
     date_mode_options = [
@@ -198,6 +199,31 @@ class TripListView(UserOwnedListView):
 
         return qs
 
+    def _has_active_filters(self):
+        date_from = (self.request.GET.get("date_from") or "").strip()
+        date_to = (self.request.GET.get("date_to") or "").strip()
+        contractor_role = (self.request.GET.get("contractor_role") or "").strip()
+        contractor_query = (self.request.GET.get("contractor_query") or "").strip()
+        date_mode = (self.request.GET.get("date_mode") or "").strip()
+
+        if date_from or date_to or contractor_role or contractor_query:
+            return True
+
+        if date_mode and date_mode != "loading":
+            return True
+
+        return False
+
+    def _should_open_last_page_by_default(self):
+        page = (self.request.GET.get("page") or "").strip()
+        if page:
+            return False
+
+        if self._has_active_filters():
+            return False
+
+        return True
+
     def get_queryset(self):
         qs = (
             super()
@@ -216,7 +242,12 @@ class TripListView(UserOwnedListView):
         qs = self._apply_date_filters(qs)
         qs = self._apply_contractor_filter(qs)
 
-        return qs.order_by("-date_of_trip", "-num_of_trip", "-pk")
+        return qs.order_by(
+            "date_of_trip",
+            "planned_loading_date",
+            "planned_unloading_date",
+            "pk",
+        )
 
     def _build_pagination_items(self, page_obj):
         current = page_obj.number
@@ -257,9 +288,15 @@ class TripListView(UserOwnedListView):
 
     def paginate_queryset(self, queryset, page_size):
         adjusted_page = self._get_adjusted_page_for_page_size()
+
+        if self._should_open_last_page_by_default():
+            paginator = Paginator(queryset, page_size)
+            adjusted_page = paginator.num_pages or 1
+
         mutable_get = self.request.GET.copy()
         mutable_get["page"] = str(adjusted_page)
         self.request.GET = mutable_get
+
         return super().paginate_queryset(queryset, page_size)
 
     def get_context_data(self, **kwargs):
