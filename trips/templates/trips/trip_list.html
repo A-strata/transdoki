@@ -17,103 +17,120 @@
     </div>
 
     <form method="get" class="filters-panel" data-trip-filters>
-        <div class="filters-block">
-            <div class="filters-block-title">Хронология</div>
-
-            <div class="filters-bar filters-bar-chronology">
-                <label class="filter-field filter-field-compact {% if filters.date_from or filters.date_to %}is-active{% endif %}">
-                    <span class="filter-label">Логика</span>
-                    <select class="filter-select" name="date_mode" data-filter="date_mode">
-                        {% for value, label in date_mode_options %}
-                            <option value="{{ value }}" {% if filters.date_mode == value %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-
-                <label class="filter-field filter-field-date {% if filters.date_from %}is-active{% endif %}">
-                    <span class="filter-label">Дата с</span>
-                    <input
-                        type="date"
-                        name="date_from"
-                        class="filter-input"
-                        value="{{ filters.date_from }}"
-                        data-filter="date_from"
-                    >
-                </label>
-
-                <label class="filter-field filter-field-date {% if filters.date_to %}is-active{% endif %}">
-                    <span class="filter-label">Дата по</span>
-                    <input
-                        type="date"
-                        name="date_to"
-                        class="filter-input"
-                        value="{{ filters.date_to }}"
-                        data-filter="date_to"
-                    >
-                </label>
-
-                <div class="quick-date-actions">
-                    <span class="quick-date-label">Быстро:</span>
-
-                    <button
-                        type="button"
-                        class="quick-date-chip"
-                        data-quick-date="yesterday"
-                    >
-                        Вчера
-                    </button>
-
-                    <button
-                        type="button"
-                        class="quick-date-chip"
-                        data-quick-date="today"
-                    >
-                        Сегодня
-                    </button>
-
-                    <button
-                        type="button"
-                        class="quick-date-chip"
-                        data-quick-date="tomorrow"
-                    >
-                        Завтра
-                    </button>
-                </div>
+        <div class="filters-panel-header">
+            <div class="filters-panel-meta">
+                <h2 class="filters-panel-title">Фильтры</h2>
+                <span class="filters-panel-badge" data-filters-active-badge hidden>Активно: <span data-filters-active-count>0</span></span>
             </div>
+
+            <button
+                type="button"
+                class="tms-btn tms-btn-secondary filters-panel-toggle"
+                data-filters-panel-toggle
+                aria-expanded="true"
+            >
+                Свернуть фильтры
+            </button>
         </div>
 
-        <div class="filters-block">
-            <div class="filters-block-title">Контрагенты</div>
+        <div class="filters-panel-body" data-filters-panel-body>
+            <div class="filters-block">
+                <div class="filters-block-title">Хронология</div>
 
-            <div class="filters-bar filters-bar-contractors">
-                <label class="filter-field filter-field-compact {% if filters.contractor_role %}is-active{% endif %}">
-                    <span class="filter-label">Роль</span>
-                    <select class="filter-select" name="contractor_role" data-filter="contractor_role">
-                        <option value="">Все</option>
-                        {% for value, label in contractor_role_options %}
-                            <option value="{{ value }}" {% if filters.contractor_role == value %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
+                <div class="filters-bar filters-bar-chronology">
+                    <label class="filter-field filter-field-compact {% if filters.date_from or filters.date_to %}is-active{% endif %}">
+                        <span class="filter-label">Логика</span>
+                        <select class="filter-select" name="date_mode" data-filter="date_mode">
+                            {% for value, label in date_mode_options %}
+                                <option value="{{ value }}" {% if filters.date_mode == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
 
-                <label class="filter-field filter-field-contractor-query {% if filters.contractor_query %}is-active{% endif %}">
-                    <span class="filter-label">Поиск</span>
-                    <input
-                        type="text"
-                        name="contractor_query"
-                        class="filter-input"
-                        value="{{ filters.contractor_query }}"
-                        placeholder="Введите название или ФИО"
-                        data-filter="contractor_query"
-                    >
-                </label>
+                    <label class="filter-field filter-field-date {% if filters.date_from %}is-active{% endif %}">
+                        <span class="filter-label">Дата с</span>
+                        <input
+                            type="date"
+                            name="date_from"
+                            class="filter-input"
+                            value="{{ filters.date_from }}"
+                            data-filter="date_from"
+                        >
+                    </label>
 
+                    <label class="filter-field filter-field-date {% if filters.date_to %}is-active{% endif %}">
+                        <span class="filter-label">Дата по</span>
+                        <input
+                            type="date"
+                            name="date_to"
+                            class="filter-input"
+                            value="{{ filters.date_to }}"
+                            data-filter="date_to"
+                        >
+                    </label>
 
-                <div class="filters-actions filters-actions-placeholder"></div>
+                    <div class="quick-date-actions">
+                        <span class="quick-date-label">Быстро:</span>
+
+                        <button
+                            type="button"
+                            class="quick-date-chip"
+                            data-quick-date="yesterday"
+                        >
+                            Вчера
+                        </button>
+
+                        <button
+                            type="button"
+                            class="quick-date-chip"
+                            data-quick-date="today"
+                        >
+                            Сегодня
+                        </button>
+
+                        <button
+                            type="button"
+                            class="quick-date-chip"
+                            data-quick-date="tomorrow"
+                        >
+                            Завтра
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filters-block">
+                <div class="filters-block-title">Контрагенты</div>
+
+                <div class="filters-bar filters-bar-contractors">
+                    <label class="filter-field filter-field-compact {% if filters.contractor_role %}is-active{% endif %}">
+                        <span class="filter-label">Роль</span>
+                        <select class="filter-select" name="contractor_role" data-filter="contractor_role">
+                            <option value="">Все</option>
+                            {% for value, label in contractor_role_options %}
+                                <option value="{{ value }}" {% if filters.contractor_role == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    <label class="filter-field filter-field-contractor-query {% if filters.contractor_query %}is-active{% endif %}">
+                        <span class="filter-label">Поиск</span>
+                        <input
+                            type="text"
+                            name="contractor_query"
+                            class="filter-input"
+                            value="{{ filters.contractor_query }}"
+                            placeholder="Введите название или ФИО"
+                            data-filter="contractor_query"
+                        >
+                    </label>
+
+                    <div class="filters-actions filters-actions-placeholder"></div>
+                </div>
             </div>
         </div>
 
@@ -304,4 +321,5 @@
 <script defer src="{% static 'trips/js/trips_drag_scroll.js' %}"></script>
 <script defer src="{% static 'trips/js/trips_table_columns.js' %}"></script>
 <script defer src="{% static 'trips/js/trips_filters.js' %}"></script>
+<script defer src="{% static 'trips/js/trips_filters_panel.js' %}"></script>
 {% endblock %}
