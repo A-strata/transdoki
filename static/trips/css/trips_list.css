@@ -105,6 +105,13 @@
     padding: 10px 12px;
 }
 
+.filters-panel-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .filters-panel-meta {
     display: flex;
     align-items: center;
@@ -144,6 +151,10 @@
 }
 
 .filters-panel.is-collapsed .filters-panel-body {
+    display: none;
+}
+
+.filters-panel.is-collapsed [data-submit-filters] {
     display: none;
 }
 
@@ -214,9 +225,13 @@
 
 .filters-actions {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+}
+
+.filters-actions-header {
+    align-items: center;
 }
 
 /* 4) Тулбар */
@@ -705,7 +720,8 @@
     }
 
     .toolbar-left,
-    .toolbar-right {
+    .toolbar-right,
+    .filters-panel-left {
         width: 100%;
     }
 }
@@ -821,8 +837,4 @@
 
 .filters-actions-placeholder {
     display: none;
-}
-
-.filters-actions-toolbar {
-    align-items: center;
 }

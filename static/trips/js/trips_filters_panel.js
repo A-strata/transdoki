@@ -4,37 +4,42 @@
         const toggle = document.querySelector('[data-filters-panel-toggle]');
         const badge = document.querySelector('[data-filters-active-badge]');
         const countNode = document.querySelector('[data-filters-active-count]');
+        const resetBtn = panel ? panel.querySelector('[data-filter="reset"]') : null;
 
         if (!panel || !toggle) return;
 
-        const STORAGE_KEY = 'tms_trips_filters_panel_v1';
+        const STORAGE_KEY = 'tms_trips_filters_panel_v2';
 
-        function getFilterFields() {
-            return Array.from(panel.querySelectorAll('[data-filter]')).filter((el) => el.name && el.type !== 'hidden');
+        function getField(name) {
+            return panel.querySelector(`[name="${name}"]`);
         }
 
-        function getActiveFiltersCount() {
+        function hasAppliedChronologyFilter() {
+            const dateFrom = getField('date_from');
+            const dateTo = getField('date_to');
+
+            return !!(
+                (dateFrom && String(dateFrom.value || '').trim() !== '') ||
+                (dateTo && String(dateTo.value || '').trim() !== '')
+            );
+        }
+
+        function hasAppliedContractorFilter() {
+            const contractorQuery = getField('contractor_query');
+            return !!(contractorQuery && String(contractorQuery.value || '').trim() !== '');
+        }
+
+        function getAppliedGroupsCount() {
             let count = 0;
 
-            getFilterFields().forEach((el) => {
-                if (el.tagName === 'SELECT') {
-                    if (el.value !== '') count += 1;
-                    return;
-                }
-
-                if (el.type === 'checkbox' || el.type === 'radio') {
-                    if (el.checked) count += 1;
-                    return;
-                }
-
-                if ((el.value || '').trim() !== '') count += 1;
-            });
+            if (hasAppliedChronologyFilter()) count += 1;
+            if (hasAppliedContractorFilter()) count += 1;
 
             return count;
         }
 
         function updateActiveBadge() {
-            const count = getActiveFiltersCount();
+            const count = getAppliedGroupsCount();
 
             if (!badge || !countNode) return;
 
@@ -66,10 +71,12 @@
             setCollapsed(!collapsed);
         });
 
-        panel.addEventListener('input', updateActiveBadge);
-        panel.addEventListener('change', updateActiveBadge);
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                requestAnimationFrame(updateActiveBadge);
+            });
+        }
 
-        document.addEventListener('DOMContentLoaded', updateActiveBadge);
         window.addEventListener('pageshow', updateActiveBadge);
 
         setCollapsed(getInitialCollapsed());

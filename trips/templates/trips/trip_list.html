@@ -18,9 +18,20 @@
 
     <form method="get" class="filters-panel" data-trip-filters>
         <div class="filters-panel-header">
-            <div class="filters-panel-meta">
-                <h2 class="filters-panel-title">Фильтры</h2>
-                <span class="filters-panel-badge" data-filters-active-badge hidden>Активно: <span data-filters-active-count>0</span></span>
+            <div class="filters-panel-left">
+                <div class="filters-panel-meta">
+                    <h2 class="filters-panel-title">Фильтры</h2>
+                    <span class="filters-panel-badge" data-filters-active-badge hidden>Активно: <span data-filters-active-count>0</span></span>
+                </div>
+
+                <div class="filters-actions filters-actions-header">
+                    <button type="submit" class="tms-btn tms-btn-primary" data-submit-filters>
+                        Применить
+                    </button>
+                    <button type="button" class="tms-btn tms-btn-secondary" data-filter="reset">
+                        Сбросить
+                    </button>
+                </div>
             </div>
 
             <button
@@ -105,12 +116,17 @@
                 <div class="filters-block-title">Контрагенты</div>
 
                 <div class="filters-bar filters-bar-contractors">
-                    <label class="filter-field filter-field-compact {% if filters.contractor_role %}is-active{% endif %}">
+                    <label class="filter-field filter-field-compact {% if filters.contractor_query %}is-active{% endif %}">
                         <span class="filter-label">Роль</span>
                         <select class="filter-select" name="contractor_role" data-filter="contractor_role">
-                            <option value="">Все</option>
                             {% for value, label in contractor_role_options %}
-                                <option value="{{ value }}" {% if filters.contractor_role == value %}selected{% endif %}>
+                                <option value="{{ value }}"
+                                    {% if filters.contractor_role %}
+                                        {% if filters.contractor_role == value %}selected{% endif %}
+                                    {% else %}
+                                        {% if forloop.first %}selected{% endif %}
+                                    {% endif %}
+                                >
                                     {{ label }}
                                 </option>
                             {% endfor %}
@@ -136,15 +152,6 @@
 
         <div class="table-toolbar">
             <div class="toolbar-left">
-                <div class="filters-actions filters-actions-toolbar">
-                    <button type="submit" class="tms-btn tms-btn-primary" data-submit-filters>
-                        Применить
-                    </button>
-                    <button type="button" class="tms-btn tms-btn-secondary" data-filter="reset">
-                        Сбросить
-                    </button>
-                </div>
-
                 <div class="columns-visibility" data-columns-visibility>
                     <button type="button" class="tms-btn tms-btn-secondary" data-visibility-toggle aria-expanded="false">
                         Вид
