@@ -2,12 +2,21 @@
 // - меню переносится в body
 // - не обрезается таблицей
 // - открывается возле кнопки
+// - закрывается, если кнопка вышла из видимой области таблицы
+// - подсвечивает строку с открытым меню
 (function () {
     function init() {
         const dropdowns = document.querySelectorAll('[data-actions-dropdown]');
         if (!dropdowns.length) return;
 
         let openState = null;
+
+        function setRowHighlight(dd, active) {
+            const row = dd ? dd.closest('tr[data-trip-row]') : null;
+            if (!row) return;
+
+            row.classList.toggle('is-dropdown-open', !!active);
+        }
 
         function closeAll() {
             dropdowns.forEach((dd) => {
@@ -28,9 +37,28 @@
                 }
 
                 btn.setAttribute('aria-expanded', 'false');
+                setRowHighlight(dd, false);
             });
 
             openState = null;
+        }
+
+        function isButtonVisibleInTableWrap(btn) {
+            const wrap = document.querySelector('[data-drag-scroll]');
+            if (!wrap) return true;
+
+            const btnRect = btn.getBoundingClientRect();
+            const wrapRect = wrap.getBoundingClientRect();
+
+            const verticallyVisible =
+                btnRect.bottom > wrapRect.top &&
+                btnRect.top < wrapRect.bottom;
+
+            const horizontallyVisible =
+                btnRect.right > wrapRect.left &&
+                btnRect.left < wrapRect.right;
+
+            return verticallyVisible && horizontallyVisible;
         }
 
         function placeMenu(btn, menu) {
@@ -80,6 +108,12 @@
 
         function repositionOpenMenu() {
             if (!openState) return;
+
+            if (!isButtonVisibleInTableWrap(openState.btn)) {
+                closeAll();
+                return;
+            }
+
             placeMenu(openState.btn, openState.menu);
         }
 
@@ -105,6 +139,7 @@
                     moveMenuToBody(dd, menu);
                     menu.classList.add('is-open');
                     btn.setAttribute('aria-expanded', 'true');
+                    setRowHighlight(dd, true);
                     placeMenu(btn, menu);
                     openState = { btn, menu, dd };
                 }
@@ -121,8 +156,11 @@
             if (e.key === 'Escape') closeAll();
         });
 
+        document.addEventListener('tms:drag-scroll-start', closeAll);
+
         window.addEventListener('resize', repositionOpenMenu);
         window.addEventListener('scroll', repositionOpenMenu, true);
+        document.addEventListener('tms:columns-updated', repositionOpenMenu);
     }
 
     if (document.readyState === 'loading') {

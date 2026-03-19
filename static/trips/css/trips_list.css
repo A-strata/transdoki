@@ -448,6 +448,12 @@
     background: #f8fafc;
 }
 
+.tms-table tbody tr.is-dropdown-open td,
+.tms-table tbody tr.is-dropdown-open:hover td {
+    /* Подсветка строки с открытым меню действий */
+    background: #eef6ff;
+}
+
 /* drag-scroll */
 .table-wrap.is-dragging,
 .table-wrap.is-dragging * {
@@ -560,6 +566,11 @@
     background: #f8fafc;
 }
 
+.tms-table tbody tr.is-dropdown-open td[data-col="actions"],
+.tms-table tbody tr.is-dropdown-open:hover td[data-col="actions"] {
+    background: #eef6ff;
+}
+
 .table-wrap.is-dragging .tms-table tbody tr.is-drag-source td[data-col="actions"],
 .table-wrap.is-dragging .tms-table tbody tr.is-drag-source:hover td[data-col="actions"] {
     background: #eef6ff;
@@ -581,11 +592,13 @@
 
 .actions-menu {
     /* Выпадающее меню с действиями над записью */
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
     z-index: 1400;
     min-width: 220px;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 16px));
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 10px;

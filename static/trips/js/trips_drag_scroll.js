@@ -29,6 +29,7 @@
             isDown = true;
             moved = false;
             wrap.classList.add('is-dragging');
+            document.dispatchEvent(new CustomEvent('tms:drag-scroll-start'));
 
             startX = e.clientX;
             startY = e.clientY;
