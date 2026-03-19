@@ -36,8 +36,7 @@ class BaseDocxGenerator:
         - путь относительно BASE_DIR
         """
         if not cls.template_candidates:
-            raise DocGenerationError(
-                "Не заданы пути к шаблону (template_candidates).")
+            raise DocGenerationError("Не заданы пути к шаблону (template_candidates).")
 
         base_dir = Path(getattr(settings, "BASE_DIR", Path.cwd()))
 
@@ -51,9 +50,7 @@ class BaseDocxGenerator:
                 return rel
 
         raise DocGenerationError(
-            f"Шаблон не найден. Проверены пути: {
-                ', '.join(cls.template_candidates)
-            }"
+            f"Шаблон не найден. Проверены пути: {', '.join(cls.template_candidates)}"
         )
 
     @classmethod
@@ -64,7 +61,8 @@ class BaseDocxGenerator:
             doc.render(context)
         except Exception as exc:
             raise DocGenerationError(
-                f"Ошибка рендера шаблона {template_path}: {exc}") from exc
+                f"Ошибка рендера шаблона {template_path}: {exc}"
+            ) from exc
 
         buffer = BytesIO()
         doc.save(buffer)
@@ -111,22 +109,21 @@ class TNGenerator(BaseDocxGenerator):
             "unloading_contact_name": trip.unloading_contact_name or "—",
             "unloading_contact_phone": trip.unloading_contact_phone or "—",
             "planned_loading_date": fmt_date(
-                trip.planned_loading_date, "%d.%m.%Y %H:%M"),
+                trip.planned_loading_date, "%d.%m.%Y %H:%M"
+            ),
             "planned_unloading_date": fmt_date(
-                trip.planned_unloading_date, "%d.%m.%Y %H:%M"),
-            "actual_loading_date": fmt_date(
-                trip.actual_loading_date, "%d.%m.%Y %H:%M"),
+                trip.planned_unloading_date, "%d.%m.%Y %H:%M"
+            ),
+            "actual_loading_date": fmt_date(trip.actual_loading_date, "%d.%m.%Y %H:%M"),
             "actual_unloading_date": fmt_date(
-                trip.actual_unloading_date, "%d.%m.%Y %H:%M"),
-
+                trip.actual_unloading_date, "%d.%m.%Y %H:%M"
+            ),
             # Для типов погрузки/разгрузки используем get_FOO_display()
             "loading_type": (
-                trip.get_loading_type_display()
-                if trip.loading_type else "—"
+                trip.get_loading_type_display() if trip.loading_type else "—"
             ),
             "unloading_type": (
-                trip.get_unloading_type_display()
-                if trip.unloading_type else "—"
+                trip.get_unloading_type_display() if trip.unloading_type else "—"
             ),
             "payment_condition": trip.get_payment_condition_display() or "—",
         }
@@ -151,7 +148,8 @@ class TNGenerator(BaseDocxGenerator):
             filename=filename,
             content_type=(
                 "application/vnd.openxmlformats-"
-                "officedocument.wordprocessingml.document"),
+                "officedocument.wordprocessingml.document"
+            ),
         )
 
 
@@ -160,6 +158,7 @@ class AgreementRequestGenerator(TNGenerator):
     Договор-заявка: тот же context, что и для ТН,
     но другой шаблон и другое имя файла.
     """
+
     template_candidates = (
         "templates/docs/agreement_request_template.docx",
         "trips/templates/docs/agreement_request_template.docx",

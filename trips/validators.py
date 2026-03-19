@@ -4,9 +4,8 @@ from django.utils.translation import gettext_lazy as _
 
 
 def validate_unique_trip_number_and_date(
-        user,
-        num_of_trip, date_of_trip,
-        instance=None):
+    user, num_of_trip, date_of_trip, instance=None
+):
     """
     Валидатор для проверки
     уникальности комбинации
@@ -21,9 +20,7 @@ def validate_unique_trip_number_and_date(
 
     # Базовый запрос для поиска дубликатов
     qs = Trip.objects.filter(
-        created_by=user,
-        num_of_trip=num_of_trip,
-        date_of_trip=date_of_trip
+        created_by=user, num_of_trip=num_of_trip, date_of_trip=date_of_trip
     )
 
     # Исключаем текущий instance при редактировании
@@ -53,10 +50,12 @@ def validate_our_company_participation(client, consignor, consignee, carrier):
     """
     Валидатор для проверки, что в заявке участвует наша фирма
     """
-    our_participation = any([
-        client.is_own_company if client else False,
-        carrier.is_own_company if carrier else False
-    ])
+    our_participation = any(
+        [
+            client.is_own_company if client else False,
+            carrier.is_own_company if carrier else False,
+        ]
+    )
 
     if not our_participation:
         raise ValidationError(
@@ -69,10 +68,10 @@ def validate_trailer_for_truck(truck, trailer):
     """
     Валидатор: если автомобиль типа "Тягач седельный", то прицеп обязателен
     """
-    if truck and truck.vehicle_type == 'truck' and not trailer:
-        raise ValidationError({
-            'trailer': 'Для указанного автомобиля обязателен прицеп'
-        })
+    if truck and truck.vehicle_type == "truck" and not trailer:
+        raise ValidationError(
+            {"trailer": "Для указанного автомобиля обязателен прицеп"}
+        )
 
 
 def validate_vehicles_belong_to_carrier(truck, trailer, carrier):
@@ -84,25 +83,28 @@ def validate_vehicles_belong_to_carrier(truck, trailer, carrier):
 
     # Проверяем автомобиль
     if truck and truck.owner != carrier:
-        errors['truck'] = (
-            'Автомобиль должен принадлежать перевозчику.'
-            f'Этот автомбиль принадлежит {truck.owner.short_name}'
+        errors["truck"] = (
+            "Автомобиль должен принадлежать перевозчику."
+            f"Этот автомбиль принадлежит {truck.owner.short_name}"
         )
 
     # Проверяем прицеп (если он обязателен для седельного тягача)
-    if (truck and truck.vehicle_type == 'truck' and
-            trailer and trailer.owner != carrier):
-        errors['trailer'] = (
-            'Прицеп должен принадлежать перевозчику'
-            f'Этот прицеп принадлежит {truck.owner.short_name}'
+    if truck and truck.vehicle_type == "truck" and trailer and trailer.owner != carrier:
+        errors["trailer"] = (
+            "Прицеп должен принадлежать перевозчику"
+            f"Этот прицеп принадлежит {truck.owner.short_name}"
         )
 
     # Проверяем прицеп (если он указан для одиночного грузовика)
-    if (truck and truck.vehicle_type == 'single' and
-            trailer and trailer.owner != carrier):
-        errors['trailer'] = (
-            'Прицеп должен принадлежать перевозчику'
-            f'Этот прицеп принадлежит {truck.owner.short_name}'
+    if (
+        truck
+        and truck.vehicle_type == "single"
+        and trailer
+        and trailer.owner != carrier
+    ):
+        errors["trailer"] = (
+            "Прицеп должен принадлежать перевозчику"
+            f"Этот прицеп принадлежит {truck.owner.short_name}"
         )
 
     if errors:
@@ -110,7 +112,7 @@ def validate_vehicles_belong_to_carrier(truck, trailer, carrier):
 
 
 class RussianMinValueValidator(MinValueValidator):
-    message = _('Убедитесь, что значение больше или равно %(limit_value)s.')
+    message = _("Убедитесь, что значение больше или равно %(limit_value)s.")
 
     def __init__(self, limit_value, message=None):
         if message is None:
@@ -123,16 +125,10 @@ def _is_filled(value):
     Поле считается заполненным, если там не None и не пустая строка.
     Важно: 0 считается заполненным значением.
     """
-    return value is not None and value != ''
+    return value is not None and value != ""
 
 
-def validate_costs_by_our_company_role(
-    *,
-    client,
-    carrier,
-    client_cost,
-    carrier_cost
-):
+def validate_costs_by_our_company_role(*, client, carrier, client_cost, carrier_cost):
     """
     Правило:
     - Если наша фирма = перевозчик (carrier.is_own_company=True),
@@ -150,14 +146,14 @@ def validate_costs_by_our_company_role(
     we_are_client = bool(client and client.is_own_company)
 
     if we_are_carrier and _is_filled(carrier_cost):
-        errors['carrier_cost'] = (
-            'Когда наша фирма выступает перевозчиком, '
+        errors["carrier_cost"] = (
+            "Когда наша фирма выступает перевозчиком, "
             'поле "Стоимость для перевозчика" должно быть пустым.'
         )
 
     if we_are_client and _is_filled(client_cost):
-        errors['client_cost'] = (
-            'Когда наша фирма выступает заказчиком, '
+        errors["client_cost"] = (
+            "Когда наша фирма выступает заказчиком, "
             'поле "Стоимость для клиента" должно быть пустым.'
         )
 
