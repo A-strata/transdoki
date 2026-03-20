@@ -187,6 +187,51 @@
             width: 100%;
         }
     }
+    .attachment-item {
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    }
+
+    .attachment-main {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .attachment-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: #2563eb;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+    }
+
+    .attachment-icon svg {
+        width: 18px;
+        height: 18px;
+        fill: #fff;
+    }
+
+    .attachment-text {
+        min-width: 0;
+    }
+
+    .attachment-name {
+        margin: 0 0 4px 0;
+        color: #111827;
+        font-size: 0.95rem;
+        word-break: break-word;
+    }
 </style>
 
 {% with trip=object %}
@@ -445,42 +490,35 @@
 
             <div style="display:flex; flex-direction:column; gap:8px;">
                 {% for attachment in trip.attachments.all %}
-                    <div style="
-                        border:1px solid #eef2f7;
-                        border-radius:10px;
-                        padding:10px;
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        gap:10px;
-                        flex-wrap:wrap;
-                    ">
-                        <div>
-                            <p class="kv-value" style="margin:0 0 4px 0;">
-                                {{ attachment.original_name }}
-                            </p>
+                <div class="attachment-item">
+                    <div class="attachment-main">
+                        <span class="attachment-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7l-5-5zm1 7V3.5L18.5 9H15zM8 13h8v1.5H8V13zm0 3h8v1.5H8V16z"/>
+                            </svg>
+                        </span>
+
+                        <div class="attachment-text">
+                            <p class="attachment-name">{{ attachment.original_name }}</p>
                             <p class="kv-label" style="margin:0;">
                                 Загружен: {{ attachment.created_at|date:"d.m.Y H:i" }}
                             </p>
                         </div>
-
-                        <div class="actions">
-                            <a href="{% url 'trips:attachment_download' trip.pk attachment.pk %}"
-                               class="tms-btn tms-btn-secondary">
-                                Скачать
-                            </a>
-
-                            <form method="post"
-                                  action="{% url 'trips:attachment_delete' trip.pk attachment.pk %}"
-                                  onsubmit="return confirm('Удалить файл?');"
-                                  style="margin:0;">
-                                {% csrf_token %}
-                                <button type="submit" class="tms-btn tms-btn-secondary">
-                                    Удалить
-                                </button>
-                            </form>
-                        </div>
                     </div>
+
+                    <div class="actions">
+                        <a href="{% url 'trips:attachment_download' object.pk attachment.pk %}"
+                        class="tms-btn tms-btn-secondary">Скачать</a>
+
+                        <form method="post"
+                            action="{% url 'trips:attachment_delete' object.pk attachment.pk %}"
+                            onsubmit="return confirm('Удалить файл?');"
+                            style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="tms-btn tms-btn-secondary">Удалить</button>
+                        </form>
+                    </div>
+                </div>
                 {% empty %}
                     <p class="kv-value">Файлы пока не прикреплены.</p>
                 {% endfor %}
