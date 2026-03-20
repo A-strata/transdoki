@@ -2,20 +2,23 @@ import logging
 import os
 
 import requests
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.forms.models import model_to_dict
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_GET
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from dotenv import load_dotenv
 
-from .forms import TripForm
-from .models import Trip
+from .forms import TripAttachmentUploadForm, TripForm
+from .models import MAX_FILES_PER_TRIP, Trip, TripAttachment
 from .services import AgreementRequestGenerator, TNGenerator
 
 load_dotenv()
@@ -114,6 +117,17 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
 class TripDetailView(LoginRequiredMixin, DetailView):
     model = Trip
     template_name = "trips/trip_detail.html"
+
+    def get_queryset(self):
+        return Trip.objects.filter(created_by=self.request.user).prefetch_related(
+            "attachments"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["attachment_form"] = TripAttachmentUploadForm()
+        context["max_files_per_trip"] = MAX_FILES_PER_TRIP
+        return context
 
 
 class TripListView(UserOwnedListView):
@@ -365,3 +379,71 @@ def address_suggest(request):
 
     result = [{"value": s.get("value", "")} for s in data.get("suggestions", [])]
     return JsonResponse({"suggestions": result})
+
+
+class TripAttachmentUploadView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        trip = get_object_or_404(Trip, pk=pk, created_by=request.user)
+        form = TripAttachmentUploadForm(request.POST, request.FILES)
+
+        if not form.is_valid():
+            messages.error(
+                request, "Не удалось загрузить файлы. Проверьте выбранные файлы."
+            )
+            return redirect("trips:detail", pk=trip.pk)
+
+        files = form.cleaned_data["files"]
+        existing_count = trip.attachments.count()
+        free_slots = MAX_FILES_PER_TRIP - existing_count
+
+        if len(files) > free_slots:
+            messages.error(
+                request,
+                f"Можно загрузить ещё только {free_slots} файл(ов). Максимум: {MAX_FILES_PER_TRIP}.",
+            )
+            return redirect("trips:detail", pk=trip.pk)
+
+        try:
+            with transaction.atomic():
+                for uploaded_file in files:
+                    TripAttachment.objects.create(
+                        trip=trip,
+                        created_by=request.user,
+                        file=uploaded_file,
+                        original_name=uploaded_file.name,
+                        file_size=uploaded_file.size,
+                    )
+        except ValidationError as exc:
+            messages.error(request, f"Ошибка валидации файла: {exc}")
+            return redirect("trips:detail", pk=trip.pk)
+
+        messages.success(request, "Файлы успешно загружены.")
+        return redirect("trips:detail", pk=trip.pk)
+
+
+class TripAttachmentDownloadView(LoginRequiredMixin, View):
+    def get(self, request, pk, attachment_pk):
+        attachment = get_object_or_404(
+            TripAttachment.objects.select_related("trip"),
+            pk=attachment_pk,
+            trip_id=pk,
+            trip__created_by=request.user,
+        )
+        return FileResponse(
+            attachment.file.open("rb"),
+            as_attachment=True,
+            filename=attachment.original_name,
+        )
+
+
+class TripAttachmentDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk, attachment_pk):
+        attachment = get_object_or_404(
+            TripAttachment.objects.select_related("trip"),
+            pk=attachment_pk,
+            trip_id=pk,
+            trip__created_by=request.user,
+        )
+        attachment.delete()
+        messages.success(request, "Файл удалён.")
+        return redirect("trips:detail", pk=pk)

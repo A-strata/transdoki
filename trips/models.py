@@ -1,3 +1,7 @@
+import uuid
+
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError, models, transaction
 
 from organizations.models import Organization, UserOwnedModel
@@ -224,3 +228,94 @@ class Trip(UserOwnedModel):
                 name="unique_num_and_date_per_user",
             )
         ]
+
+
+ALLOWED_TRIP_FILE_EXTENSIONS = [
+    "pdf",
+    "jpg",
+    "jpeg",
+    "png",
+    "doc",
+    "docx",
+    "xls",
+    "xlsx",
+]
+MAX_TRIP_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
+MAX_FILES_PER_TRIP = 10
+
+
+def trip_attachment_upload_to(instance, filename):
+    ext = filename.split(".")[-1].lower() if "." in filename else ""
+    unique_name = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
+    return f"trip_attachments/user_{instance.created_by_id}/trip_{instance.trip_id}/{unique_name}"
+
+
+def validate_trip_file_size(file_obj):
+    if file_obj.size > MAX_TRIP_FILE_SIZE_BYTES:
+        raise ValidationError("Размер файла не должен превышать 20 МБ.")
+
+
+class TripAttachment(UserOwnedModel):
+    trip = models.ForeignKey(
+        "Trip",
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        verbose_name="Рейс",
+    )
+    file = models.FileField(
+        upload_to=trip_attachment_upload_to,
+        validators=[
+            FileExtensionValidator(allowed_extensions=ALLOWED_TRIP_FILE_EXTENSIONS),
+            validate_trip_file_size,
+        ],
+        verbose_name="Файл",
+    )
+    original_name = models.CharField(
+        max_length=255,
+        verbose_name="Оригинальное имя файла",
+    )
+    file_size = models.PositiveIntegerField(
+        verbose_name="Размер файла (байт)",
+    )
+
+    class Meta:
+        verbose_name = "Вложение рейса"
+        verbose_name_plural = "Вложения рейса"
+        ordering = ("-created_at",)
+
+    def clean(self):
+        super().clean()
+        if not self.trip_id:
+            return
+
+        qs = TripAttachment.objects.filter(trip_id=self.trip_id)
+        if self.pk:
+            qs = qs.exclude(pk=self.pk)
+
+        if qs.count() >= MAX_FILES_PER_TRIP:
+            raise ValidationError(
+                f"К рейсу можно прикрепить не более {MAX_FILES_PER_TRIP} файлов."
+            )
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.original_name:
+            self.original_name = self.file.name
+        if self.file and not self.file_size:
+            self.file_size = self.file.size
+
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        storage = self.file.storage if self.file else None
+        file_name = self.file.name if self.file else None
+
+        result = super().delete(*args, **kwargs)
+
+        if storage and file_name and storage.exists(file_name):
+            storage.delete(file_name)
+
+        return result
+
+    def __str__(self):
+        return f"{self.original_name} (рейс {self.trip_id})"

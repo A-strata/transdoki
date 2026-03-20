@@ -2,6 +2,9 @@ from django.urls import path
 
 from .views import (
     TripAgreementDownloadView,
+    TripAttachmentDeleteView,
+    TripAttachmentDownloadView,
+    TripAttachmentUploadView,
     TripCreateView,
     TripDetailView,
     TripListView,
@@ -23,5 +26,20 @@ urlpatterns = [
         "<int:pk>/download-agreement/",
         TripAgreementDownloadView.as_view(),
         name="download_agreement",
+    ),
+    path(
+        "<int:pk>/attachments/upload/",
+        TripAttachmentUploadView.as_view(),
+        name="attachment_upload",
+    ),
+    path(
+        "<int:pk>/attachments/<int:attachment_pk>/download/",
+        TripAttachmentDownloadView.as_view(),
+        name="attachment_download",
+    ),
+    path(
+        "<int:pk>/attachments/<int:attachment_pk>/delete/",
+        TripAttachmentDeleteView.as_view(),
+        name="attachment_delete",
     ),
 ]

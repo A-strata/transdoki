@@ -148,3 +148,27 @@ class TripForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+
+        if isinstance(data, (list, tuple)):
+            return [single_file_clean(item, initial) for item in data]
+
+        return [single_file_clean(data, initial)]
+
+
+class TripAttachmentUploadForm(forms.Form):
+    files = MultipleFileField(
+        label="Файлы",
+        required=True,
+        widget=MultipleFileInput(attrs={"multiple": True}),
+    )

@@ -1,7 +1,7 @@
 # trips/admin.py
 from django.contrib import admin
 
-from .models import Trip
+from .models import Trip, TripAttachment
 
 
 @admin.register(Trip)
@@ -59,3 +59,17 @@ class TripAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(TripAttachment)
+class TripAttachmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "trip",
+        "original_name",
+        "file_size",
+        "created_at",
+        "created_by",
+    )
+    search_fields = ("original_name", "trip__num_of_trip")
+    list_filter = ("created_at",)

@@ -166,8 +166,13 @@
     }
 
     @media (max-width: 760px) {
-        .card { padding: 12px; }
-        .section { padding: 10px; }
+        .card {
+            padding: 12px;
+        }
+
+        .section {
+            padding: 10px;
+        }
 
         .kv-grid,
         .two-cols {
@@ -186,6 +191,24 @@
 
 {% with trip=object %}
 <section class="trip-detail-page">
+    {% if messages %}
+        <div class="card">
+            {% for message in messages %}
+                <div style="
+                    margin-bottom:8px;
+                    padding:10px 12px;
+                    border-radius:10px;
+                    border:1px solid {% if message.tags == 'success' %}#bbf7d0{% else %}#fecaca{% endif %};
+                    background:{% if message.tags == 'success' %}#f0fdf4{% else %}#fef2f2{% endif %};
+                    color:{% if message.tags == 'success' %}#166534{% else %}#991b1b{% endif %};
+                    font-size:0.9rem;
+                ">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <div class="page-head">
         <div>
             <h1 class="page-title">Рейс №{{ trip.num_of_trip }}</h1>
@@ -197,11 +220,8 @@
 
         <div class="actions">
             <a href="{% url 'trips:edit' trip.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
-
-            {# Если у тебя другое имя маршрута - замени trips:download_tn #}
             <a href="{% url 'trips:download_tn' trip.pk %}" class="tms-btn tms-btn-secondary">Скачать ТН</a>
             <a href="{% url 'trips:download_agreement' trip.pk %}" class="tms-btn tms-btn-secondary">Скачать договор-заявку</a>
-
             <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary">К списку</a>
         </div>
     </div>
@@ -230,8 +250,7 @@
                         <p class="kv-label">Организация</p>
                         <p class="kv-value">
                             {% if trip.client %}
-                                <a class="entity-link"
-                                href="{% url 'organizations:detail' trip.client.pk %}?next={% url 'trips:detail' trip.pk %}">
+                                <a class="entity-link" href="{% url 'organizations:detail' trip.client.pk %}?next={% url 'trips:detail' trip.pk %}">
                                     {{ trip.client }}
                                 </a>
                             {% else %}—{% endif %}
@@ -246,9 +265,10 @@
                             <p class="kv-label">Перевозчик</p>
                             <p class="kv-value">
                                 {% if trip.carrier %}
-                                    <a class="entity-link" 
-                                    href="{% url 'organizations:detail' trip.carrier.pk %}?next={% url 'trips:detail' trip.pk %}">{{ trip.carrier }}</a>
-                                    {% else %}—{% endif %}
+                                    <a class="entity-link" href="{% url 'organizations:detail' trip.carrier.pk %}?next={% url 'trips:detail' trip.pk %}">
+                                        {{ trip.carrier }}
+                                    </a>
+                                {% else %}—{% endif %}
                             </p>
                         </div>
                         <div class="kv kv--full">
@@ -286,7 +306,9 @@
                             <p class="kv-label">Отправитель</p>
                             <p class="kv-value">
                                 {% if trip.consignor %}
-                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignor.pk %}?next={% url 'trips:detail' trip.pk %}">{{ trip.consignor }}</a>
+                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignor.pk %}?next={% url 'trips:detail' trip.pk %}">
+                                        {{ trip.consignor }}
+                                    </a>
                                 {% else %}—{% endif %}
                             </p>
                         </div>
@@ -324,7 +346,9 @@
                             <p class="kv-label">Получатель</p>
                             <p class="kv-value">
                                 {% if trip.consignee %}
-                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignee.pk %}?next={% url 'trips:detail' trip.pk %}">{{ trip.consignee }}</a>
+                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignee.pk %}?next={% url 'trips:detail' trip.pk %}">
+                                        {{ trip.consignee }}
+                                    </a>
                                 {% else %}—{% endif %}
                             </p>
                         </div>
@@ -398,6 +422,68 @@
                     <p class="kv-label">Комментарии</p>
                     <p class="kv-value">{{ trip.comments|default:"—" }}</p>
                 </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Вложения</h2>
+
+            <p class="kv-label" style="margin-bottom:10px;">
+                Форматы: pdf, jpg, jpeg, png, doc, docx, xls, xlsx.
+            </p>
+            <p class="kv-label" style="margin-bottom:10px;">
+                До {{ max_files_per_trip }} файлов на рейс, каждый до 20 МБ.
+            </p>
+
+            <form method="post" action="{% url 'trips:attachment_upload' trip.pk %}" enctype="multipart/form-data"
+                  style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                {% csrf_token %}
+                <input type="file" name="files" multiple
+                       style="border:1px solid #e5e7eb; border-radius:10px; padding:8px; background:#fff;">
+                <button type="submit" class="tms-btn tms-btn-primary">Загрузить файлы</button>
+            </form>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                {% for attachment in trip.attachments.all %}
+                    <div style="
+                        border:1px solid #eef2f7;
+                        border-radius:10px;
+                        padding:10px;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        gap:10px;
+                        flex-wrap:wrap;
+                    ">
+                        <div>
+                            <p class="kv-value" style="margin:0 0 4px 0;">
+                                {{ attachment.original_name }}
+                            </p>
+                            <p class="kv-label" style="margin:0;">
+                                Загружен: {{ attachment.created_at|date:"d.m.Y H:i" }}
+                            </p>
+                        </div>
+
+                        <div class="actions">
+                            <a href="{% url 'trips:attachment_download' trip.pk attachment.pk %}"
+                               class="tms-btn tms-btn-secondary">
+                                Скачать
+                            </a>
+
+                            <form method="post"
+                                  action="{% url 'trips:attachment_delete' trip.pk attachment.pk %}"
+                                  onsubmit="return confirm('Удалить файл?');"
+                                  style="margin:0;">
+                                {% csrf_token %}
+                                <button type="submit" class="tms-btn tms-btn-secondary">
+                                    Удалить
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="kv-value">Файлы пока не прикреплены.</p>
+                {% endfor %}
             </div>
         </div>
     </div>

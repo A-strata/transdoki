@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+
 import os
 from pathlib import Path
 
@@ -25,75 +26,75 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'transdoki.ru',
-    'www.transdoki.ru',
-    '95.163.231.186',
+    "transdoki.ru",
+    "www.transdoki.ru",
+    "95.163.231.186",
     # '212.193.24.247',
-    'localhost',
-    '127.0.0.1',
+    "localhost",
+    "127.0.0.1",
 ]
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Мои приложения
-    'accounts',
-    'organizations',
-    'persons',
-    'vehicles',
-    'trips',
-    'waybills',
+    "accounts",
+    "organizations",
+    "persons",
+    "vehicles",
+    "trips",
+    "waybills",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'transdoki.urls'
+ROOT_URLCONF = "transdoki.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'transdoki.wsgi.application'
+WSGI_APPLICATION = "transdoki.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -103,27 +104,27 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
-LOGIN_REDIRECT_URL = '/trips/'
+LOGIN_REDIRECT_URL = "/trips/"
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -133,50 +134,57 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    BASE_DIR / "static",
 ]
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': True,
-    'handlers': {
-        'security_file': {
-            'level': 'WARNING',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/security.log',  # 👈 файл для security логов
+    "version": 1,
+    "disable_existing_loggers": True,
+    "handlers": {
+        "security_file": {
+            "level": "WARNING",
+            "class": "logging.FileHandler",
+            "filename": "logs/security.log",  # 👈 файл для security логов
         },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/django.log',  # 👈 общие логи Django
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "logs/django.log",  # 👈 общие логи Django
         },
     },
-    'loggers': {
-        'security': {  # 👈 наш логгер
-            'handlers': ['security_file'],
-            'level': 'WARNING',
-            'propagate': False,
+    "loggers": {
+        "security": {  # 👈 наш логгер
+            "handlers": ["security_file"],
+            "level": "WARNING",
+            "propagate": False,
         },
-        'django': {  # 👈 логи Django
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': False,
+        "django": {  # 👈 логи Django
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }
 
 # integrations
-PETROLPLUS_AUTH_BASE_URL = os.getenv("PETROLPLUS_AUTH_BASE_URL", os.getenv("PETROLPLUS_BASE_URL"))
+PETROLPLUS_AUTH_BASE_URL = os.getenv(
+    "PETROLPLUS_AUTH_BASE_URL", os.getenv("PETROLPLUS_BASE_URL")
+)
 PETROLPLUS_DATA_URL = os.getenv("PETROLPLUS_DATA_URL")
-PETROLPLUS_TOKEN_PATH = os.getenv("PETROLPLUS_TOKEN_PATH", "/realms/customers/protocol/openid-connect/token")
+PETROLPLUS_TOKEN_PATH = os.getenv(
+    "PETROLPLUS_TOKEN_PATH", "/realms/customers/protocol/openid-connect/token"
+)
 PETROLPLUS_CLIENT_ID = os.getenv("PETROLPLUS_CLIENT_ID")
 PETROLPLUS_CLIENT_SECRET = os.getenv("PETROLPLUS_CLIENT_SECRET")
 PETROLPLUS_TIMEOUT = int(os.getenv("PETROLPLUS_TIMEOUT", "15"))
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

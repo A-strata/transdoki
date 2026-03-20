@@ -25,7 +25,19 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-exclude = ["migrations", ".venv", "venv", "build", "dist"]
+force-exclude = true
+exclude = [
+  "migrations",
+  ".venv",
+  "venv",
+  "build",
+  "dist",
+  "templates",
+]
+extend-exclude = [
+  "**/*.html",
+  "**/*.htm",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
