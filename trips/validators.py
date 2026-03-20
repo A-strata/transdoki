@@ -145,13 +145,23 @@ def validate_costs_by_our_company_role(*, client, carrier, client_cost, carrier_
     we_are_carrier = bool(carrier and carrier.is_own_company)
     we_are_client = bool(client and client.is_own_company)
 
+    # Новый кейс: обе стороны — наши компании, но это разные юрлица.
+    # В этом случае разрешаем заполнять client_cost.
+    different_own_companies = bool(
+        we_are_carrier
+        and we_are_client
+        and client
+        and carrier
+        and client.pk != carrier.pk
+    )
+
     if we_are_carrier and _is_filled(carrier_cost):
         errors["carrier_cost"] = (
             "Когда наша фирма выступает перевозчиком, "
             'поле "Стоимость для перевозчика" должно быть пустым.'
         )
 
-    if we_are_client and _is_filled(client_cost):
+    if we_are_client and not different_own_companies and _is_filled(client_cost):
         errors["client_cost"] = (
             "Когда наша фирма выступает заказчиком, "
             'поле "Стоимость для клиента" должно быть пустым.'
