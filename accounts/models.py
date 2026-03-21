@@ -98,16 +98,22 @@ class UserProfile(models.Model):
 
     @property
     def own_companies_count(self):
-        """Количество компаний, отмеченных как 'Мои'"""
+        """Количество собственных компаний в рамках account"""
         from organizations.models import Organization
 
+        if not self.account_id:
+            return 0
+
         return Organization.objects.filter(
-            created_by=self.user, is_own_company=True
+            account_id=self.account_id,
+            is_own_company=True,
         ).count()
 
     def can_add_own_company(self):
-        """Проверяет, можно ли добавить еще одну свою компанию"""
-        return self.own_companies_count < self.max_own_companies
+        """Проверяет лимит собственных компаний account"""
+        if not self.account_id:
+            return False
+        return self.own_companies_count < self.account.max_own_companies
 
     @property
     def active_sessions_count(self):
@@ -123,10 +129,16 @@ class UserProfile(models.Model):
         return self.active_sessions_count < self.max_sessions
 
     def get_own_companies(self):
-        """Возвращает queryset собственных компаний пользователя"""
+        """Возвращает queryset собственных компаний account"""
         from organizations.models import Organization
 
-        return Organization.objects.filter(created_by=self.user, is_own_company=True)
+        if not self.account_id:
+            return Organization.objects.none()
+
+        return Organization.objects.filter(
+            account_id=self.account_id,
+            is_own_company=True,
+        )
 
 
 class UserSession(models.Model):
