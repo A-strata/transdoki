@@ -27,10 +27,6 @@ class Person(UserOwnedModel):
         verbose_name_plural = "Люди"
         constraints = [
             models.UniqueConstraint(
-                fields=["surname", "name", "patronymic", "created_by"],
-                name="unique_fio_per_user",
-            ),
-            models.UniqueConstraint(
                 fields=["surname", "name", "patronymic", "account"],
                 name="unique_fio_per_account",
             ),

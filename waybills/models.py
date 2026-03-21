@@ -105,11 +105,6 @@ class Waybill(UserOwnedModel):
         verbose_name_plural = "Путевые листы"
         ordering = ["-date", "-number"]
         constraints = [
-            # Legacy (временно)
-            models.UniqueConstraint(
-                fields=["created_by", "year", "number"],
-                name="unique_waybill_number_per_user_per_year",
-            ),
             # Новая tenant-уникальность
             models.UniqueConstraint(
                 fields=["account", "year", "number"],

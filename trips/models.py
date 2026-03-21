@@ -224,10 +224,6 @@ class Trip(UserOwnedModel):
         verbose_name_plural = "Рейсы"
         constraints = [
             models.UniqueConstraint(
-                fields=["created_by", "num_of_trip", "date_of_trip"],
-                name="unique_num_and_date_per_user",
-            ),
-            models.UniqueConstraint(
                 fields=["account", "num_of_trip", "date_of_trip"],
                 name="unique_num_and_date_per_account",
             ),

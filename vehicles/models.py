@@ -67,9 +67,6 @@ class Vehicle(UserOwnedModel):
         verbose_name_plural = "Транспортные средства"
         constraints = [
             models.UniqueConstraint(
-                fields=["created_by", "grn"], name="unique_grn_per_user"
-            ),
-            models.UniqueConstraint(
                 fields=["account", "grn"], name="unique_grn_per_account"
             ),
         ]

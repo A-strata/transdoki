@@ -95,11 +95,6 @@ class Organization(UserOwnedModel):
         verbose_name = "Организация"
         verbose_name_plural = "Организации"
         constraints = [
-            # Legacy (временно оставляем на переходный период)
-            models.UniqueConstraint(
-                fields=["created_by", "inn"],
-                name="unique_inn_per_user",
-            ),
             # Основная tenant-уникальность: в рамках account
             models.UniqueConstraint(
                 fields=["account", "inn"],
