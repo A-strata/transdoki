@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
@@ -9,10 +9,16 @@ from .models import Organization
 
 
 class UserOwnedListView(LoginRequiredMixin, ListView):
-    """Базовый View показывающий только записи пользователя"""
+    """Базовый View показывающий только записи текущего account (tenant)."""
+
+    def _get_request_account(self):
+        account = getattr(getattr(self.request.user, "profile", None), "account", None)
+        if account is None:
+            raise PermissionDenied("У пользователя не найден account.")
+        return account
 
     def get_queryset(self):
-        return self.model.objects.filter(created_by=self.request.user)
+        return self.model.objects.filter(account=self._get_request_account())
 
 
 class OrganizationCreateView(LoginRequiredMixin, CreateView):
@@ -21,8 +27,15 @@ class OrganizationCreateView(LoginRequiredMixin, CreateView):
     template_name = "organizations/organization_form.html"
     success_url = reverse_lazy("organizations:list")
 
+    def _get_request_account(self):
+        account = getattr(getattr(self.request.user, "profile", None), "account", None)
+        if account is None:
+            raise PermissionDenied("У пользователя не найден account.")
+        return account
+
     def form_valid(self, form):
         form.instance.created_by = self.request.user
+        form.instance.account = self._get_request_account()
 
         try:
             return super().form_valid(form)
@@ -48,7 +61,10 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "organizations/organization_form.html"
 
     def get_queryset(self):
-        return Organization.objects.filter(created_by=self.request.user)
+        account = getattr(getattr(self.request.user, "profile", None), "account", None)
+        if account is None:
+            raise PermissionDenied("У пользователя не найден account.")
+        return Organization.objects.filter(account=account)
 
     def form_valid(self, form):
         # Просто сохраняем организацию, без машин
@@ -69,4 +85,7 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
     template_name = "organizations/organization_detail.html"
 
     def get_queryset(self):
-        return Organization.objects.filter(created_by=self.request.user)
+        account = getattr(getattr(self.request.user, "profile", None), "account", None)
+        if account is None:
+            raise PermissionDenied("У пользователя не найден account.")
+        return Organization.objects.filter(account=account)
