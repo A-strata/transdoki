@@ -1,83 +1,106 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView
+
+from organizations.models import Organization
 
 from .forms import VehicleForm
 from .models import Vehicle
 
 
+def _get_request_account(request):
+    account = getattr(getattr(request.user, "profile", None), "account", None)
+    if account is None:
+        raise PermissionDenied("У пользователя не найден account.")
+    return account
+
+
 class UserOwnedListView(LoginRequiredMixin, ListView):
-    """Базовый View показывающий только записи пользователя"""
+    """Базовый View показывающий только записи текущего account (tenant)."""
+
     def get_queryset(self):
-        return self.model.objects.filter(created_by=self.request.user)
+        return self.model.objects.filter(account=_get_request_account(self.request))
 
 
 class VehicleCreateView0(LoginRequiredMixin, CreateView):
     model = Vehicle
     form_class = VehicleForm
-    template_name = 'vehicles/vehicle_form.html'
-    success_url = reverse_lazy('vehicles:list')
+    template_name = "vehicles/vehicle_form.html"
+    success_url = reverse_lazy("vehicles:list")
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
+        form.instance.account = _get_request_account(self.request)
         try:
             return super().form_valid(form)
         except IntegrityError:
-            form.add_error('grn', 'ТС с таким номером уже существует.')
+            form.add_error("grn", "ТС с таким номером уже существует.")
             return self.form_invalid(form)
 
 
 class VehicleCreateView(LoginRequiredMixin, CreateView):
     model = Vehicle
     form_class = VehicleForm
-    template_name = 'vehicles/vehicle_form.html'
+    template_name = "vehicles/vehicle_form.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['organization_pk'] = self.kwargs['organization_pk']
+        context["organization_pk"] = self.kwargs["organization_pk"]
         return context
 
     def get_success_url(self):
         return reverse(
-            'organizations:detail',
-            kwargs={'pk': self.kwargs['organization_pk']}
+            "organizations:detail", kwargs={"pk": self.kwargs["organization_pk"]}
         )
 
     def form_valid(self, form):
+        account = _get_request_account(self.request)
+
+        owner = Organization.objects.filter(
+            pk=self.kwargs["organization_pk"],
+            account=account,
+        ).first()
+        if owner is None:
+            raise PermissionDenied("Организация недоступна в текущем account.")
+
         form.instance.created_by = self.request.user
-        form.instance.owner_id = self.kwargs['organization_pk']
-        return super().form_valid(form)
+        form.instance.account = account
+        form.instance.owner = owner
+
+        try:
+            return super().form_valid(form)
+        except IntegrityError:
+            form.add_error("grn", "ТС с таким номером уже существует.")
+            return self.form_invalid(form)
 
 
 class VehicleUpdateView(LoginRequiredMixin, UpdateView):
     model = Vehicle
     form_class = VehicleForm
-    template_name = 'vehicles/vehicle_form.html'
+    template_name = "vehicles/vehicle_form.html"
 
     def get_queryset(self):
-        return Vehicle.objects.filter(created_by=self.request.user)
+        return Vehicle.objects.filter(account=_get_request_account(self.request))
 
     def get_success_url(self):
-        return reverse(
-            'organizations:detail',
-            kwargs={'pk': self.object.owner.pk}
-        )
+        return reverse("organizations:detail", kwargs={"pk": self.object.owner.pk})
 
-    def get_context_data(self, **kwargs):  # ✅ Убрал form из параметров
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['organization_pk'] = self.object.owner.pk
+        context["organization_pk"] = self.object.owner.pk
         return context
 
     def form_valid(self, form):
         try:
-            return super().form_valid(form)  # ✅ Переместил в form_valid
+            return super().form_valid(form)
         except IntegrityError:
-            form.add_error('grn', 'ТС с таким номером уже существует.')
+            form.add_error("grn", "ТС с таким номером уже существует.")
             return self.form_invalid(form)
 
 
 class VehicleListView(UserOwnedListView):
     model = Vehicle
-    template_name = 'vehicles/vehicle_list.html'
-    context_object_name = 'vehicles'  # опционально, для ясности в шаблоне
+    template_name = "vehicles/vehicle_list.html"
+    context_object_name = "vehicles"
