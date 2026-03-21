@@ -10,6 +10,7 @@ from .models import Organization
 
 class UserOwnedListView(LoginRequiredMixin, ListView):
     """Базовый View показывающий только записи пользователя"""
+
     def get_queryset(self):
         return self.model.objects.filter(created_by=self.request.user)
 
@@ -17,8 +18,8 @@ class UserOwnedListView(LoginRequiredMixin, ListView):
 class OrganizationCreateView(LoginRequiredMixin, CreateView):
     model = Organization
     form_class = OrganizationForm
-    template_name = 'organizations/organization_form.html'
-    success_url = reverse_lazy('organizations:list')
+    template_name = "organizations/organization_form.html"
+    success_url = reverse_lazy("organizations:list")
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -33,18 +34,18 @@ class OrganizationCreateView(LoginRequiredMixin, CreateView):
             return self.form_invalid(form)
         except IntegrityError:
             # Обрабатываем ошибку уникальности ИНН
-            form.add_error('inn', 'Организация с таким ИНН уже существует.')
+            form.add_error("inn", "Организация с таким ИНН уже существует.")
             return self.form_invalid(form)
 
     def get_success_url(self):
         """После создания перенаправляем на детальную страницу организации"""
-        return reverse('organizations:detail', kwargs={'pk': self.object.pk})
+        return reverse("organizations:detail", kwargs={"pk": self.object.pk})
 
 
 class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
     model = Organization
     form_class = OrganizationForm
-    template_name = 'organizations/organization_form.html'
+    template_name = "organizations/organization_form.html"
 
     def get_queryset(self):
         return Organization.objects.filter(created_by=self.request.user)
@@ -54,18 +55,18 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('organizations:detail', kwargs={'pk': self.object.pk})
+        return reverse("organizations:detail", kwargs={"pk": self.object.pk})
 
 
 class OrganizationListView(UserOwnedListView):
     model = Organization
-    template_name = 'organizations/organization_list.html'
-    context_object_name = 'organizations'  # опционально, для ясности в шаблоне
+    template_name = "organizations/organization_list.html"
+    context_object_name = "organizations"  # опционально, для ясности в шаблоне
 
 
 class OrganizationDetailView(LoginRequiredMixin, DetailView):
     model = Organization
-    template_name = 'organizations/organization_detail.html'
+    template_name = "organizations/organization_detail.html"
 
     def get_queryset(self):
         return Organization.objects.filter(created_by=self.request.user)

@@ -37,7 +37,8 @@ class OrganizationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Показываем PetrolPlus только для уже сохранённой "своей компании"
         self.show_petrolplus_fields = bool(
-            self.instance.pk and self.instance.is_own_company)
+            self.instance.pk and self.instance.is_own_company
+        )
         self.fields["petrolplus_integration_enabled"].widget.attrs.update(
             {"class": "toggle-input"}
         )
@@ -52,8 +53,7 @@ class OrganizationForm(forms.ModelForm):
         cleaned_data = super().clean()
 
         is_own_company = cleaned_data.get("is_own_company")
-        integration_enabled = cleaned_data.get(
-            "petrolplus_integration_enabled")
+        integration_enabled = cleaned_data.get("petrolplus_integration_enabled")
         client_id = cleaned_data.get("petrolplus_client_id")
         secret_input = cleaned_data.get("petrolplus_client_secret")
 
@@ -66,20 +66,17 @@ class OrganizationForm(forms.ModelForm):
 
         # Своя компания + включена интеграция -> client_id обязателен
         if integration_enabled and not client_id:
-            self.add_error(
-                "petrolplus_client_id",
-                "Укажите PetrolPlus Client ID.")
+            self.add_error("petrolplus_client_id", "Укажите PetrolPlus Client ID.")
 
         # Для create secret обязателен, если интеграция включена.
         # Для update можно оставить пустым, чтобы сохранить существующий.
         has_existing_secret = bool(
-            self.instance.pk and self.instance.petrolplus_client_secret)
-        if (integration_enabled and
-                not secret_input and
-                not has_existing_secret):
+            self.instance.pk and self.instance.petrolplus_client_secret
+        )
+        if integration_enabled and not secret_input and not has_existing_secret:
             self.add_error(
-                "petrolplus_client_secret",
-                "Укажите PetrolPlus Client Secret.")
+                "petrolplus_client_secret", "Укажите PetrolPlus Client Secret."
+            )
 
         return cleaned_data
 
@@ -89,8 +86,11 @@ class OrganizationForm(forms.ModelForm):
         # Если update и secret не ввели — оставляем прежний
         new_secret = self.cleaned_data.get("petrolplus_client_secret")
         if obj.pk and not new_secret:
-            old = Organization.objects.filter(
-                pk=obj.pk).only("petrolplus_client_secret").first()
+            old = (
+                Organization.objects.filter(pk=obj.pk)
+                .only("petrolplus_client_secret")
+                .first()
+            )
             if old:
                 obj.petrolplus_client_secret = old.petrolplus_client_secret
 
@@ -102,7 +102,7 @@ class OrganizationForm(forms.ModelForm):
 class VehicleForm(forms.ModelForm):
     class Meta:
         model = Vehicle
-        fields = ['grn', 'brand', 'model', 'vehicle_type', 'property_type']
+        fields = ["grn", "brand", "model", "vehicle_type", "property_type"]
 
 
 VehicleFormSet = forms.inlineformset_factory(
@@ -112,5 +112,5 @@ VehicleFormSet = forms.inlineformset_factory(
     extra=1,
     can_delete=True,
     min_num=0,
-    validate_min=True
+    validate_min=True,
 )
