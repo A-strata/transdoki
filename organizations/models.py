@@ -2,8 +2,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import UniqueConstraint
-from django_cryptography.fields import encrypt
 from django.urls import reverse
+from django_cryptography.fields import encrypt
 
 from .validators import validate_inn
 
@@ -17,16 +17,19 @@ ACCOUNT_LENGTH = 20
 
 
 class UserOwnedModel(models.Model):
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    # NEW (expand)
+    account = models.ForeignKey(
+        "accounts.Account",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_index=True,
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         abstract = True
@@ -64,13 +67,10 @@ class Organization(UserOwnedModel):
         null=True,
         verbose_name="Адрес юридического лица",
     )
-    is_own_company = models.BooleanField(
-        default=False,
-        verbose_name="Моя компания"
-    )
+    is_own_company = models.BooleanField(default=False, verbose_name="Моя компания")
     petrolplus_integration_enabled = models.BooleanField(
-        'ППР (Petrol Plus)',
-        default=False)
+        "ППР (Petrol Plus)", default=False
+    )
     petrolplus_client_id = models.CharField(
         max_length=255,
         blank=True,
@@ -81,7 +81,8 @@ class Organization(UserOwnedModel):
             max_length=512,
             blank=True,
             null=True,
-        ))
+        )
+    )
     petrolplus_credentials_updated_at = models.DateTimeField(
         blank=True,
         null=True,
@@ -98,33 +99,71 @@ class Organization(UserOwnedModel):
         verbose_name_plural = "Организации"
         constraints = [
             models.UniqueConstraint(
-                fields=['created_by', 'inn'],
-                name='unique_inn_per_user'
+                fields=["created_by", "inn"], name="unique_inn_per_user"
             )
         ]
+
+    def _resolve_limit(self) -> int:
+        """
+        Переходная логика:
+        1) account.max_own_companies
+        2) legacy profile.max_own_companies
+        """
+        # 1) account-level limit
+        if self.account_id:
+            return self.account.max_own_companies
+
+        # 2) legacy fallback
+        profile = getattr(self.created_by, "profile", None)
+        if profile:
+            if profile.account_id:
+                return profile.account.max_own_companies
+            return profile.max_own_companies
+
+        return 1
+
+    def _own_companies_qs(self):
+        qs = Organization.objects.filter(is_own_company=True).exclude(pk=self.pk)
+
+        # приоритетно считаем в рамках account
+        if self.account_id:
+            return qs.filter(account_id=self.account_id)
+
+        profile = getattr(self.created_by, "profile", None)
+        if profile and profile.account_id:
+            return qs.filter(account_id=profile.account_id)
+
+        # legacy fallback
+        if self.created_by_id:
+            return qs.filter(created_by_id=self.created_by_id)
+
+        return qs.none()
 
     def clean(self):
         super().clean()
 
-        # Валидация работает только когда created_by установлен
-        if self.is_own_company and self.created_by_id:
-            own_companies_count = Organization.objects.filter(
-                created_by_id=self.created_by_id,
-                is_own_company=True
-            ).exclude(pk=self.pk).count()
+        if self.is_own_company:
+            own_companies_count = self._own_companies_qs().count()
+            limit = self._resolve_limit()
 
-            if (own_companies_count >=
-                    self.created_by.profile.max_own_companies):
-                raise ValidationError({
-                    'is_own_company': (
-                        f"Превышен лимит собственных компаний. "
-                        f"Использовано {own_companies_count} "
-                        f"из {self.created_by.profile.max_own_companies}"
-                    )
-                })
+            if own_companies_count >= limit:
+                raise ValidationError(
+                    {
+                        "is_own_company": (
+                            f"Превышен лимит собственных компаний. "
+                            f"Использовано {own_companies_count} из {limit}"
+                        )
+                    }
+                )
 
     def save(self, *args, **kwargs):
         """Вызываем валидацию перед сохранением"""
+        # Переходно: если account не задан, попробуем взять из профиля пользователя
+        if not self.account_id and self.created_by_id:
+            profile = getattr(self.created_by, "profile", None)
+            if profile and profile.account_id:
+                self.account_id = profile.account_id
+
         self.full_clean()
         super().save(*args, **kwargs)
 
@@ -137,7 +176,7 @@ class Bank(models.Model):
     bic = models.CharField(
         max_length=BIC_LENGTH,
         verbose_name="БИК",
-        unique=True,  # Добавлено: БИК должен быть уникальным
+        unique=True,
     )
     corr_account = models.CharField(
         max_length=ACCOUNT_LENGTH,
@@ -161,7 +200,7 @@ class OrganizationBank(UserOwnedModel):
         Organization,
         on_delete=models.CASCADE,
         verbose_name="Владелец счёта",
-        related_name="bank_accounts",  # Добавлено для обратной связи
+        related_name="bank_accounts",
     )
     account_bank = models.ForeignKey(
         Bank,
@@ -172,47 +211,66 @@ class OrganizationBank(UserOwnedModel):
     def clean(self):
         super().clean()
 
-        # Проверка расчётного счёта
         if not self.account_num.isdigit() or len(self.account_num) != 20:
             raise ValidationError(
                 {"account_num": "Расчётный счёт должен состоять из 20 цифр."}
             )
 
-        # Проверка БИК (только если банк уже сохранен в БД)
-        # Проверяем по ID, чтобы избежать лишних запросов
         if self.account_bank_id:
             try:
                 bank = Bank.objects.get(pk=self.account_bank_id)
                 bic = bank.bic
                 if len(bic) != 9 or not bic.isdigit():
                     raise ValidationError(
-                        {
-                            "account_bank": "БИК должен состоять из 9 цифр."
-                        }
+                        {"account_bank": "БИК должен состоять из 9 цифр."}
                     )
 
-                # Проверка контрольной суммы
                 bic_rs = bic[-3:] + self.account_num
                 weights = [
-                    7, 1, 3, 7, 1, 3,
-                    7, 1, 3, 7, 1, 3,
-                    7, 1, 3, 7, 1, 3,
-                    7, 1, 3, 7, 1
+                    7,
+                    1,
+                    3,
+                    7,
+                    1,
+                    3,
+                    7,
+                    1,
+                    3,
+                    7,
+                    1,
+                    3,
+                    7,
+                    1,
+                    3,
+                    7,
+                    1,
+                    3,
+                    7,
+                    1,
+                    3,
+                    7,
+                    1,
                 ]
-                total = sum(
-                    int(bic_rs[i]) * weights[i] % 10 for i in range(23)
-                )
+                total = sum(int(bic_rs[i]) * weights[i] % 10 for i in range(23))
 
                 if total % 10 != 0:
                     raise ValidationError(
-                        {
-                            "account_num": "Неверное сочетание "
-                                           "расчётного счёта и БИК."
-                        }
+                        {"account_num": "Неверное сочетание расчётного счёта и БИК."}
                     )
 
             except Bank.DoesNotExist:
-                pass  # Банк не найден, проверка будет при сохранении
+                pass
+
+    def save(self, *args, **kwargs):
+        # Переходно: наследуем account от owner, иначе из профиля создателя
+        if not self.account_id:
+            if self.account_owner_id and self.account_owner.account_id:
+                self.account_id = self.account_owner.account_id
+            elif self.created_by_id:
+                profile = getattr(self.created_by, "profile", None)
+                if profile and profile.account_id:
+                    self.account_id = profile.account_id
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.account_num} ({self.account_owner.short_name})"
