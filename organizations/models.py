@@ -110,40 +110,13 @@ class Organization(UserOwnedModel):
         ]
 
     def _resolve_limit(self) -> int:
-        """
-        Переходная логика:
-        1) account.max_own_companies
-        2) legacy profile.max_own_companies
-        """
-        # 1) account-level limit
-        if self.account_id:
-            return self.account.max_own_companies
-
-        # 2) legacy fallback
-        profile = getattr(self.created_by, "profile", None)
-        if profile:
-            if profile.account_id:
-                return profile.account.max_own_companies
-            return profile.max_own_companies
-
-        return 1
+        return self.account.max_own_companies
 
     def _own_companies_qs(self):
-        qs = Organization.objects.filter(is_own_company=True).exclude(pk=self.pk)
-
-        # приоритетно считаем в рамках account
-        if self.account_id:
-            return qs.filter(account_id=self.account_id)
-
-        profile = getattr(self.created_by, "profile", None)
-        if profile and profile.account_id:
-            return qs.filter(account_id=profile.account_id)
-
-        # legacy fallback
-        if self.created_by_id:
-            return qs.filter(created_by_id=self.created_by_id)
-
-        return qs.none()
+        return Organization.objects.filter(
+            is_own_company=True,
+            account_id=self.account_id,
+        ).exclude(pk=self.pk)
 
     def clean(self):
         super().clean()
@@ -163,13 +136,6 @@ class Organization(UserOwnedModel):
                 )
 
     def save(self, *args, **kwargs):
-        """Вызываем валидацию перед сохранением"""
-        # Переходно: если account не задан, попробуем взять из профиля пользователя
-        if not self.account_id and self.created_by_id:
-            profile = getattr(self.created_by, "profile", None)
-            if profile and profile.account_id:
-                self.account_id = profile.account_id
-
         self.full_clean()
         super().save(*args, **kwargs)
 
@@ -268,14 +234,12 @@ class OrganizationBank(UserOwnedModel):
                 pass
 
     def save(self, *args, **kwargs):
-        # Переходно: наследуем account от owner, иначе из профиля создателя
-        if not self.account_id:
-            if self.account_owner_id and self.account_owner.account_id:
-                self.account_id = self.account_owner.account_id
-            elif self.created_by_id:
-                profile = getattr(self.created_by, "profile", None)
-                if profile and profile.account_id:
-                    self.account_id = profile.account_id
+        if (
+            not self.account_id
+            and self.account_owner_id
+            and self.account_owner.account_id
+        ):
+            self.account_id = self.account_owner.account_id
         super().save(*args, **kwargs)
 
     def __str__(self):
