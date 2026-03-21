@@ -1,13 +1,22 @@
 from itertools import chain
 
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Max
 from django.shortcuts import redirect
-from django.urls import reverse, reverse_lazy
-from django.views.generic import CreateView, UpdateView, DetailView, ListView
+from django.urls import reverse
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
-from .forms import WaybillForm, WaybillEventForm, RoutePointForm
-from .models import Waybill, WaybillEvent, RoutePoint
+from .forms import RoutePointForm, WaybillEventForm, WaybillForm
+from .models import Waybill, WaybillEvent
+
+
+def _get_request_account(request):
+    account = getattr(getattr(request.user, "profile", None), "account", None)
+    if account is None:
+        raise PermissionDenied("У пользователя не найден account.")
+    return account
 
 
 def build_waybill_timeline(waybill):
@@ -50,7 +59,7 @@ def build_waybill_timeline(waybill):
     return timeline
 
 
-class WaybillListView(ListView):
+class WaybillListView(LoginRequiredMixin, ListView):
     model = Waybill
     template_name = "waybills/waybill_list.html"
     context_object_name = "waybills"
@@ -58,18 +67,21 @@ class WaybillListView(ListView):
 
     def get_queryset(self):
         return (
-            Waybill.objects
+            Waybill.objects.filter(account=_get_request_account(self.request))
             .select_related("driver", "truck", "trailer")
             .order_by("-date", "-id")
         )
 
 
-class WaybillCreateView(CreateView):
+class WaybillCreateView(LoginRequiredMixin, CreateView):
     model = Waybill
     form_class = WaybillForm
     template_name = "waybills/waybill_form.html"
 
     def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        form.instance.account = _get_request_account(self.request)
+
         response = super().form_valid(form)
         messages.success(self.request, "Путевой лист успешно создан.")
         return response
@@ -78,17 +90,16 @@ class WaybillCreateView(CreateView):
         return reverse("waybills:waybill-detail", kwargs={"pk": self.object.pk})
 
 
-class WaybillUpdateView(UpdateView):
+class WaybillUpdateView(LoginRequiredMixin, UpdateView):
     model = Waybill
     form_class = WaybillForm
     template_name = "waybills/waybill_form.html"
     context_object_name = "waybill"
 
     def get_queryset(self):
-        return (
-            Waybill.objects
-            .select_related("driver", "truck", "trailer")
-        )
+        return Waybill.objects.filter(
+            account=_get_request_account(self.request)
+        ).select_related("driver", "truck", "trailer")
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -99,14 +110,14 @@ class WaybillUpdateView(UpdateView):
         return reverse("waybills:waybill-detail", kwargs={"pk": self.object.pk})
 
 
-class WaybillDetailView(DetailView):
+class WaybillDetailView(LoginRequiredMixin, DetailView):
     model = Waybill
     template_name = "waybills/waybill_detail.html"
     context_object_name = "waybill"
 
     def get_queryset(self):
         return (
-            Waybill.objects
+            Waybill.objects.filter(account=_get_request_account(self.request))
             .select_related("driver", "truck", "trailer")
             .prefetch_related("events", "route_points")
         )
@@ -127,7 +138,9 @@ class WaybillDetailView(DetailView):
         action = request.POST.get("action")
 
         if getattr(self.object, "status", None) == Waybill.Status.CLOSED:
-            messages.error(request, "Путевой лист закрыт. Добавление записей запрещено.")
+            messages.error(
+                request, "Путевой лист закрыт. Добавление записей запрещено."
+            )
             return redirect("waybills:waybill-detail", pk=self.object.pk)
 
         if action == "add_event":
@@ -174,7 +187,7 @@ class WaybillDetailView(DetailView):
         return self.render_to_response(context)
 
     def get_next_route_point_sequence(self):
-        max_sequence = self.object.route_points.aggregate(
-            max_seq=Max("sequence")
-        )["max_seq"]
+        max_sequence = self.object.route_points.aggregate(max_seq=Max("sequence"))[
+            "max_seq"
+        ]
         return (max_sequence or 0) + 1
