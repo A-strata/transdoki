@@ -7,20 +7,23 @@ def validate_unique_trip_number_and_date(
     user, num_of_trip, date_of_trip, instance=None
 ):
     """
-    Валидатор для проверки
-    уникальности комбинации
-    номера и даты рейса для пользователя
+    Валидатор для проверки уникальности
+    комбинации номера и даты рейса в рамках account
     """
     # Локальный импорт чтобы избежать циклических зависимостей
     from .models import Trip
 
+    account_id = getattr(getattr(user, "profile", None), "account_id", None)
+
     # Проверяем что все необходимые данные есть
-    if not all([user, num_of_trip, date_of_trip]):
+    if not all([account_id, num_of_trip, date_of_trip]):
         return
 
-    # Базовый запрос для поиска дубликатов
+    # Базовый запрос для поиска дубликатов в рамках account
     qs = Trip.objects.filter(
-        created_by=user, num_of_trip=num_of_trip, date_of_trip=date_of_trip
+        account_id=account_id,
+        num_of_trip=num_of_trip,
+        date_of_trip=date_of_trip,
     )
 
     # Исключаем текущий instance при редактировании

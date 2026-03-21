@@ -49,32 +49,39 @@ class TripForm(forms.ModelForm):
             self._apply_queryset_filters()
 
     def _apply_queryset_filters(self):
-        """Применяем фильтрацию с сохранением текущих значений
-        для полей, являющихся внешними ключами"""
+        """Применяем tenant-фильтрацию по account с сохранением текущих значений."""
         from organizations.models import Organization
         from persons.models import Person
         from vehicles.models import Vehicle
 
+        account_id = getattr(getattr(self.user, "profile", None), "account_id", None)
+        if not account_id:
+            # Без account не показываем чужие данные
+            organization_qs = Organization.objects.none()
+            person_qs = Person.objects.none()
+            truck_qs = Vehicle.objects.none()
+            trailer_qs = Vehicle.objects.none()
+        else:
+            organization_qs = Organization.objects.filter(account_id=account_id)
+            person_qs = Person.objects.filter(account_id=account_id)
+            truck_qs = Vehicle.objects.filter(
+                account_id=account_id, vehicle_type__in=["truck", "single"]
+            )
+            trailer_qs = Vehicle.objects.filter(
+                account_id=account_id, vehicle_type="trailer"
+            )
+
         # Организации
-        organization_qs = Organization.objects.filter(created_by=self.user)
         for field in ["client", "consignor", "consignee", "carrier"]:
             self.fields[field].queryset = self._add_current_value(
                 organization_qs, field
             )
 
         # Люди
-        person_qs = Person.objects.filter(created_by=self.user)
         self.fields["driver"].queryset = self._add_current_value(person_qs, "driver")
 
         # Транспорт
-        truck_qs = Vehicle.objects.filter(
-            created_by=self.user, vehicle_type__in=["truck", "single"]
-        )
         self.fields["truck"].queryset = self._add_current_value(truck_qs, "truck")
-
-        trailer_qs = Vehicle.objects.filter(
-            created_by=self.user, vehicle_type="trailer"
-        )
         self.fields["trailer"].queryset = self._add_current_value(trailer_qs, "trailer")
 
     def _add_current_value(self, base_queryset, field_name):
