@@ -133,6 +133,9 @@ def create_waybill(*, user, organization, driver, truck, trailer=None, date=None
             }
         )
 
+    if driver.account_id != account_id:
+        raise ValidationError({"driver": "Можно выбрать только своего водителя."})
+
     if truck.account_id != account_id:
         raise ValidationError({"truck": "Можно выбрать только свой автомобиль."})
 

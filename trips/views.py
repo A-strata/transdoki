@@ -94,20 +94,6 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         initial.update(model_to_dict(source_trip, fields=fields_to_copy))
         return initial
 
-        # Чтобы пользователь не мог копировать чужие рейсы
-        source_trip = Trip.objects.filter(
-            pk=copy_from_id, created_by=self.request.user
-        ).first()
-        if not source_trip:
-            return initial
-
-        # Копируем только поля, которые реально есть в форме
-        form_fields = set(self.form_class.base_fields.keys())
-        fields_to_copy = [f for f in form_fields if f not in self.COPY_EXCLUDE_FIELDS]
-
-        initial.update(model_to_dict(source_trip, fields=fields_to_copy))
-        return initial
-
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = _get_request_account(self.request)
