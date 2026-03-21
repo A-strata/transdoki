@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import UniqueConstraint
+from django.db.models import Q, UniqueConstraint
 from django.urls import reverse
 from django_cryptography.fields import encrypt
 
@@ -95,9 +95,23 @@ class Organization(UserOwnedModel):
         verbose_name = "Организация"
         verbose_name_plural = "Организации"
         constraints = [
+            # Legacy (временно оставляем на переходный период)
             models.UniqueConstraint(
-                fields=["created_by", "inn"], name="unique_inn_per_user"
-            )
+                fields=["created_by", "inn"],
+                name="unique_inn_per_user",
+            ),
+            # Основная tenant-уникальность: в рамках account
+            models.UniqueConstraint(
+                fields=["account", "inn"],
+                name="unique_inn_per_account",
+            ),
+            # Бизнес-правило: "собственная компания" (is_own_company=True)
+            # с таким ИНН может быть только одна на всю БД
+            models.UniqueConstraint(
+                fields=["inn"],
+                condition=Q(is_own_company=True),
+                name="unique_own_company_inn_global",
+            ),
         ]
 
     def _resolve_limit(self) -> int:

@@ -105,10 +105,15 @@ class Waybill(UserOwnedModel):
         verbose_name_plural = "Путевые листы"
         ordering = ["-date", "-number"]
         constraints = [
-            # Номер не должен повторяться у пользователя в пределах года.
+            # Legacy (временно)
             models.UniqueConstraint(
                 fields=["created_by", "year", "number"],
                 name="unique_waybill_number_per_user_per_year",
+            ),
+            # Новая tenant-уникальность
+            models.UniqueConstraint(
+                fields=["account", "year", "number"],
+                name="unique_waybill_number_per_account_per_year",
             ),
         ]
 

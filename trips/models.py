@@ -189,19 +189,19 @@ class Trip(UserOwnedModel):
         if self.pk:
             return super().save(*args, **kwargs)
 
-        # created_by обязателен: нумерация идёт отдельно для каждого польз-ля
-        if not self.created_by_id:
-            raise ValueError("created_by must be set before saving Trip")
+        # account обязателен: нумерация идёт отдельно для каждого аккаунта
+        if not self.account_id:
+            raise ValueError("account must be set before saving Trip")
 
         # Несколько попыток на случай гонки параллельных запросов
         for _ in range(5):
             try:
-                # ВАЖНО: и вычисление номера, и сам save в одной транзакции
+                # И вычисление номера, и save — в одной транзакции
                 with transaction.atomic():
-                    # Блокируем последнюю запись пользователя до конца тр-ции
+                    # Блокируем последнюю запись аккаунта до конца транзакции
                     last_trip = (
                         Trip.objects.select_for_update()
-                        .filter(created_by=self.created_by)
+                        .filter(account_id=self.account_id)
                         .order_by("-num_of_trip")
                         .first()
                     )
@@ -226,7 +226,11 @@ class Trip(UserOwnedModel):
             models.UniqueConstraint(
                 fields=["created_by", "num_of_trip", "date_of_trip"],
                 name="unique_num_and_date_per_user",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["account", "num_of_trip", "date_of_trip"],
+                name="unique_num_and_date_per_account",
+            ),
         ]
 
 
