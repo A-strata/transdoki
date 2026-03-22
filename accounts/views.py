@@ -1,8 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import FormView, TemplateView
 
 from transdoki.tenancy import get_request_account
@@ -90,3 +91,60 @@ class AccountUserCreateView(LoginRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         context["account"] = self.account
         return context
+
+
+class AccountUserRoleUpdateView(LoginRequiredMixin, View):
+    allowed_roles = {
+        UserProfile.Role.ADMIN,
+        UserProfile.Role.DISPATCHER,
+        UserProfile.Role.LOGIST,
+    }
+
+    def post(self, request, profile_id):
+        account = get_request_account(request)
+        actor_profile = request.user.profile
+        actor_role = actor_profile.role
+
+        if actor_role not in {UserProfile.Role.OWNER, UserProfile.Role.ADMIN}:
+            raise PermissionDenied("Недостаточно прав для изменения ролей.")
+
+        target_profile = get_object_or_404(
+            UserProfile.objects.select_related("user").filter(account=account),
+            pk=profile_id,
+        )
+
+        if target_profile.user_id == request.user.id:
+            messages.error(request, "Нельзя менять собственную роль.")
+            return redirect("accounts:cabinet")
+
+        if (
+            actor_role == UserProfile.Role.ADMIN
+            and target_profile.role == UserProfile.Role.OWNER
+        ):
+            raise PermissionDenied("Администратор не может менять роль владельца.")
+
+        # Без отдельного сценария transfer ownership не даем менять OWNER
+        if target_profile.role == UserProfile.Role.OWNER:
+            messages.error(
+                request,
+                "Нельзя менять роль владельца аккаунта в этом разделе.",
+            )
+            return redirect("accounts:cabinet")
+
+        new_role = request.POST.get("role")
+        if new_role not in self.allowed_roles:
+            messages.error(request, "Некорректная роль.")
+            return redirect("accounts:cabinet")
+
+        if target_profile.role == new_role:
+            messages.info(request, "Роль не изменилась.")
+            return redirect("accounts:cabinet")
+
+        target_profile.role = new_role
+        target_profile.save(update_fields=["role"])
+
+        messages.success(
+            request,
+            f"Роль пользователя {target_profile.user.username} изменена.",
+        )
+        return redirect("accounts:cabinet")

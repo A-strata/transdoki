@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section style="max-width: 900px; margin: 0 auto; padding: 12px 0;">
+<section style="max-width: 980px; margin: 0 auto; padding: 12px 0;">
     <h1 style="margin-bottom: 12px;">Личный кабинет аккаунта</h1>
 
     <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px;">
@@ -64,6 +64,9 @@
                             <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Имя</th>
                             <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Роль</th>
                             <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Статус</th>
+                            {% if can_manage_users %}
+                                <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Действия</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -81,6 +84,28 @@
                                 <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
                                     {% if p.user.is_active %}Активен{% else %}Отключён{% endif %}
                                 </td>
+
+                                {% if can_manage_users %}
+                                    <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
+                                        {% if p.user_id == request.user.id %}
+                                            <span style="color:#9ca3af;">Собственный профиль</span>
+                                        {% elif p.role == "owner" %}
+                                            <span style="color:#9ca3af;">Роль владельца защищена</span>
+                                        {% elif profile.role == "admin" and p.role == "owner" %}
+                                            <span style="color:#9ca3af;">Недоступно для admin</span>
+                                        {% else %}
+                                            <form method="post" action="{% url 'accounts:user_role_update' p.id %}" style="display:flex; gap:8px; align-items:center;">
+                                                {% csrf_token %}
+                                                <select name="role">
+                                                    <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Admin</option>
+                                                    <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Dispatcher</option>
+                                                    <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Logist</option>
+                                                </select>
+                                                <button type="submit">Сохранить роль</button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     </tbody>
