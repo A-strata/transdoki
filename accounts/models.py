@@ -6,7 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-SESSION_TIMEOUT = 2
+SESSION_TIMEOUT_HOURS = 2
 
 
 class Account(models.Model):
@@ -48,7 +48,7 @@ class Account(models.Model):
 
 
 class UserProfile(models.Model):
-    """Профиль пользователя для хранения бизнес-лимитов и настроек"""
+    """Профиль пользователя для tenant-привязки и роли."""
 
     class Role(models.TextChoices):
         OWNER = "owner", "Owner"
@@ -63,15 +63,6 @@ class UserProfile(models.Model):
         verbose_name="Пользователь",
     )
 
-    # Legacy-лимиты (сохраняем до Фазы 3 Contract)
-    max_sessions = models.PositiveIntegerField(
-        default=1, verbose_name="Лимит одновременных сессий"
-    )
-    max_own_companies = models.PositiveIntegerField(
-        default=1, verbose_name="Лимит собственных компаний"
-    )
-
-    # Новые multi-tenant поля (Фаза 1 Expand)
     account = models.ForeignKey(
         Account,
         on_delete=models.SET_NULL,
@@ -98,7 +89,7 @@ class UserProfile(models.Model):
 
     @property
     def own_companies_count(self):
-        """Количество собственных компаний в рамках account"""
+        """Количество собственных компаний в рамках account."""
         from organizations.models import Organization
 
         if not self.account_id:
@@ -110,26 +101,43 @@ class UserProfile(models.Model):
         ).count()
 
     def can_add_own_company(self):
-        """Проверяет лимит собственных компаний account"""
+        """Проверяет лимит собственных компаний account."""
         if not self.account_id:
             return False
         return self.own_companies_count < self.account.max_own_companies
 
     @property
     def active_sessions_count(self):
-        """Количество активных сессий (с учетом таймаута 2 часа)"""
+        """Активные сессии текущего пользователя (служебно)."""
         return UserSession.objects.filter(
             user=self.user,
             is_active=True,
-            last_activity__gte=timezone.now() - timedelta(hours=SESSION_TIMEOUT),
+            last_activity__gte=timezone.now() - timedelta(hours=SESSION_TIMEOUT_HOURS),
+        ).count()
+
+    @property
+    def account_active_sessions_count(self):
+        """Активные сессии всех пользователей аккаунта."""
+        if not self.account_id:
+            return self.active_sessions_count
+
+        return UserSession.objects.filter(
+            user__profile__account_id=self.account_id,
+            is_active=True,
+            last_activity__gte=timezone.now() - timedelta(hours=SESSION_TIMEOUT_HOURS),
         ).count()
 
     def can_add_session(self):
-        """Проверяет, можно ли создать новую сессию"""
-        return self.active_sessions_count < self.max_sessions
+        """
+        Проверяет, можно ли создать новую сессию.
+        Лимит только на уровне account.
+        """
+        if not self.account_id:
+            return False
+        return self.account_active_sessions_count < self.account.max_sessions
 
     def get_own_companies(self):
-        """Возвращает queryset собственных компаний account"""
+        """Возвращает queryset собственных компаний account."""
         from organizations.models import Organization
 
         if not self.account_id:
@@ -142,7 +150,7 @@ class UserProfile(models.Model):
 
 
 class UserSession(models.Model):
-    """Отслеживание активных сессий пользователя"""
+    """Отслеживание активных сессий пользователя."""
 
     user = models.ForeignKey(
         User,
@@ -172,16 +180,15 @@ class UserSession(models.Model):
         return f"Сессия {self.user.username} ({self.session_key})"
 
 
-# Сигналы для автоматического создания профиля
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    """Автоматически создает профиль при создании пользователя"""
+    """Автоматически создает профиль при создании пользователя."""
     if created:
         UserProfile.objects.create(user=instance)
 
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    """Автоматически сохраняет профиль при сохранении пользователя"""
+    """Сохраняет профиль, если он уже существует."""
     if hasattr(instance, "profile"):
         instance.profile.save()
