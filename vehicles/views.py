@@ -1,43 +1,21 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.views.generic import CreateView, ListView, UpdateView
 
 from organizations.models import Organization
+from transdoki.tenancy import get_request_account
 
 from .forms import VehicleForm
 from .models import Vehicle
-
-
-def _get_request_account(request):
-    account = getattr(getattr(request.user, "profile", None), "account", None)
-    if account is None:
-        raise PermissionDenied("У пользователя не найден account.")
-    return account
 
 
 class UserOwnedListView(LoginRequiredMixin, ListView):
     """Базовый View показывающий только записи текущего account (tenant)."""
 
     def get_queryset(self):
-        return self.model.objects.filter(account=_get_request_account(self.request))
-
-
-class VehicleCreateView0(LoginRequiredMixin, CreateView):
-    model = Vehicle
-    form_class = VehicleForm
-    template_name = "vehicles/vehicle_form.html"
-    success_url = reverse_lazy("vehicles:list")
-
-    def form_valid(self, form):
-        form.instance.created_by = self.request.user
-        form.instance.account = _get_request_account(self.request)
-        try:
-            return super().form_valid(form)
-        except IntegrityError:
-            form.add_error("grn", "ТС с таким номером уже существует.")
-            return self.form_invalid(form)
+        return self.model.objects.filter(account=get_request_account(self.request))
 
 
 class VehicleCreateView(LoginRequiredMixin, CreateView):
@@ -56,7 +34,7 @@ class VehicleCreateView(LoginRequiredMixin, CreateView):
         )
 
     def form_valid(self, form):
-        account = _get_request_account(self.request)
+        account = get_request_account(self.request)
 
         owner = Organization.objects.filter(
             pk=self.kwargs["organization_pk"],
@@ -82,7 +60,7 @@ class VehicleUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "vehicles/vehicle_form.html"
 
     def get_queryset(self):
-        return Vehicle.objects.filter(account=_get_request_account(self.request))
+        return Vehicle.objects.filter(account=get_request_account(self.request))
 
     def get_success_url(self):
         return reverse("organizations:detail", kwargs={"pk": self.object.owner.pk})
