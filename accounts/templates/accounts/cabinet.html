@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section style="max-width: 760px; margin: 0 auto; padding: 12px 0;">
+    <h1 style="margin-bottom: 12px;">Личный кабинет аккаунта</h1>
+
+    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px;">
+        <h2 style="margin-top:0;">Аккаунт</h2>
+        <dl style="display:grid; grid-template-columns: 220px 1fr; gap:8px 12px; margin:0;">
+            <dt style="color:#6b7280;">Название</dt>
+            <dd style="margin:0;">{{ account.name }}</dd>
+
+            <dt style="color:#6b7280;">Владелец</dt>
+            <dd style="margin:0;">
+                {% if account.owner %}
+                    {{ account.owner.username }}
+                {% else %}
+                    —
+                {% endif %}
+            </dd>
+
+            <dt style="color:#6b7280;">Лимит сессий аккаунта</dt>
+            <dd style="margin:0;">{{ account.max_sessions }}</dd>
+
+            <dt style="color:#6b7280;">Лимит собственных компаний</dt>
+            <dd style="margin:0;">{{ account.max_own_companies }}</dd>
+
+            <dt style="color:#6b7280;">Статус</dt>
+            <dd style="margin:0;">
+                {% if account.is_active %}Активен{% else %}Неактивен{% endif %}
+            </dd>
+        </dl>
+    </div>
+
+    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:12px;">
+        <h2 style="margin-top:0;">Мой доступ</h2>
+        <dl style="display:grid; grid-template-columns: 220px 1fr; gap:8px 12px; margin:0;">
+            <dt style="color:#6b7280;">Пользователь</dt>
+            <dd style="margin:0;">{{ request.user.username }}</dd>
+
+            <dt style="color:#6b7280;">Роль</dt>
+            <dd style="margin:0;">{{ profile.get_role_display }}</dd>
+        </dl>
+    </div>
+</section>
+{% endblock %}
