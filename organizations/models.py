@@ -57,6 +57,8 @@ class Organization(UserOwnedModel):
     ogrn = models.CharField(
         max_length=OGRN_LENGTH,
         verbose_name="ОГРН",
+        null=True,
+        blank=True,
     )
     address = models.CharField(
         max_length=ORG_ADDRESS_LENGTH,
