@@ -113,6 +113,29 @@
         font-weight: 600;
     }
 
+    .cabinet-link {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 11px;
+        border-radius: 9px;
+        font-size: 0.9rem;
+        color: #374151;
+        border: 1px solid transparent;
+        transition: background .2s ease, color .2s ease, border-color .2s ease;
+    }
+
+    .cabinet-link:hover {
+        background: #f3f4f6;
+        border-color: #e5e7eb;
+    }
+
+    .cabinet-link.active {
+        background: #eff6ff;
+        color: var(--primary);
+        border-color: #bfdbfe;
+        font-weight: 600;
+    }
+
     .user-meta {
         color: var(--muted);
         font-size: 0.92rem;
@@ -342,8 +365,14 @@
                 {% endif %}
             </div>
 
-            <div class="nav-right">
+            <!--<div class="nav-right">
                 {% if user.is_authenticated %}
+                    {% url 'accounts:cabinet' as cabinet_url %}
+                    <a href="{{ cabinet_url }}"
+                       class="cabinet-link {% if request.path == cabinet_url %}active{% endif %}">
+                        Личный кабинет
+                    </a>
+
                     <span class="user-meta">Привет, {{ user.username }}!</span>
                     <form method="post" action="{% url 'logout' %}" class="logout-form">
                         {% csrf_token %}
@@ -353,7 +382,25 @@
                     <a href="{% url 'login' %}" class="auth-link">Войти</a>
                     <a href="{% url 'accounts:register' %}" class="auth-link">Регистрация</a>
                 {% endif %}
-            </div>
+            </div>-->
+            <div class="nav-right">
+                {% if user.is_authenticated %}
+                    <span class="user-meta">Привет, {{ user.username }}!</span>
+
+                    {% url 'accounts:cabinet' as cabinet_url %}
+                    <a href="{{ cabinet_url }}"
+                    class="cabinet-link {% if request.path == cabinet_url %}active{% endif %}">
+                        Личный кабинет
+                    </a>
+
+                    <form method="post" action="{% url 'logout' %}" class="logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-link">Выйти</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="auth-link">Войти</a>
+                    <a href="{% url 'accounts:register' %}" class="auth-link">Регистрация</a>
+                {% endif %}
         </nav>
     </header>
 
