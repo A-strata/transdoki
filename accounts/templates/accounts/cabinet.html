@@ -1,5 +1,83 @@
 {% extends "base.html" %}
 
+{% block head %}
+<style>
+    .role-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 360px;
+        white-space: nowrap;
+    }
+
+    .user-row-anchor {
+        scroll-margin-top: 90px;
+    }
+
+    .role-form select {
+        width: 140px;
+        min-height: 32px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        padding: 4px 8px;
+        background: #f9fafb;
+    }
+
+    .role-form select:disabled {
+        color: #6b7280;
+        opacity: 1;
+        cursor: not-allowed;
+    }
+
+    .role-btn {
+        min-height: 32px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        padding: 0 10px;
+        cursor: pointer;
+    }
+
+    .role-btn:hover {
+        background: #f3f4f6;
+    }
+
+    .role-toggle-btn {
+        width: 110px;
+    }
+
+    .role-btn-primary {
+        width: 96px;
+        border-color: #2563eb;
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .role-btn-primary:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .role-btn:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+
+    .role-save-btn {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .15s ease;
+    }
+
+    .role-save-btn.is-visible {
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <section style="max-width: 980px; margin: 0 auto; padding: 12px 0;">
     <h1 style="margin-bottom: 12px;">Личный кабинет аккаунта</h1>
@@ -65,13 +143,13 @@
                             <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Роль</th>
                             <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Статус</th>
                             {% if can_manage_users %}
-                                <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Действия</th>
+                                <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px; width:380px;">Действия</th>
                             {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in users_in_account %}
-                            <tr>
+                            <tr id="user-{{ p.id }}" class="user-row-anchor">
                                 <td style="border-bottom:1px solid #f3f4f6; padding:8px;">{{ p.user.username }}</td>
                                 <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
                                     {% if p.user.get_full_name %}
@@ -86,22 +164,30 @@
                                 </td>
 
                                 {% if can_manage_users %}
-                                    <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
+                                    <td style="border-bottom:1px solid #f3f4f6; padding:8px; width:380px;">
                                         {% if p.user_id == request.user.id %}
                                             <span style="color:#9ca3af;">Собственный профиль</span>
                                         {% elif p.role == "owner" %}
                                             <span style="color:#9ca3af;">Роль владельца защищена</span>
-                                        {% elif profile.role == "admin" and p.role == "owner" %}
-                                            <span style="color:#9ca3af;">Недоступно для admin</span>
                                         {% else %}
-                                            <form method="post" action="{% url 'accounts:user_role_update' p.id %}" style="display:flex; gap:8px; align-items:center;">
+                                            <form method="post"
+                                                  action="{% url 'accounts:user_role_update' p.id %}"
+                                                  class="role-form"
+                                                  style="margin:0;">
                                                 {% csrf_token %}
-                                                <select name="role">
-                                                    <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Admin</option>
-                                                    <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Dispatcher</option>
-                                                    <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Logist</option>
-                                                </select>
-                                                <button type="submit">Сохранить роль</button>
+                                                <div class="role-actions">
+                                                    <select name="role"
+                                                            class="role-select"
+                                                            data-initial="{{ p.role }}"
+                                                            disabled>
+                                                        <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Admin</option>
+                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Dispatcher</option>
+                                                        <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Logist</option>
+                                                    </select>
+
+                                                    <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
+                                                    <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
+                                                </div>
                                             </form>
                                         {% endif %}
                                     </td>
@@ -116,4 +202,53 @@
         {% endif %}
     </div>
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".role-form").forEach(function (form) {
+        const select = form.querySelector(".role-select");
+        const toggleBtn = form.querySelector(".role-toggle-btn");
+        const saveBtn = form.querySelector(".role-save-btn");
+
+        if (!select || !toggleBtn || !saveBtn) return;
+
+        const initial = select.dataset.initial || select.value;
+        let isEditing = false;
+
+        function updateSaveVisibility() {
+            const changed = select.value !== initial;
+            saveBtn.classList.toggle("is-visible", isEditing && changed);
+            saveBtn.disabled = !(isEditing && changed);
+        }
+
+        function setEditMode(next) {
+            isEditing = next;
+            select.disabled = !isEditing;
+            toggleBtn.textContent = isEditing ? "Отмена" : "Редактировать";
+
+            if (!isEditing) {
+                select.value = initial;
+            }
+            updateSaveVisibility();
+        }
+
+        toggleBtn.addEventListener("click", function () {
+            setEditMode(!isEditing);
+        });
+
+        select.addEventListener("change", function () {
+            updateSaveVisibility();
+        });
+
+        form.addEventListener("submit", function () {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Сохраняем…";
+            toggleBtn.disabled = true;
+            // select НЕ отключаем, чтобы role отправилась в POST
+        });
+
+        setEditMode(false);
+    });
+});
+</script>
 {% endblock %}

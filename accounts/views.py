@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
@@ -123,11 +123,9 @@ class AccountUserRoleUpdateView(LoginRequiredMixin, View):
         ):
             raise PermissionDenied("Администратор не может менять роль владельца.")
 
-        # Без отдельного сценария transfer ownership не даем менять OWNER
         if target_profile.role == UserProfile.Role.OWNER:
             messages.error(
-                request,
-                "Нельзя менять роль владельца аккаунта в этом разделе.",
+                request, "Нельзя менять роль владельца аккаунта в этом разделе."
             )
             return redirect("accounts:cabinet")
 
@@ -140,11 +138,14 @@ class AccountUserRoleUpdateView(LoginRequiredMixin, View):
             messages.info(request, "Роль не изменилась.")
             return redirect("accounts:cabinet")
 
+        old_role_display = target_profile.get_role_display()
         target_profile.role = new_role
         target_profile.save(update_fields=["role"])
+        new_role_display = target_profile.get_role_display()
 
         messages.success(
             request,
-            f"Роль пользователя {target_profile.user.username} изменена.",
+            f"Роль пользователя {target_profile.user.username} изменена: "
+            f"{old_role_display} → {new_role_display}.",
         )
-        return redirect("accounts:cabinet")
+        return redirect(f"{reverse('accounts:cabinet')}#user-{target_profile.id}")
