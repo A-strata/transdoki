@@ -5,7 +5,7 @@ import requests
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.forms.models import model_to_dict
@@ -16,6 +16,8 @@ from django.views import View
 from django.views.decorators.http import require_GET
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from dotenv import load_dotenv
+
+from transdoki.tenancy import get_request_account
 
 from .forms import TripAttachmentUploadForm, TripForm
 from .models import MAX_FILES_PER_TRIP, Trip, TripAttachment
@@ -29,18 +31,11 @@ DADATA_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/addre
 logger = logging.getLogger("security")
 
 
-def _get_request_account(request):
-    account = getattr(getattr(request.user, "profile", None), "account", None)
-    if account is None:
-        raise PermissionDenied("У пользователя не найден account.")
-    return account
-
-
 class UserOwnedListView(LoginRequiredMixin, ListView):
     """Базовый View показывающий только записи пользователя"""
 
     def get_queryset(self):
-        return self.model.objects.filter(account=_get_request_account(self.request))
+        return self.model.objects.filter(account=get_request_account(self.request))
 
 
 class TripCreateView(LoginRequiredMixin, CreateView):
@@ -77,7 +72,7 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         if not copy_from_id:
             return initial
 
-        account = _get_request_account(self.request)
+        account = get_request_account(self.request)
 
         # Чтобы пользователь не мог копировать чужие рейсы
         source_trip = Trip.objects.filter(
@@ -96,7 +91,7 @@ class TripCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        form.instance.account = _get_request_account(self.request)
+        form.instance.account = get_request_account(self.request)
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -110,7 +105,7 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_queryset(self):
         # Ограничивает доступ только к своему account
-        return Trip.objects.filter(account=_get_request_account(self.request))
+        return Trip.objects.filter(account=get_request_account(self.request))
 
     def get_form_kwargs(self):
         # Готовит контекст для формы
@@ -132,7 +127,7 @@ class TripDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Trip.objects.filter(
-            account=_get_request_account(self.request)
+            account=get_request_account(self.request)
         ).prefetch_related("attachments")
 
     def get_context_data(self, **kwargs):
@@ -355,13 +350,13 @@ class TripListView(UserOwnedListView):
 
 class TripTNDownloadView(LoginRequiredMixin, View):
     def get(self, request, pk):
-        trip = get_object_or_404(Trip, pk=pk, account=_get_request_account(request))
+        trip = get_object_or_404(Trip, pk=pk, account=get_request_account(request))
         return TNGenerator.generate_response(trip)
 
 
 class TripAgreementDownloadView(LoginRequiredMixin, View):
     def get(self, request, pk):
-        trip = get_object_or_404(Trip, pk=pk, account=_get_request_account(request))
+        trip = get_object_or_404(Trip, pk=pk, account=get_request_account(request))
         return AgreementRequestGenerator.generate_response(trip)
 
 
@@ -395,7 +390,7 @@ def address_suggest(request):
 
 class TripAttachmentUploadView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        trip = get_object_or_404(Trip, pk=pk, account=_get_request_account(request))
+        trip = get_object_or_404(Trip, pk=pk, account=get_request_account(request))
         form = TripAttachmentUploadForm(request.POST, request.FILES)
 
         if not form.is_valid():
@@ -440,7 +435,7 @@ class TripAttachmentDownloadView(LoginRequiredMixin, View):
             TripAttachment.objects.select_related("trip"),
             pk=attachment_pk,
             trip_id=pk,
-            trip__account=_get_request_account(request),
+            trip__account=get_request_account(request),
         )
         return FileResponse(
             attachment.file.open("rb"),
@@ -455,7 +450,7 @@ class TripAttachmentDeleteView(LoginRequiredMixin, View):
             TripAttachment.objects.select_related("trip"),
             pk=attachment_pk,
             trip_id=pk,
-            trip__account=_get_request_account(request),
+            trip__account=get_request_account(request),
         )
         attachment.delete()
         messages.success(request, "Файл удалён.")
