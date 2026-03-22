@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section style="max-width: 760px; margin: 0 auto; padding: 12px 0;">
+<section style="max-width: 900px; margin: 0 auto; padding: 12px 0;">
     <h1 style="margin-bottom: 12px;">Личный кабинет аккаунта</h1>
 
     <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px;">
@@ -41,6 +41,54 @@
             <dt style="color:#6b7280;">Роль</dt>
             <dd style="margin:0;">{{ profile.get_role_display }}</dd>
         </dl>
+    </div>
+
+    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px;">
+            <h2 style="margin:0;">Пользователи аккаунта</h2>
+
+            {% if can_manage_users %}
+                <a href="{% url 'accounts:user_create' %}"
+                   style="display:inline-block; min-height:36px; line-height:36px; padding:0 12px; border-radius:8px; text-decoration:none; background:#2563eb; color:#fff; font-weight:600;">
+                    Добавить пользователя
+                </a>
+            {% endif %}
+        </div>
+
+        {% if users_in_account %}
+            <div style="overflow:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Email / Логин</th>
+                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Имя</th>
+                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Роль</th>
+                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in users_in_account %}
+                            <tr>
+                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">{{ p.user.username }}</td>
+                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
+                                    {% if p.user.get_full_name %}
+                                        {{ p.user.get_full_name }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">{{ p.get_role_display }}</td>
+                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
+                                    {% if p.user.is_active %}Активен{% else %}Отключён{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="margin:0; color:#6b7280;">В аккаунте пока нет пользователей.</p>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

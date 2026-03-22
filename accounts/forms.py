@@ -6,7 +6,8 @@ from django.core.exceptions import ValidationError
 from organizations.models import Organization
 from organizations.validators import validate_inn
 
-from .services import register_account_with_owner
+from .models import UserProfile
+from .services import create_account_user_by_admin, register_account_with_owner
 
 
 class AccountRegistrationForm(forms.Form):
@@ -73,4 +74,58 @@ class AccountRegistrationForm(forms.Form):
             inn=self.cleaned_data["inn"],
             email=self.cleaned_data["email"],
             password=self.cleaned_data["password1"],
+        )
+
+
+class AccountUserCreateForm(forms.Form):
+    ROLE_CHOICES = [
+        (UserProfile.Role.ADMIN, "Admin"),
+        (UserProfile.Role.DISPATCHER, "Dispatcher"),
+        (UserProfile.Role.LOGIST, "Logist"),
+    ]
+
+    email = forms.EmailField(label="Email")
+    first_name = forms.CharField(label="Имя", max_length=150, required=False)
+    last_name = forms.CharField(label="Фамилия", max_length=150, required=False)
+    role = forms.ChoiceField(label="Роль", choices=ROLE_CHOICES)
+    password1 = forms.CharField(label="Пароль", widget=forms.PasswordInput)
+    password2 = forms.CharField(
+        label="Подтверждение пароля",
+        widget=forms.PasswordInput,
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+
+        if User.objects.filter(username__iexact=email).exists():
+            raise ValidationError("Пользователь с таким email уже существует.")
+
+        if User.objects.filter(email__iexact=email).exists():
+            raise ValidationError("Email уже используется.")
+
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", "Пароли не совпадают.")
+            return cleaned_data
+
+        if password1:
+            validate_password(password1)
+
+        return cleaned_data
+
+    def save(self, *, account, created_by):
+        return create_account_user_by_admin(
+            account=account,
+            created_by=created_by,
+            email=self.cleaned_data["email"],
+            password=self.cleaned_data["password1"],
+            role=self.cleaned_data["role"],
+            first_name=self.cleaned_data.get("first_name", ""),
+            last_name=self.cleaned_data.get("last_name", ""),
         )
