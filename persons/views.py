@@ -1,8 +1,9 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+
+from transdoki.tenancy import get_request_account
 
 from .forms import PersonForm
 from .models import Person
@@ -11,14 +12,8 @@ from .models import Person
 class UserOwnedListView(LoginRequiredMixin, ListView):
     """Базовый View показывающий только записи текущего account (tenant)."""
 
-    def _get_request_account(self):
-        account = getattr(getattr(self.request.user, "profile", None), "account", None)
-        if account is None:
-            raise PermissionDenied("У пользователя не найден account.")
-        return account
-
     def get_queryset(self):
-        return self.model.objects.filter(account=self._get_request_account())
+        return self.model.objects.filter(account=get_request_account(self.request))
 
 
 class PersonCreateView(LoginRequiredMixin, CreateView):
@@ -27,15 +22,9 @@ class PersonCreateView(LoginRequiredMixin, CreateView):
     template_name = "persons/person_form.html"
     success_url = reverse_lazy("persons:list")
 
-    def _get_request_account(self):
-        account = getattr(getattr(self.request.user, "profile", None), "account", None)
-        if account is None:
-            raise PermissionDenied("У пользователя не найден account.")
-        return account
-
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        form.instance.account = self._get_request_account()
+        form.instance.account = get_request_account(self.request)
         try:
             return super().form_valid(form)
         except IntegrityError:
@@ -50,10 +39,7 @@ class PersonUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy("persons:list")
 
     def get_queryset(self):
-        account = getattr(getattr(self.request.user, "profile", None), "account", None)
-        if account is None:
-            raise PermissionDenied("У пользователя не найден account.")
-        return Person.objects.filter(account=account)
+        return Person.objects.filter(account=get_request_account(self.request))
 
     def form_valid(self, form):
         try:
@@ -69,10 +55,7 @@ class PersonDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy("persons:list")
 
     def get_queryset(self):
-        account = getattr(getattr(self.request.user, "profile", None), "account", None)
-        if account is None:
-            raise PermissionDenied("У пользователя не найден account.")
-        return Person.objects.filter(account=account)
+        return Person.objects.filter(account=get_request_account(self.request))
 
 
 class PersonListView(UserOwnedListView):
