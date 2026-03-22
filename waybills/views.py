@@ -2,21 +2,15 @@ from itertools import chain
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.db.models import Max
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from transdoki.tenancy import get_request_account
+
 from .forms import RoutePointForm, WaybillEventForm, WaybillForm
 from .models import Waybill, WaybillEvent
-
-
-def _get_request_account(request):
-    account = getattr(getattr(request.user, "profile", None), "account", None)
-    if account is None:
-        raise PermissionDenied("У пользователя не найден account.")
-    return account
 
 
 def build_waybill_timeline(waybill):
@@ -67,7 +61,7 @@ class WaybillListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return (
-            Waybill.objects.filter(account=_get_request_account(self.request))
+            Waybill.objects.filter(account=get_request_account(self.request))
             .select_related("driver", "truck", "trailer")
             .order_by("-date", "-id")
         )
@@ -80,7 +74,7 @@ class WaybillCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        form.instance.account = _get_request_account(self.request)
+        form.instance.account = get_request_account(self.request)
 
         response = super().form_valid(form)
         messages.success(self.request, "Путевой лист успешно создан.")
@@ -98,7 +92,7 @@ class WaybillUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_queryset(self):
         return Waybill.objects.filter(
-            account=_get_request_account(self.request)
+            account=get_request_account(self.request)
         ).select_related("driver", "truck", "trailer")
 
     def form_valid(self, form):
@@ -117,7 +111,7 @@ class WaybillDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return (
-            Waybill.objects.filter(account=_get_request_account(self.request))
+            Waybill.objects.filter(account=get_request_account(self.request))
             .select_related("driver", "truck", "trailer")
             .prefetch_related("events", "route_points")
         )
