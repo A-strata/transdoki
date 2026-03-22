@@ -1,14 +1,24 @@
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 
 from organizations.models import Organization
 from persons.models import Person
+from transdoki.tenancy import get_request_account
 from vehicles.models import Vehicle
 
 from .models import Trip, TripAttachment
 
 
 def _get_request_account(request):
-    return getattr(getattr(request.user, "profile", None), "account", None)
+    """
+    Совместимость для admin:
+    - используем общий tenancy helper
+    - сохраняем прежнее поведение admin (если account не найден -> None)
+    """
+    try:
+        return get_request_account(request)
+    except PermissionDenied:
+        return None
 
 
 @admin.register(Trip)
