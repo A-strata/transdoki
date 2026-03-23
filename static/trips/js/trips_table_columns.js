@@ -19,7 +19,7 @@
         const STORAGE_KEY = 'tms_trips_columns_v5';
         const LOCK_RIGHT = 'actions';
         const MIN_COL_WIDTH = 80;
-        const ACTIONS_WIDTH = 190;
+        const ACTIONS_WIDTH = 60;
 
         const ths = Array.from(table.querySelectorAll('thead th[data-col]'));
         const defaultOrder = ths.map(th => th.dataset.col);

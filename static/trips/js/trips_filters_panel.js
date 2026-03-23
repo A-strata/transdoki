@@ -1,23 +1,22 @@
 (function () {
     function init() {
-        const panel = document.querySelector('[data-trip-filters]');
+        const form = document.querySelector('[data-trip-filters]');
         const toggle = document.querySelector('[data-filters-panel-toggle]');
+        const panel = document.querySelector('[data-filter-dropdown]');
+        const wrap = document.querySelector('[data-filter-dropdown-wrap]');
         const badge = document.querySelector('[data-filters-active-badge]');
         const countNode = document.querySelector('[data-filters-active-count]');
-        const resetBtn = panel ? panel.querySelector('[data-filter="reset"]') : null;
+        const resetBtn = form ? form.querySelector('[data-filter="reset"]') : null;
 
-        if (!panel || !toggle) return;
-
-        const STORAGE_KEY = 'tms_trips_filters_panel_v2';
+        if (!form || !toggle || !panel) return;
 
         function getField(name) {
-            return panel.querySelector(`[name="${name}"]`);
+            return form.querySelector(`[name="${name}"]`);
         }
 
         function hasAppliedChronologyFilter() {
             const dateFrom = getField('date_from');
             const dateTo = getField('date_to');
-
             return !!(
                 (dateFrom && String(dateFrom.value || '').trim() !== '') ||
                 (dateTo && String(dateTo.value || '').trim() !== '')
@@ -31,18 +30,14 @@
 
         function getAppliedGroupsCount() {
             let count = 0;
-
             if (hasAppliedChronologyFilter()) count += 1;
             if (hasAppliedContractorFilter()) count += 1;
-
             return count;
         }
 
         function updateActiveBadge() {
-            const count = getAppliedGroupsCount();
-
             if (!badge || !countNode) return;
-
+            const count = getAppliedGroupsCount();
             if (count > 0) {
                 countNode.textContent = String(count);
                 badge.hidden = false;
@@ -51,24 +46,27 @@
             }
         }
 
-        function setCollapsed(collapsed) {
-            panel.classList.toggle('is-collapsed', collapsed);
-            toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-            toggle.textContent = collapsed ? 'Развернуть фильтры' : 'Свернуть фильтры';
-            localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+        function openPanel() {
+            panel.classList.add('is-open');
+            toggle.setAttribute('aria-expanded', 'true');
         }
 
-        function getInitialCollapsed() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved === '1') return true;
-            if (saved === '0') return false;
-
-            return window.innerHeight <= 900;
+        function closePanel() {
+            panel.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
         }
 
-        toggle.addEventListener('click', function () {
-            const collapsed = panel.classList.contains('is-collapsed');
-            setCollapsed(!collapsed);
+        toggle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            panel.classList.contains('is-open') ? closePanel() : openPanel();
+        });
+
+        document.addEventListener('click', function (e) {
+            if (wrap && !wrap.contains(e.target)) closePanel();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closePanel();
         });
 
         if (resetBtn) {
@@ -78,8 +76,6 @@
         }
 
         window.addEventListener('pageshow', updateActiveBadge);
-
-        setCollapsed(getInitialCollapsed());
         updateActiveBadge();
     }
 

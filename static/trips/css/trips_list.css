@@ -1,4 +1,4 @@
-/* 1) Лейаут */
+/* 1) Лейаут страницы */
 .trips-page {
     display: flex;
     flex-direction: column;
@@ -8,35 +8,6 @@
     margin: 0;
     height: 100%;
     min-height: 0;
-}
-
-.trips-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    flex-shrink: 0;
-}
-
-.trips-title {
-    margin: 0;
-    font-size: clamp(1.2rem, 1.7vw, 1.5rem);
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-}
-
-.trips-subtitle {
-    margin: 2px 0 0;
-    color: #6b7280;
-    font-size: 0.88rem;
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
 }
 
 /* 2) Кнопки */
@@ -79,83 +50,119 @@
 }
 
 .tms-btn-add {
-    min-height: 38px;
-    padding: 0 14px;
-    border-radius: 10px;
-    font-size: 0.88rem;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 0.83rem;
 }
 
-/* 3) Фильтры */
-.filters-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.filters-panel-header {
+/* 3) Единый тулбар */
+.page-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-shrink: 0;
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 10px 12px;
-}
-
-.filters-panel-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    padding: 8px 12px;
     flex-wrap: wrap;
 }
 
-.filters-panel-meta {
+.toolbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: auto;
+}
+
+.toolbar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+}
+
+.toolbar-controls {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.filters-panel-title {
-    margin: 0;
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: #111827;
+.toolbar-divider {
+    width: 1px;
+    height: 22px;
+    background: #e5e7eb;
+    flex-shrink: 0;
 }
 
-.filters-panel-badge {
+/* 4) Фильтры — dropdown */
+.filter-dropdown-wrap {
+    position: relative;
+}
+
+.filters-count-badge {
     display: inline-flex;
     align-items: center;
-    min-height: 24px;
-    padding: 0 8px;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
     border-radius: 999px;
-    background: #eff6ff;
-    color: #1d4ed8;
-    font-size: 0.78rem;
+    background: #2563eb;
+    color: #fff;
+    font-size: 0.7rem;
     font-weight: 700;
-    white-space: nowrap;
+    margin-left: 5px;
+    line-height: 1;
 }
 
-.filters-panel-toggle {
-    min-height: 32px;
-    padding: 0 10px;
-}
-
-.filters-panel-body {
-    display: flex;
+.filter-dropdown-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 1200;
+    width: 660px;
+    max-width: calc(100vw - 24px);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+    padding: 12px;
     flex-direction: column;
     gap: 8px;
 }
 
-.filters-panel.is-collapsed .filters-panel-body {
-    display: none;
+.filter-dropdown-panel.is-open {
+    display: flex;
 }
 
-.filters-panel.is-collapsed [data-submit-filters] {
-    display: none;
+.filter-dropdown-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
+/* 5) Поля фильтров */
+.filters-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.filters-block-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b7280;
 }
 
 .filters-bar {
@@ -166,6 +173,11 @@
     width: 100%;
 }
 
+.filters-bar-chronology,
+.filters-bar-contractors {
+    align-items: flex-end;
+}
+
 .filter-field {
     display: flex;
     flex-direction: column;
@@ -173,17 +185,17 @@
     min-width: 160px;
 }
 
-.filter-field-period {
-    min-width: 180px;
+.filter-field-compact {
+    min-width: 170px;
 }
 
 .filter-field-date {
     min-width: 150px;
 }
 
-.filter-field-address {
-    flex: 1 1 320px;
-    min-width: 260px;
+.filter-field-contractor-query {
+    flex: 1 1 280px;
+    min-width: 220px;
 }
 
 .filter-label {
@@ -223,53 +235,17 @@
     opacity: 0.55;
 }
 
-.filters-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.filters-actions-header {
-    align-items: center;
-}
-
-/* 4) Тулбар */
-.table-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    width: 100%;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 8px 12px;
-}
-
-.toolbar-left,
-.toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.toolbar-right {
-    margin-left: auto;
-}
-
 .filter-meta {
     color: #6b7280;
     font-size: 0.86rem;
     white-space: nowrap;
 }
 
+/* 6) Строк на странице */
 .page-size-control {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     color: #374151;
     font-size: 0.86rem;
 }
@@ -280,18 +256,79 @@
 }
 
 .page-size-select {
-    min-width: 88px;
+    min-width: 72px;
     width: auto;
+    height: 34px;
+    min-height: 34px;
 }
 
-/* 5) Панель видимости колонок */
+/* 7) Быстрые даты */
+.quick-date-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 34px;
+    padding-bottom: 1px;
+}
+
+.quick-date-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.quick-date-chip {
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid #dbe3ee;
+    border-radius: 999px;
+    background: #fff;
+    color: #374151;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+
+.quick-date-chip:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.quick-date-chip:focus {
+    outline: none;
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.quick-date-chip.is-active {
+    color: #1d4ed8;
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+/* 8) Активные фильтры */
+.filter-field.is-active .filter-label {
+    color: #1d4ed8;
+}
+
+.filter-field.is-active .filter-input,
+.filter-field.is-active .filter-select {
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+/* 9) Панель видимости колонок */
 .columns-visibility {
     position: relative;
 }
 
 .visibility-panel {
     position: absolute;
-    left: 0;
+    right: 0;
     top: calc(100% + 6px);
     z-index: 1300;
     width: 320px;
@@ -301,11 +338,6 @@
     border-radius: 10px;
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
     padding: 10px;
-}
-
-.visibility-panel.align-left {
-    left: 0;
-    right: auto;
 }
 
 .visibility-panel.is-hidden {
@@ -389,7 +421,7 @@
     justify-content: flex-end;
 }
 
-/* 6) Карточка таблицы */
+/* 10) Карточка таблицы */
 .table-card {
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -409,7 +441,7 @@
     overflow: auto;
 }
 
-/* 7) Таблица */
+/* 11) Таблица */
 .tms-table {
     width: max-content;
     min-width: 100%;
@@ -519,7 +551,7 @@
     cursor: default;
 }
 
-/* 8) Resize колонок */
+/* 12) Resize колонок */
 .tms-table thead th[data-col] {
     position: sticky;
 }
@@ -555,7 +587,7 @@
     background: #cbd5e1;
 }
 
-/* 9) Sticky actions column */
+/* 13) Sticky actions column */
 .tms-table thead th[data-col="actions"],
 .tms-table tbody td[data-col="actions"] {
     position: sticky;
@@ -588,7 +620,7 @@
     background: #eef6ff;
 }
 
-/* 10) Actions dropdown */
+/* 14) Actions dropdown */
 .actions {
     position: relative;
     display: inline-flex;
@@ -597,7 +629,10 @@
 
 .actions-toggle {
     min-height: 30px;
-    padding: 0 10px;
+    min-width: 36px;
+    padding: 0 8px;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
 }
 
 .actions-menu {
@@ -633,7 +668,7 @@
     background: #f3f4f6;
 }
 
-/* 11) Пагинация */
+/* 15) Пагинация */
 .pagination {
     display: flex;
     align-items: center;
@@ -641,6 +676,7 @@
     gap: 6px;
     flex-wrap: wrap;
     padding: 2px 0 0;
+    flex-shrink: 0;
 }
 
 .pagination-link,
@@ -686,155 +722,28 @@
     color: #9ca3af;
 }
 
-/* 12) Адаптив */
-@media (max-width: 1100px) {
-    .table-toolbar {
-        align-items: flex-start;
-    }
-
-    .toolbar-right {
-        margin-left: 0;
-    }
-}
-
+/* 16) Адаптив */
 @media (max-width: 768px) {
     .trips-page {
         gap: 8px;
     }
 
-    .filters-actions {
+    .toolbar-brand {
+        margin-right: 0;
         width: 100%;
     }
 
-    .filters-actions .tms-btn {
-        flex: 1 1 auto;
+    .toolbar-controls {
+        width: 100%;
+    }
+
+    .filter-dropdown-panel {
+        right: auto;
+        left: 0;
+        width: calc(100vw - 24px);
     }
 
     .page-size-control {
-        width: 100%;
         justify-content: space-between;
     }
-
-    .page-size-select {
-        width: 110px;
-    }
-
-    .toolbar-left,
-    .toolbar-right,
-    .filters-panel-left {
-        width: 100%;
-    }
-}
-
-/* 13) Новые блоки фильтров */
-.filters-block {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    background: #fff;
-}
-
-.filters-block-title {
-    font-size: 0.76rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #6b7280;
-}
-
-.filters-bar-chronology,
-.filters-bar-contractors {
-    align-items: flex-end;
-}
-
-.filter-field-compact {
-    min-width: 170px;
-}
-
-.filter-field-contractor-query {
-    flex: 1 1 320px;
-    min-width: 240px;
-}
-
-.quick-date-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    min-height: 34px;
-    padding-bottom: 1px;
-}
-
-.quick-date-label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #6b7280;
-    white-space: nowrap;
-}
-
-.quick-date-chip {
-    height: 30px;
-    padding: 0 10px;
-    border: 1px solid #dbe3ee;
-    border-radius: 999px;
-    background: #fff;
-    color: #374151;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-    white-space: nowrap;
-}
-
-.quick-date-chip:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-}
-
-.quick-date-chip:focus {
-    outline: none;
-    border-color: #93c5fd;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-@media (max-width: 768px) {
-    .filters-block {
-        padding: 10px;
-    }
-
-    .quick-date-actions {
-        width: 100%;
-    }
-
-    .filters-panel-header {
-        padding: 10px;
-    }
-
-    .table-toolbar {
-        padding: 10px;
-    }
-}
-
-/* 14) Активные фильтры */
-.filter-field.is-active .filter-label {
-    color: #1d4ed8;
-}
-
-.filter-field.is-active .filter-input,
-.filter-field.is-active .filter-select {
-    border-color: #93c5fd;
-    background: #eff6ff;
-}
-
-.quick-date-chip.is-active {
-    color: #1d4ed8;
-    border-color: #93c5fd;
-    background: #eff6ff;
-}
-
-.filters-actions-placeholder {
-    display: none;
 }

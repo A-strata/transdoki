@@ -5,191 +5,123 @@
 <link rel="stylesheet" href="{% static 'trips/css/trips_list.css' %}">
 
 <section class="trips-page">
-    <div class="trips-header">
-        <div>
-            <h1 class="trips-title">Поездки</h1>
-            <p class="trips-subtitle">Управление заявками и транспортными накладными</p>
+
+    <form method="get" class="page-toolbar" data-trip-filters>
+
+        <div class="toolbar-brand">
+            <span class="toolbar-title">Поездки</span>
+            <span class="filter-meta toolbar-count">Найдено: {{ page_obj.paginator.count }}</span>
         </div>
 
-        <div class="header-actions">
-            <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">Создать поездку</a>
-        </div>
-    </div>
+        <div class="toolbar-controls">
 
-    <form method="get" class="filters-panel" data-trip-filters>
-        <div class="filters-panel-header">
-            <div class="filters-panel-left">
-                <div class="filters-panel-meta">
-                    <h2 class="filters-panel-title">Фильтры</h2>
-                    <span class="filters-panel-badge" data-filters-active-badge hidden>Активно: <span data-filters-active-count>0</span></span>
-                </div>
+            <div class="filter-dropdown-wrap" data-filter-dropdown-wrap>
+                <button type="button" class="tms-btn tms-btn-secondary" data-filters-panel-toggle aria-expanded="false">
+                    Фильтры<span class="filters-count-badge" data-filters-active-badge hidden><span data-filters-active-count>0</span></span>
+                </button>
 
-                <div class="filters-actions filters-actions-header">
-                    <button type="submit" class="tms-btn tms-btn-primary" data-submit-filters>
-                        Применить
-                    </button>
-                    <button type="button" class="tms-btn tms-btn-secondary" data-filter="reset">
-                        Сбросить
-                    </button>
-                </div>
-            </div>
+                <div class="filter-dropdown-panel" data-filter-dropdown>
 
-            <button
-                type="button"
-                class="tms-btn tms-btn-secondary filters-panel-toggle"
-                data-filters-panel-toggle
-                aria-expanded="true"
-            >
-                Свернуть фильтры
-            </button>
-        </div>
+                    <div class="filters-block">
+                        <div class="filters-block-title">Хронология</div>
+                        <div class="filters-bar filters-bar-chronology">
+                            <label class="filter-field filter-field-compact {% if filters.date_from or filters.date_to %}is-active{% endif %}">
+                                <span class="filter-label">Логика</span>
+                                <select class="filter-select" name="date_mode" data-filter="date_mode">
+                                    {% for value, label in date_mode_options %}
+                                        <option value="{{ value }}" {% if filters.date_mode == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </label>
 
-        <div class="filters-panel-body" data-filters-panel-body>
-            <div class="filters-block">
-                <div class="filters-block-title">Хронология</div>
+                            <label class="filter-field filter-field-date {% if filters.date_from %}is-active{% endif %}">
+                                <span class="filter-label">Дата с</span>
+                                <input type="date" name="date_from" class="filter-input" value="{{ filters.date_from }}" data-filter="date_from">
+                            </label>
 
-                <div class="filters-bar filters-bar-chronology">
-                    <label class="filter-field filter-field-compact {% if filters.date_from or filters.date_to %}is-active{% endif %}">
-                        <span class="filter-label">Логика</span>
-                        <select class="filter-select" name="date_mode" data-filter="date_mode">
-                            {% for value, label in date_mode_options %}
-                                <option value="{{ value }}" {% if filters.date_mode == value %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </label>
+                            <label class="filter-field filter-field-date {% if filters.date_to %}is-active{% endif %}">
+                                <span class="filter-label">Дата по</span>
+                                <input type="date" name="date_to" class="filter-input" value="{{ filters.date_to }}" data-filter="date_to">
+                            </label>
 
-                    <label class="filter-field filter-field-date {% if filters.date_from %}is-active{% endif %}">
-                        <span class="filter-label">Дата с</span>
-                        <input
-                            type="date"
-                            name="date_from"
-                            class="filter-input"
-                            value="{{ filters.date_from }}"
-                            data-filter="date_from"
-                        >
-                    </label>
-
-                    <label class="filter-field filter-field-date {% if filters.date_to %}is-active{% endif %}">
-                        <span class="filter-label">Дата по</span>
-                        <input
-                            type="date"
-                            name="date_to"
-                            class="filter-input"
-                            value="{{ filters.date_to }}"
-                            data-filter="date_to"
-                        >
-                    </label>
-
-                    <div class="quick-date-actions">
-                        <span class="quick-date-label">Быстро:</span>
-
-                        <button
-                            type="button"
-                            class="quick-date-chip"
-                            data-quick-date="yesterday"
-                        >
-                            Вчера
-                        </button>
-
-                        <button
-                            type="button"
-                            class="quick-date-chip"
-                            data-quick-date="today"
-                        >
-                            Сегодня
-                        </button>
-
-                        <button
-                            type="button"
-                            class="quick-date-chip"
-                            data-quick-date="tomorrow"
-                        >
-                            Завтра
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="filters-block">
-                <div class="filters-block-title">Контрагенты</div>
-
-                <div class="filters-bar filters-bar-contractors">
-                    <label class="filter-field filter-field-compact {% if filters.contractor_query %}is-active{% endif %}">
-                        <span class="filter-label">Роль</span>
-                        <select class="filter-select" name="contractor_role" data-filter="contractor_role">
-                            {% for value, label in contractor_role_options %}
-                                <option value="{{ value }}"
-                                    {% if filters.contractor_role %}
-                                        {% if filters.contractor_role == value %}selected{% endif %}
-                                    {% else %}
-                                        {% if forloop.first %}selected{% endif %}
-                                    {% endif %}
-                                >
-                                    {{ label }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </label>
-
-                    <label class="filter-field filter-field-contractor-query {% if filters.contractor_query %}is-active{% endif %}">
-                        <span class="filter-label">Поиск</span>
-                        <input
-                            type="text"
-                            name="contractor_query"
-                            class="filter-input"
-                            value="{{ filters.contractor_query }}"
-                            placeholder="Введите название или ФИО"
-                            data-filter="contractor_query"
-                        >
-                    </label>
-
-                    <div class="filters-actions filters-actions-placeholder"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-toolbar">
-            <div class="toolbar-left">
-                <div class="columns-visibility" data-columns-visibility>
-                    <button type="button" class="tms-btn tms-btn-secondary" data-visibility-toggle aria-expanded="false">
-                        Вид
-                    </button>
-
-                    <div class="visibility-panel is-hidden" data-visibility-panel>
-                        <p class="visibility-title">Показать / скрыть колонки</p>
-                        <ul class="visibility-list" data-visibility-list></ul>
-
-                        <div class="visibility-footer">
-                            <button type="button" class="tms-btn tms-btn-secondary" data-visibility-reset>
-                                Сбросить
-                            </button>
+                            <div class="quick-date-actions">
+                                <span class="quick-date-label">Быстро:</span>
+                                <button type="button" class="quick-date-chip" data-quick-date="yesterday">Вчера</button>
+                                <button type="button" class="quick-date-chip" data-quick-date="today">Сегодня</button>
+                                <button type="button" class="quick-date-chip" data-quick-date="tomorrow">Завтра</button>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="filters-block">
+                        <div class="filters-block-title">Контрагенты</div>
+                        <div class="filters-bar filters-bar-contractors">
+                            <label class="filter-field filter-field-compact {% if filters.contractor_query %}is-active{% endif %}">
+                                <span class="filter-label">Роль</span>
+                                <select class="filter-select" name="contractor_role" data-filter="contractor_role">
+                                    {% for value, label in contractor_role_options %}
+                                        <option value="{{ value }}"
+                                            {% if filters.contractor_role %}
+                                                {% if filters.contractor_role == value %}selected{% endif %}
+                                            {% else %}
+                                                {% if forloop.first %}selected{% endif %}
+                                            {% endif %}
+                                        >
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+
+                            <label class="filter-field filter-field-contractor-query {% if filters.contractor_query %}is-active{% endif %}">
+                                <span class="filter-label">Поиск</span>
+                                <input type="text" name="contractor_query" class="filter-input" value="{{ filters.contractor_query }}" placeholder="Введите название или ФИО" data-filter="contractor_query">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-dropdown-footer">
+                        <button type="button" class="tms-btn tms-btn-secondary" data-filter="reset">Сбросить</button>
+                        <button type="submit" class="tms-btn tms-btn-primary" data-submit-filters>Применить</button>
+                    </div>
+
                 </div>
             </div>
 
-            <div class="toolbar-right">
-                <label class="page-size-control">
-                    <span class="page-size-label">Строк на странице</span>
-                    <select name="page_size" class="filter-select page-size-select" data-filter="page_size">
-                        {% for size in page_size_options %}
-                            <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>
-                                {{ size }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-
-                <input type="hidden" name="current_page_size" value="{{ page_obj.paginator.per_page }}">
-                <input type="hidden" name="page" value="{{ page_obj.number }}">
-
-                <span class="filter-meta">
-                    Найдено: {{ page_obj.paginator.count }}
-                </span>
+            <div class="columns-visibility" data-columns-visibility>
+                <button type="button" class="tms-btn tms-btn-secondary" data-visibility-toggle aria-expanded="false">
+                    Вид
+                </button>
+                <div class="visibility-panel is-hidden" data-visibility-panel>
+                    <p class="visibility-title">Показать / скрыть колонки</p>
+                    <ul class="visibility-list" data-visibility-list></ul>
+                    <div class="visibility-footer">
+                        <button type="button" class="tms-btn tms-btn-secondary" data-visibility-reset>Сбросить</button>
+                    </div>
+                </div>
             </div>
+
+            <label class="page-size-control">
+                <span class="page-size-label">Строк</span>
+                <select name="page_size" class="filter-select page-size-select" data-filter="page_size">
+                    {% for size in page_size_options %}
+                        <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>
+                            {{ size }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <input type="hidden" name="current_page_size" value="{{ page_obj.paginator.per_page }}">
+            <input type="hidden" name="page" value="{{ page_obj.number }}">
+
+            <span class="toolbar-divider"></span>
+
+            <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">+ Создать рейс</a>
         </div>
+
     </form>
 
     <div class="table-card">
@@ -253,7 +185,7 @@
                                     data-actions-toggle
                                     aria-expanded="false"
                                 >
-                                    Действия <span>▾</span>
+                                    ···
                                 </button>
                                 <div class="actions-menu" data-actions-menu>
                                     <a href="{% url 'trips:detail' trip.pk %}">Просмотр</a>
@@ -278,17 +210,13 @@
     {% if page_obj %}
         <nav class="pagination" aria-label="Пагинация поездок">
             {% if page_obj.has_previous %}
-                <a class="pagination-link pagination-nav" href="?page=1{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">
-                    «
-                </a>
+                <a class="pagination-link pagination-nav" href="?page=1{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">«</a>
             {% else %}
                 <span class="pagination-link pagination-nav is-disabled">«</span>
             {% endif %}
 
             {% if page_obj.has_previous %}
-                <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">
-                    ‹
-                </a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">‹</a>
             {% else %}
                 <span class="pagination-link pagination-nav is-disabled">‹</span>
             {% endif %}
@@ -299,29 +227,24 @@
                 {% elif item.current %}
                     <span class="pagination-link is-current">{{ item.number }}</span>
                 {% else %}
-                    <a class="pagination-link" href="?page={{ item.number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">
-                        {{ item.number }}
-                    </a>
+                    <a class="pagination-link" href="?page={{ item.number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">{{ item.number }}</a>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
-                <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">
-                    ›
-                </a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">›</a>
             {% else %}
                 <span class="pagination-link pagination-nav is-disabled">›</span>
             {% endif %}
 
             {% if page_obj.has_next %}
-                <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">
-                    »
-                </a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">»</a>
             {% else %}
                 <span class="pagination-link pagination-nav is-disabled">»</span>
             {% endif %}
         </nav>
     {% endif %}
+
 </section>
 
 <script defer src="{% static 'trips/js/trips_actions_dropdown.js' %}"></script>
