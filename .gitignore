@@ -88,3 +88,4 @@ docker-compose.override.yml
 secrets/
 backups/
 
+.claude/settings.local.json
