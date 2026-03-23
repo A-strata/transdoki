@@ -8,20 +8,31 @@ from .models import Account, UserProfile, UserSession
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    """Управление аккаунтами и их лимитами."""
+    """Управление аккаунтами и биллингом."""
 
     list_display = (
         "name",
         "owner",
-        "max_sessions",
-        "max_own_companies",
+        "balance",
+        "is_billing_exempt",
         "is_active",
         "created_at",
     )
-    list_editable = ("max_sessions", "max_own_companies", "is_active")
+    list_editable = ("is_billing_exempt", "is_active")
     search_fields = ("name", "owner__username", "owner__email")
-    list_filter = ("is_active",)
-    raw_id_fields = ("owner",)  # Удобно, если пользователей очень много
+    list_filter = ("is_active", "is_billing_exempt")
+    raw_id_fields = ("owner",)
+    fieldsets = (
+        (None, {
+            "fields": ("name", "owner", "is_active"),
+        }),
+        ("Биллинг", {
+            "fields": ("balance", "is_billing_exempt", "credit_limit"),
+        }),
+        ("Бесплатный уровень", {
+            "fields": ("free_orgs", "free_vehicles", "free_users"),
+        }),
+    )
 
 
 class UserProfileInline(admin.StackedInline):
@@ -31,16 +42,7 @@ class UserProfileInline(admin.StackedInline):
     extra = 0
     # Выводим account и role для редактирования,
     # а лимиты аккаунта — только для информации (readonly)
-    fields = ("account", "role", "get_max_sessions", "get_max_companies")
-    readonly_fields = ("get_max_sessions", "get_max_companies")
-
-    @admin.display(description="Лимит сессий (из Аккаунта)")
-    def get_max_sessions(self, obj):
-        return obj.account.max_sessions if obj.account else "—"
-
-    @admin.display(description="Лимит компаний (из Аккаунта)")
-    def get_max_companies(self, obj):
-        return obj.account.max_own_companies if obj.account else "—"
+    fields = ("account", "role")
 
 
 @admin.register(UserProfile)

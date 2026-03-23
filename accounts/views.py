@@ -6,6 +6,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
+from billing.mixins import BillingProtectedMixin
 from transdoki.tenancy import get_request_account
 
 from .forms import AccountRegistrationForm, AccountUserCreateForm
@@ -62,7 +63,7 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class AccountUserCreateView(LoginRequiredMixin, FormView):
+class AccountUserCreateView(BillingProtectedMixin, LoginRequiredMixin, FormView):
     template_name = "accounts/user_create.html"
     form_class = AccountUserCreateForm
     success_url = reverse_lazy("accounts:user_create")

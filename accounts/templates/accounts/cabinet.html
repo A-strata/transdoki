@@ -90,23 +90,50 @@
 
             <dt style="color:#6b7280;">Владелец</dt>
             <dd style="margin:0;">
-                {% if account.owner %}
-                    {{ account.owner.username }}
-                {% else %}
-                    —
-                {% endif %}
+                {% if account.owner %}{{ account.owner.username }}{% else %}—{% endif %}
             </dd>
-
-            <dt style="color:#6b7280;">Лимит сессий аккаунта</dt>
-            <dd style="margin:0;">{{ account.max_sessions }}</dd>
-
-            <dt style="color:#6b7280;">Лимит собственных компаний</dt>
-            <dd style="margin:0;">{{ account.max_own_companies }}</dd>
 
             <dt style="color:#6b7280;">Статус</dt>
             <dd style="margin:0;">
                 {% if account.is_active %}Активен{% else %}Неактивен{% endif %}
             </dd>
+        </dl>
+    </div>
+
+    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2 style="margin:0;">Баланс и тариф</h2>
+            <a href="{% url 'billing:transactions' %}"
+               style="font-size:0.88rem; color:#2563eb; padding:6px 12px; border-radius:8px; border:1px solid #bfdbfe; background:#eff6ff; text-decoration:none;">
+               История транзакций
+            </a>
+        </div>
+        <dl style="display:grid; grid-template-columns: 220px 1fr; gap:8px 12px; margin:0;">
+            {% if account.is_billing_exempt %}
+                <dt style="color:#6b7280;">Тариф</dt>
+                <dd style="margin:0; color:#6b7280;">Без ограничений (привилегированный аккаунт)</dd>
+            {% else %}
+                <dt style="color:#6b7280;">Баланс</dt>
+                <dd style="margin:0;">
+                    {% if account.balance > 0 %}
+                        <strong style="color:#16a34a;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                    {% elif account.balance >= 0 %}
+                        <strong style="color:#d97706;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                    {% else %}
+                        <strong style="color:#dc2626;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                    {% endif %}
+                </dd>
+
+                <dt style="color:#6b7280;">Кредитный лимит</dt>
+                <dd style="margin:0; color:#6b7280;">{{ account.credit_limit|floatformat:2 }} &#8381;</dd>
+
+                <dt style="color:#6b7280;">Бесплатно включено</dt>
+                <dd style="margin:0; color:#6b7280;">
+                    {{ account.free_orgs }} компани{{ account.free_orgs|pluralize:"я,и,й" }},
+                    {{ account.free_vehicles }} машин{{ account.free_vehicles|pluralize:"а,ы," }},
+                    {{ account.free_users }} пользовател{{ account.free_users|pluralize:"ь,я,ей" }}
+                </dd>
+            {% endif %}
         </dl>
     </div>
 

@@ -19,6 +19,7 @@ urlpatterns = [
         auth_views.LogoutView.as_view(next_page="login"),
         name="logout",
     ),
+    path("", include("billing.urls")),
     path("organizations/", include("organizations.urls")),
     path("persons/", include("persons.urls")),
     path("vehicles/", include("vehicles.urls")),

@@ -1,10 +1,18 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+
+from billing.constants import (
+    BLOCK_THRESHOLD,
+    FREE_TIER_ORGS,
+    FREE_TIER_USERS,
+    FREE_TIER_VEHICLES,
+)
 
 SESSION_TIMEOUT_HOURS = 2
 
@@ -24,15 +32,43 @@ class Account(models.Model):
         blank=True,
         verbose_name="Владелец аккаунта",
     )
-    max_sessions = models.PositiveIntegerField(
-        default=1, verbose_name="Лимит одновременных сессий аккаунта"
-    )
-    max_own_companies = models.PositiveIntegerField(
-        default=1, verbose_name="Лимит собственных компаний аккаунта"
-    )
     is_active = models.BooleanField(default=True, verbose_name="Активен")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создан")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлен")
+
+    # --- Биллинг ---
+    balance = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Баланс (₽)",
+    )
+    is_billing_exempt = models.BooleanField(
+        default=False,
+        verbose_name="Освобождён от биллинга",
+        help_text="Аккаунт не тарифицируется и не блокируется по балансу",
+    )
+    credit_limit = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=BLOCK_THRESHOLD,
+        verbose_name="Кредитный лимит (₽)",
+        help_text="Баланс ниже этого значения блокирует создание новых сущностей",
+    )
+
+    # --- Кастомные freemium-лимиты (можно расширить для отдельного аккаунта) ---
+    free_orgs = models.PositiveSmallIntegerField(
+        default=FREE_TIER_ORGS,
+        verbose_name="Бесплатных компаний",
+    )
+    free_vehicles = models.PositiveSmallIntegerField(
+        default=FREE_TIER_VEHICLES,
+        verbose_name="Бесплатных машин",
+    )
+    free_users = models.PositiveSmallIntegerField(
+        default=FREE_TIER_USERS,
+        verbose_name="Бесплатных пользователей",
+    )
 
     class Meta:
         verbose_name = "Аккаунт"
@@ -104,7 +140,7 @@ class UserProfile(models.Model):
         """Проверяет лимит собственных компаний account."""
         if not self.account_id:
             return False
-        return self.own_companies_count < self.account.max_own_companies
+        return self.own_companies_count < self.account.free_orgs
 
     @property
     def active_sessions_count(self):
@@ -130,11 +166,11 @@ class UserProfile(models.Model):
     def can_add_session(self):
         """
         Проверяет, можно ли создать новую сессию.
-        Лимит только на уровне account.
+        Лимит — до MAX_SESSIONS_PER_USER активных сессий на одного пользователя.
         """
-        if not self.account_id:
-            return False
-        return self.account_active_sessions_count < self.account.max_sessions
+        from billing.constants import MAX_SESSIONS_PER_USER
+
+        return self.active_sessions_count < MAX_SESSIONS_PER_USER
 
     def get_own_companies(self):
         """Возвращает queryset собственных компаний account."""

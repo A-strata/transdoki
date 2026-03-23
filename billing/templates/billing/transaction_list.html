@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}История транзакций — TMS{% endblock %}
+
+{% block head %}
+<style>
+    .tx-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .tx-table th {
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 8px 10px;
+        color: #6b7280;
+        font-weight: 600;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .tx-table td {
+        border-bottom: 1px solid #f3f4f6;
+        padding: 9px 10px;
+        font-size: 0.92rem;
+        vertical-align: middle;
+    }
+
+    .tx-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .tx-kind {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .tx-deposit {
+        background: #f0fdf4;
+        color: #16a34a;
+        border: 1px solid #bbf7d0;
+    }
+
+    .tx-charge {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+
+    .tx-amount-deposit { color: #16a34a; font-weight: 600; }
+    .tx-amount-charge  { color: #dc2626; font-weight: 600; }
+
+    .balance-after {
+        color: #374151;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tx-empty {
+        text-align: center;
+        padding: 40px 0;
+        color: #9ca3af;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 16px;
+        flex-wrap: wrap;
+    }
+
+    .page-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #374151;
+        font-size: 0.88rem;
+        text-decoration: none;
+        transition: background .15s ease, border-color .15s ease;
+    }
+
+    .page-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+    .page-btn.current { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; font-weight: 600; }
+    .page-btn.disabled { color: #d1d5db; pointer-events: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section style="max-width: 980px; margin: 0 auto; padding: 12px 0;">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; flex-wrap:wrap;">
+        <h1 style="margin:0;">История транзакций</h1>
+
+        {% if not account.is_billing_exempt %}
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="color:#6b7280; font-size:0.9rem;">Текущий баланс:</span>
+                {% if account.balance > 0 %}
+                    <strong style="color:#16a34a; font-size:1.1rem;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                {% elif account.balance == 0 %}
+                    <strong style="color:#d97706; font-size:1.1rem;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                {% else %}
+                    <strong style="color:#dc2626; font-size:1.1rem;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                {% endif %}
+            </div>
+        {% else %}
+            <span style="background:#f3f4f6; color:#6b7280; border:1px solid #e5e7eb; border-radius:9px; padding:6px 12px; font-size:0.88rem;">
+                Аккаунт без ограничений
+            </span>
+        {% endif %}
+    </div>
+
+    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px;">
+        {% if transactions %}
+            <div style="overflow-x:auto;">
+                <table class="tx-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Сумма</th>
+                            <th>Баланс после</th>
+                            <th>Описание</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                            <tr>
+                                <td style="color:#6b7280; white-space:nowrap;">
+                                    {{ tx.created_at|date:"d M Y, H:i" }}
+                                </td>
+                                <td>
+                                    {% if tx.kind == 'deposit' %}
+                                        <span class="tx-kind tx-deposit">&#8593; Пополнение</span>
+                                    {% else %}
+                                        <span class="tx-kind tx-charge">&#8595; Списание</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tx.kind == 'deposit' %}
+                                        <span class="tx-amount-deposit">+{{ tx.amount|floatformat:2 }} &#8381;</span>
+                                    {% else %}
+                                        <span class="tx-amount-charge">&#8722;{{ tx.amount|floatformat:2 }} &#8381;</span>
+                                    {% endif %}
+                                </td>
+                                <td class="balance-after">
+                                    {{ tx.balance_after|floatformat:2 }} &#8381;
+                                </td>
+                                <td style="color:#374151;">{{ tx.description }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+                <div class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1" class="page-btn">&laquo;</a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="page-btn">&lsaquo;</a>
+                    {% else %}
+                        <span class="page-btn disabled">&laquo;</span>
+                        <span class="page-btn disabled">&lsaquo;</span>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="page-btn current">{{ num }}</span>
+                        {% elif num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+                            <a href="?page={{ num }}" class="page-btn">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="page-btn">&rsaquo;</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}" class="page-btn">&raquo;</a>
+                    {% else %}
+                        <span class="page-btn disabled">&rsaquo;</span>
+                        <span class="page-btn disabled">&raquo;</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+        {% else %}
+            <p class="tx-empty">Транзакций пока нет</p>
+        {% endif %}
+    </div>
+
+</section>
+{% endblock %}

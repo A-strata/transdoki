@@ -142,6 +142,49 @@
         margin-right: 4px;
     }
 
+    .balance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 11px;
+        border-radius: 9px;
+        border: 1px solid transparent;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: filter .15s ease;
+        white-space: nowrap;
+    }
+
+    .balance-badge:hover {
+        filter: brightness(0.95);
+    }
+
+    .balance-ok {
+        background: #f0fdf4;
+        color: #16a34a;
+        border-color: #bbf7d0;
+    }
+
+    .balance-warn {
+        background: #fffbeb;
+        color: #d97706;
+        border-color: #fde68a;
+    }
+
+    .balance-danger {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .balance-exempt {
+        background: #f3f4f6;
+        color: #6b7280;
+        border-color: #e5e7eb;
+        cursor: default;
+    }
+
     .logout-form {
         margin: 0;
     }
@@ -386,6 +429,23 @@
             <div class="nav-right">
                 {% if user.is_authenticated %}
                     <span class="user-meta">Привет, {{ user.username }}!</span>
+
+                    {% if billing_account %}
+                        {% if billing_account.is_billing_exempt %}
+                            <span class="balance-badge balance-exempt">Без ограничений</span>
+                        {% else %}
+                            {% with b=billing_account.balance %}
+                                {% url 'billing:transactions' as billing_url %}
+                                {% if b > 100 %}
+                                    <a href="{{ billing_url }}" class="balance-badge balance-ok">&#9679; {{ b|floatformat:2 }} &#8381;</a>
+                                {% elif b >= 0 %}
+                                    <a href="{{ billing_url }}" class="balance-badge balance-warn">&#9651; {{ b|floatformat:2 }} &#8381;</a>
+                                {% else %}
+                                    <a href="{{ billing_url }}" class="balance-badge balance-danger">&#9888; {{ b|floatformat:2 }} &#8381;</a>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endif %}
 
                     {% url 'accounts:cabinet' as cabinet_url %}
                     <a href="{{ cabinet_url }}"

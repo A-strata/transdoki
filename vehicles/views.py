@@ -7,6 +7,8 @@ from django.views.generic import CreateView, ListView, UpdateView
 from organizations.models import Organization
 from transdoki.tenancy import get_request_account
 
+from billing.mixins import BillingProtectedMixin
+
 from .forms import VehicleForm
 from .models import Vehicle
 
@@ -18,7 +20,7 @@ class UserOwnedListView(LoginRequiredMixin, ListView):
         return self.model.objects.filter(account=get_request_account(self.request))
 
 
-class VehicleCreateView(LoginRequiredMixin, CreateView):
+class VehicleCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
     model = Vehicle
     form_class = VehicleForm
     template_name = "vehicles/vehicle_form.html"

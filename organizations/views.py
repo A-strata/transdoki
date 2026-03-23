@@ -6,6 +6,8 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from transdoki.tenancy import get_request_account
 
+from billing.mixins import BillingProtectedMixin
+
 from .forms import OrganizationForm
 from .models import Organization
 
@@ -17,7 +19,7 @@ class UserOwnedListView(LoginRequiredMixin, ListView):
         return self.model.objects.filter(account=get_request_account(self.request))
 
 
-class OrganizationCreateView(LoginRequiredMixin, CreateView):
+class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
     model = Organization
     form_class = OrganizationForm
     template_name = "organizations/organization_form.html"
