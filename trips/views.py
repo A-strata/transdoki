@@ -17,6 +17,7 @@ from django.views.decorators.http import require_GET
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from dotenv import load_dotenv
 
+from organizations.models import Organization
 from transdoki.tenancy import get_request_account
 
 from .forms import TripAttachmentUploadForm, TripForm
@@ -89,6 +90,14 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         initial.update(model_to_dict(source_trip, fields=fields_to_copy))
         return initial
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        account = get_request_account(self.request)
+        context["orgs"] = list(
+            Organization.objects.filter(account=account).values("id", "short_name")
+        )
+        return context
+
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
@@ -108,14 +117,20 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
         return Trip.objects.filter(account=get_request_account(self.request))
 
     def get_form_kwargs(self):
-        # Готовит контекст для формы
         kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user  # Передает user для фильтрации
+        kwargs["user"] = self.request.user
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        account = get_request_account(self.request)
+        context["orgs"] = list(
+            Organization.objects.filter(account=account).values("id", "short_name")
+        )
+        return context
+
     def form_valid(self, form):
-        # Управляет обновлением объекта (created_by уже установлен)
-        return super().form_valid(form)  # Делегирует сохранение
+        return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy("trips:detail", kwargs={"pk": self.object.pk})

@@ -254,6 +254,38 @@
     color: #6b7280;
     line-height: 1.35;
     }
+    .field-add-row {
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+    }
+
+    .field-add-row select {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .qc-add-btn {
+        flex-shrink: 0;
+        width: 36px;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        font-size: 1.3rem;
+        line-height: 1;
+        cursor: pointer;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .15s ease;
+    }
+
+    .qc-add-btn:hover {
+        background: #e5e7eb;
+    }
+
     @media (max-width: 760px) {
         .form-card { padding: 12px; }
         .section { padding: 10px; }
@@ -329,7 +361,13 @@
                     <h3 class="parties-col-title">Заказчик</h3>
                     <div class="field">
                         {{ form.client.label_tag }}
-                        {{ form.client }}
+                        <div class="field-add-row">
+                            {{ form.client }}
+                            <button type="button" class="qc-add-btn"
+                                    data-qc-type="organization"
+                                    data-qc-target="{{ form.client.id_for_label }}"
+                                    title="Добавить организацию">+</button>
+                        </div>
                         {{ form.client.errors }}
                     </div>
                 </div>
@@ -338,22 +376,48 @@
                     <h3 class="parties-col-title">Исполнение перевозки</h3>
                     <div class="field">
                         {{ form.carrier.label_tag }}
-                        {{ form.carrier }}
+                        <div class="field-add-row">
+                            {{ form.carrier }}
+                            <button type="button" class="qc-add-btn"
+                                    data-qc-type="organization"
+                                    data-qc-target="{{ form.carrier.id_for_label }}"
+                                    title="Добавить организацию">+</button>
+                        </div>
                         {{ form.carrier.errors }}
                     </div>
                     <div class="field">
                         {{ form.driver.label_tag }}
-                        {{ form.driver }}
+                        <div class="field-add-row">
+                            {{ form.driver }}
+                            <button type="button" class="qc-add-btn"
+                                    data-qc-type="person"
+                                    data-qc-target="{{ form.driver.id_for_label }}"
+                                    title="Добавить водителя">+</button>
+                        </div>
                         {{ form.driver.errors }}
                     </div>
                     <div class="field">
                         {{ form.truck.label_tag }}
-                        {{ form.truck }}
+                        <div class="field-add-row">
+                            {{ form.truck }}
+                            <button type="button" class="qc-add-btn"
+                                    data-qc-type="vehicle"
+                                    data-qc-target="{{ form.truck.id_for_label }}"
+                                    data-qc-vehicle-types="single,truck"
+                                    title="Добавить ТС">+</button>
+                        </div>
                         {{ form.truck.errors }}
                     </div>
                     <div class="field">
                         {{ form.trailer.label_tag }}
-                        {{ form.trailer }}
+                        <div class="field-add-row">
+                            {{ form.trailer }}
+                            <button type="button" class="qc-add-btn"
+                                    data-qc-type="vehicle"
+                                    data-qc-target="{{ form.trailer.id_for_label }}"
+                                    data-qc-vehicle-types="trailer"
+                                    title="Добавить прицеп">+</button>
+                        </div>
                         {{ form.trailer.errors }}
                     </div>
                 </div>
@@ -372,7 +436,13 @@
                     </div>
                     <div class="field">
                         {{ form.consignor.label_tag }}
-                        {{ form.consignor }}
+                        <div class="field-add-row">
+                            {{ form.consignor }}
+                            <button type="button" class="qc-add-btn"
+                                    data-qc-type="organization"
+                                    data-qc-target="{{ form.consignor.id_for_label }}"
+                                    title="Добавить организацию">+</button>
+                        </div>
                         {{ form.consignor.errors }}
                     </div>
                     <div class="field">
@@ -406,7 +476,13 @@
                     </div>
                     <div class="field">
                         {{ form.consignee.label_tag }}
-                        {{ form.consignee }}
+                        <div class="field-add-row">
+                            {{ form.consignee }}
+                            <button type="button" class="qc-add-btn"
+                                    data-qc-type="organization"
+                                    data-qc-target="{{ form.consignee.id_for_label }}"
+                                    title="Добавить организацию">+</button>
+                        </div>
                         {{ form.consignee.errors }}
                     </div>
                     <div class="field">
@@ -492,6 +568,12 @@
     </form>
 </section>
 
+{{ orgs|json_script:"qc-orgs-data" }}
+<script>
+window.QC_ORG_SUGGESTIONS_URL = "{% url 'organizations:api_suggestions_by_inn' %}";
+window.QC_ORGS = JSON.parse(document.getElementById('qc-orgs-data').textContent);
+</script>
+<script src="{% static 'js/quick_create.js' %}"></script>
 <script src="{% static 'trips/js/autocomplete.js' %}"></script>
 <style>
 .address-suggest-wrap {

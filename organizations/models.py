@@ -111,32 +111,6 @@ class Organization(UserOwnedModel):
             ),
         ]
 
-    def _resolve_limit(self) -> int:
-        return self.account.max_own_companies
-
-    def _own_companies_qs(self):
-        return Organization.objects.filter(
-            is_own_company=True,
-            account_id=self.account_id,
-        ).exclude(pk=self.pk)
-
-    def clean(self):
-        super().clean()
-
-        if self.is_own_company:
-            own_companies_count = self._own_companies_qs().count()
-            limit = self._resolve_limit()
-
-            if own_companies_count >= limit:
-                raise ValidationError(
-                    {
-                        "is_own_company": (
-                            f"Превышен лимит собственных компаний. "
-                            f"Использовано {own_companies_count} из {limit}"
-                        )
-                    }
-                )
-
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)

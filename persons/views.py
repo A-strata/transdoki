@@ -1,12 +1,17 @@
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.http import JsonResponse
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from transdoki.tenancy import get_request_account
 
 from .forms import PersonForm
 from .models import Person
+from .validators import validate_phone_number
 
 
 class UserOwnedListView(LoginRequiredMixin, ListView):
@@ -62,3 +67,45 @@ class PersonListView(UserOwnedListView):
     model = Person
     template_name = "persons/person_list.html"
     context_object_name = "persons"
+
+
+@login_required
+@require_POST
+def person_quick_create(request):
+    account = get_request_account(request)
+    surname = request.POST.get("surname", "").strip()
+    name = request.POST.get("name", "").strip()
+    patronymic = request.POST.get("patronymic", "").strip()
+    phone = request.POST.get("phone", "").strip()
+
+    errors = {}
+    if not surname:
+        errors["surname"] = "Обязательное поле"
+    if not name:
+        errors["name"] = "Обязательное поле"
+    if phone:
+        try:
+            validate_phone_number(phone)
+        except ValidationError as e:
+            errors["phone"] = e.messages[0]
+
+    if errors:
+        return JsonResponse({"errors": errors}, status=400)
+
+    try:
+        person = Person(
+            surname=surname,
+            name=name,
+            patronymic=patronymic,
+            phone=phone,
+            created_by=request.user,
+            account=account,
+        )
+        person.save()
+    except IntegrityError:
+        return JsonResponse(
+            {"errors": {"surname": "Водитель с таким ФИО уже существует"}}, status=400
+        )
+
+    full_name = " ".join(filter(None, [surname, name, patronymic]))
+    return JsonResponse({"id": person.pk, "text": full_name})

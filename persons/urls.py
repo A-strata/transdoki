@@ -9,4 +9,5 @@ urlpatterns = [
     path('<int:pk>/edit/', views.PersonUpdateView.as_view(), name='edit'),
     path('<int:pk>/delete/', views.PersonDeleteView.as_view(), name='delete'),
     path('', views.PersonListView.as_view(), name='list'),
+    path('quick-create/', views.person_quick_create, name='quick_create'),
 ]

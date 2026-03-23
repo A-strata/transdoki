@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import VehicleCreateView, VehicleListView, VehicleUpdateView
+from .views import VehicleCreateView, VehicleListView, VehicleUpdateView, vehicle_quick_create
 
 app_name = 'vehicles'
 
@@ -16,4 +16,5 @@ urlpatterns = [
         VehicleListView.as_view(),
         name='list'
     ),
+    path('quick-create/', vehicle_quick_create, name='quick_create'),
 ]
