@@ -17,7 +17,6 @@ from django.views.decorators.http import require_GET
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from dotenv import load_dotenv
 
-from organizations.models import Organization
 from transdoki.tenancy import get_request_account
 
 from .forms import TripAttachmentUploadForm, TripForm
@@ -90,14 +89,6 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         initial.update(model_to_dict(source_trip, fields=fields_to_copy))
         return initial
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        account = get_request_account(self.request)
-        context["orgs"] = list(
-            Organization.objects.filter(account=account).values("id", "short_name")
-        )
-        return context
-
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
@@ -120,14 +111,6 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
         return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        account = get_request_account(self.request)
-        context["orgs"] = list(
-            Organization.objects.filter(account=account).values("id", "short_name")
-        )
-        return context
 
     def form_valid(self, form):
         return super().form_valid(form)

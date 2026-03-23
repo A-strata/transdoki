@@ -311,8 +311,6 @@
         currentTarget = document.getElementById(targetSelectId);
         if (!currentTarget) return;
 
-        const orgs = window.QC_ORGS || [];
-
         currentEndpoint = '/vehicles/quick-create/';
         currentFields = ['vehicle_type', 'grn', 'brand', 'model', 'property_type', 'owner_id'];
 
@@ -340,9 +338,7 @@
         ownerSelect.name = 'owner_id';
         ownerSelect.style.cssText = 'width:100%; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px; font-size:.92rem; box-sizing:border-box;';
         ownerSelect.add(new Option('— начните вводить —', ''));
-        orgs.forEach(function (c) {
-            ownerSelect.add(new Option(c.short_name, c.id));
-        });
+        ownerSelect.dataset.searchUrl = window.QC_ORG_SEARCH_URL || '/organizations/search/';
         const ownerErr = document.createElement('span');
         ownerErr.dataset.errField = 'owner_id';
         ownerErr.style.cssText = 'display:none; font-size:.82rem; color:#991b1b; margin-top:3px;';
