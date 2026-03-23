@@ -2,9 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.db.models import Q
 from django.http import JsonResponse
 from django.urls import reverse_lazy
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from transdoki.tenancy import get_request_account
@@ -67,6 +68,26 @@ class PersonListView(UserOwnedListView):
     model = Person
     template_name = "persons/person_list.html"
     context_object_name = "persons"
+
+
+@login_required
+@require_GET
+def person_search(request):
+    account = get_request_account(request)
+    q = request.GET.get("q", "").strip()
+    qs = Person.objects.filter(account=account)
+    if q:
+        for part in q.split():
+            qs = qs.filter(
+                Q(surname__icontains=part)
+                | Q(name__icontains=part)
+                | Q(patronymic__icontains=part)
+            )
+    results = [
+        {"id": p.pk, "text": str(p)}
+        for p in qs.order_by("surname", "name")[:25]
+    ]
+    return JsonResponse({"results": results})
 
 
 @login_required

@@ -7,6 +7,7 @@ from .views import (
     OrganizationListView,
     OrganizationUpdateView,
     organization_quick_create,
+    organization_search,
 )
 
 app_name = "organizations"
@@ -20,4 +21,5 @@ urlpatterns = [
     # views.OrganizationDeleteView.as_view(), name='delete'),
     path("api/suggestions_by_inn/", get_org_data, name="api_suggestions_by_inn"),
     path("quick-create/", organization_quick_create, name="quick_create"),
+    path("search/", organization_search, name="search"),
 ]

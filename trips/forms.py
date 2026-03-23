@@ -1,6 +1,31 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 from .models import Trip
+
+
+class AjaxModelChoiceField(forms.ModelChoiceField):
+    """
+    ModelChoiceField с двумя queryset-ами:
+    - self.queryset        — минимальный (только текущее значение), для рендера <option>
+    - self._validation_qs  — полный по account, для валидации submitted pk
+
+    Это позволяет не грузить все записи в HTML, сохраняя серверную валидацию.
+    """
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        qs = getattr(self, "_validation_qs", self.queryset)
+        try:
+            return qs.get(pk=value)
+        except (ValueError, TypeError, qs.model.DoesNotExist):
+            raise ValidationError(
+                self.error_messages["invalid_choice"],
+                code="invalid_choice",
+                params={"value": value},
+            )
 from .validators import (
     validate_client_cannot_be_carrier,
     validate_costs_by_our_company_role,
@@ -35,6 +60,9 @@ class TripForm(forms.ModelForm):
             ),
         }
 
+    # FK-поля, переводимые в AjaxModelChoiceField
+    _AJAX_FIELDS = ["client", "consignor", "consignee", "carrier", "driver", "truck", "trailer"]
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
@@ -45,53 +73,68 @@ class TripForm(forms.ModelForm):
         else:
             self.fields.pop("num_of_trip", None)
 
+        # Заменяем FK-поля на AjaxModelChoiceField (пустой queryset для рендера)
+        for fname in self._AJAX_FIELDS:
+            if fname not in self.fields:
+                continue
+            orig = self.fields[fname]
+            self.fields[fname] = AjaxModelChoiceField(
+                queryset=orig.queryset.none(),
+                required=orig.required,
+                widget=orig.widget,
+                label=orig.label,
+                initial=orig.initial,
+                help_text=orig.help_text,
+                empty_label=orig.empty_label,
+                to_field_name=orig.to_field_name,
+            )
+
         if self.user and self.user.is_authenticated:
             self._apply_queryset_filters()
 
     def _apply_queryset_filters(self):
-        """Применяем tenant-фильтрацию по account с сохранением текущих значений."""
         from organizations.models import Organization
         from persons.models import Person
         from vehicles.models import Vehicle
 
         account_id = getattr(getattr(self.user, "profile", None), "account_id", None)
         if not account_id:
-            # Без account не показываем чужие данные
-            organization_qs = Organization.objects.none()
-            person_qs = Person.objects.none()
-            truck_qs = Vehicle.objects.none()
-            trailer_qs = Vehicle.objects.none()
-        else:
-            organization_qs = Organization.objects.filter(account_id=account_id)
-            person_qs = Person.objects.filter(account_id=account_id)
-            truck_qs = Vehicle.objects.filter(
-                account_id=account_id, vehicle_type__in=["truck", "single"]
-            )
-            trailer_qs = Vehicle.objects.filter(
-                account_id=account_id, vehicle_type="trailer"
-            )
+            return  # queryset уже none() из __init__
 
-        # Организации
-        for field in ["client", "consignor", "consignee", "carrier"]:
-            self.fields[field].queryset = self._add_current_value(
-                organization_qs, field
-            )
+        full_org = Organization.objects.filter(account_id=account_id)
+        full_person = Person.objects.filter(account_id=account_id)
+        full_truck = Vehicle.objects.filter(account_id=account_id, vehicle_type__in=["truck", "single"])
+        full_trailer = Vehicle.objects.filter(account_id=account_id, vehicle_type="trailer")
 
-        # Люди
-        self.fields["driver"].queryset = self._add_current_value(person_qs, "driver")
+        org_search_url = reverse("organizations:search")
+        person_search_url = reverse("persons:search")
+        vehicle_search_url = reverse("vehicles:search")
 
-        # Транспорт
-        self.fields["truck"].queryset = self._add_current_value(truck_qs, "truck")
-        self.fields["trailer"].queryset = self._add_current_value(trailer_qs, "trailer")
+        for fname in ["client", "consignor", "consignee", "carrier"]:
+            self._setup_ajax_field(fname, full_org, org_search_url)
 
-    def _add_current_value(self, base_queryset, field_name):
-        """Добавляет текущее значение в queryset"""
-        current_value = getattr(self.instance, field_name, None)
-        if current_value:
-            return base_queryset | base_queryset.model.objects.filter(
-                pk=current_value.pk
-            )
-        return base_queryset
+        self._setup_ajax_field("driver", full_person, person_search_url)
+        self._setup_ajax_field("truck", full_truck, vehicle_search_url, search_type="truck")
+        self._setup_ajax_field("trailer", full_trailer, vehicle_search_url, search_type="trailer")
+
+    def _setup_ajax_field(self, fname, full_qs, search_url, search_type=""):
+        """Устанавливает validation queryset, display queryset (текущее значение)
+        и data-атрибуты для AJAX-автокомплита."""
+        field = self.fields[fname]
+        field._validation_qs = full_qs
+
+        # display queryset: только текущее значение (при edit) или initial (при copy)
+        current = getattr(self.instance, fname, None)
+        initial_pk = self.initial.get(fname) if not (current and current.pk) else None
+        if current and current.pk:
+            field.queryset = full_qs.filter(pk=current.pk)
+        elif initial_pk:
+            field.queryset = full_qs.filter(pk=initial_pk)
+        # else: остаётся none()
+
+        field.widget.attrs["data-search-url"] = search_url
+        if search_type:
+            field.widget.attrs["data-search-type"] = search_type
 
     # ✅ ДОБАВЛЕНО: парная валидация контактов
     def _validate_contact_pair(

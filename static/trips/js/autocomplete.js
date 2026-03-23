@@ -1,255 +1,177 @@
 function initAutocomplete(selectId) {
     const select = document.getElementById(selectId);
-    if (!select) {
-        console.warn(`Element ${selectId} not found`);
-        return;
-    }
+    if (!select) return;
 
+    const searchUrl = select.dataset.searchUrl || '';
+    const searchType = select.dataset.searchType || '';
+    const isAjax = !!searchUrl;
+
+    // ── DOM setup ─────────────────────────────────────────────────────────
     const container = document.createElement('div');
-    container.style.position = 'relative';
-    container.style.display = 'inline-block';
+    container.style.cssText = 'position:relative; display:block;';
     container.className = 'autocomplete-container';
-    
+
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'Начните вводить...';
-    input.className = 'autocomplete-input form-control';
+    input.placeholder = isAjax ? 'Начните вводить для поиска…' : 'Начните вводить…';
+    input.className = 'autocomplete-input';
     input.style.width = '100%';
 
-    // НЕ создаем скрытое поле - работаем с оригинальным select
     const dropdown = document.createElement('div');
-    dropdown.style.display = 'none';
-    dropdown.style.position = 'absolute';
-    dropdown.style.top = '100%';
-    dropdown.style.left = '0';
-    dropdown.style.width = '100%';
-    dropdown.style.maxHeight = '200px';
-    dropdown.style.overflowY = 'auto';
-    dropdown.style.background = 'white';
-    dropdown.style.border = '1px solid #ccc';
-    dropdown.style.borderTop = 'none';
-    dropdown.style.zIndex = '1000';
+    dropdown.style.cssText = [
+        'display:none; position:absolute; top:100%; left:0; right:0;',
+        'max-height:220px; overflow-y:auto; background:#fff;',
+        'border:1px solid #e5e7eb; border-top:none; border-radius:0 0 10px 10px;',
+        'box-shadow:0 8px 16px rgba(15,23,42,.1); z-index:1100;',
+    ].join('');
     dropdown.className = 'autocomplete-dropdown';
 
-    // Вставляем контейнер перед select и перемещаем select внутрь
     select.parentNode.insertBefore(container, select);
     container.appendChild(input);
     container.appendChild(dropdown);
-    container.appendChild(select); // Перемещаем select внутрь контейнера
-    
-    // Скрываем select, но оставляем в DOM
-    select.style.position = 'absolute';
-    select.style.opacity = '0';
-    select.style.height = '1px';
-    select.style.width = '1px';
-    select.style.pointerEvents = 'none';
-    select.style.zIndex = '-1';
+    container.appendChild(select);
 
-    console.log(`Autocomplete initialized for ${selectId}, select name: ${select.name}`);
+    // Скрываем оригинальный select, оставляем в DOM для отправки формы
+    select.style.cssText = 'position:absolute; opacity:0; height:1px; width:1px; pointer-events:none; z-index:-1;';
 
-    // Восстанавливаем значение при загрузке
+    // ── Синхронизация начального значения ─────────────────────────────────
     function syncInputToSelect() {
         if (select.value) {
-            const selectedOption = select.options[select.selectedIndex];
-            if (selectedOption && selectedOption.text) {
-                input.value = selectedOption.text;
-                console.log(`Initialized ${selectId} with:`, selectedOption.text, select.value);
-            }
+            const opt = select.options[select.selectedIndex];
+            input.value = opt ? opt.text : '';
         } else {
             input.value = '';
         }
     }
-
-    // Синхронизация при изменении select (на случай если значение меняется извне)
     select.addEventListener('change', syncInputToSelect);
-    
-    // Инициализация
     syncInputToSelect();
 
-    function updateDropdown() {
-        const searchTerm = input.value.toLowerCase().trim();
+    // ── Рендер выпадающего списка ──────────────────────────────────────────
+    function renderItems(items) {
         dropdown.innerHTML = '';
-        
-        let hasResults = false;
-        let exactMatch = null;
-        
-        for (let option of select.options) {
-            if (!option.value) continue;
-            
-            const text = option.textContent.toLowerCase();
-            if (text.includes(searchTerm)) {
-                const item = document.createElement('div');
-                item.textContent = option.text;
-                item.style.padding = '8px 12px';
-                item.style.cursor = 'pointer';
-                item.style.borderBottom = '1px solid #eee';
-                
-                // Запоминаем точное совпадение
-                if (text === searchTerm.toLowerCase()) {
-                    exactMatch = option;
-                }
-                
-                item.addEventListener('click', function() {
-                    selectOption(option);
-                });
-                
-                item.addEventListener('mouseenter', function() {
-                    this.style.background = '#f5f5f5';
-                });
-                
-                item.addEventListener('mouseleave', function() {
-                    this.style.background = 'white';
-                });
-                
-                dropdown.appendChild(item);
-                hasResults = true;
-            }
+        if (!items.length) {
+            dropdown.style.display = 'none';
+            return;
         }
-        
-        // Автоматически выбираем точное совпадение
-        if (exactMatch && searchTerm.length > 0) {
-            selectOption(exactMatch);
-        } else {
-            dropdown.style.display = searchTerm && hasResults ? 'block' : 'none';
-        }
+        items.forEach(function (item) {
+            const el = document.createElement('div');
+            el.textContent = item.text;
+            el.style.cssText = 'padding:9px 12px; cursor:pointer; border-bottom:1px solid #f3f4f6; font-size:.92rem;';
+            el.addEventListener('mouseenter', function () { this.style.background = '#f9fafb'; });
+            el.addEventListener('mouseleave', function () { this.style.background = '#fff'; });
+            el.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                selectItem(item);
+            });
+            dropdown.appendChild(el);
+        });
+        dropdown.style.display = 'block';
     }
 
-    function selectOption(option) {
-        input.value = option.text;
-        select.value = option.value;
+    function selectItem(item) {
+        // Добавляем опцию если её нет, затем устанавливаем значение
+        let opt = Array.from(select.options).find(o => String(o.value) === String(item.id));
+        if (!opt) {
+            opt = new Option(item.text, item.id);
+            select.add(opt);
+        }
+        select.value = item.id;
+        input.value = item.text;
         dropdown.style.display = 'none';
-        
-        console.log(`Selected ${selectId}:`, option.text, option.value);
-        
-        // Триггерим события для Django
-        const changeEvent = new Event('change', { bubbles: true });
-        const inputEvent = new Event('input', { bubbles: true });
-        select.dispatchEvent(changeEvent);
-        select.dispatchEvent(inputEvent);
-        
-        // Также диспатчим события на input для хорошей меры
-        input.dispatchEvent(changeEvent);
-        input.dispatchEvent(inputEvent);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    input.addEventListener('input', function() {
-        // Если пользователь очищает поле, очищаем и select
-        if (!input.value.trim()) {
-            select.value = '';
-            const changeEvent = new Event('change', { bubbles: true });
-            select.dispatchEvent(changeEvent);
+    function closeDropdown() {
+        dropdown.style.display = 'none';
+    }
+
+    // ── AJAX-режим ────────────────────────────────────────────────────────
+    if (isAjax) {
+        let debounceTimer = null;
+        let controller = null;
+
+        function fetchResults(q) {
+            if (controller) controller.abort();
+            controller = new AbortController();
+
+            const url = new URL(searchUrl, location.origin);
+            if (q) url.searchParams.set('q', q);
+            if (searchType) url.searchParams.set('type', searchType);
+
+            fetch(url.toString(), { signal: controller.signal })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { renderItems(data.results || []); })
+                .catch(function () {});
         }
-        updateDropdown();
-    });
-    
-    input.addEventListener('focus', function() {
-        updateDropdown();
-        // Показываем все варианты при фокусе
-        if (!input.value.trim()) {
-            const searchTerm = '';
-            dropdown.innerHTML = '';
-            
-            for (let option of select.options) {
-                if (!option.value) continue;
-                
-                const item = document.createElement('div');
-                item.textContent = option.text;
-                item.style.padding = '8px 12px';
-                item.style.cursor = 'pointer';
-                item.style.borderBottom = '1px solid #eee';
-                
-                item.addEventListener('click', function() {
-                    selectOption(option);
-                });
-                
-                item.addEventListener('mouseenter', function() {
-                    this.style.background = '#f5f5f5';
-                });
-                
-                item.addEventListener('mouseleave', function() {
-                    this.style.background = 'white';
-                });
-                
-                dropdown.appendChild(item);
+
+        input.addEventListener('input', function () {
+            const q = input.value.trim();
+            if (!q) {
+                select.value = '';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                closeDropdown();
+                return;
             }
-            dropdown.style.display = 'block';
-        }
-    });
+            if (q.length < 2) {
+                closeDropdown();
+                return;
+            }
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () { fetchResults(q); }, 300);
+        });
 
-    input.addEventListener('blur', function() {
-        // Не скрываем сразу, чтобы можно было кликнуть по варианту
-        setTimeout(() => {
-            dropdown.style.display = 'none';
-        }, 200);
-    });
-
-    // Скрываем dropdown при клике вне
-    document.addEventListener('click', function(e) {
-        if (!container.contains(e.target)) {
-            dropdown.style.display = 'none';
-        }
-    });
-
-    // Enter для выбора первого варианта
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            if (dropdown.style.display === 'block') {
-                const firstItem = dropdown.querySelector('div');
-                if (firstItem) {
-                    firstItem.click();
+    // ── DOM-режим (для quick_create модалки и обратной совместимости) ─────
+    } else {
+        function getDomItems(q) {
+            const items = [];
+            for (const opt of select.options) {
+                if (!opt.value) continue;
+                if (!q || opt.textContent.toLowerCase().includes(q.toLowerCase())) {
+                    items.push({ id: opt.value, text: opt.text });
                 }
             }
-            e.preventDefault();
+            return items;
         }
-        
-        // Esc для скрытия dropdown
+
+        input.addEventListener('input', function () {
+            const q = input.value.trim();
+            if (!q) {
+                select.value = '';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            renderItems(getDomItems(q));
+        });
+
+        input.addEventListener('focus', function () {
+            renderItems(getDomItems(input.value.trim()));
+        });
+    }
+
+    // ── Общие обработчики ─────────────────────────────────────────────────
+    input.addEventListener('blur', function () {
+        setTimeout(closeDropdown, 200);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!container.contains(e.target)) closeDropdown();
+    });
+
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const first = dropdown.querySelector('div');
+            if (first) first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        }
         if (e.key === 'Escape') {
-            dropdown.style.display = 'none';
+            closeDropdown();
             input.blur();
         }
     });
-
-    // Обновляем dropdown при изменении select извне
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
-                syncInputToSelect();
-            }
-        });
-    });
-    
-    observer.observe(select, { attributes: true, attributeFilter: ['value'] });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initializing autocomplete...');
-    
-    // Используем правильные ID полей Django
-    const fields = [
-        'id_client', 'id_consignor', 'id_consignee', 
-        'id_carrier', 'id_driver', 'id_truck', 'id_trailer'
-    ];
-    
-    fields.forEach(fieldId => {
-        // Добавляем небольшую задержку для полной загрузки DOM
-        setTimeout(() => {
-            initAutocomplete(fieldId);
-        }, 100);
+document.addEventListener('DOMContentLoaded', function () {
+    const fields = ['id_client', 'id_consignor', 'id_consignee', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'];
+    fields.forEach(function (id) {
+        setTimeout(function () { initAutocomplete(id); }, 0);
     });
-    
-    // Отладочная функция для проверки состояния полей
-    window.debugFormState = function() {
-        console.log('=== FORM STATE DEBUG ===');
-        const fields = ['client', 'consignor', 'consignee', 'carrier', 'driver', 'truck', 'trailer'];
-        fields.forEach(fieldName => {
-            const select = document.getElementById(`id_${fieldName}`);
-            const input = document.querySelector(`#id_${fieldName}`).parentNode.querySelector('.autocomplete-input');
-            console.log(`${fieldName}:`, {
-                selectValue: select?.value,
-                inputValue: input?.value,
-                selectName: select?.name,
-                selectInDOM: !!select
-            });
-        });
-    };
 });

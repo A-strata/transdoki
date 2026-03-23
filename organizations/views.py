@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.urls import reverse, reverse_lazy
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from transdoki.tenancy import get_request_account
@@ -75,6 +75,23 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Organization.objects.filter(account=get_request_account(self.request))
+
+
+@login_required
+@require_GET
+def organization_search(request):
+    account = get_request_account(request)
+    q = request.GET.get("q", "").strip()
+    qs = Organization.objects.filter(account=account)
+    if q:
+        qs = qs.filter(short_name__icontains=q) | Organization.objects.filter(
+            account=account, inn__icontains=q
+        )
+    results = [
+        {"id": o.pk, "text": o.short_name}
+        for o in qs.order_by("short_name")[:25]
+    ]
+    return JsonResponse({"results": results})
 
 
 @login_required

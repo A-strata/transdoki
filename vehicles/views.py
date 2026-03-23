@@ -2,9 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
+from django.db.models import Q
 from django.http import JsonResponse
 from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
 from organizations.models import Organization
@@ -87,6 +88,26 @@ class VehicleListView(UserOwnedListView):
     model = Vehicle
     template_name = "vehicles/vehicle_list.html"
     context_object_name = "vehicles"
+
+
+@login_required
+@require_GET
+def vehicle_search(request):
+    account = get_request_account(request)
+    q = request.GET.get("q", "").strip()
+    vtype = request.GET.get("type", "")
+    qs = Vehicle.objects.filter(account=account)
+    if vtype == "truck":
+        qs = qs.filter(vehicle_type__in=["truck", "single"])
+    elif vtype == "trailer":
+        qs = qs.filter(vehicle_type="trailer")
+    if q:
+        qs = qs.filter(Q(grn__icontains=q) | Q(brand__icontains=q))
+    results = [
+        {"id": v.pk, "text": str(v)}
+        for v in qs.order_by("grn")[:25]
+    ]
+    return JsonResponse({"results": results})
 
 
 @login_required
