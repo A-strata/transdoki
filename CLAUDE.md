@@ -21,7 +21,8 @@ Production URL: transdoki.ru
 ## Apps
 | App | Назначение |
 |-----|-----------|
-| `accounts` | Аутентификация, профили, роли пользователей |
+| `accounts` | Аутентификация, профили, роли, сессии пользователей |
+| `billing` | Биллинг: баланс аккаунта, транзакции, тарификация |
 | `organizations` | Организации (юрлица) |
 | `persons` | Физические лица (водители и др.) |
 | `vehicles` | Транспортные средства |
@@ -65,6 +66,10 @@ python manage.py shell
 
 # Static files (production)
 python manage.py collectstatic
+
+# Ежедневное списание за использование (запускать через cron)
+python manage.py charge_daily
+python manage.py charge_daily --dry-run   # только расчёт, без записи в БД
 ```
 
 ## Secrets & Environment (.env)
@@ -94,6 +99,22 @@ python manage.py collectstatic
 - `logs/django.log` — общие логи (INFO+)
 - `logs/security.log` — события безопасности (WARNING+)
 - Логгер безопасности: `logging.getLogger("security")`
+
+## Billing архитектура
+- Тарифы и лимиты — в `billing/constants.py` (не в settings.py, не в БД)
+- Финансовые операции — только через `billing/services.py`: `deposit()`, `withdraw()`
+- `BillingTransaction.balance_after` — снимок баланса после каждой операции (аудит)
+- `metadata = JSONField` — детализация списания (breakdown по сущностям)
+- `Account.is_billing_exempt = True` — привилегированный аккаунт без ограничений
+- `BillingProtectedMixin` — подключать ко всем Create-views чтобы блокировать создание при долге
+- Контекст-процессор `billing_account` доступен во всех шаблонах как `{{ billing_account }}`
+- Cron: `charge_daily` запускать ежедневно (инструкция в `docs/cron.md` или отдельно)
+
+## accounts: сессии и роли
+- `SessionActivityMiddleware` — обновляет `last_activity` не чаще 1 раза в 5 минут
+- Сигналы `user_logged_in` / `user_logged_out` в `accounts/signals.py` — управляют `UserSession`
+- Лимит сессий: 3 на пользователя (`MAX_SESSIONS_PER_USER` в `billing/constants.py`); превышение логируется как `suspicious_activity`, вход не блокируется
+- Роли: `owner`, `admin`, `dispatcher`, `logist` — хранятся в `UserProfile.role`
 
 ## Integration: Petrolplus
 - OAuth2/Keycloak авторизация
