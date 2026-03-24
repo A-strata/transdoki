@@ -160,6 +160,9 @@
         </form>
 
         <p class="auth-footer">
+            <a href="{% url 'password_reset' %}" class="auth-link" style="font-weight:400;">Забыли пароль?</a>
+        </p>
+        <p class="auth-footer">
             Нет аккаунта?
             <a href="{% url 'accounts:register' %}" class="auth-link">Зарегистрироваться</a>
         </p>
