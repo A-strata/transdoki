@@ -142,6 +142,8 @@
                         <th data-col="planned_unloading_date">Дата выгрузки</th>
                         <th data-col="loading_address">Адрес погрузки</th>
                         <th data-col="unloading_address">Адрес выгрузки</th>
+                        <th data-col="tp_loading_address" style="background:#f0fdf4;">Адрес погрузки (TP)</th>
+                        <th data-col="tp_unloading_address" style="background:#f0fdf4;">Адрес выгрузки (TP)</th>
                         <th data-col="cargo">Груз</th>
                         <th data-col="weight">Вес, кг</th>
                         <th data-col="client_cost">Стоимость клиенту</th>
@@ -169,6 +171,8 @@
                         <td data-col="planned_unloading_date">{{ trip.planned_unloading_date|date:"d.m.Y" }}</td>
                         <td data-col="loading_address">{{ trip.loading_address }}</td>
                         <td data-col="unloading_address">{{ trip.unloading_address }}</td>
+                        <td data-col="tp_loading_address" style="background:#f0fdf4;">{% for p in trip.points.all %}{% if forloop.first %}{{ p.address|default:"—" }}{% endif %}{% endfor %}</td>
+                        <td data-col="tp_unloading_address" style="background:#f0fdf4;">{% for p in trip.points.all %}{% if forloop.last %}{{ p.address|default:"—" }}{% endif %}{% endfor %}</td>
                         <td data-col="cargo">{{ trip.cargo }}</td>
                         <td data-col="weight">{{ trip.weight|default:"—" }}</td>
                         <td data-col="client_cost">{{ trip.client_cost|money }}</td>

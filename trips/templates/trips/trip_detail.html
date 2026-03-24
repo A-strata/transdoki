@@ -342,88 +342,61 @@
         </div>
 
         <div class="section">
-            <h2 class="section-title">Погрузка и выгрузка</h2>
-            <div class="two-cols">
-                <div class="sub-card">
-                    <h3 class="sub-title">Погрузка</h3>
-                    <div class="kv-grid">
-                        <div class="kv kv--full">
-                            <p class="kv-label">Отправитель</p>
-                            <p class="kv-value">
-                                {% if trip.consignor %}
-                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignor.pk %}?next={% url 'trips:detail' trip.pk %}">
-                                        {{ trip.consignor }}
-                                    </a>
-                                {% else %}—{% endif %}
-                            </p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Адрес погрузки</p>
-                            <p class="kv-value">{{ trip.loading_address|default:"—" }}</p>
-                        </div>
-                        <div class="kv">
-                            <p class="kv-label">Тип погрузки</p>
-                            <p class="kv-value">{{ trip.get_loading_type_display|default:"—" }}</p>
-                        </div>
-                        <div class="kv">
-                            <p class="kv-label">Заявленные дата и время</p>
-                            <p class="kv-value">{% if trip.planned_loading_date %}{{ trip.planned_loading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Фактическая дата и время</p>
-                            <p class="kv-value">{% if trip.actual_loading_date %}{{ trip.actual_loading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Контакт на погрузке (имя)</p>
-                            <p class="kv-value">{% if trip.loading_contact_name %}{{ trip.loading_contact_name }}{% else %}—{% endif %}</p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Контакт на погрузке (телефон)</p>
-                            <p class="kv-value">{% if trip.loading_contact_phone %}{{ trip.loading_contact_phone }}{% else %}—{% endif %}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sub-card">
-                    <h3 class="sub-title">Выгрузка</h3>
-                    <div class="kv-grid">
-                        <div class="kv kv--full">
-                            <p class="kv-label">Получатель</p>
-                            <p class="kv-value">
-                                {% if trip.consignee %}
-                                    <a class="entity-link" href="{% url 'organizations:detail' trip.consignee.pk %}?next={% url 'trips:detail' trip.pk %}">
-                                        {{ trip.consignee }}
-                                    </a>
-                                {% else %}—{% endif %}
-                            </p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Адрес выгрузки</p>
-                            <p class="kv-value">{{ trip.unloading_address|default:"—" }}</p>
-                        </div>
-                        <div class="kv">
-                            <p class="kv-label">Тип выгрузки</p>
-                            <p class="kv-value">{{ trip.get_unloading_type_display|default:"—" }}</p>
-                        </div>
-                        <div class="kv">
-                            <p class="kv-label">Заявленные дата и время</p>
-                            <p class="kv-value">{% if trip.planned_unloading_date %}{{ trip.planned_unloading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Фактическая дата и время</p>
-                            <p class="kv-value">{% if trip.actual_unloading_date %}{{ trip.actual_unloading_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Контакт на выгрузке (имя)</p>
-                            <p class="kv-value">{% if trip.unloading_contact_name %}{{ trip.unloading_contact_name }}{% else %}—{% endif %}</p>
-                        </div>
-                        <div class="kv kv--full">
-                            <p class="kv-label">Контакт на выгрузке (телефон)</p>
-                            <p class="kv-value">{% if trip.unloading_contact_phone %}{{ trip.unloading_contact_phone }}{% else %}—{% endif %}</p>
+            <h2 class="section-title">Маршрут</h2>
+            {% with points=trip.points.all %}
+            {% if points %}
+                <div class="two-cols">
+                {% for p in points %}
+                    <div class="sub-card">
+                        <h3 class="sub-title">
+                            {{ p.get_point_type_display }}
+                            <span style="font-size:0.78rem; font-weight:400; color:#6b7280;">#{{ p.sequence }}</span>
+                        </h3>
+                        <div class="kv-grid">
+                            <div class="kv kv--full">
+                                <p class="kv-label">Адрес</p>
+                                <p class="kv-value">{{ p.address|default:"—" }}</p>
+                            </div>
+                            <div class="kv">
+                                <p class="kv-label">Заявленные дата и время</p>
+                                <p class="kv-value">{% if p.planned_date %}{{ p.planned_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+                            </div>
+                            <div class="kv">
+                                <p class="kv-label">Фактические дата и время</p>
+                                <p class="kv-value">{% if p.actual_date %}{{ p.actual_date|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+                            </div>
+                            <div class="kv">
+                                <p class="kv-label">Тип</p>
+                                <p class="kv-value">{{ p.get_loading_type_display|default:"—" }}</p>
+                            </div>
+                            <div class="kv">
+                                <p class="kv-label">Контакт (имя)</p>
+                                <p class="kv-value">{{ p.contact_name|default:"—" }}</p>
+                            </div>
+                            <div class="kv">
+                                <p class="kv-label">Контакт (телефон)</p>
+                                <p class="kv-value">{{ p.contact_phone|default:"—" }}</p>
+                            </div>
+                            {% if p.waybill %}
+                            <div class="kv">
+                                <p class="kv-label">Путевой лист</p>
+                                <p class="kv-value">{{ p.waybill }}</p>
+                            </div>
+                            {% endif %}
+                            {% if p.odometer is not None %}
+                            <div class="kv">
+                                <p class="kv-label">Одометр</p>
+                                <p class="kv-value">{{ p.odometer }} км</p>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
+                {% endfor %}
                 </div>
-            </div>
+            {% else %}
+                <p class="kv-value">Точки маршрута не заполнены.</p>
+            {% endif %}
+            {% endwith %}
         </div>
 
         <div class="section">

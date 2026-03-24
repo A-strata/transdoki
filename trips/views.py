@@ -126,7 +126,7 @@ class TripDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Trip.objects.filter(
             account=get_request_account(self.request)
-        ).prefetch_related("attachments")
+        ).prefetch_related("attachments", "points")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -256,6 +256,7 @@ class TripListView(UserOwnedListView):
                 "truck",
                 "trailer",
             )
+            .prefetch_related("points")
         )
 
         qs = self._apply_date_filters(qs)
