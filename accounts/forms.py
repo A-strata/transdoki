@@ -20,8 +20,9 @@ class AccountRegistrationForm(forms.Form):
         max_length=12,
         validators=[validate_inn],
     )
-    email = forms.EmailField(
-        label="Email",
+    email = forms.CharField(
+        label="Логин",
+        max_length=150,
     )
     password1 = forms.CharField(
         label="Пароль",
@@ -33,7 +34,7 @@ class AccountRegistrationForm(forms.Form):
     )
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
+        email = self.cleaned_data["email"].strip()
 
         if User.objects.filter(username__iexact=email).exists():
             raise ValidationError("Пользователь с таким email уже существует.")
@@ -79,12 +80,12 @@ class AccountRegistrationForm(forms.Form):
 
 class AccountUserCreateForm(forms.Form):
     ROLE_CHOICES = [
-        (UserProfile.Role.ADMIN, "Admin"),
-        (UserProfile.Role.DISPATCHER, "Dispatcher"),
-        (UserProfile.Role.LOGIST, "Logist"),
+        (UserProfile.Role.ADMIN, "Администратор"),
+        (UserProfile.Role.DISPATCHER, "Диспетчер"),
+        (UserProfile.Role.LOGIST, "Логист"),
     ]
 
-    email = forms.EmailField(label="Email")
+    email = forms.CharField(label="Логин", max_length=150)
     first_name = forms.CharField(label="Имя", max_length=150, required=False)
     last_name = forms.CharField(label="Фамилия", max_length=150, required=False)
     role = forms.ChoiceField(label="Роль", choices=ROLE_CHOICES)
@@ -95,7 +96,7 @@ class AccountUserCreateForm(forms.Form):
     )
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
+        email = self.cleaned_data["email"].strip()
 
         if User.objects.filter(username__iexact=email).exists():
             raise ValidationError("Пользователь с таким email уже существует.")

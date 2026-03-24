@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views import View
@@ -66,27 +67,35 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
 class AccountUserCreateView(BillingProtectedMixin, LoginRequiredMixin, FormView):
     template_name = "accounts/user_create.html"
     form_class = AccountUserCreateForm
-    success_url = reverse_lazy("accounts:user_create")
+    success_url = reverse_lazy("accounts:cabinet")
 
     def dispatch(self, request, *args, **kwargs):
         self.account = get_request_account(request)
         role = getattr(request.user.profile, "role", None)
 
         if role not in {UserProfile.Role.OWNER, UserProfile.Role.ADMIN}:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"ok": False, "errors": {"__all__": "Недостаточно прав."}}, status=403)
             raise PermissionDenied("Недостаточно прав для создания пользователей.")
 
-        return super().dispatch(request, *args, **kwargs)
+        # Перехватываем billing-блокировку для AJAX
+        response = super().dispatch(request, *args, **kwargs)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest" and response.status_code == 302:
+            return JsonResponse({"ok": False, "errors": {"__all__": "Создание заблокировано: недостаточно средств на балансе."}}, status=402)
+        return response
 
     def form_valid(self, form):
-        user = form.save(
-            account=self.account,
-            created_by=self.request.user,
-        )
-        messages.success(
-            self.request,
-            f"Пользователь {user.username} создан и добавлен в ваш аккаунт.",
-        )
+        user = form.save(account=self.account, created_by=self.request.user)
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": True, "username": user.username, "role": user.profile.get_role_display()})
+        messages.success(self.request, f"Пользователь {user.username} создан.")
         return super().form_valid(form)
+
+    def form_invalid(self, form):
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            errors = {f: e.get_json_data() for f, e in form.errors.items()}
+            return JsonResponse({"ok": False, "errors": {f: msgs[0]["message"] for f, msgs in errors.items()}}, status=400)
+        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

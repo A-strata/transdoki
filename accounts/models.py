@@ -87,10 +87,10 @@ class UserProfile(models.Model):
     """Профиль пользователя для tenant-привязки и роли."""
 
     class Role(models.TextChoices):
-        OWNER = "owner", "Owner"
-        ADMIN = "admin", "Admin"
-        DISPATCHER = "dispatcher", "Dispatcher"
-        LOGIST = "logist", "Logist"
+        OWNER = "owner", "Владелец"
+        ADMIN = "admin", "Администратор"
+        DISPATCHER = "dispatcher", "Диспетчер"
+        LOGIST = "logist", "Логист"
 
     user = models.OneToOneField(
         User,

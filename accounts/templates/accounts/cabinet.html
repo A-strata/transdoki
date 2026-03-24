@@ -153,10 +153,10 @@
             <h2 style="margin:0;">Пользователи аккаунта</h2>
 
             {% if can_manage_users %}
-                <a href="{% url 'accounts:user_create' %}"
-                   style="display:inline-block; min-height:36px; line-height:36px; padding:0 12px; border-radius:8px; text-decoration:none; background:#2563eb; color:#fff; font-weight:600;">
-                    Добавить пользователя
-                </a>
+                <button type="button" id="add-user-btn"
+                   style="min-height:36px; padding:0 12px; border-radius:8px; border:none; background:#2563eb; color:#fff; font-weight:600; cursor:pointer;">
+                    + Добавить пользователя
+                </button>
             {% endif %}
         </div>
 
@@ -207,9 +207,9 @@
                                                             class="role-select"
                                                             data-initial="{{ p.role }}"
                                                             disabled>
-                                                        <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Admin</option>
-                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Dispatcher</option>
-                                                        <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Logist</option>
+                                                        <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Администратор</option>
+                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
+                                                        <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Логист</option>
                                                     </select>
 
                                                     <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
@@ -229,6 +229,138 @@
         {% endif %}
     </div>
 </section>
+
+<div id="add-user-overlay" style="display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:14px; padding:20px 24px; width:100%; max-width:420px; box-shadow:0 16px 40px rgba(15,23,42,.18); box-sizing:border-box; margin:16px;">
+        <h3 style="margin:0 0 16px; font-size:1.05rem; font-weight:700; color:#111827;">Добавить пользователя</h3>
+
+        <div id="add-user-error" style="display:none; margin-bottom:10px; padding:8px 10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:.88rem; color:#991b1b;"></div>
+
+        <div class="au-field">
+            <label class="au-label">Логин *</label>
+            <input type="text" id="au-login" name="email" class="au-input">
+            <span class="au-err" data-err="email"></span>
+        </div>
+        <div class="au-field">
+            <label class="au-label">Имя</label>
+            <input type="text" id="au-first-name" name="first_name" class="au-input">
+        </div>
+        <div class="au-field">
+            <label class="au-label">Фамилия</label>
+            <input type="text" id="au-last-name" name="last_name" class="au-input">
+        </div>
+        <div class="au-field">
+            <label class="au-label">Роль *</label>
+            <select id="au-role" name="role" class="au-input">
+                <option value="admin">Администратор</option>
+                <option value="dispatcher">Диспетчер</option>
+                <option value="logist">Логист</option>
+            </select>
+            <span class="au-err" data-err="role"></span>
+        </div>
+        <div class="au-field">
+            <label class="au-label">Пароль *</label>
+            <input type="password" id="au-password1" name="password1" class="au-input">
+            <span class="au-err" data-err="password1"></span>
+        </div>
+        <div class="au-field">
+            <label class="au-label">Подтверждение пароля *</label>
+            <input type="password" id="au-password2" name="password2" class="au-input">
+            <span class="au-err" data-err="password2"></span>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:16px; justify-content:flex-end;">
+            <button type="button" id="add-user-cancel" style="padding:8px 14px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:.9rem;">Отмена</button>
+            <button type="button" id="add-user-submit" style="padding:8px 14px; border-radius:8px; border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; font-size:.9rem; font-weight:600;">Создать</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.au-field { margin-bottom: 10px; }
+.au-label { display: block; margin-bottom: 4px; font-size: .88rem; font-weight: 600; color: #374151; }
+.au-input { width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; font-size: .92rem; box-sizing: border-box; background: #fff; }
+.au-input:focus { outline: none; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.au-err { display: none; font-size: .82rem; color: #991b1b; margin-top: 3px; }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var overlay = document.getElementById("add-user-overlay");
+    var openBtn = document.getElementById("add-user-btn");
+    var cancelBtn = document.getElementById("add-user-cancel");
+    var submitBtn = document.getElementById("add-user-submit");
+    var errorBox = document.getElementById("add-user-error");
+
+    function getCsrf() {
+        for (var c of document.cookie.split(";")) {
+            var p = c.trim().split("=");
+            if (p[0] === "csrftoken") return decodeURIComponent(p[1]);
+        }
+        return "";
+    }
+
+    function openModal() {
+        overlay.querySelectorAll(".au-input").forEach(function(el) { el.value = ""; });
+        overlay.querySelectorAll(".au-err").forEach(function(el) { el.style.display = "none"; el.textContent = ""; });
+        overlay.querySelectorAll(".au-input").forEach(function(el) { el.style.borderColor = "#e5e7eb"; });
+        errorBox.style.display = "none";
+        overlay.style.display = "flex";
+    }
+
+    function closeModal() { overlay.style.display = "none"; }
+
+    if (openBtn) openBtn.addEventListener("click", openModal);
+    cancelBtn.addEventListener("click", closeModal);
+    overlay.addEventListener("click", function(e) { if (e.target === overlay) closeModal(); });
+    document.addEventListener("keydown", function(e) { if (e.key === "Escape" && overlay.style.display === "flex") closeModal(); });
+
+    submitBtn.addEventListener("click", async function () {
+        overlay.querySelectorAll(".au-err").forEach(function(el) { el.style.display = "none"; el.textContent = ""; });
+        overlay.querySelectorAll(".au-input").forEach(function(el) { el.style.borderColor = "#e5e7eb"; });
+        errorBox.style.display = "none";
+
+        var params = new URLSearchParams();
+        ["email","first_name","last_name","role","password1","password2"].forEach(function(name) {
+            var el = overlay.querySelector("[name='" + name + "']");
+            if (el) params.set(name, el.value.trim());
+        });
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Сохраняем…";
+
+        try {
+            var resp = await fetch("{% url 'accounts:user_create' %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": getCsrf(), "Content-Type": "application/x-www-form-urlencoded", "X-Requested-With": "XMLHttpRequest" },
+                body: params.toString()
+            });
+            var data = await resp.json();
+
+            if (data.ok) {
+                closeModal();
+                location.reload();
+            } else {
+                var errors = data.errors || {};
+                var hasField = false;
+                for (var field in errors) {
+                    var errEl = overlay.querySelector("[data-err='" + field + "']");
+                    var inputEl = overlay.querySelector("[name='" + field + "']");
+                    if (errEl) { errEl.textContent = errors[field]; errEl.style.display = "block"; hasField = true; }
+                    if (inputEl) inputEl.style.borderColor = "#ef4444";
+                }
+                if (!hasField) { errorBox.textContent = Object.values(errors).join("; ") || "Ошибка"; errorBox.style.display = "block"; }
+            }
+        } catch (_) {
+            errorBox.textContent = "Ошибка соединения.";
+            errorBox.style.display = "block";
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Создать";
+        }
+    });
+});
+</script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
