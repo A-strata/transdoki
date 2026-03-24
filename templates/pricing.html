@@ -1,0 +1,555 @@
+{% extends "base.html" %}
+{% block title %}Тарифы — Transdoki{% endblock %}
+
+{% block content %}
+<style>
+.pricing-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 0 40px;
+}
+
+/* ─── HERO ─────────────────────────────────────────────── */
+.hero {
+    text-align: center;
+    padding: 48px 24px 36px;
+}
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #3B5ADB;
+    background: #EEF2FF;
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-bottom: 20px;
+}
+.hero h1 {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    margin: 0 0 14px;
+    letter-spacing: -0.02em;
+}
+.hero h1 em {
+    font-style: normal;
+    color: var(--primary);
+}
+.hero p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 460px;
+    margin: 0 auto 28px;
+}
+.hero-cta {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.btn-primary {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 26px;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .2s;
+}
+.btn-primary:hover { background: var(--primary-hover); color: #fff; }
+.btn-secondary {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 11px 26px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .2s;
+}
+.btn-secondary:hover { background: #f3f4f6; }
+
+.trust-row {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+.trust-item {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.dot-green {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10B981;
+    flex-shrink: 0;
+}
+
+/* ─── PRICING SECTION ──────────────────────────────────── */
+.pricing-section {
+    padding: 0 16px;
+}
+.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #3B5ADB;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 6px;
+}
+.section-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 24px;
+    line-height: 1.6;
+}
+
+/* ─── PLAN CARDS ───────────────────────────────────────── */
+.plans {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+.plan {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: var(--shadow);
+}
+.plan.featured {
+    border: 2px solid var(--primary);
+}
+
+.plan-header { display: flex; flex-direction: column; gap: 5px; }
+.plan-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.plan-tag {
+    font-size: 11px;
+    background: #EEF2FF;
+    color: #3B5ADB;
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-weight: 500;
+}
+.plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+.price-free {
+    font-size: 26px;
+    font-weight: 600;
+    color: #10B981;
+}
+.price-amount {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+}
+.price-period { font-size: 13px; color: var(--muted); }
+.plan-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+.plan-divider { height: 1px; background: var(--border); }
+
+/* limits */
+.plan-limits { display: flex; flex-direction: column; gap: 8px; }
+.limit-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    gap: 8px;
+}
+.limit-label { color: var(--muted); }
+.limit-val { font-weight: 600; color: var(--text); text-align: right; }
+.limit-val.unlimited { color: #10B981; }
+.limit-val-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.limit-price-hint { font-size: 11px; font-weight: 400; color: var(--muted); }
+
+/* features */
+.plan-features { display: flex; flex-direction: column; gap: 7px; }
+.feat {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    line-height: 1.4;
+}
+.feat-check { color: #10B981; flex-shrink: 0; font-size: 11px; margin-top: 1px; }
+.feat-check.dim { color: var(--border); }
+.feat.dim span:last-child { color: #c4c9d4; }
+
+/* plan CTA */
+.plan-cta { margin-top: auto; }
+.plan-cta .btn-primary,
+.plan-cta .btn-secondary { display: block; text-align: center; width: 100%; padding: 10px; }
+
+/* ─── UNLIMITED BADGES ─────────────────────────────────── */
+.unlimited-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.unlimited-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.unlimited-badge {
+    font-size: 12px;
+    color: #065F46;
+    background: #D1FAE5;
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ─── CALCULATOR ───────────────────────────────────────── */
+.calc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+}
+.calc-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+}
+.calc-rows { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.calc-row { display: flex; align-items: center; gap: 10px; }
+.calc-row label { font-size: 12px; color: var(--muted); flex: 1; min-width: 0; }
+.calc-row input[type=range] { flex: 1; min-width: 0; accent-color: var(--primary); }
+.calc-row .val { font-size: 12px; font-weight: 600; color: var(--text); min-width: 24px; text-align: right; }
+
+.calc-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8faff;
+    border: 1px solid #dbeafe;
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+}
+.calc-result-label { font-size: 13px; color: var(--muted); }
+.calc-result-amount { font-size: 22px; font-weight: 600; color: var(--primary); }
+.calc-result-amount.is-free { color: #10B981; }
+
+.calc-breakdown {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    min-height: 16px;
+    margin-bottom: 12px;
+}
+
+.calc-action { text-align: center; }
+
+/* ─── MOBILE ───────────────────────────────────────────── */
+@media (max-width: 580px) {
+    .hero { padding: 32px 16px 28px; }
+    .plans { grid-template-columns: 1fr; }
+    .pricing-section { padding: 0 12px; }
+}
+</style>
+
+<section class="pricing-page">
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-badge">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <circle cx="5" cy="5" r="4.5" fill="#3B5ADB"/>
+                <path d="M3 5l1.5 1.5L7.5 3" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Учёт транспорта для малого и среднего бизнеса
+        </div>
+        <h1>Знайте сколько стоит<br>каждый <em>рейс</em></h1>
+        <p>Transdoki считает реальные затраты: топливо с карт, маршруты, водители. Начните бесплатно — без ограничений по времени.</p>
+        <div class="hero-cta">
+            <a href="{% url 'accounts:register' %}" class="btn-primary">Зарегистрироваться бесплатно</a>
+            <a href="{% url 'login' %}" class="btn-secondary">Войти →</a>
+        </div>
+        <div class="trust-row">
+            <span class="trust-item"><span class="dot-green"></span>Бесплатный тариф навсегда</span>
+            <span class="trust-item"><span class="dot-green"></span>Карта не нужна</span>
+            <span class="trust-item"><span class="dot-green"></span>Данные хранятся в России</span>
+        </div>
+    </div>
+
+    <!-- PRICING -->
+    <div class="pricing-section">
+        <div class="section-label">Тарифы</div>
+        <div class="section-title">Платите только за рост</div>
+        <div class="section-sub">Маленький бизнес работает бесплатно. Расширяетесь — платите только за дополнительные ресурсы.</div>
+
+        <div class="plans">
+
+            <!-- FREE -->
+            <div class="plan">
+                <div class="plan-header">
+                    <div class="plan-name">Бесплатно</div>
+                    <div class="plan-price">
+                        <span class="price-free">0 ₽</span>
+                        <span class="price-period">навсегда</span>
+                    </div>
+                    <div class="plan-desc">Для старта и небольшого парка. Без ограничений по времени и количеству рейсов.</div>
+                </div>
+
+                <div class="plan-divider"></div>
+
+                <div class="plan-limits">
+                    <div class="limit-row">
+                        <span class="limit-label">Своих фирм</span>
+                        <span class="limit-val">{{ free_orgs }}</span>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Своих машин</span>
+                        <span class="limit-val">{{ free_vehicles }}</span>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Пользователей аккаунта</span>
+                        <span class="limit-val">{{ free_users }}</span>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Водителей</span>
+                        <span class="limit-val unlimited">∞</span>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Рейсов</span>
+                        <span class="limit-val unlimited">∞</span>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Контрагентов</span>
+                        <span class="limit-val unlimited">∞</span>
+                    </div>
+                </div>
+
+                <div class="plan-divider"></div>
+
+                <div class="plan-features">
+                    <div class="feat"><span class="feat-check">✓</span>Учёт рейсов и маршрутов</div>
+                    <div class="feat"><span class="feat-check">✓</span>Путевые листы (.docx)</div>
+                    <div class="feat"><span class="feat-check">✓</span>Учёт затрат по рейсам</div>
+                    <div class="feat"><span class="feat-check">✓</span>Учёт водителей</div>
+                    <div class="feat dim"><span class="feat-check dim">✓</span><span>Интеграция Петролплюс</span></div>
+                    <div class="feat dim"><span class="feat-check dim">✓</span><span>Несколько пользователей и ролей</span></div>
+                </div>
+
+                <div class="plan-cta">
+                    <a href="{% url 'accounts:register' %}" class="btn-secondary">Начать бесплатно</a>
+                </div>
+            </div>
+
+            <!-- PAID -->
+            <div class="plan featured">
+                <div class="plan-header">
+                    <div class="plan-name">Профессиональный <span class="plan-tag">Pay as you grow</span></div>
+                    <div class="plan-price">
+                        <span class="price-amount">от {{ min_paid }} ₽</span>
+                        <span class="price-period">/ ед. в мес.</span>
+                    </div>
+                    <div class="plan-desc">Добавляйте фирмы, машины и пользователей — платите только за них.</div>
+                </div>
+
+                <div class="plan-divider"></div>
+
+                <div class="plan-limits">
+                    <div class="limit-row">
+                        <span class="limit-label">Своих фирм</span>
+                        <div class="limit-val-stack">
+                            <span class="limit-val" style="color: var(--primary);">+ сколько нужно</span>
+                            <span class="limit-price-hint">{{ monthly_org }} ₽/фирма в мес.</span>
+                        </div>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Своих машин</span>
+                        <div class="limit-val-stack">
+                            <span class="limit-val" style="color: var(--primary);">+ сколько нужно</span>
+                            <span class="limit-price-hint">{{ monthly_vehicle }} ₽/авто в мес.</span>
+                        </div>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Пользователей аккаунта</span>
+                        <div class="limit-val-stack">
+                            <span class="limit-val" style="color: var(--primary);">+ сколько нужно</span>
+                            <span class="limit-price-hint">{{ monthly_user }} ₽/польз. в мес.</span>
+                        </div>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Водителей</span>
+                        <span class="limit-val unlimited">∞</span>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Рейсов</span>
+                        <span class="limit-val unlimited">∞</span>
+                    </div>
+                    <div class="limit-row">
+                        <span class="limit-label">Контрагентов</span>
+                        <span class="limit-val unlimited">∞</span>
+                    </div>
+                </div>
+
+                <div class="plan-divider"></div>
+
+                <div class="plan-features">
+                    <div class="feat"><span class="feat-check">✓</span>Всё из бесплатного</div>
+                    <div class="feat"><span class="feat-check">✓</span>Интеграция с Петролплюс</div>
+                    <div class="feat"><span class="feat-check">✓</span>Несколько пользователей и ролей</div>
+                    <div class="feat"><span class="feat-check">✓</span>Учёт нескольких организаций</div>
+                </div>
+
+                <div class="plan-cta">
+                    <a href="{% url 'accounts:register' %}" class="btn-primary">Попробовать бесплатно</a>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- UNLIMITED BADGES -->
+        <div class="unlimited-note">На всех тарифах — без ограничений:</div>
+        <div class="unlimited-row">
+            <span class="unlimited-badge">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Водители
+            </span>
+            <span class="unlimited-badge">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Рейсы
+            </span>
+            <span class="unlimited-badge">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Путевые листы
+            </span>
+            <span class="unlimited-badge">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Контрагенты
+            </span>
+            <span class="unlimited-badge">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Учёт затрат по рейсам
+            </span>
+        </div>
+
+        <!-- CALCULATOR -->
+        <div class="calc">
+            <div class="calc-title">Посчитайте свою стоимость</div>
+            <div class="calc-rows">
+                <div class="calc-row">
+                    <label>Своих фирм</label>
+                    <input type="range" min="1" max="10" value="{{ free_orgs }}" id="c-firms" oninput="calcPricing()">
+                    <span class="val" id="c-firms-val">{{ free_orgs }}</span>
+                </div>
+                <div class="calc-row">
+                    <label>Своих машин</label>
+                    <input type="range" min="1" max="30" value="{{ free_vehicles }}" id="c-cars" oninput="calcPricing()">
+                    <span class="val" id="c-cars-val">{{ free_vehicles }}</span>
+                </div>
+                <div class="calc-row">
+                    <label>Пользователей аккаунта</label>
+                    <input type="range" min="1" max="15" value="{{ free_users }}" id="c-users" oninput="calcPricing()">
+                    <span class="val" id="c-users-val">{{ free_users }}</span>
+                </div>
+            </div>
+
+            <div class="calc-result">
+                <span class="calc-result-label">Ваш тариф / месяц</span>
+                <span class="calc-result-amount" id="c-total">0 ₽</span>
+            </div>
+            <div class="calc-breakdown" id="c-breakdown"></div>
+
+            <div class="calc-action">
+                <a href="{% url 'accounts:register' %}" class="btn-primary" id="c-cta">Начать бесплатно</a>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+(function () {
+    const FREE_ORGS     = {{ free_orgs }};
+    const FREE_VEHICLES = {{ free_vehicles }};
+    const FREE_USERS    = {{ free_users }};
+    const PRICE_ORG     = {{ monthly_org }};
+    const PRICE_VEHICLE = {{ monthly_vehicle }};
+    const PRICE_USER    = {{ monthly_user }};
+
+    window.calcPricing = function () {
+        const firms = parseInt(document.getElementById('c-firms').value);
+        const cars  = parseInt(document.getElementById('c-cars').value);
+        const users = parseInt(document.getElementById('c-users').value);
+
+        document.getElementById('c-firms-val').textContent = firms;
+        document.getElementById('c-cars-val').textContent  = cars;
+        document.getElementById('c-users-val').textContent = users;
+
+        const paidFirms = Math.max(0, firms - FREE_ORGS);
+        const paidCars  = Math.max(0, cars  - FREE_VEHICLES);
+        const paidUsers = Math.max(0, users - FREE_USERS);
+
+        const total = paidFirms * PRICE_ORG + paidCars * PRICE_VEHICLE + paidUsers * PRICE_USER;
+
+        const totalEl     = document.getElementById('c-total');
+        const breakdownEl = document.getElementById('c-breakdown');
+        const ctaEl       = document.getElementById('c-cta');
+
+        if (total === 0) {
+            totalEl.textContent = '0 ₽ — бесплатно';
+            totalEl.className   = 'calc-result-amount is-free';
+            breakdownEl.textContent = 'Вы укладываетесь в бесплатный тариф';
+            ctaEl.textContent   = 'Начать бесплатно';
+        } else {
+            totalEl.textContent = '~' + total.toLocaleString('ru-RU') + ' ₽';
+            totalEl.className   = 'calc-result-amount';
+            const parts = [];
+            if (paidFirms > 0) parts.push(paidFirms + ' доп. фирм × ' + PRICE_ORG + ' ₽');
+            if (paidCars  > 0) parts.push(paidCars  + ' доп. авто × ' + PRICE_VEHICLE + ' ₽');
+            if (paidUsers > 0) parts.push(paidUsers + ' доп. польз. × ' + PRICE_USER + ' ₽');
+            breakdownEl.textContent = parts.join(' + ');
+            ctaEl.textContent = 'Попробовать бесплатно';
+        }
+    };
+
+    calcPricing();
+})();
+</script>
+{% endblock %}
