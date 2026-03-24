@@ -3,6 +3,13 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'waybills/css/waybill_detail.css' %}">
+<script src="{% static 'trips/js/autocomplete.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var tripField = document.getElementById('id_trip');
+    if (tripField) initAutocomplete('id_trip');
+});
+</script>
 
 <section class="waybill-detail-page">
     <div class="page-header">
@@ -134,6 +141,7 @@
                                     <th>Вид записи</th>
                                     <th>Операция</th>
                                     <th>Адрес</th>
+                                    <th>Рейс</th>
                                     <th>Одометр</th>
                                 </tr>
                             </thead>
@@ -163,6 +171,15 @@
                                         <td>
                                             {% if item.address %}
                                                 {{ item.address }}
+                                            {% else %}
+                                                <span class="muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.kind == "route_point" and item.trip %}
+                                                <a href="{% url 'trips:detail' item.trip.pk %}">
+                                                    №{{ item.trip.num_of_trip }}
+                                                </a>
                                             {% else %}
                                                 <span class="muted">—</span>
                                             {% endif %}
@@ -273,6 +290,12 @@
                         {{ route_point_form.odometer.label_tag }}
                         {{ route_point_form.odometer }}
                         {{ route_point_form.odometer.errors }}
+                    </div>
+
+                    <div class="field">
+                        {{ route_point_form.trip.label_tag }}
+                        {{ route_point_form.trip }}
+                        {{ route_point_form.trip.errors }}
                     </div>
 
                     <div class="form-actions">

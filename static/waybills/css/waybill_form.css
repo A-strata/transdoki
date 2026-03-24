@@ -85,6 +85,15 @@
     color: #374151;
 }
 
+.field .autocomplete-container {
+    width: 100%;
+}
+
+select[data-search-url] {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .field input,
 .field select,
 .field textarea {

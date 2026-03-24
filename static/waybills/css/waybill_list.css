@@ -1,0 +1,232 @@
+.waybills-page {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 8px 14px;
+}
+
+.wl-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.wl-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.wl-filter-form {
+    display: flex;
+    align-items: center;
+}
+
+.wl-select {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    background: #fff;
+    color: #111827;
+    cursor: pointer;
+}
+
+.wl-select:focus {
+    outline: none;
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.tms-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.tms-btn-primary {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.tms-btn-primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.tms-btn-secondary {
+    background: #fff;
+    color: #374151;
+    border-color: #e5e7eb;
+}
+
+.tms-btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.tms-btn-sm {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 0.82rem;
+    border-radius: 6px;
+}
+
+.wl-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.wl-table-wrap {
+    overflow-x: auto;
+}
+
+.wl-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 860px;
+}
+
+.wl-table thead th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6b7280;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.wl-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+    color: #111827;
+    vertical-align: middle;
+}
+
+.wl-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.wl-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.wl-num-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.wl-num-link:hover {
+    text-decoration: underline;
+}
+
+.wl-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.wl-status--open {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.wl-status--closed {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.wl-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.wl-empty {
+    text-align: center;
+    padding: 24px;
+    color: #6b7280;
+}
+
+.wl-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.wl-page-link {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #374151;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.wl-page-link:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.wl-page-link.is-current {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+    font-weight: 700;
+}
+
+.wl-page-link.is-disabled {
+    color: #9ca3af;
+    background: #f9fafb;
+    pointer-events: none;
+}

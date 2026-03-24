@@ -46,6 +46,7 @@ def build_waybill_timeline(waybill):
                     "odometer": item.odometer,
                     "address": item.address,
                     "sequence": item.sequence,
+                    "trip": item.trip,
                 }
             )
 
@@ -60,17 +61,31 @@ class WaybillListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return (
+        qs = (
             Waybill.objects.filter(account=get_request_account(self.request))
-            .select_related("driver", "truck", "trailer")
+            .select_related("organization", "driver", "truck", "trailer")
             .order_by("-date", "-id")
         )
+        status = self.request.GET.get("status")
+        if status in (Waybill.Status.OPEN, Waybill.Status.CLOSED):
+            qs = qs.filter(status=status)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["status_filter"] = self.request.GET.get("status", "")
+        return context
 
 
 class WaybillCreateView(LoginRequiredMixin, CreateView):
     model = Waybill
     form_class = WaybillForm
     template_name = "waybills/waybill_form.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["account"] = get_request_account(self.request)
+        return kwargs
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -89,6 +104,11 @@ class WaybillUpdateView(LoginRequiredMixin, UpdateView):
     form_class = WaybillForm
     template_name = "waybills/waybill_form.html"
     context_object_name = "waybill"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["account"] = get_request_account(self.request)
+        return kwargs
 
     def get_queryset(self):
         return Waybill.objects.filter(
@@ -113,15 +133,16 @@ class WaybillDetailView(LoginRequiredMixin, DetailView):
         return (
             Waybill.objects.filter(account=get_request_account(self.request))
             .select_related("driver", "truck", "trailer")
-            .prefetch_related("events", "route_points")
+            .prefetch_related("events", "route_points__trip")
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         waybill = self.object
 
+        account = get_request_account(self.request)
         context.setdefault("event_form", WaybillEventForm(waybill=waybill))
-        context.setdefault("route_point_form", RoutePointForm(waybill=waybill))
+        context.setdefault("route_point_form", RoutePointForm(waybill=waybill, account=account))
         context["timeline"] = build_waybill_timeline(waybill)
         context["is_closed"] = getattr(waybill, "status", None) == Waybill.Status.CLOSED
 
@@ -158,12 +179,12 @@ class WaybillDetailView(LoginRequiredMixin, DetailView):
 
         context = self.get_context_data(
             event_form=form,
-            route_point_form=RoutePointForm(waybill=self.object),
+            route_point_form=RoutePointForm(waybill=self.object, account=get_request_account(self.request)),
         )
         return self.render_to_response(context)
 
     def handle_add_route_point(self):
-        form = RoutePointForm(self.request.POST, waybill=self.object)
+        form = RoutePointForm(self.request.POST, waybill=self.object, account=get_request_account(self.request))
 
         if form.is_valid():
             route_point = form.save(commit=False)

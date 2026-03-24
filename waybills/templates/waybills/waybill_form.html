@@ -65,7 +65,18 @@
 
         <div class="form-actions">
             <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+            <a href="{% url 'waybills:waybill-list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
         </div>
     </form>
 </section>
+
+<script src="{% static 'trips/js/autocomplete.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    ['id_organization', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) initAutocomplete(id);
+    });
+});
+</script>
 {% endblock %}

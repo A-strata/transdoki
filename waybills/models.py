@@ -162,6 +162,14 @@ class RoutePoint(models.Model):
         related_name="route_points",
         verbose_name="Путевой лист",
     )
+    trip = models.ForeignKey(
+        "trips.Trip",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="route_points",
+        verbose_name="Рейс",
+    )
     point_type = models.CharField("Тип точки", max_length=10, choices=Type.choices)
     sequence = models.PositiveSmallIntegerField("Порядок")
     timestamp = models.DateTimeField("Время", default=timezone.now, db_index=True)

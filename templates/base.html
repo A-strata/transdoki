@@ -405,6 +405,11 @@
                        class="nav-link {% if request.path == vehicles_url %}active{% endif %}">
                         Транспорт
                     </a>
+                    {% url 'waybills:waybill-list' as waybills_url %}
+                    <a href="{{ waybills_url }}"
+                       class="nav-link {% if request.path == waybills_url %}active{% endif %}">
+                        Путевые листы
+                    </a>
                 {% endif %}
             </div>
 

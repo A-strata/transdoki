@@ -1,9 +1,34 @@
 from itertools import chain
 
 from django import forms
+from django.urls import reverse
 from django.utils import timezone
 
+from organizations.models import Organization
+from persons.models import Person
+from trips.models import Trip
+from vehicles.models import Vehicle
+
 from .models import Waybill, WaybillEvent, RoutePoint
+
+
+class AjaxModelChoiceField(forms.ModelChoiceField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("empty_label", "")
+        super().__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        qs = getattr(self, "_validation_qs", self.queryset)
+        try:
+            return qs.get(pk=value)
+        except (ValueError, TypeError, qs.model.DoesNotExist):
+            raise forms.ValidationError(
+                self.error_messages["invalid_choice"],
+                code="invalid_choice",
+                params={"value": value},
+            )
 
 
 def _is_event(record):
@@ -226,51 +251,82 @@ class BaseStyledModelForm(forms.ModelForm):
 
 
 class WaybillForm(BaseStyledModelForm):
+    organization = AjaxModelChoiceField(
+        queryset=Organization.objects.none(),
+        label="Организация",
+        required=True,
+    )
+    driver = AjaxModelChoiceField(
+        queryset=Person.objects.none(),
+        label="Водитель",
+        required=True,
+    )
+    truck = AjaxModelChoiceField(
+        queryset=Vehicle.objects.none(),
+        label="Автомобиль",
+        required=True,
+    )
+    trailer = AjaxModelChoiceField(
+        queryset=Vehicle.objects.none(),
+        label="Прицеп",
+        required=False,
+    )
+
     class Meta:
         model = Waybill
-        fields = [
-            "date",
-            "organization",
-            "driver",
-            "truck",
-            "trailer",
-        ]
+        fields = ["date", "organization", "driver", "truck", "trailer"]
         widgets = {
-            "date": forms.DateInput(
-                attrs={
-                    "type": "date",
-                }
-            ),
-            "organization": forms.TextInput(
-                attrs={
-                    "placeholder": "Организация",
-                }
-            ),
-            "driver": forms.Select(),
-            "truck": forms.Select(),
-            "trailer": forms.Select(),
+            "date": forms.DateInput(attrs={"type": "date"}),
         }
+
+    def __init__(self, *args, account=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if account:
+            self._setup_ajax_fields(account)
+
+    def _setup_ajax_field(self, fname, full_qs, search_url, search_type=""):
+        field = self.fields[fname]
+        field._validation_qs = full_qs
+        current = getattr(self.instance, fname, None)
+        initial_pk = self.initial.get(fname) if not (current and current.pk) else None
+        if current and current.pk:
+            field.queryset = full_qs.filter(pk=current.pk)
+        elif initial_pk:
+            field.queryset = full_qs.filter(pk=initial_pk)
+        field.widget.attrs["data-search-url"] = search_url
+        if search_type:
+            field.widget.attrs["data-search-type"] = search_type
+
+    def _setup_ajax_fields(self, account):
+        self._setup_ajax_field(
+            "organization",
+            Organization.objects.filter(account=account),
+            reverse("organizations:search"),
+        )
+        self._setup_ajax_field(
+            "driver",
+            Person.objects.filter(account=account),
+            reverse("persons:search"),
+        )
+        self._setup_ajax_field(
+            "truck",
+            Vehicle.objects.filter(account=account),
+            reverse("vehicles:search"),
+            "truck",
+        )
+        self._setup_ajax_field(
+            "trailer",
+            Vehicle.objects.filter(account=account),
+            reverse("vehicles:search"),
+            "trailer",
+        )
 
     def clean(self):
         cleaned_data = super().clean()
-        date = cleaned_data.get("date")
-        organization = cleaned_data.get("organization")
-        driver = cleaned_data.get("driver")
         truck = cleaned_data.get("truck")
         trailer = cleaned_data.get("trailer")
-
-        if not date:
-            self.add_error("date", "Дата обязательна.")
-        if not organization:
-            self.add_error("organization", "Организация обязательна.")
-        if not driver:
-            self.add_error("driver", "Водитель обязателен.")
-        if not truck:
-            self.add_error("truck", "Грузовик обязателен.")
-
         if truck and trailer and truck == trailer:
             self.add_error("trailer", "Прицеп не может совпадать с грузовиком.")
-
         return cleaned_data
 
 
@@ -384,6 +440,12 @@ class WaybillEventForm(BaseStyledModelForm):
 
 
 class RoutePointForm(BaseStyledModelForm):
+    trip = AjaxModelChoiceField(
+        queryset=Trip.objects.none(),
+        label="Рейс",
+        required=False,
+    )
+
     class Meta:
         model = RoutePoint
         fields = [
@@ -391,6 +453,7 @@ class RoutePointForm(BaseStyledModelForm):
             "timestamp",
             "address",
             "odometer",
+            "trip",
         ]
         widgets = {
             "point_type": forms.Select(),
@@ -414,12 +477,21 @@ class RoutePointForm(BaseStyledModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, account=None, **kwargs):
         self.waybill = kwargs.pop("waybill", None)
         super().__init__(*args, **kwargs)
 
         if not self.instance.pk and "timestamp" in self.fields:
             self.fields["timestamp"].initial = timezone.localtime().strftime("%Y-%m-%dT%H:%M")
+
+        if account:
+            trip_field = self.fields["trip"]
+            full_qs = Trip.objects.filter(account=account)
+            trip_field._validation_qs = full_qs
+            current_trip = getattr(self.instance, "trip", None)
+            if current_trip and current_trip.pk:
+                trip_field.queryset = full_qs.filter(pk=current_trip.pk)
+            trip_field.widget.attrs["data-search-url"] = reverse("trips:search")
 
     def clean_odometer(self):
         value = self.cleaned_data["odometer"]
