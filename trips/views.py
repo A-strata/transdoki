@@ -360,6 +360,24 @@ class TripAgreementDownloadView(LoginRequiredMixin, View):
 
 @login_required
 @require_GET
+def trip_search(request):
+    account = get_request_account(request)
+    q = (request.GET.get("q") or "").strip()
+    qs = Trip.objects.filter(account=account).order_by("-date_of_trip", "-num_of_trip")
+    if q:
+        qs = qs.filter(num_of_trip__icontains=q)
+    results = [
+        {
+            "id": t.pk,
+            "text": f"№{t.num_of_trip} от {t.date_of_trip.strftime('%d.%m.%Y')}",
+        }
+        for t in qs[:25]
+    ]
+    return JsonResponse({"results": results})
+
+
+@login_required
+@require_GET
 def address_suggest(request):
     q = (request.GET.get("q") or "").strip()
     if len(q) < 3:

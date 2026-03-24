@@ -230,6 +230,105 @@ class Trip(UserOwnedModel):
         ]
 
 
+class TripPoint(models.Model):
+    """
+    Точка маршрута рейса (погрузка или выгрузка груза).
+
+    Заменяет плоские поля Trip (loading_address, unloading_address и т.д.)
+    и позволяет хранить произвольное количество точек в хронологическом порядке.
+
+    Поле waybill + odometer используются для расчёта реальных затрат рейса:
+    по одометру на момент погрузки/выгрузки можно определить, какую долю
+    километража каждого путевого листа занял данный рейс.
+    """
+
+    class Type(models.TextChoices):
+        LOAD = "LOAD", "Погрузка"
+        UNLOAD = "UNLOAD", "Выгрузка"
+
+    trip = models.ForeignKey(
+        Trip,
+        on_delete=models.CASCADE,
+        related_name="points",
+        verbose_name="Рейс",
+    )
+    point_type = models.CharField(
+        max_length=10,
+        choices=Type.choices,
+        verbose_name="Тип точки",
+    )
+    sequence = models.PositiveSmallIntegerField(
+        verbose_name="Порядковый номер",
+        help_text="Хронологический порядок точек внутри рейса",
+    )
+
+    # Коммерческие данные (перенесены из плоских полей Trip)
+    address = models.CharField(
+        max_length=ADDRESS_LENGTH,
+        verbose_name="Адрес",
+    )
+    planned_date = models.DateTimeField(
+        verbose_name="Заявленные дата и время",
+    )
+    actual_date = models.DateTimeField(
+        verbose_name="Фактические дата и время",
+        null=True,
+        blank=True,
+    )
+    contact_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        verbose_name="Контакт (имя)",
+    )
+    contact_phone = models.CharField(
+        max_length=25,
+        blank=True,
+        default="",
+        verbose_name="Контакт (телефон)",
+        validators=[validate_phone_number],
+    )
+    loading_type = models.CharField(
+        max_length=LOADING_TYPE_LENGTH,
+        choices=LoadingType.choices,
+        blank=True,
+        default="",
+        verbose_name="Тип погрузки/выгрузки",
+    )
+
+    # Данные для расчёта затрат — заполняются постфактум
+    waybill = models.ForeignKey(
+        "waybills.Waybill",
+        on_delete=models.SET_NULL,
+        related_name="trip_points",
+        verbose_name="Путевой лист",
+        null=True,
+        blank=True,
+    )
+    odometer = models.PositiveIntegerField(
+        verbose_name="Показание одометра",
+        null=True,
+        blank=True,
+        help_text="Показание одометра путевого листа в момент погрузки/выгрузки",
+    )
+
+    class Meta:
+        verbose_name = "Точка маршрута рейса"
+        verbose_name_plural = "Точки маршрута рейса"
+        ordering = ["sequence"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["trip", "sequence"],
+                name="unique_trippoint_sequence_per_trip",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.get_point_type_display()} #{self.sequence} / {self.trip}"
+        )
+
+
 ALLOWED_TRIP_FILE_EXTENSIONS = [
     "pdf",
     "jpg",

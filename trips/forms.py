@@ -14,6 +14,10 @@ class AjaxModelChoiceField(forms.ModelChoiceField):
     Это позволяет не грузить все записи в HTML, сохраняя серверную валидацию.
     """
 
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("empty_label", "")
+        super().__init__(*args, **kwargs)
+
     def to_python(self, value):
         if value in self.empty_values:
             return None

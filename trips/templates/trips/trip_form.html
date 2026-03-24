@@ -569,12 +569,23 @@
     </form>
 </section>
 
+<style>
+select[data-search-url] { opacity: 0; pointer-events: none; }
+</style>
+
 <script>
 window.QC_ORG_SUGGESTIONS_URL = "{% url 'organizations:api_suggestions_by_inn' %}";
 window.QC_ORG_SEARCH_URL = "{% url 'organizations:search' %}";
 </script>
 <script src="{% static 'js/quick_create.js' %}"></script>
 <script src="{% static 'trips/js/autocomplete.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    ['id_client', 'id_consignor', 'id_consignee', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {
+        initAutocomplete(id);
+    });
+});
+</script>
 <style>
 .address-suggest-wrap {
     position: relative;

@@ -1,6 +1,7 @@
 function initAutocomplete(selectId) {
     const select = document.getElementById(selectId);
-    if (!select) return;
+    if (!select || select.dataset.acInitialized) return;
+    select.dataset.acInitialized = '1';
 
     const searchUrl = select.dataset.searchUrl || '';
     const searchType = select.dataset.searchType || '';
@@ -169,9 +170,3 @@ function initAutocomplete(selectId) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    const fields = ['id_client', 'id_consignor', 'id_consignee', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'];
-    fields.forEach(function (id) {
-        setTimeout(function () { initAutocomplete(id); }, 0);
-    });
-});

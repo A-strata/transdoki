@@ -11,6 +11,7 @@ from .views import (
     TripTNDownloadView,
     TripUpdateView,
     address_suggest,
+    trip_search,
 )
 
 app_name = "trips"
@@ -21,6 +22,7 @@ urlpatterns = [
     path("", TripListView.as_view(), name="list"),
     path("<int:pk>/", TripDetailView.as_view(), name="detail"),
     path("api/address-suggest/", address_suggest, name="address_suggest"),
+    path("search/", trip_search, name="search"),
     path("<int:pk>/download-tn/", TripTNDownloadView.as_view(), name="download_tn"),
     path(
         "<int:pk>/download-agreement/",
