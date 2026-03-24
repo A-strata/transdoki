@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from transdoki.tenancy import get_request_account
 
 from .forms import TripAttachmentUploadForm, TripForm
-from .models import MAX_FILES_PER_TRIP, Trip, TripAttachment
+from .models import MAX_FILES_PER_TRIP, Trip, TripAttachment, TripPoint
 from .services import AgreementRequestGenerator, TNGenerator
 
 load_dotenv()
@@ -29,6 +29,39 @@ DADATA_SECRET = os.getenv("DADATA_SECRET")
 DADATA_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
 
 logger = logging.getLogger("security")
+
+
+def _sync_trip_points(trip, cleaned_data):
+    """
+    Синхронизирует TripPoint (sequence=1 LOAD, sequence=2 UNLOAD)
+    с плоскими полями формы рейса.
+    Вызывается после сохранения Trip в create и update.
+    """
+    trip.points.filter(sequence__in=[1, 2]).delete()
+    TripPoint.objects.bulk_create([
+        TripPoint(
+            trip=trip,
+            point_type=TripPoint.Type.LOAD,
+            sequence=1,
+            address=cleaned_data.get("loading_address") or "",
+            planned_date=cleaned_data.get("planned_loading_date"),
+            actual_date=cleaned_data.get("actual_loading_date"),
+            contact_name=cleaned_data.get("loading_contact_name") or "",
+            contact_phone=cleaned_data.get("loading_contact_phone") or "",
+            loading_type=cleaned_data.get("loading_type") or "",
+        ),
+        TripPoint(
+            trip=trip,
+            point_type=TripPoint.Type.UNLOAD,
+            sequence=2,
+            address=cleaned_data.get("unloading_address") or "",
+            planned_date=cleaned_data.get("planned_unloading_date"),
+            actual_date=cleaned_data.get("actual_unloading_date"),
+            contact_name=cleaned_data.get("unloading_contact_name") or "",
+            contact_phone=cleaned_data.get("unloading_contact_phone") or "",
+            loading_type=cleaned_data.get("unloading_type") or "",
+        ),
+    ])
 
 
 class UserOwnedListView(LoginRequiredMixin, ListView):
@@ -92,7 +125,9 @@ class TripCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        _sync_trip_points(self.object, form.cleaned_data)
+        return response
 
     def get_success_url(self):
         return reverse_lazy("trips:detail", kwargs={"pk": self.object.pk})
@@ -113,7 +148,9 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        _sync_trip_points(self.object, form.cleaned_data)
+        return response
 
     def get_success_url(self):
         return reverse_lazy("trips:detail", kwargs={"pk": self.object.pk})
