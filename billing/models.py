@@ -1,4 +1,99 @@
+import uuid
+
 from django.db import models
+
+
+class PaymentOrder(models.Model):
+    """
+    Намерение пополнить баланс через CloudPayments.
+
+    Жизненный цикл:
+      pending  →  paid      (webhook Pay пришёл, деньги зачислены)
+      pending  →  failed    (webhook Fail или истёк срок)
+      paid/failed → нельзя вернуть назад (финальные статусы)
+
+    Поле order_id (UUID) передаётся в CloudPayments-виджет как InvoiceId.
+    CloudPayments вернёт его в каждом webhook-уведомлении — так мы
+    идентифицируем аккаунт без сессии пользователя.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Ожидает оплаты"
+        PAID = "paid", "Оплачен"
+        FAILED = "failed", "Ошибка / отменён"
+
+    # UUID генерируется автоматически при создании объекта.
+    # Именно он уходит в CloudPayments как InvoiceId.
+    order_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        verbose_name="ID заказа",
+        help_text="Передаётся в CloudPayments как InvoiceId",
+    )
+    account = models.ForeignKey(
+        "accounts.Account",
+        on_delete=models.PROTECT,
+        related_name="payment_orders",
+        verbose_name="Аккаунт",
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Сумма (₽)",
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+        verbose_name="Статус",
+    )
+    # Заполняется из webhook'а CloudPayments после успешной оплаты.
+    # Нужен для поддержки возвратов и сверки с выпиской CP.
+    cp_transaction_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID транзакции CloudPayments",
+    )
+    # Хранит данные из webhook: маску карты, код авторизации и т.п.
+    # Не используем отдельные поля — CloudPayments может добавлять новые
+    # атрибуты в ответ, JSONField безопасно это принимает.
+    cp_data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Данные CloudPayments",
+    )
+    # BillingTransaction, созданная при зачислении.
+    # NULL пока заказ не оплачен. Позволяет пройти от платежа до транзакции
+    # и обратно без дополнительных запросов.
+    transaction = models.OneToOneField(
+        "BillingTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payment_order",
+        verbose_name="Транзакция биллинга",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name="Создан",
+    )
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Завершён",
+        help_text="Дата оплаты или отказа",
+    )
+
+    class Meta:
+        verbose_name = "Платёжный заказ"
+        verbose_name_plural = "Платёжные заказы"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Заказ {self.order_id} — {self.amount}₽ [{self.get_status_display()}]"
 
 
 class BillingTransaction(models.Model):
