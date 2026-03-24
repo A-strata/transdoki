@@ -138,7 +138,7 @@ def verify_webhook_hmac(raw_body: bytes, signature: str) -> bool:
     ).decode("utf-8")
 
     # ВРЕМЕННЫЙ DEBUG — убрать после диагностики
-    logger.warning(
+    security_logger.warning(
         "cloudpayments.hmac_debug body_len=%d body_prefix=%r computed=%r received=%r",
         len(raw_body),
         raw_body[:80],

@@ -183,6 +183,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "billing": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
