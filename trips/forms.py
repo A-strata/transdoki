@@ -47,7 +47,7 @@ class TripForm(forms.ModelForm):
 
     class Meta:
         model = Trip
-        exclude = ["created_by", "created_at", "updated_at"]
+        exclude = ["created_by", "created_at", "updated_at", "account"]
         widgets = {
             "date_of_trip": forms.DateInput(attrs={"type": "date"}),
             "planned_loading_date": forms.DateTimeInput(
