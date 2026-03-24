@@ -21,13 +21,14 @@ def _transliterate(text: str) -> str:
     return ''.join(_TRANSLIT.get(c, c) for c in text.lower())
 
 
-def _generate_username(first_name: str, last_name: str) -> str:
+def _generate_username(first_name: str, last_name: str, exclude_pk: int | None = None) -> str:
     last = re.sub(r'[^a-z0-9]', '', _transliterate(last_name))
     first_init = re.sub(r'[^a-z0-9]', '', _transliterate(first_name[:1])) if first_name else ''
     base = f"{last}.{first_init}" if first_init else last or 'user'
     username = base
     counter = 2
-    while User.objects.filter(username=username).exists():
+    qs = User.objects.all() if exclude_pk is None else User.objects.exclude(pk=exclude_pk)
+    while qs.filter(username=username).exists():
         username = f"{base}{counter}"
         counter += 1
     return username
@@ -87,13 +88,17 @@ def register_account_with_owner(
 
 def reset_account_user_password(*, profile, actor) -> str:
     """
-    Генерирует новый временный пароль для пользователя внутри account.
+    Сбрасывает логин и пароль пользователя до заводских значений.
+    Логин перегенерируется по имени/фамилии, пароль — случайная строка.
     actor — пользователь, инициирующий сброс (owner/admin).
     Возвращает temp_password.
     """
+    user = profile.user
+    new_username = _generate_username(user.first_name, user.last_name, exclude_pk=user.pk)
     temp_password = _generate_temp_password()
-    profile.user.set_password(temp_password)
-    profile.user.save(update_fields=["password"])
+    user.username = new_username
+    user.set_password(temp_password)
+    user.save(update_fields=["username", "password"])
     return temp_password
 
 
