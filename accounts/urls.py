@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AccountCabinetView,
     AccountUserCreateView,
+    AccountUserPasswordResetView,
     AccountUserRoleUpdateView,
     RegisterView,
 )
@@ -17,5 +18,10 @@ urlpatterns = [
         "users/<int:profile_id>/role/",
         AccountUserRoleUpdateView.as_view(),
         name="user_role_update",
+    ),
+    path(
+        "users/<int:profile_id>/reset-password/",
+        AccountUserPasswordResetView.as_view(),
+        name="user_reset_password",
     ),
 ]

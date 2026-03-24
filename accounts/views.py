@@ -12,6 +12,7 @@ from transdoki.tenancy import get_request_account
 
 from .forms import AccountRegistrationForm, AccountUserCreateForm
 from .models import UserProfile
+from .services import reset_account_user_password
 
 
 class RegisterView(FormView):
@@ -85,10 +86,19 @@ class AccountUserCreateView(BillingProtectedMixin, LoginRequiredMixin, FormView)
         return response
 
     def form_valid(self, form):
-        user = form.save(account=self.account, created_by=self.request.user)
+        user, temp_password = form.save(account=self.account, created_by=self.request.user)
         if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"ok": True, "username": user.username, "role": user.profile.get_role_display()})
-        messages.success(self.request, f"Пользователь {user.username} создан.")
+            return JsonResponse({
+                "ok": True,
+                "username": user.username,
+                "temp_password": temp_password,
+                "full_name": user.get_full_name() or user.username,
+                "role": user.profile.get_role_display(),
+            })
+        messages.success(
+            self.request,
+            f"Пользователь {user.username} создан. Временный пароль: {temp_password}",
+        )
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -101,6 +111,34 @@ class AccountUserCreateView(BillingProtectedMixin, LoginRequiredMixin, FormView)
         context = super().get_context_data(**kwargs)
         context["account"] = self.account
         return context
+
+
+class AccountUserPasswordResetView(LoginRequiredMixin, View):
+    def post(self, request, profile_id):
+        account = get_request_account(request)
+        actor_profile = request.user.profile
+
+        if actor_profile.role not in {UserProfile.Role.OWNER, UserProfile.Role.ADMIN}:
+            return JsonResponse({"ok": False, "error": "Недостаточно прав."}, status=403)
+
+        target_profile = get_object_or_404(
+            UserProfile.objects.select_related("user").filter(account=account),
+            pk=profile_id,
+        )
+
+        if target_profile.user_id == request.user.id:
+            return JsonResponse({"ok": False, "error": "Нельзя сбросить собственный пароль здесь."}, status=400)
+
+        if target_profile.role == UserProfile.Role.OWNER:
+            return JsonResponse({"ok": False, "error": "Нельзя сбросить пароль владельца."}, status=400)
+
+        temp_password = reset_account_user_password(profile=target_profile, actor=request.user)
+        return JsonResponse({
+            "ok": True,
+            "username": target_profile.user.username,
+            "temp_password": temp_password,
+            "full_name": target_profile.user.get_full_name() or target_profile.user.username,
+        })
 
 
 class AccountUserRoleUpdateView(LoginRequiredMixin, View):

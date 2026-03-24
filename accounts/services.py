@@ -1,9 +1,41 @@
+import re
+import secrets
+import string
+
 from django.contrib.auth.models import User
 from django.db import transaction
 
 from organizations.models import Organization
 
 from .models import Account, UserProfile
+
+_TRANSLIT = {
+    'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh',
+    'з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o',
+    'п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts',
+    'ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+}
+
+
+def _transliterate(text: str) -> str:
+    return ''.join(_TRANSLIT.get(c, c) for c in text.lower())
+
+
+def _generate_username(first_name: str, last_name: str) -> str:
+    last = re.sub(r'[^a-z0-9]', '', _transliterate(last_name))
+    first_init = re.sub(r'[^a-z0-9]', '', _transliterate(first_name[:1])) if first_name else ''
+    base = f"{last}.{first_init}" if first_init else last or 'user'
+    username = base
+    counter = 2
+    while User.objects.filter(username=username).exists():
+        username = f"{base}{counter}"
+        counter += 1
+    return username
+
+
+def _generate_temp_password(length: int = 10) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 @transaction.atomic
@@ -53,27 +85,40 @@ def register_account_with_owner(
     return user
 
 
+def reset_account_user_password(*, profile, actor) -> str:
+    """
+    Генерирует новый временный пароль для пользователя внутри account.
+    actor — пользователь, инициирующий сброс (owner/admin).
+    Возвращает temp_password.
+    """
+    temp_password = _generate_temp_password()
+    profile.user.set_password(temp_password)
+    profile.user.save(update_fields=["password"])
+    return temp_password
+
+
 @transaction.atomic
 def create_account_user_by_admin(
     *,
     account: Account,
     created_by: User,
-    email: str,
-    password: str,
+    first_name: str,
+    last_name: str,
     role: str,
-    first_name: str = "",
-    last_name: str = "",
-) -> User:
+) -> tuple:
     """
     Создание пользователя внутри текущего account.
-    account всегда берётся из контекста текущего пользователя (не из формы).
+    Логин генерируется автоматически (фамилия.инициал),
+    временный пароль — случайная строка.
+    Возвращает (user, temp_password).
     """
-    normalized_email = email.strip().lower()
+    username = _generate_username(first_name, last_name)
+    temp_password = _generate_temp_password()
 
     user = User.objects.create_user(
-        username=normalized_email,
-        email=normalized_email,
-        password=password,
+        username=username,
+        email="",
+        password=temp_password,
         first_name=first_name.strip(),
         last_name=last_name.strip(),
     )
@@ -83,4 +128,4 @@ def create_account_user_by_admin(
     profile.role = role
     profile.save(update_fields=["account", "role"])
 
-    return user
+    return user, temp_password

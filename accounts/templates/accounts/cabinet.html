@@ -214,6 +214,14 @@
 
                                                     <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
                                                     <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
+                                                    <button type="button"
+                                                            class="role-btn reset-pwd-btn"
+                                                            data-profile-id="{{ p.id }}"
+                                                            data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
+                                                            style="border-color:#f59e0b; color:#92400e; background:#fffbeb;"
+                                                            title="Сбросить пароль пользователя">
+                                                        Сбросить пароль
+                                                    </button>
                                                 </div>
                                             </form>
                                         {% endif %}
@@ -234,44 +242,59 @@
     <div style="background:#fff; border-radius:14px; padding:20px 24px; width:100%; max-width:420px; box-shadow:0 16px 40px rgba(15,23,42,.18); box-sizing:border-box; margin:16px;">
         <h3 style="margin:0 0 16px; font-size:1.05rem; font-weight:700; color:#111827;">Добавить пользователя</h3>
 
-        <div id="add-user-error" style="display:none; margin-bottom:10px; padding:8px 10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:.88rem; color:#991b1b;"></div>
+        <!-- Форма ввода -->
+        <div id="au-form-body">
+            <div id="add-user-error" style="display:none; margin-bottom:10px; padding:8px 10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:.88rem; color:#991b1b;"></div>
 
-        <div class="au-field">
-            <label class="au-label">Логин *</label>
-            <input type="text" id="au-login" name="email" class="au-input">
-            <span class="au-err" data-err="email"></span>
-        </div>
-        <div class="au-field">
-            <label class="au-label">Имя</label>
-            <input type="text" id="au-first-name" name="first_name" class="au-input">
-        </div>
-        <div class="au-field">
-            <label class="au-label">Фамилия</label>
-            <input type="text" id="au-last-name" name="last_name" class="au-input">
-        </div>
-        <div class="au-field">
-            <label class="au-label">Роль *</label>
-            <select id="au-role" name="role" class="au-input">
-                <option value="admin">Администратор</option>
-                <option value="dispatcher">Диспетчер</option>
-                <option value="logist">Логист</option>
-            </select>
-            <span class="au-err" data-err="role"></span>
-        </div>
-        <div class="au-field">
-            <label class="au-label">Пароль *</label>
-            <input type="password" id="au-password1" name="password1" class="au-input">
-            <span class="au-err" data-err="password1"></span>
-        </div>
-        <div class="au-field">
-            <label class="au-label">Подтверждение пароля *</label>
-            <input type="password" id="au-password2" name="password2" class="au-input">
-            <span class="au-err" data-err="password2"></span>
+            <div class="au-field">
+                <label class="au-label">Фамилия *</label>
+                <input type="text" name="last_name" class="au-input">
+                <span class="au-err" data-err="last_name"></span>
+            </div>
+            <div class="au-field">
+                <label class="au-label">Имя *</label>
+                <input type="text" name="first_name" class="au-input">
+                <span class="au-err" data-err="first_name"></span>
+            </div>
+            <div class="au-field">
+                <label class="au-label">Роль *</label>
+                <select name="role" class="au-input">
+                    <option value="admin">Администратор</option>
+                    <option value="dispatcher">Диспетчер</option>
+                    <option value="logist">Логист</option>
+                </select>
+                <span class="au-err" data-err="role"></span>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:16px; justify-content:flex-end;">
+                <button type="button" id="add-user-cancel" style="padding:8px 14px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:.9rem;">Отмена</button>
+                <button type="button" id="add-user-submit" style="padding:8px 14px; border-radius:8px; border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; font-size:.9rem; font-weight:600;">Создать</button>
+            </div>
         </div>
 
-        <div style="display:flex; gap:8px; margin-top:16px; justify-content:flex-end;">
-            <button type="button" id="add-user-cancel" style="padding:8px 14px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:.9rem;">Отмена</button>
-            <button type="button" id="add-user-submit" style="padding:8px 14px; border-radius:8px; border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; font-size:.9rem; font-weight:600;">Создать</button>
+        <!-- Экран с credentials после создания -->
+        <div id="au-credentials" style="display:none;">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:14px; margin-bottom:14px;">
+                <div style="font-size:.88rem; font-weight:600; color:#166534; margin-bottom:10px;">Пользователь создан</div>
+                <div style="font-size:.85rem; color:#374151; margin-bottom:8px;">
+                    Передайте сотруднику логин и временный пароль. Он сможет сменить пароль после входа.
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:.82rem; color:#6b7280; min-width:80px;">Логин</span>
+                        <code id="cred-login" style="flex:1; background:#fff; border:1px solid #d1d5db; border-radius:6px; padding:5px 8px; font-size:.9rem; font-family:monospace;"></code>
+                        <button type="button" class="copy-btn" data-target="cred-login" style="padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:.8rem; white-space:nowrap;">Копировать</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:.82rem; color:#6b7280; min-width:80px;">Пароль</span>
+                        <code id="cred-pass" style="flex:1; background:#fff; border:1px solid #d1d5db; border-radius:6px; padding:5px 8px; font-size:.9rem; font-family:monospace;"></code>
+                        <button type="button" class="copy-btn" data-target="cred-pass" style="padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:.8rem; white-space:nowrap;">Копировать</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" id="au-cred-close" style="padding:8px 14px; border-radius:8px; border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; font-size:.9rem; font-weight:600;">Готово</button>
+            </div>
         </div>
     </div>
 </div>
@@ -291,6 +314,9 @@ document.addEventListener("DOMContentLoaded", function () {
     var cancelBtn = document.getElementById("add-user-cancel");
     var submitBtn = document.getElementById("add-user-submit");
     var errorBox = document.getElementById("add-user-error");
+    var formBody = document.getElementById("au-form-body");
+    var credentials = document.getElementById("au-credentials");
+    var credClose = document.getElementById("au-cred-close");
 
     function getCsrf() {
         for (var c of document.cookie.split(";")) {
@@ -305,15 +331,65 @@ document.addEventListener("DOMContentLoaded", function () {
         overlay.querySelectorAll(".au-err").forEach(function(el) { el.style.display = "none"; el.textContent = ""; });
         overlay.querySelectorAll(".au-input").forEach(function(el) { el.style.borderColor = "#e5e7eb"; });
         errorBox.style.display = "none";
+        formBody.style.display = "block";
+        credentials.style.display = "none";
         overlay.style.display = "flex";
     }
 
-    function closeModal() { overlay.style.display = "none"; }
+    function closeModal() {
+        overlay.style.display = "none";
+    }
+
+    function showCredentials(username, password) {
+        document.getElementById("cred-login").textContent = username;
+        document.getElementById("cred-pass").textContent = password;
+        formBody.style.display = "none";
+        credentials.style.display = "block";
+    }
 
     if (openBtn) openBtn.addEventListener("click", openModal);
     cancelBtn.addEventListener("click", closeModal);
+    credClose.addEventListener("click", function() { closeModal(); location.reload(); });
     overlay.addEventListener("click", function(e) { if (e.target === overlay) closeModal(); });
     document.addEventListener("keydown", function(e) { if (e.key === "Escape" && overlay.style.display === "flex") closeModal(); });
+
+    overlay.addEventListener("click", function(e) {
+        if (e.target.classList.contains("copy-btn")) {
+            var targetId = e.target.dataset.target;
+            var text = document.getElementById(targetId).textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var orig = e.target.textContent;
+                e.target.textContent = "Скопировано!";
+                setTimeout(function() { e.target.textContent = orig; }, 1500);
+            });
+        }
+    });
+
+    document.querySelectorAll(".reset-pwd-btn").forEach(function(btn) {
+        btn.addEventListener("click", async function() {
+            if (!confirm("Сбросить пароль пользователя? Будет создан новый временный пароль.")) return;
+            btn.disabled = true;
+            btn.textContent = "Сбрасываем…";
+            try {
+                var resp = await fetch(btn.dataset.resetUrl, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": getCsrf(), "X-Requested-With": "XMLHttpRequest" },
+                });
+                var data = await resp.json();
+                if (data.ok) {
+                    showCredentials(data.username, data.temp_password);
+                    overlay.style.display = "flex";
+                } else {
+                    alert(data.error || "Ошибка сброса пароля.");
+                }
+            } catch (_) {
+                alert("Ошибка соединения.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Сбросить пароль";
+            }
+        });
+    });
 
     submitBtn.addEventListener("click", async function () {
         overlay.querySelectorAll(".au-err").forEach(function(el) { el.style.display = "none"; el.textContent = ""; });
@@ -321,7 +397,7 @@ document.addEventListener("DOMContentLoaded", function () {
         errorBox.style.display = "none";
 
         var params = new URLSearchParams();
-        ["email","first_name","last_name","role","password1","password2"].forEach(function(name) {
+        ["first_name", "last_name", "role"].forEach(function(name) {
             var el = overlay.querySelector("[name='" + name + "']");
             if (el) params.set(name, el.value.trim());
         });
@@ -338,8 +414,7 @@ document.addEventListener("DOMContentLoaded", function () {
             var data = await resp.json();
 
             if (data.ok) {
-                closeModal();
-                location.reload();
+                showCredentials(data.username, data.temp_password);
             } else {
                 var errors = data.errors || {};
                 var hasField = false;
