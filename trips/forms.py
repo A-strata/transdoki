@@ -2,7 +2,32 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 
-from .models import Trip
+from .models import Trip, TripPoint
+
+
+class TripPointForm(forms.ModelForm):
+    class Meta:
+        model = TripPoint
+        fields = [
+            "address", "planned_date", "actual_date",
+            "contact_name", "contact_phone", "loading_type",
+        ]
+        widgets = {
+            "planned_date": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "actual_date": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        name = (cleaned_data.get("contact_name") or "").strip()
+        phone = (cleaned_data.get("contact_phone") or "").strip()
+        cleaned_data["contact_name"] = name
+        cleaned_data["contact_phone"] = phone
+        if bool(name) ^ bool(phone):
+            msg = "Заполните и имя, и телефон контакта (или оставьте оба поля пустыми)."
+            self.add_error("contact_name", msg)
+            self.add_error("contact_phone", msg)
+        return cleaned_data
 
 
 class AjaxModelChoiceField(forms.ModelChoiceField):
@@ -47,21 +72,17 @@ class TripForm(forms.ModelForm):
 
     class Meta:
         model = Trip
-        exclude = ["created_by", "created_at", "updated_at", "account"]
+        exclude = [
+            "created_by", "created_at", "updated_at", "account",
+            "loading_address", "unloading_address",
+            "planned_loading_date", "planned_unloading_date",
+            "actual_loading_date", "actual_unloading_date",
+            "loading_contact_name", "loading_contact_phone",
+            "unloading_contact_name", "unloading_contact_phone",
+            "loading_type", "unloading_type",
+        ]
         widgets = {
             "date_of_trip": forms.DateInput(attrs={"type": "date"}),
-            "planned_loading_date": forms.DateTimeInput(
-                attrs={"type": "datetime-local"}
-            ),
-            "planned_unloading_date": forms.DateTimeInput(
-                attrs={"type": "datetime-local"}
-            ),
-            "actual_loading_date": forms.DateTimeInput(
-                attrs={"type": "datetime-local"}
-            ),
-            "actual_unloading_date": forms.DateTimeInput(
-                attrs={"type": "datetime-local"}
-            ),
         }
 
     # FK-поля, переводимые в AjaxModelChoiceField
@@ -140,35 +161,8 @@ class TripForm(forms.ModelForm):
         if search_type:
             field.widget.attrs["data-search-type"] = search_type
 
-    # ✅ ДОБАВЛЕНО: парная валидация контактов
-    def _validate_contact_pair(
-        self, cleaned_data, name_field, phone_field, place_label
-    ):
-        name = (cleaned_data.get(name_field) or "").strip()
-        phone = (cleaned_data.get(phone_field) or "").strip()
-
-        # нормализуем значения после strip
-        cleaned_data[name_field] = name
-        cleaned_data[phone_field] = phone
-
-        if bool(name) ^ bool(phone):
-            msg = f"Для контакта на {place_label} заполните и имя, и телефон."
-            self.add_error(name_field, msg)
-            self.add_error(phone_field, msg)
-
     def clean(self):
         cleaned_data = super().clean()
-
-        # ✅ ДОБАВЛЕНО: валидация новых 4 полей (вне зависимости от user)
-        self._validate_contact_pair(
-            cleaned_data, "loading_contact_name", "loading_contact_phone", "погрузке"
-        )
-        self._validate_contact_pair(
-            cleaned_data,
-            "unloading_contact_name",
-            "unloading_contact_phone",
-            "выгрузке",
-        )
 
         if self.user:
             validate_unique_trip_number_and_date(

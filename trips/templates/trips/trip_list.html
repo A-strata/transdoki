@@ -165,10 +165,10 @@
                         <td data-col="driver">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
                         <td data-col="truck">{{ trip.truck.grn }}</td>
                         <td data-col="trailer">{{ trip.trailer.grn|default:"—" }}</td>
-                        <td data-col="planned_loading_date">{{ trip.planned_loading_date|date:"d.m.Y" }}</td>
-                        <td data-col="planned_unloading_date">{{ trip.planned_unloading_date|date:"d.m.Y" }}</td>
-                        <td data-col="loading_address">{{ trip.loading_address }}</td>
-                        <td data-col="unloading_address">{{ trip.unloading_address }}</td>
+                        <td data-col="planned_loading_date">{{ trip.load_point.planned_date|date:"d.m.Y"|default:"—" }}</td>
+                        <td data-col="planned_unloading_date">{{ trip.unload_point.planned_date|date:"d.m.Y"|default:"—" }}</td>
+                        <td data-col="loading_address">{{ trip.load_point.address|default:"—" }}</td>
+                        <td data-col="unloading_address">{{ trip.unload_point.address|default:"—" }}</td>
                         <td data-col="cargo">{{ trip.cargo }}</td>
                         <td data-col="weight">{{ trip.weight|default:"—" }}</td>
                         <td data-col="client_cost">{{ trip.client_cost|money }}</td>

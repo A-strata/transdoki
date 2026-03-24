@@ -86,46 +86,6 @@ class Trip(UserOwnedModel):
         blank=True,
         null=True,
     )
-    planned_loading_date = models.DateTimeField(
-        verbose_name="Заявленные дата и время погрузки"
-    )
-    planned_unloading_date = models.DateTimeField(
-        verbose_name="Заявленные дата и время выгрузки"
-    )
-    actual_loading_date = models.DateTimeField(
-        verbose_name="Фактическая дата и время погрузки", null=True, blank=True
-    )
-    actual_unloading_date = models.DateTimeField(
-        verbose_name="Фактическая дата и время выгрузки", null=True, blank=True
-    )
-    loading_address = models.CharField(
-        max_length=ADDRESS_LENGTH,
-        verbose_name="Адрес погрузки",
-    )
-    unloading_address = models.CharField(
-        max_length=ADDRESS_LENGTH,
-        verbose_name="Адрес выгрузки",
-    )
-    loading_contact_name = models.CharField(
-        max_length=150, blank=True, default="", verbose_name="Контакт на погрузке (имя)"
-    )
-    loading_contact_phone = models.CharField(
-        max_length=25,
-        blank=True,
-        default="",
-        verbose_name="Контакт на погрузке (телефон)",
-        validators=[validate_phone_number],
-    )
-    unloading_contact_name = models.CharField(
-        max_length=150, blank=True, default="", verbose_name="Контакт на выгрузке (имя)"
-    )
-    unloading_contact_phone = models.CharField(
-        max_length=25,
-        blank=True,
-        default="",
-        verbose_name="Контакт на выгрузке (телефон)",
-        validators=[validate_phone_number],
-    )
     cargo = models.CharField(max_length=CARGO_LENGTH, verbose_name="Груз")
     weight = models.PositiveIntegerField(verbose_name="Вес", blank=True, null=True)
     client_cost = models.DecimalField(
@@ -150,20 +110,6 @@ class Trip(UserOwnedModel):
         blank=True,
         help_text="Дополнительная информация о рейсе",
     )
-    loading_type = models.CharField(
-        max_length=LOADING_TYPE_LENGTH,
-        choices=LoadingType.choices,
-        blank=True,
-        default="",
-        verbose_name="Тип погрузки",
-    )
-    unloading_type = models.CharField(
-        max_length=LOADING_TYPE_LENGTH,
-        choices=LoadingType.choices,
-        blank=True,
-        default="",
-        verbose_name="Тип выгрузки",
-    )
     payment_type = models.CharField(
         max_length=PAYMENT_TYPE_LENGTH,
         choices=PaymentType.choices,
@@ -183,6 +129,22 @@ class Trip(UserOwnedModel):
         null=True,
         verbose_name="Срок оплаты",
     )
+
+    @property
+    def load_point(self):
+        """Первая точка погрузки (sequence=1). Работает с prefetch_related('points')."""
+        for p in self.points.all():
+            if p.sequence == 1:
+                return p
+        return None
+
+    @property
+    def unload_point(self):
+        """Точка выгрузки (sequence=2). Работает с prefetch_related('points')."""
+        for p in self.points.all():
+            if p.sequence == 2:
+                return p
+        return None
 
     def save(self, *args, **kwargs):
         # Для существующего рейса номер не пересчитываем

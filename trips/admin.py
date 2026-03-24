@@ -59,12 +59,10 @@ class TripAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Логистика",
+            "Груз",
             {
                 "fields": (
-                    ("planned_loading_date", "planned_unloading_date"),
-                    ("loading_address", "unloading_address"),
-                    ("cargo", "weight", "loading_type", "unloading_type"),
+                    ("cargo", "weight"),
                 )
             },
         ),

@@ -84,9 +84,11 @@ class TNGenerator(BaseDocxGenerator):
 
     @classmethod
     def build_context(cls, trip) -> dict:
-        # Простая функция только для форматирования дат
         def fmt_date(date_val, format_str):
             return date_val.strftime(format_str) if date_val else "—"
+
+        load_p = trip.load_point
+        unload_p = trip.unload_point
 
         return {
             "date_of_trip": fmt_date(trip.date_of_trip, "%d.%m.%Y"),
@@ -100,30 +102,33 @@ class TNGenerator(BaseDocxGenerator):
             "driver": trip.driver or "—",
             "truck": trip.truck or "—",
             "trailer": trip.trailer or "—",
-            "loading_address": trip.loading_address or "—",
-            "unloading_address": trip.unloading_address or "—",
+            "loading_address": (load_p.address if load_p else "") or "—",
+            "unloading_address": (unload_p.address if unload_p else "") or "—",
             "client_cost": trip.client_cost or "—",
             "payment_term": trip.payment_condition or "—",
-            "loading_contact_name": trip.loading_contact_name or "—",
-            "loading_contact_phone": trip.loading_contact_phone or "—",
-            "unloading_contact_name": trip.unloading_contact_name or "—",
-            "unloading_contact_phone": trip.unloading_contact_phone or "—",
+            "loading_contact_name": (load_p.contact_name if load_p else "") or "—",
+            "loading_contact_phone": (load_p.contact_phone if load_p else "") or "—",
+            "unloading_contact_name": (unload_p.contact_name if unload_p else "") or "—",
+            "unloading_contact_phone": (unload_p.contact_phone if unload_p else "") or "—",
             "planned_loading_date": fmt_date(
-                trip.planned_loading_date, "%d.%m.%Y %H:%M"
+                load_p.planned_date if load_p else None, "%d.%m.%Y %H:%M"
             ),
             "planned_unloading_date": fmt_date(
-                trip.planned_unloading_date, "%d.%m.%Y %H:%M"
+                unload_p.planned_date if unload_p else None, "%d.%m.%Y %H:%M"
             ),
-            "actual_loading_date": fmt_date(trip.actual_loading_date, "%d.%m.%Y %H:%M"),
+            "actual_loading_date": fmt_date(
+                load_p.actual_date if load_p else None, "%d.%m.%Y %H:%M"
+            ),
             "actual_unloading_date": fmt_date(
-                trip.actual_unloading_date, "%d.%m.%Y %H:%M"
+                unload_p.actual_date if unload_p else None, "%d.%m.%Y %H:%M"
             ),
-            # Для типов погрузки/разгрузки используем get_FOO_display()
             "loading_type": (
-                trip.get_loading_type_display() if trip.loading_type else "—"
+                load_p.get_loading_type_display()
+                if load_p and load_p.loading_type else "—"
             ),
             "unloading_type": (
-                trip.get_unloading_type_display() if trip.unloading_type else "—"
+                unload_p.get_loading_type_display()
+                if unload_p and unload_p.loading_type else "—"
             ),
             "payment_condition": trip.get_payment_condition_display() or "—",
         }

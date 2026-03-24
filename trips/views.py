@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 from transdoki.tenancy import get_request_account
 
-from .forms import TripAttachmentUploadForm, TripForm
+from .forms import TripAttachmentUploadForm, TripForm, TripPointForm
 from .models import MAX_FILES_PER_TRIP, Trip, TripAttachment, TripPoint
 from .services import AgreementRequestGenerator, TNGenerator
 
@@ -30,38 +30,6 @@ DADATA_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/addre
 
 logger = logging.getLogger("security")
 
-
-def _sync_trip_points(trip, cleaned_data):
-    """
-    Синхронизирует TripPoint (sequence=1 LOAD, sequence=2 UNLOAD)
-    с плоскими полями формы рейса.
-    Вызывается после сохранения Trip в create и update.
-    """
-    trip.points.filter(sequence__in=[1, 2]).delete()
-    TripPoint.objects.bulk_create([
-        TripPoint(
-            trip=trip,
-            point_type=TripPoint.Type.LOAD,
-            sequence=1,
-            address=cleaned_data.get("loading_address") or "",
-            planned_date=cleaned_data.get("planned_loading_date"),
-            actual_date=cleaned_data.get("actual_loading_date"),
-            contact_name=cleaned_data.get("loading_contact_name") or "",
-            contact_phone=cleaned_data.get("loading_contact_phone") or "",
-            loading_type=cleaned_data.get("loading_type") or "",
-        ),
-        TripPoint(
-            trip=trip,
-            point_type=TripPoint.Type.UNLOAD,
-            sequence=2,
-            address=cleaned_data.get("unloading_address") or "",
-            planned_date=cleaned_data.get("planned_unloading_date"),
-            actual_date=cleaned_data.get("actual_unloading_date"),
-            contact_name=cleaned_data.get("unloading_contact_name") or "",
-            contact_phone=cleaned_data.get("unloading_contact_phone") or "",
-            loading_type=cleaned_data.get("unloading_type") or "",
-        ),
-    ])
 
 
 class UserOwnedListView(LoginRequiredMixin, ListView):
@@ -76,22 +44,10 @@ class TripCreateView(LoginRequiredMixin, CreateView):
     form_class = TripForm
     template_name = "trips/trip_form.html"
 
-    # Поля, которые НЕ копируем
     COPY_EXCLUDE_FIELDS = {
-        "created_by",
-        "account",
-        "created_at",
-        "updated_at",
-        "num_of_trip",
-        "date_of_trip",
-        "planned_loading_date",
-        "planned_unloading_date",
-        "actual_loading_date",
-        "actual_unloading_date",
-        "weight",
-        "client_cost",
-        "carrier_cost",
-        "comments",
+        "created_by", "account", "created_at", "updated_at",
+        "num_of_trip", "date_of_trip",
+        "weight", "client_cost", "carrier_cost", "comments",
     }
 
     def get_form_kwargs(self):
@@ -99,35 +55,77 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         kwargs["user"] = self.request.user
         return kwargs
 
-    def get_initial(self):
-        initial = super().get_initial()
+    def _get_copy_source(self):
         copy_from_id = self.request.GET.get("copy_from")
         if not copy_from_id:
-            return initial
-
+            return None
         account = get_request_account(self.request)
+        return Trip.objects.filter(
+            pk=copy_from_id, account=account
+        ).prefetch_related("points").first()
 
-        # Чтобы пользователь не мог копировать чужие рейсы
-        source_trip = Trip.objects.filter(
-            pk=copy_from_id,
-            account=account,
-        ).first()
-        if not source_trip:
+    def get_initial(self):
+        initial = super().get_initial()
+        source = self._get_copy_source()
+        if not source:
             return initial
-
-        # Копируем только поля, которые реально есть в форме
         form_fields = set(self.form_class.base_fields.keys())
         fields_to_copy = [f for f in form_fields if f not in self.COPY_EXCLUDE_FIELDS]
-
-        initial.update(model_to_dict(source_trip, fields=fields_to_copy))
+        initial.update(model_to_dict(source, fields=fields_to_copy))
         return initial
 
-    def form_valid(self, form):
+    def _point_initials_from_copy(self):
+        source = self._get_copy_source()
+        if not source:
+            return {}, {}
+        load_p = source.load_point
+        unload_p = source.unload_point
+        load_initial = (
+            {"address": load_p.address, "loading_type": load_p.loading_type}
+            if load_p else {}
+        )
+        unload_initial = (
+            {"address": unload_p.address, "loading_type": unload_p.loading_type}
+            if unload_p else {}
+        )
+        return load_initial, unload_initial
+
+    def get(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+        load_initial, unload_initial = self._point_initials_from_copy()
+        load_form = TripPointForm(prefix="load", initial=load_initial)
+        unload_form = TripPointForm(prefix="unload", initial=unload_initial)
+        return self.render_to_response(
+            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
+        )
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+        load_form = TripPointForm(request.POST, prefix="load")
+        unload_form = TripPointForm(request.POST, prefix="unload")
+        if form.is_valid() and load_form.is_valid() and unload_form.is_valid():
+            return self._save_all(form, load_form, unload_form)
+        return self.render_to_response(
+            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
+        )
+
+    def _save_all(self, form, load_form, unload_form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
-        response = super().form_valid(form)
-        _sync_trip_points(self.object, form.cleaned_data)
-        return response
+        self.object = form.save()
+        load_p = load_form.save(commit=False)
+        load_p.trip = self.object
+        load_p.point_type = TripPoint.Type.LOAD
+        load_p.sequence = 1
+        load_p.save()
+        unload_p = unload_form.save(commit=False)
+        unload_p.trip = self.object
+        unload_p.point_type = TripPoint.Type.UNLOAD
+        unload_p.sequence = 2
+        unload_p.save()
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse_lazy("trips:detail", kwargs={"pk": self.object.pk})
@@ -139,18 +137,52 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "trips/trip_form.html"
 
     def get_queryset(self):
-        # Ограничивает доступ только к своему account
-        return Trip.objects.filter(account=get_request_account(self.request))
+        return Trip.objects.filter(
+            account=get_request_account(self.request)
+        ).prefetch_related("points")
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
         return kwargs
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        _sync_trip_points(self.object, form.cleaned_data)
-        return response
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        load_form = TripPointForm(instance=self.object.load_point, prefix="load")
+        unload_form = TripPointForm(instance=self.object.unload_point, prefix="unload")
+        return self.render_to_response(
+            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
+        )
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        load_form = TripPointForm(
+            request.POST, instance=self.object.load_point, prefix="load"
+        )
+        unload_form = TripPointForm(
+            request.POST, instance=self.object.unload_point, prefix="unload"
+        )
+        if form.is_valid() and load_form.is_valid() and unload_form.is_valid():
+            return self._save_all(form, load_form, unload_form)
+        return self.render_to_response(
+            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
+        )
+
+    def _save_all(self, form, load_form, unload_form):
+        self.object = form.save()
+        load_p = load_form.save(commit=False)
+        load_p.trip = self.object
+        load_p.point_type = TripPoint.Type.LOAD
+        load_p.sequence = 1
+        load_p.save()
+        unload_p = unload_form.save(commit=False)
+        unload_p.trip = self.object
+        unload_p.point_type = TripPoint.Type.UNLOAD
+        unload_p.sequence = 2
+        unload_p.save()
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse_lazy("trips:detail", kwargs={"pk": self.object.pk})
@@ -217,17 +249,19 @@ class TripListView(UserOwnedListView):
         date_from = self._normalize_date_value(self.request.GET.get("date_from"))
         date_to = self._normalize_date_value(self.request.GET.get("date_to"))
 
-        field_name = "planned_loading_date"
-        if date_mode == "unloading":
-            field_name = "planned_unloading_date"
+        if not date_from and not date_to:
+            return qs
 
+        sequence = 1 if date_mode != "unloading" else 2
+        filter_kwargs = {"points__sequence": sequence}
         if date_from:
-            qs = qs.filter(**{f"{field_name}__date__gte": date_from})
-
+            filter_kwargs["points__planned_date__date__gte"] = date_from
         if date_to:
-            qs = qs.filter(**{f"{field_name}__date__lte": date_to})
+            filter_kwargs["points__planned_date__date__lte"] = date_to
 
-        return qs
+        return qs.filter(**filter_kwargs).distinct()
+
+
 
     def _apply_contractor_filter(self, qs):
         contractor_role = (self.request.GET.get("contractor_role") or "").strip()
@@ -299,12 +333,7 @@ class TripListView(UserOwnedListView):
         qs = self._apply_date_filters(qs)
         qs = self._apply_contractor_filter(qs)
 
-        return qs.order_by(
-            "date_of_trip",
-            "planned_loading_date",
-            "planned_unloading_date",
-            "pk",
-        )
+        return qs.order_by("date_of_trip", "pk")
 
     def _build_pagination_items(self, page_obj):
         current = page_obj.number

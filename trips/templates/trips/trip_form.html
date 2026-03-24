@@ -430,10 +430,15 @@
             <div class="logistics-grid">
                 <div class="logistics-col">
                     <h3 class="logistics-title">Погрузка</h3>
+                    {% if load_form.non_field_errors %}
+                        <div class="form-errors" role="alert">
+                            {% for error in load_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
                     <div class="field">
-                        {{ form.loading_address.label_tag }}
-                        {{ form.loading_address }}
-                        {{ form.loading_address.errors }}
+                        {{ load_form.address.label_tag }}
+                        {{ load_form.address }}
+                        {{ load_form.address.errors }}
                     </div>
                     <div class="field">
                         {{ form.consignor.label_tag }}
@@ -447,33 +452,43 @@
                         {{ form.consignor.errors }}
                     </div>
                     <div class="field">
-                        {{ form.loading_type.label_tag }}
-                        {{ form.loading_type }}
-                        {{ form.loading_type.errors }}
+                        {{ load_form.loading_type.label_tag }}
+                        {{ load_form.loading_type }}
+                        {{ load_form.loading_type.errors }}
                     </div>
                     <div class="field">
-                        {{ form.planned_loading_date.label_tag }}
-                        {{ form.planned_loading_date }}
-                        {{ form.planned_loading_date.errors }}
+                        {{ load_form.planned_date.label_tag }}
+                        {{ load_form.planned_date }}
+                        {{ load_form.planned_date.errors }}
                     </div>
                     <div class="field">
-                        {{ form.loading_contact_name.label_tag }}
-                        {{ form.loading_contact_name }}
-                        {{ form.loading_contact_name.errors }}
+                        {{ load_form.actual_date.label_tag }}
+                        {{ load_form.actual_date }}
+                        {{ load_form.actual_date.errors }}
                     </div>
                     <div class="field">
-                        {{ form.loading_contact_phone.label_tag }}
-                        {{ form.loading_contact_phone }}
-                        {{ form.loading_contact_phone.errors }}
+                        {{ load_form.contact_name.label_tag }}
+                        {{ load_form.contact_name }}
+                        {{ load_form.contact_name.errors }}
+                    </div>
+                    <div class="field">
+                        {{ load_form.contact_phone.label_tag }}
+                        {{ load_form.contact_phone }}
+                        {{ load_form.contact_phone.errors }}
                     </div>
                 </div>
 
                 <div class="logistics-col">
                     <h3 class="logistics-title">Выгрузка</h3>
+                    {% if unload_form.non_field_errors %}
+                        <div class="form-errors" role="alert">
+                            {% for error in unload_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
                     <div class="field">
-                        {{ form.unloading_address.label_tag }}
-                        {{ form.unloading_address }}
-                        {{ form.unloading_address.errors }}
+                        {{ unload_form.address.label_tag }}
+                        {{ unload_form.address }}
+                        {{ unload_form.address.errors }}
                     </div>
                     <div class="field">
                         {{ form.consignee.label_tag }}
@@ -487,24 +502,29 @@
                         {{ form.consignee.errors }}
                     </div>
                     <div class="field">
-                        {{ form.unloading_type.label_tag }}
-                        {{ form.unloading_type }}
-                        {{ form.unloading_type.errors }}
+                        {{ unload_form.loading_type.label_tag }}
+                        {{ unload_form.loading_type }}
+                        {{ unload_form.loading_type.errors }}
                     </div>
                     <div class="field">
-                        {{ form.planned_unloading_date.label_tag }}
-                        {{ form.planned_unloading_date }}
-                        {{ form.planned_unloading_date.errors }}
+                        {{ unload_form.planned_date.label_tag }}
+                        {{ unload_form.planned_date }}
+                        {{ unload_form.planned_date.errors }}
                     </div>
                     <div class="field">
-                        {{ form.unloading_contact_name.label_tag }}
-                        {{ form.unloading_contact_name }}
-                        {{ form.unloading_contact_name.errors }}
+                        {{ unload_form.actual_date.label_tag }}
+                        {{ unload_form.actual_date }}
+                        {{ unload_form.actual_date.errors }}
                     </div>
                     <div class="field">
-                        {{ form.unloading_contact_phone.label_tag }}
-                        {{ form.unloading_contact_phone }}
-                        {{ form.unloading_contact_phone.errors }}
+                        {{ unload_form.contact_name.label_tag }}
+                        {{ unload_form.contact_name }}
+                        {{ unload_form.contact_name.errors }}
+                    </div>
+                    <div class="field">
+                        {{ unload_form.contact_phone.label_tag }}
+                        {{ unload_form.contact_phone }}
+                        {{ unload_form.contact_phone.errors }}
                     </div>
                 </div>
             </div>
@@ -736,9 +756,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Django id по умолчанию: id_<имя_поля>
-    initAddressSuggest("id_loading_address");
-    initAddressSuggest("id_unloading_address");
+    // IDs с префиксом формы TripPointForm
+    initAddressSuggest("id_load-address");
+    initAddressSuggest("id_unload-address");
 })();
 </script>
 <script src="https://unpkg.com/imask"></script>
@@ -747,10 +767,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('form.form-card');
     if (!form || typeof IMask === 'undefined') return;
 
-    const phoneInputs = [
-        document.getElementById('id_loading_contact_phone'),
-        document.getElementById('id_unloading_contact_phone')
-    ].filter(Boolean);
+    const phoneInputs = Array.from(
+        form.querySelectorAll('input[name$="-contact_phone"]')
+    );
 
     if (!phoneInputs.length) return;
 
