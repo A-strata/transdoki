@@ -144,6 +144,10 @@ def _verify_and_parse(request) -> tuple[dict | None, JsonResponse | HttpResponse
     """
     raw_body = request.body  # читаем первым — нужен для HMAC
 
+    # ВРЕМЕННЫЙ DEBUG — логируем все HTTP-заголовки чтобы найти нужный
+    hmac_headers = {k: v for k, v in request.META.items() if k.startswith("HTTP_") and ("HMAC" in k or "SIGN" in k or "HASH" in k or "TOKEN" in k)}
+    logger.warning("cloudpayments.headers_debug hmac_related=%r", hmac_headers)
+
     signature = request.META.get("HTTP_X_CONTENT_HMAC", "")
     if not cp_service.verify_webhook_hmac(raw_body, signature):
         security_logger.warning(
