@@ -105,7 +105,10 @@ def get_daily_cost(account) -> tuple[Decimal, dict]:
         is_own_company=True,
     ).count()
 
-    vehicles_count = Vehicle.objects.filter(account=account).count()
+    vehicles_count = Vehicle.objects.filter(
+        account=account,
+        owner__is_own_company=True,
+    ).count()
 
     users_count = account.profiles.count()
 
