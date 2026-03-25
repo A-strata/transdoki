@@ -7,6 +7,7 @@ Production URL: transdoki.ru
 ## Stack
 - Python 3.12, Django 5.2
 - SQLite (dev) — db.sqlite3 в корне
+- PostgreSQL 17 (production)
 - Gunicorn (production)
 - Package manager: **Poetry** (`poetry run ...` или активированный venv)
 - Linter/formatter: **ruff**
