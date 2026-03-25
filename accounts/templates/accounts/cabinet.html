@@ -75,60 +75,316 @@
         opacity: 1;
         pointer-events: auto;
     }
+
+    /* Cabinet layout */
+    .cabinet-page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 12px 0;
+    }
+
+    .cabinet-title {
+        margin-bottom: 12px;
+    }
+
+    .cabinet-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 12px;
+    }
+
+    .cabinet-card:first-of-type {
+        margin-top: 0;
+    }
+
+    .cabinet-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 12px;
+    }
+
+    .cabinet-card-title {
+        margin: 0;
+    }
+
+    /* Definition list grid */
+    .dl-grid {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 8px 12px;
+        margin: 0;
+    }
+
+    .dl-term {
+        color: #6b7280;
+    }
+
+    .dl-desc {
+        margin: 0;
+    }
+
+    /* Balance colors */
+    .balance-positive { color: #16a34a; }
+    .balance-zero     { color: #d97706; }
+    .balance-negative { color: #dc2626; }
+
+    /* Action links in card headers */
+    .history-link {
+        font-size: 0.88rem;
+        color: #2563eb;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .change-pwd-link {
+        font-size: .88rem;
+        color: #374151;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        background: #f9fafb;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    /* Users table */
+    .cab-add-btn {
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: none;
+        background: #2563eb;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .cab-add-btn:hover {
+        background: #1d4ed8;
+    }
+
+    .cab-table-wrap {
+        overflow: auto;
+    }
+
+    .cab-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .cab-table th {
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 8px;
+        font-size: 0.88rem;
+        color: #374151;
+    }
+
+    .cab-table td {
+        border-bottom: 1px solid #f3f4f6;
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+
+    .cab-table td.col-actions {
+        width: 380px;
+    }
+
+    .text-muted-sm {
+        color: #9ca3af;
+    }
+
+    .role-btn-warning {
+        border-color: #f59e0b;
+        color: #92400e;
+        background: #fffbeb;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-modal, 1000);
+        background: rgba(0, 0, 0, .45);
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-box {
+        background: #fff;
+        border-radius: 14px;
+        padding: 20px 24px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, .18);
+        box-sizing: border-box;
+        margin: 16px;
+    }
+
+    .modal-title {
+        margin: 0 0 16px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .modal-error {
+        margin-bottom: 10px;
+        padding: 8px 10px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        font-size: .88rem;
+        color: #991b1b;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+        justify-content: flex-end;
+    }
+
+    .modal-btn {
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: .9rem;
+        border: 1px solid;
+    }
+
+    .modal-btn-cancel {
+        border-color: #e5e7eb;
+        background: #fff;
+        color: #374151;
+    }
+
+    .modal-btn-primary {
+        border-color: #2563eb;
+        background: #2563eb;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    /* Credentials screen */
+    .cred-box {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
+    }
+
+    .cred-box-title {
+        font-size: .88rem;
+        font-weight: 600;
+        color: #166534;
+        margin-bottom: 10px;
+    }
+
+    .cred-box-desc {
+        font-size: .85rem;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+
+    .cred-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .cred-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cred-label {
+        font-size: .82rem;
+        color: #6b7280;
+        min-width: 80px;
+    }
+
+    .cred-value {
+        flex: 1;
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: .9rem;
+        font-family: monospace;
+    }
+
+    .cred-copy-btn {
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        cursor: pointer;
+        font-size: .8rem;
+        white-space: nowrap;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<section style="max-width: 980px; margin: 0 auto; padding: 12px 0;">
-    <h1 style="margin-bottom: 12px;">Личный кабинет аккаунта</h1>
+<section class="cabinet-page">
+    <h1 class="cabinet-title">Личный кабинет аккаунта</h1>
 
-    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px;">
-        <h2 style="margin-top:0;">Аккаунт</h2>
-        <dl style="display:grid; grid-template-columns: 220px 1fr; gap:8px 12px; margin:0;">
-            <dt style="color:#6b7280;">Название</dt>
-            <dd style="margin:0;">{{ account.name }}</dd>
+    <div class="cabinet-card">
+        <h2 class="cabinet-card-title">Аккаунт</h2>
+        <dl class="dl-grid">
+            <dt class="dl-term">Название</dt>
+            <dd class="dl-desc">{{ account.name }}</dd>
 
-            <dt style="color:#6b7280;">Владелец</dt>
-            <dd style="margin:0;">
+            <dt class="dl-term">Владелец</dt>
+            <dd class="dl-desc">
                 {% if account.owner %}{{ account.owner.username }}{% else %}—{% endif %}
             </dd>
 
-            <dt style="color:#6b7280;">Статус</dt>
-            <dd style="margin:0;">
+            <dt class="dl-term">Статус</dt>
+            <dd class="dl-desc">
                 {% if account.is_active %}Активен{% else %}Неактивен{% endif %}
             </dd>
         </dl>
     </div>
 
-    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h2 style="margin:0;">Баланс и тариф</h2>
-            <a href="{% url 'billing:transactions' %}"
-               style="font-size:0.88rem; color:#2563eb; padding:6px 12px; border-radius:8px; border:1px solid #bfdbfe; background:#eff6ff; text-decoration:none;">
-               История транзакций
-            </a>
+    <div class="cabinet-card">
+        <div class="cabinet-card-header">
+            <h2 class="cabinet-card-title">Баланс и тариф</h2>
+            <a href="{% url 'billing:transactions' %}" class="history-link">История транзакций</a>
         </div>
-        <dl style="display:grid; grid-template-columns: 220px 1fr; gap:8px 12px; margin:0;">
+        <dl class="dl-grid">
             {% if account.is_billing_exempt %}
-                <dt style="color:#6b7280;">Тариф</dt>
-                <dd style="margin:0; color:#6b7280;">Без ограничений (привилегированный аккаунт)</dd>
+                <dt class="dl-term">Тариф</dt>
+                <dd class="dl-desc dl-term">Без ограничений (привилегированный аккаунт)</dd>
             {% else %}
-                <dt style="color:#6b7280;">Баланс</dt>
-                <dd style="margin:0;">
+                <dt class="dl-term">Баланс</dt>
+                <dd class="dl-desc">
                     {% if account.balance > 0 %}
-                        <strong style="color:#16a34a;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                        <strong class="balance-positive">{{ account.balance|floatformat:2 }} &#8381;</strong>
                     {% elif account.balance >= 0 %}
-                        <strong style="color:#d97706;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                        <strong class="balance-zero">{{ account.balance|floatformat:2 }} &#8381;</strong>
                     {% else %}
-                        <strong style="color:#dc2626;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                        <strong class="balance-negative">{{ account.balance|floatformat:2 }} &#8381;</strong>
                     {% endif %}
                 </dd>
 
-                <dt style="color:#6b7280;">Кредитный лимит</dt>
-                <dd style="margin:0; color:#6b7280;">{{ account.credit_limit|floatformat:2 }} &#8381;</dd>
+                <dt class="dl-term">Кредитный лимит</dt>
+                <dd class="dl-desc dl-term">{{ account.credit_limit|floatformat:2 }} &#8381;</dd>
 
-                <dt style="color:#6b7280;">Бесплатно включено</dt>
-                <dd style="margin:0; color:#6b7280;">
+                <dt class="dl-term">Бесплатно включено</dt>
+                <dd class="dl-desc dl-term">
                     {{ account.free_orgs }} компани{{ account.free_orgs|pluralize:"я,и,й" }},
                     {{ account.free_vehicles }} машин{{ account.free_vehicles|pluralize:"а,ы," }},
                     {{ account.free_users }} пользовател{{ account.free_users|pluralize:"ь,я,ей" }}
@@ -137,76 +393,71 @@
         </dl>
     </div>
 
-    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h2 style="margin:0;">Мой доступ</h2>
-            <a href="{% url 'password_change' %}"
-               style="font-size:.88rem; color:#374151; padding:6px 12px; border-radius:8px; border:1px solid #e5e7eb; background:#f9fafb; text-decoration:none;">
-               Сменить пароль
-            </a>
+    <div class="cabinet-card">
+        <div class="cabinet-card-header">
+            <h2 class="cabinet-card-title">Мой доступ</h2>
+            <a href="{% url 'password_change' %}" class="change-pwd-link">Сменить пароль</a>
         </div>
-        <dl style="display:grid; grid-template-columns: 220px 1fr; gap:8px 12px; margin:0;">
-            <dt style="color:#6b7280;">Пользователь</dt>
-            <dd style="margin:0;">{{ request.user.username }}</dd>
+        <dl class="dl-grid">
+            <dt class="dl-term">Пользователь</dt>
+            <dd class="dl-desc">{{ request.user.username }}</dd>
 
-            <dt style="color:#6b7280;">Роль</dt>
-            <dd style="margin:0;">{{ profile.get_role_display }}</dd>
+            <dt class="dl-term">Роль</dt>
+            <dd class="dl-desc">{{ profile.get_role_display }}</dd>
         </dl>
     </div>
 
-    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px;">
-            <h2 style="margin:0;">Пользователи аккаунта</h2>
+    <div class="cabinet-card">
+        <div class="cabinet-card-header">
+            <h2 class="cabinet-card-title">Пользователи аккаунта</h2>
 
             {% if can_manage_users %}
-                <button type="button" id="add-user-btn"
-                   style="min-height:36px; padding:0 12px; border-radius:8px; border:none; background:#2563eb; color:#fff; font-weight:600; cursor:pointer;">
+                <button type="button" id="add-user-btn" class="cab-add-btn">
                     + Добавить пользователя
                 </button>
             {% endif %}
         </div>
 
         {% if users_in_account %}
-            <div style="overflow:auto;">
-                <table style="width:100%; border-collapse:collapse;">
+            <div class="cab-table-wrap">
+                <table class="cab-table">
                     <thead>
                         <tr>
-                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Email / Логин</th>
-                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Имя</th>
-                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Роль</th>
-                            <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Статус</th>
+                            <th>Email / Логин</th>
+                            <th>Имя</th>
+                            <th>Роль</th>
+                            <th>Статус</th>
                             {% if can_manage_users %}
-                                <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px; width:380px;">Действия</th>
+                                <th class="col-actions">Действия</th>
                             {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in users_in_account %}
                             <tr id="user-{{ p.id }}" class="user-row-anchor">
-                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">{{ p.user.username }}</td>
-                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
+                                <td>{{ p.user.username }}</td>
+                                <td>
                                     {% if p.user.get_full_name %}
                                         {{ p.user.get_full_name }}
                                     {% else %}
                                         —
                                     {% endif %}
                                 </td>
-                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">{{ p.get_role_display }}</td>
-                                <td style="border-bottom:1px solid #f3f4f6; padding:8px;">
+                                <td>{{ p.get_role_display }}</td>
+                                <td>
                                     {% if p.user.is_active %}Активен{% else %}Отключён{% endif %}
                                 </td>
 
                                 {% if can_manage_users %}
-                                    <td style="border-bottom:1px solid #f3f4f6; padding:8px; width:380px;">
+                                    <td class="col-actions">
                                         {% if p.user_id == request.user.id %}
-                                            <span style="color:#9ca3af;">Собственный профиль</span>
+                                            <span class="text-muted-sm">Собственный профиль</span>
                                         {% elif p.role == "owner" %}
-                                            <span style="color:#9ca3af;">Роль владельца защищена</span>
+                                            <span class="text-muted-sm">Роль владельца защищена</span>
                                         {% else %}
                                             <form method="post"
                                                   action="{% url 'accounts:user_role_update' p.id %}"
-                                                  class="role-form"
-                                                  style="margin:0;">
+                                                  class="role-form">
                                                 {% csrf_token %}
                                                 <div class="role-actions">
                                                     <select name="role"
@@ -221,10 +472,9 @@
                                                     <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
                                                     <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
                                                     <button type="button"
-                                                            class="role-btn reset-pwd-btn"
+                                                            class="role-btn role-btn-warning reset-pwd-btn"
                                                             data-profile-id="{{ p.id }}"
                                                             data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
-                                                            style="border-color:#f59e0b; color:#92400e; background:#fffbeb;"
                                                             title="Сбросить пароль пользователя">
                                                         Сбросить пароль
                                                     </button>
@@ -239,18 +489,20 @@
                 </table>
             </div>
         {% else %}
-            <p style="margin:0; color:#6b7280;">В аккаунте пока нет пользователей.</p>
+            <div class="empty-state">
+                <p>В аккаунте пока нет пользователей.</p>
+            </div>
         {% endif %}
     </div>
 </section>
 
-<div id="add-user-overlay" style="display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:14px; padding:20px 24px; width:100%; max-width:420px; box-shadow:0 16px 40px rgba(15,23,42,.18); box-sizing:border-box; margin:16px;">
-        <h3 style="margin:0 0 16px; font-size:1.05rem; font-weight:700; color:#111827;">Добавить пользователя</h3>
+<div id="add-user-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <h3 class="modal-title">Добавить пользователя</h3>
 
         <!-- Форма ввода -->
         <div id="au-form-body">
-            <div id="add-user-error" style="display:none; margin-bottom:10px; padding:8px 10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:.88rem; color:#991b1b;"></div>
+            <div id="add-user-error" class="modal-error" style="display:none;"></div>
 
             <div class="au-field">
                 <label class="au-label">Фамилия *</label>
@@ -272,34 +524,34 @@
                 <span class="au-err" data-err="role"></span>
             </div>
 
-            <div style="display:flex; gap:8px; margin-top:16px; justify-content:flex-end;">
-                <button type="button" id="add-user-cancel" style="padding:8px 14px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:.9rem;">Отмена</button>
-                <button type="button" id="add-user-submit" style="padding:8px 14px; border-radius:8px; border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; font-size:.9rem; font-weight:600;">Создать</button>
+            <div class="modal-actions">
+                <button type="button" id="add-user-cancel" class="modal-btn modal-btn-cancel">Отмена</button>
+                <button type="button" id="add-user-submit" class="modal-btn modal-btn-primary">Создать</button>
             </div>
         </div>
 
         <!-- Экран с credentials после создания -->
         <div id="au-credentials" style="display:none;">
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:14px; margin-bottom:14px;">
-                <div style="font-size:.88rem; font-weight:600; color:#166534; margin-bottom:10px;">Пользователь создан</div>
-                <div style="font-size:.85rem; color:#374151; margin-bottom:8px;">
+            <div class="cred-box">
+                <div class="cred-box-title">Пользователь создан</div>
+                <div class="cred-box-desc">
                     Передайте сотруднику логин и временный пароль. Он сможет сменить пароль после входа.
                 </div>
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:.82rem; color:#6b7280; min-width:80px;">Логин</span>
-                        <code id="cred-login" style="flex:1; background:#fff; border:1px solid #d1d5db; border-radius:6px; padding:5px 8px; font-size:.9rem; font-family:monospace;"></code>
-                        <button type="button" class="copy-btn" data-target="cred-login" style="padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:.8rem; white-space:nowrap;">Копировать</button>
+                <div class="cred-rows">
+                    <div class="cred-row">
+                        <span class="cred-label">Логин</span>
+                        <code id="cred-login" class="cred-value"></code>
+                        <button type="button" class="copy-btn cred-copy-btn" data-target="cred-login">Копировать</button>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:.82rem; color:#6b7280; min-width:80px;">Пароль</span>
-                        <code id="cred-pass" style="flex:1; background:#fff; border:1px solid #d1d5db; border-radius:6px; padding:5px 8px; font-size:.9rem; font-family:monospace;"></code>
-                        <button type="button" class="copy-btn" data-target="cred-pass" style="padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:.8rem; white-space:nowrap;">Копировать</button>
+                    <div class="cred-row">
+                        <span class="cred-label">Пароль</span>
+                        <code id="cred-pass" class="cred-value"></code>
+                        <button type="button" class="copy-btn cred-copy-btn" data-target="cred-pass">Копировать</button>
                     </div>
                 </div>
             </div>
-            <div style="display:flex; gap:8px; justify-content:flex-end;">
-                <button type="button" id="au-cred-close" style="padding:8px 14px; border-radius:8px; border:1px solid #2563eb; background:#2563eb; color:#fff; cursor:pointer; font-size:.9rem; font-weight:600;">Готово</button>
+            <div class="modal-actions">
+                <button type="button" id="au-cred-close" class="modal-btn modal-btn-primary">Готово</button>
             </div>
         </div>
     </div>

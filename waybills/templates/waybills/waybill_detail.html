@@ -50,50 +50,50 @@ document.addEventListener('DOMContentLoaded', function () {
                     <h2 class="card-title">Шапка путевого листа</h2>
                 </div>
 
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Номер</div>
-                        <div class="info-value">
+                <div class="kv-grid">
+                    <div class="kv">
+                        <div class="kv-label">Номер</div>
+                        <div class="kv-value">
                             {% if waybill.number %}{{ waybill.number }}{% else %}—{% endif %}
                         </div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Дата</div>
-                        <div class="info-value">{{ waybill.date|date:"d.m.Y" }}</div>
+                    <div class="kv">
+                        <div class="kv-label">Дата</div>
+                        <div class="kv-value">{{ waybill.date|date:"d.m.Y" }}</div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Организация</div>
-                        <div class="info-value">
+                    <div class="kv">
+                        <div class="kv-label">Организация</div>
+                        <div class="kv-value">
                             {% if waybill.organization %}{{ waybill.organization }}{% else %}—{% endif %}
                         </div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Водитель</div>
-                        <div class="info-value">
+                    <div class="kv">
+                        <div class="kv-label">Водитель</div>
+                        <div class="kv-value">
                             {% if waybill.driver %}{{ waybill.driver }}{% else %}—{% endif %}
                         </div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Грузовик</div>
-                        <div class="info-value">
+                    <div class="kv">
+                        <div class="kv-label">Грузовик</div>
+                        <div class="kv-value">
                             {% if waybill.truck %}{{ waybill.truck }}{% else %}—{% endif %}
                         </div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Прицеп</div>
-                        <div class="info-value">
+                    <div class="kv">
+                        <div class="kv-label">Прицеп</div>
+                        <div class="kv-value">
                             {% if waybill.trailer %}{{ waybill.trailer }}{% else %}—{% endif %}
                         </div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Статус</div>
-                        <div class="info-value">
+                    <div class="kv">
+                        <div class="kv-label">Статус</div>
+                        <div class="kv-value">
                             {% if waybill.get_status_display %}
                                 {{ waybill.get_status_display }}
                             {% else %}
@@ -102,9 +102,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Открыт</div>
-                        <div class="info-value">
+                    <div class="kv">
+                        <div class="kv-label">Открыт</div>
+                        <div class="kv-value">
                             {% if waybill.opened_at %}
                                 {{ waybill.opened_at|date:"d.m.Y H:i" }}
                             {% else %}
@@ -113,9 +113,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </div>
 
-                    <div class="info-item">
-                        <div class="info-label">Закрыт</div>
-                        <div class="info-value">
+                    <div class="kv">
+                        <div class="kv-label">Закрыт</div>
+                        <div class="kv-value">
                             {% if waybill.closed_at %}
                                 {{ waybill.closed_at|date:"d.m.Y H:i" }}
                             {% else %}

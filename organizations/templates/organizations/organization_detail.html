@@ -58,6 +58,14 @@
         color: #111827;
     }
 
+    .org-section {
+        margin-top: 14px;
+    }
+
+    .vehicles-head .section-title {
+        margin: 0;
+    }
+
     .info-table {
         width: 100%;
         border-collapse: collapse;
@@ -299,7 +307,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 14px;">
+        <div class="org-section">
             <h2 class="section-title">Основные данные</h2>
             <table class="info-table">
                 <tr>
@@ -337,7 +345,7 @@
 
     <div class="detail-card">
         <div class="vehicles-head">
-            <h2 class="section-title" style="margin: 0;">Транспортные средства</h2>
+            <h2 class="section-title">Транспортные средства</h2>
             <a href="{% url 'vehicles:create' organization.pk %}" class="tms-btn tms-btn-success">+ Добавить транспортное средство</a>
         </div>
 
