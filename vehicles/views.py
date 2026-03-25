@@ -84,10 +84,39 @@ class VehicleUpdateView(LoginRequiredMixin, UpdateView):
             return self.form_invalid(form)
 
 
-class VehicleListView(UserOwnedListView):
+class VehicleListView(LoginRequiredMixin, ListView):
     model = Vehicle
     template_name = "vehicles/vehicle_list.html"
     context_object_name = "vehicles"
+
+    def get_queryset(self):
+        account = get_request_account(self.request)
+        qs = Vehicle.objects.filter(account=account).select_related("owner")
+
+        org_filter = self.request.GET.get("org", "all")
+        type_filter = self.request.GET.get("type", "all")
+
+        if org_filter == "own":
+            qs = qs.filter(owner__is_own_company=True)
+        elif org_filter.isdigit():
+            qs = qs.filter(owner_id=int(org_filter))
+
+        valid_types = {vt[0] for vt in VehicleType.choices}
+        if type_filter in valid_types:
+            qs = qs.filter(vehicle_type=type_filter)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        account = get_request_account(self.request)
+        context["own_companies"] = Organization.objects.filter(
+            account=account, is_own_company=True
+        ).order_by("short_name")
+        context["current_org"] = self.request.GET.get("org", "all")
+        context["current_type"] = self.request.GET.get("type", "all")
+        context["vehicle_types"] = VehicleType.choices
+        return context
 
 
 @login_required
