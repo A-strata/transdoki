@@ -224,44 +224,44 @@ def handle_pay_webhook(payload: dict) -> None:
     order_id = payload.get("InvoiceId")
     cp_transaction_id = payload.get("TransactionId")
 
-    try:
-        order = PaymentOrder.objects.select_for_update().get(order_id=order_id)
-    except PaymentOrder.DoesNotExist:
-        security_logger.error(
-            "cloudpayments.pay_webhook_unknown_order order_id=%s cp_tx=%s",
-            order_id,
-            cp_transaction_id,
-        )
-        raise PaymentOrderNotFound(f"Заказ {order_id} не найден")
-
-    # Отклоняем тестовые платежи в production.
-    # TestMode=1 приходит при проверке уведомлений в ЛК CP или при тестовых картах.
-    if payload.get("TestMode") and not settings.DEBUG:
-        security_logger.warning(
-            "cloudpayments.test_payment_rejected order_id=%s", order_id
-        )
-        raise CloudPaymentsError("Тестовый платёж отклонён в production")
-
-    # Идемпотентность: уже обработан — ничего не делаем.
-    if order.status == PaymentOrder.Status.PAID:
-        logger.info(
-            "cloudpayments.pay_webhook_duplicate order_id=%s", order_id
-        )
-        return
-
-    if order.status == PaymentOrder.Status.FAILED:
-        # Платёж пришёл на уже отменённый заказ — подозрительно, логируем.
-        security_logger.warning(
-            "cloudpayments.pay_on_failed_order order_id=%s cp_tx=%s",
-            order_id,
-            cp_transaction_id,
-        )
-        raise ValueError(f"Заказ {order_id} уже находится в статусе failed")
-
     with transaction.atomic():
-        # deposit() сам захватит select_for_update на Account, поэтому
-        # порядок блокировок: сначала PaymentOrder (выше), потом Account.
-        # Менять порядок нельзя — дедлок.
+        try:
+            # select_for_update требует активной транзакции.
+            # Блокируем PaymentOrder ДО Account (который захватит deposit()),
+            # чтобы порядок блокировок был стабильным и не было дедлока.
+            order = PaymentOrder.objects.select_for_update().get(order_id=order_id)
+        except PaymentOrder.DoesNotExist:
+            security_logger.error(
+                "cloudpayments.pay_webhook_unknown_order order_id=%s cp_tx=%s",
+                order_id,
+                cp_transaction_id,
+            )
+            raise PaymentOrderNotFound(f"Заказ {order_id} не найден")
+
+        # Отклоняем тестовые платежи в production.
+        # TestMode=1 приходит при проверке уведомлений в ЛК CP или при тестовых картах.
+        if payload.get("TestMode") and not settings.DEBUG:
+            security_logger.warning(
+                "cloudpayments.test_payment_rejected order_id=%s", order_id
+            )
+            raise CloudPaymentsError("Тестовый платёж отклонён в production")
+
+        # Идемпотентность: уже обработан — ничего не делаем.
+        if order.status == PaymentOrder.Status.PAID:
+            logger.info(
+                "cloudpayments.pay_webhook_duplicate order_id=%s", order_id
+            )
+            return
+
+        if order.status == PaymentOrder.Status.FAILED:
+            # Платёж пришёл на уже отменённый заказ — подозрительно, логируем.
+            security_logger.warning(
+                "cloudpayments.pay_on_failed_order order_id=%s cp_tx=%s",
+                order_id,
+                cp_transaction_id,
+            )
+            raise ValueError(f"Заказ {order_id} уже находится в статусе failed")
+
         billing_tx = billing_services.deposit(
             account=order.account,
             amount=order.amount,
