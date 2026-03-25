@@ -137,16 +137,6 @@ def verify_webhook_hmac(raw_body: bytes, signature: str) -> bool:
         ).digest()
     ).decode("utf-8")
 
-    # ВРЕМЕННЫЙ DEBUG — убрать после диагностики
-    import tempfile, os
-    _dbg = os.path.join(tempfile.gettempdir(), "cp_webhook_debug.bin")
-    with open(_dbg, "wb") as _f:
-        _f.write(raw_body)
-    security_logger.warning(
-        "cloudpayments.hmac_debug body_len=%d computed=%r received=%r saved_to=%s",
-        len(raw_body), expected, signature, _dbg,
-    )
-
     # Используем compare_digest чтобы избежать timing attack:
     # обычное == возвращает False при первом несовпадающем байте,
     # по времени ответа можно угадать правильный секрет посимвольно.
