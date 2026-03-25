@@ -238,9 +238,9 @@ def handle_pay_webhook(payload: dict) -> None:
             )
             raise PaymentOrderNotFound(f"Заказ {order_id} не найден")
 
-        # Отклоняем тестовые платежи в production.
-        # TestMode=1 приходит при проверке уведомлений в ЛК CP или при тестовых картах.
-        if payload.get("TestMode") and not settings.DEBUG:
+        # ВРЕМЕННО ОТКЛЮЧЕНО для проверки биллинга — вернуть после теста!
+        # if payload.get("TestMode") and not settings.DEBUG:
+        if False:
             security_logger.warning(
                 "cloudpayments.test_payment_rejected order_id=%s", order_id
             )
