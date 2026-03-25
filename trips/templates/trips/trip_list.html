@@ -146,9 +146,9 @@
                         <th data-col="weight">Вес, кг</th>
                         <th data-col="client_cost">Стоимость клиенту</th>
                         <th data-col="carrier_cost">Стоимость перевозчику</th>
-                        <th data-col="payment_type">Форма оплаты</th>
-                        <th data-col="payment_condition">Условия оплаты</th>
-                        <th data-col="payment_term">Срок оплаты (дн.)</th>
+                        <th data-col="client_payment_method">Оплата (заказчик)</th>
+                        <th data-col="payment_condition">Срок (заказчик)</th>
+                        <th data-col="carrier_payment_method">Оплата (перевозчик)</th>
                         <th data-col="comments">Комментарии</th>
                         <th data-col="actions">Действия</th>
                     </tr>
@@ -173,9 +173,9 @@
                         <td data-col="weight">{{ trip.weight|default:"—" }}</td>
                         <td data-col="client_cost">{{ trip.client_cost|money }}</td>
                         <td data-col="carrier_cost">{{ trip.carrier_cost|money }}</td>
-                        <td data-col="payment_type">{{ trip.get_payment_type_display|default:"—" }}</td>
-                        <td data-col="payment_condition">{{ trip.get_payment_condition_display|default:"—" }}</td>
-                        <td data-col="payment_term">{{ trip.payment_term|default:"—" }}</td>
+                        <td data-col="client_payment_method">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless_vat' and trip.client_vat_rate %} {{ trip.client_vat_rate }}%{% endif %}</td>
+                        <td data-col="payment_condition">{% if trip.payment_condition == 'unloading' %}На выгрузке{% elif trip.payment_term %}{{ trip.payment_term }} дн.{% else %}—{% endif %}</td>
+                        <td data-col="carrier_payment_method">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %} {{ trip.carrier_vat_rate }}%{% endif %}</td>
                         <td data-col="comments">{{ trip.comments|default:"—" }}</td>
                         <td data-col="actions">
                             <div class="actions" data-actions-dropdown>

@@ -105,7 +105,7 @@ class TNGenerator(BaseDocxGenerator):
             "loading_address": (load_p.address if load_p else "") or "—",
             "unloading_address": (unload_p.address if unload_p else "") or "—",
             "client_cost": trip.client_cost or "—",
-            "payment_term": trip.payment_condition or "—",
+            "payment_term": trip.payment_term or "—",
             "loading_contact_name": (load_p.contact_name if load_p else "") or "—",
             "loading_contact_phone": (load_p.contact_phone if load_p else "") or "—",
             "unloading_contact_name": (unload_p.contact_name if unload_p else "") or "—",

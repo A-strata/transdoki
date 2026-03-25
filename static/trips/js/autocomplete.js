@@ -5,6 +5,7 @@ function initAutocomplete(selectId) {
 
     const searchUrl = select.dataset.searchUrl || '';
     const searchType = select.dataset.searchType || '';
+    const openOnFocus = select.dataset.openOnFocus === '1';
     const isAjax = !!searchUrl;
 
     // ── DOM setup ─────────────────────────────────────────────────────────
@@ -105,12 +106,22 @@ function initAutocomplete(selectId) {
                 .catch(function () {});
         }
 
+        if (openOnFocus) {
+            input.addEventListener('focus', function () {
+                if (!input.value.trim()) fetchResults('');
+            });
+        }
+
         input.addEventListener('input', function () {
             const q = input.value.trim();
             if (!q) {
                 select.value = '';
                 select.dispatchEvent(new Event('change', { bubbles: true }));
-                closeDropdown();
+                if (openOnFocus) {
+                    fetchResults('');
+                } else {
+                    closeDropdown();
+                }
                 return;
             }
             if (q.length < 2) {

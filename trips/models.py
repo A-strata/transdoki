@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
@@ -13,8 +14,6 @@ from .validators import RussianMinValueValidator
 
 CARGO_LENGTH = 20
 LOADING_TYPE_LENGTH = 20
-TERM_OF_PAYMENT_LENGTH = 100
-PAYMENT_TYPE_LENGTH = 50
 ADDRESS_LENGTH = 200
 
 
@@ -25,16 +24,37 @@ class LoadingType(models.TextChoices):
 
 
 class PaymentCondition(models.TextChoices):
-    DOCUMENTS = (
-        "documents",
-        "По факту предоставления документов",
-    )
-    UNLOADING = "unloading", "По факту выгрузки"
+    DOCUMENTS = "documents", "По факту предоставления документов"
+    UNLOADING = "unloading", "Оплата на выгрузке"
 
 
-class PaymentType(models.TextChoices):
-    CASHLESS = "cashless", "Безналичный расчёт"
-    CASH = "cash", "Наличный расчёт"
+class PaymentMethod(models.TextChoices):
+    CASH = "cash", "Наличными (в т.ч. на карту)"
+    CASHLESS_VAT = "cashless_vat", "Безнал с НДС"
+    CASHLESS_NO_VAT = "cashless_no_vat", "Безнал без НДС"
+
+
+class VatRate(models.TextChoices):
+    VAT_20 = "20", "20%"
+    VAT_10 = "10", "10%"
+    VAT_7 = "7", "7%"
+    VAT_5 = "5", "5%"
+    VAT_0 = "0", "0%"
+
+
+class CostUnit(models.TextChoices):
+    RUB = "rub", "руб."
+    RUB_PER_KM = "rub_km", "руб./км"
+    RUB_PER_KG = "rub_kg", "руб./кг"
+    RUB_PER_CBM = "rub_cbm", "руб./куб"
+    RUB_PER_HOUR = "rub_hour", "руб./час"
+
+
+class FinancialStatus(models.TextChoices):
+    OPEN = "open", "Открыт"
+    CALCULATED = "calculated", "Зафиксирован"
+    INVOICED = "invoiced", "Документы выставлены"
+    PAID = "paid", "Оплачен"
 
 
 class Trip(UserOwnedModel):
@@ -87,22 +107,138 @@ class Trip(UserOwnedModel):
         null=True,
     )
     cargo = models.CharField(max_length=CARGO_LENGTH, verbose_name="Груз")
-    weight = models.PositiveIntegerField(verbose_name="Вес", blank=True, null=True)
-    client_cost = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        verbose_name="Стоимость для клиента",
+    weight = models.PositiveIntegerField(verbose_name="Вес (кг)", blank=True, null=True)
+    volume = models.DecimalField(
+        max_digits=8,
+        decimal_places=3,
+        verbose_name="Объём (м³)",
         blank=True,
         null=True,
         validators=[RussianMinValueValidator(0)],
     )
-    carrier_cost = models.DecimalField(
+    client_cost = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        verbose_name="Стоимость для перевозчика",
+        verbose_name="Ставка заказчику",
         blank=True,
         null=True,
         validators=[RussianMinValueValidator(0)],
+    )
+    client_cost_unit = models.CharField(
+        max_length=20,
+        choices=CostUnit.choices,
+        default=CostUnit.RUB,
+        blank=True,
+        verbose_name="Единица измерения (заказчик)",
+    )
+    client_payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        blank=True,
+        default="",
+        verbose_name="Форма оплаты (заказчик)",
+    )
+    client_vat_rate = models.CharField(
+        max_length=5,
+        choices=VatRate.choices,
+        blank=True,
+        default="",
+        verbose_name="Ставка НДС (заказчик)",
+    )
+    payment_condition = models.CharField(
+        max_length=50,
+        choices=PaymentCondition.choices,
+        blank=True,
+        default="",
+        verbose_name="Условия оплаты (заказчик)",
+    )
+    payment_term = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name="Срок оплаты (заказчик, банк. дней)",
+    )
+    client_quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        blank=True,
+        null=True,
+        verbose_name="Фактически (заказчик)",
+        help_text="Фактический пробег (км) или время (ч) для расчёта итоговой суммы",
+    )
+    client_financial_status = models.CharField(
+        max_length=20,
+        choices=FinancialStatus.choices,
+        default=FinancialStatus.OPEN,
+        verbose_name="Статус расчётов (заказчик)",
+    )
+    client_total_fixed = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Итоговая сумма (заказчик, зафиксирована)",
+    )
+    carrier_cost = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Ставка перевозчику",
+        blank=True,
+        null=True,
+        validators=[RussianMinValueValidator(0)],
+    )
+    carrier_cost_unit = models.CharField(
+        max_length=20,
+        choices=CostUnit.choices,
+        default=CostUnit.RUB,
+        blank=True,
+        verbose_name="Единица измерения (перевозчик)",
+    )
+    carrier_payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        blank=True,
+        default="",
+        verbose_name="Форма оплаты (перевозчик)",
+    )
+    carrier_vat_rate = models.CharField(
+        max_length=5,
+        choices=VatRate.choices,
+        blank=True,
+        default="",
+        verbose_name="Ставка НДС (перевозчик)",
+    )
+    carrier_payment_condition = models.CharField(
+        max_length=50,
+        choices=PaymentCondition.choices,
+        blank=True,
+        default="",
+        verbose_name="Условия оплаты (перевозчик)",
+    )
+    carrier_payment_term = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name="Срок оплаты (перевозчик, банк. дней)",
+    )
+    carrier_quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        blank=True,
+        null=True,
+        verbose_name="Фактически (перевозчик)",
+        help_text="Фактический пробег (км) или время (ч) для расчёта итоговой суммы",
+    )
+    carrier_financial_status = models.CharField(
+        max_length=20,
+        choices=FinancialStatus.choices,
+        default=FinancialStatus.OPEN,
+        verbose_name="Статус расчётов (перевозчик)",
+    )
+    carrier_total_fixed = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Итоговая сумма (перевозчик, зафиксирована)",
     )
     comments = models.TextField(
         max_length=1000,
@@ -110,25 +246,42 @@ class Trip(UserOwnedModel):
         blank=True,
         help_text="Дополнительная информация о рейсе",
     )
-    payment_type = models.CharField(
-        max_length=PAYMENT_TYPE_LENGTH,
-        choices=PaymentType.choices,
-        blank=True,
-        default="",
-        verbose_name="Форма оплаты",
-    )
-    payment_condition = models.CharField(
-        max_length=50,
-        choices=PaymentCondition.choices,
-        blank=True,
-        default="",
-        verbose_name="Условия оплаты",
-    )
-    payment_term = models.PositiveIntegerField(
-        blank=True,
-        null=True,
-        verbose_name="Срок оплаты",
-    )
+
+    def _quantity_value(self, cost_unit, quantity_field):
+        """Возвращает фактическое количество для расчёта исходя из единицы ставки."""
+        if cost_unit == CostUnit.RUB_PER_KG:
+            return Decimal(self.weight) if self.weight is not None else None
+        if cost_unit == CostUnit.RUB_PER_CBM:
+            return self.volume
+        return quantity_field  # км или часы — хранятся отдельно
+
+    def _compute_total(self, cost, cost_unit, quantity_field):
+        qty = self._quantity_value(cost_unit, quantity_field)
+        if cost_unit == CostUnit.RUB:
+            return cost
+        if cost and qty:
+            return (cost * qty).quantize(Decimal("0.01"))
+        return None
+
+    @property
+    def client_quantity_value(self):
+        return self._quantity_value(self.client_cost_unit, self.client_quantity)
+
+    @property
+    def client_total(self):
+        return self._compute_total(
+            self.client_cost, self.client_cost_unit, self.client_quantity
+        )
+
+    @property
+    def carrier_quantity_value(self):
+        return self._quantity_value(self.carrier_cost_unit, self.carrier_quantity)
+
+    @property
+    def carrier_total(self):
+        return self._compute_total(
+            self.carrier_cost, self.carrier_cost_unit, self.carrier_quantity
+        )
 
     @property
     def load_point(self):

@@ -167,6 +167,151 @@
         margin-bottom: 0;
     }
 
+    /* Финансовый блок */
+    .finance-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .finance-col {
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fcfcfd;
+        min-width: 0; /* предотвращает выход flex-детей за границы */
+        overflow: hidden;
+    }
+
+    .finance-col-title {
+        margin: 0 0 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .finance-col .field {
+        margin-bottom: 10px;
+    }
+
+    .finance-col .field:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Сумма + единица измерения — слитный инпут */
+    .cost-input-group {
+        display: flex;
+        min-width: 0;
+    }
+
+    /* Сбрасываем глобальный width:100% внутри flex-групп */
+    .cost-input-group input,
+    .cost-input-group select,
+    .payment-method-row select {
+        width: auto;
+    }
+
+    .cost-input-group input {
+        border-radius: 10px 0 0 10px !important;
+        border-right: none !important;
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .cost-input-group select {
+        border-radius: 0 10px 10px 0 !important;
+        border-left: 1px solid #e5e7eb !important;
+        flex: 0 0 108px;
+        background: #f9fafb;
+    }
+
+    /* Форма оплаты + НДС — в одну строку */
+    .payment-method-row {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+        min-width: 0;
+    }
+
+    .payment-method-row > select:first-child {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .vat-wrap {
+        flex: 0 0 auto;
+    }
+
+    .vat-wrap select {
+        width: 76px;
+    }
+
+    /* Срок оплаты — радио-блок */
+    .payment-term-block {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+        width: auto !important;
+        padding: 0 !important;
+        flex: 0 0 auto;
+        margin: 0;
+        accent-color: #2563eb;
+        cursor: pointer;
+    }
+
+    .radio-label-text {
+        font-size: 0.92rem;
+        color: #374151;
+        white-space: nowrap;
+    }
+
+    .term-days-input {
+        flex: 0 0 64px !important;
+        width: 64px !important;
+        min-width: 64px;
+        padding: 8px 8px !important;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    /* Единица при поле количества (не select, а badge) */
+    .cost-unit-badge {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        border: 1px solid #e5e7eb;
+        border-left: none;
+        border-radius: 0 10px 10px 0;
+        background: #f9fafb;
+        font-size: 0.9rem;
+        color: #6b7280;
+        white-space: nowrap;
+        box-sizing: border-box;
+        min-height: 40px;
+    }
+
+    /* Итоговая сумма под финансовым блоком */
+    .finance-total {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        font-size: 0.92rem;
+        color: #166534;
+    }
+
     /* Погрузка/выгрузка */
     .logistics-grid {
         display: grid;
@@ -293,7 +438,8 @@
 
         .fields-grid,
         .parties-grid,
-        .logistics-grid {
+        .logistics-grid,
+        .finance-grid {
             grid-template-columns: 1fr;
         }
 
@@ -543,42 +689,156 @@
                     {{ form.weight }}
                     {{ form.weight.errors }}
                 </div>
+                <div class="field">
+                    {{ form.volume.label_tag }}
+                    {{ form.volume }}
+                    {{ form.volume.errors }}
+                </div>
             </div>
         </div>
 
         <div class="section">
             <h2 class="section-title">Финансы и оплата</h2>
-            <div class="fields-grid">
-                <div class="field">
-                    {{ form.client_cost.label_tag }}
-                    {{ form.client_cost }}
-                    {{ form.client_cost.errors }}
+            <div class="finance-grid">
+
+                {# ---- Заказчик ---- #}
+                <div class="finance-col">
+                    <h3 class="finance-col-title">Ставка заказчику</h3>
+
+                    <div class="field">
+                        <label for="{{ form.client_cost.id_for_label }}">Ставка</label>
+                        <div class="cost-input-group">
+                            {{ form.client_cost }}
+                            {{ form.client_cost_unit }}
+                        </div>
+                        {{ form.client_cost.errors }}
+                        {{ form.client_cost_unit.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.client_payment_method.id_for_label }}">Форма оплаты</label>
+                        <div class="payment-method-row">
+                            {{ form.client_payment_method }}
+                            <div class="vat-wrap" id="client-vat-wrap">
+                                {{ form.client_vat_rate }}
+                            </div>
+                        </div>
+                        {{ form.client_payment_method.errors }}
+                        {{ form.client_vat_rate.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label>Срок оплаты</label>
+                        {% with pv=form.payment_condition.value %}
+                        <div class="payment-term-block">
+                            <label class="radio-option">
+                                <input type="radio" name="payment_condition" value="documents"
+                                       {% if pv != 'unloading' %}checked{% endif %}>
+                                <span class="radio-label-text">Через</span>
+                                <input type="number" name="payment_term" id="id_payment_term"
+                                       value="{{ form.payment_term.value|default:'' }}"
+                                       min="0" max="999" class="term-days-input">
+                                <span class="radio-label-text">банк. дней</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="payment_condition" value="unloading"
+                                       {% if pv == 'unloading' %}checked{% endif %}>
+                                <span class="radio-label-text">Оплата на выгрузке</span>
+                            </label>
+                        </div>
+                        {% endwith %}
+                        {{ form.payment_condition.errors }}
+                        {{ form.payment_term.errors }}
+                    </div>
+
+                    {# Фактическое количество (только для км/часов) #}
+                    <div class="field" id="client-qty-row" style="display:none">
+                        <label for="{{ form.client_quantity.id_for_label }}" id="client-qty-label">Фактически</label>
+                        <div class="cost-input-group">
+                            {{ form.client_quantity }}
+                            <div class="cost-unit-badge" id="client-qty-badge">км</div>
+                        </div>
+                        {{ form.client_quantity.errors }}
+                    </div>
+
+                    {# Итоговая сумма — только подсказка, read-only #}
+                    <div class="finance-total" id="client-total-hint" style="display:none">
+                        Итого: <strong id="client-total-value">—</strong>
+                    </div>
                 </div>
-                <div class="field">
-                    {{ form.carrier_cost.label_tag }}
-                    {{ form.carrier_cost }}
-                    {{ form.carrier_cost.errors }}
+
+                {# ---- Перевозчик ---- #}
+                <div class="finance-col">
+                    <h3 class="finance-col-title">Ставка перевозчику</h3>
+
+                    <div class="field">
+                        <label for="{{ form.carrier_cost.id_for_label }}">Ставка</label>
+                        <div class="cost-input-group">
+                            {{ form.carrier_cost }}
+                            {{ form.carrier_cost_unit }}
+                        </div>
+                        {{ form.carrier_cost.errors }}
+                        {{ form.carrier_cost_unit.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.carrier_payment_method.id_for_label }}">Форма оплаты</label>
+                        <div class="payment-method-row">
+                            {{ form.carrier_payment_method }}
+                            <div class="vat-wrap" id="carrier-vat-wrap">
+                                {{ form.carrier_vat_rate }}
+                            </div>
+                        </div>
+                        {{ form.carrier_payment_method.errors }}
+                        {{ form.carrier_vat_rate.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label>Срок оплаты</label>
+                        {% with cpv=form.carrier_payment_condition.value %}
+                        <div class="payment-term-block">
+                            <label class="radio-option">
+                                <input type="radio" name="carrier_payment_condition" value="documents"
+                                       {% if cpv != 'unloading' %}checked{% endif %}>
+                                <span class="radio-label-text">Через</span>
+                                <input type="number" name="carrier_payment_term" id="id_carrier_payment_term"
+                                       value="{{ form.carrier_payment_term.value|default:'' }}"
+                                       min="0" max="999" class="term-days-input">
+                                <span class="radio-label-text">банк. дней</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="carrier_payment_condition" value="unloading"
+                                       {% if cpv == 'unloading' %}checked{% endif %}>
+                                <span class="radio-label-text">Оплата на выгрузке</span>
+                            </label>
+                        </div>
+                        {% endwith %}
+                        {{ form.carrier_payment_condition.errors }}
+                        {{ form.carrier_payment_term.errors }}
+                    </div>
+
+                    {# Фактическое количество (только для км/часов) #}
+                    <div class="field" id="carrier-qty-row" style="display:none">
+                        <label for="{{ form.carrier_quantity.id_for_label }}" id="carrier-qty-label">Фактически</label>
+                        <div class="cost-input-group">
+                            {{ form.carrier_quantity }}
+                            <div class="cost-unit-badge" id="carrier-qty-badge">км</div>
+                        </div>
+                        {{ form.carrier_quantity.errors }}
+                    </div>
+
+                    {# Итоговая сумма — только подсказка, read-only #}
+                    <div class="finance-total" id="carrier-total-hint" style="display:none">
+                        Итого: <strong id="carrier-total-value">—</strong>
+                    </div>
                 </div>
-                <div class="field">
-                    {{ form.payment_type.label_tag }}
-                    {{ form.payment_type }}
-                    {{ form.payment_type.errors }}
-                </div>
-                <div class="field">
-                    {{ form.payment_condition.label_tag }}
-                    {{ form.payment_condition }}
-                    {{ form.payment_condition.errors }}
-                </div>
-                <div class="field">
-                    {{ form.payment_term.label_tag }}
-                    {{ form.payment_term }}
-                    {{ form.payment_term.errors }}
-                </div>
-                <div class="field field--full">
-                    {{ form.comments.label_tag }}
-                    {{ form.comments }}
-                    {{ form.comments.errors }}
-                </div>
+
+            </div>
+
+            <div class="field" style="margin-top: 12px;">
+                {{ form.comments.label_tag }}
+                {{ form.comments }}
+                {{ form.comments.errors }}
             </div>
         </div>
 
@@ -784,6 +1044,136 @@ document.addEventListener('DOMContentLoaded', function () {
         phoneInputs.forEach((input) => {
             const rawValue = input.value.replace(/\D/g, '');
             input.value = (rawValue === '7') ? '' : rawValue;
+        });
+    });
+})();
+</script>
+<script>
+(function () {
+    // НДС: показывать селект только при "Безнал с НДС"
+    function initVatToggle(methodId, vatWrapId) {
+        var method = document.getElementById(methodId);
+        var wrap = document.getElementById(vatWrapId);
+        if (!method || !wrap) return;
+        function update() { wrap.style.display = method.value === 'cashless_vat' ? '' : 'none'; }
+        method.addEventListener('change', update);
+        update();
+    }
+
+    // Срок оплаты: блокировать поле дней при "Оплата на выгрузке"
+    function initTermToggle(radioName, termInputId) {
+        var radios = document.querySelectorAll('input[name="' + radioName + '"]');
+        var termInput = document.getElementById(termInputId);
+        if (!radios.length || !termInput) return;
+        function update() {
+            var isUnloading = false;
+            radios.forEach(function (r) { if (r.checked && r.value === 'unloading') isUnloading = true; });
+            termInput.disabled = isUnloading;
+            termInput.style.opacity = isUnloading ? '0.35' : '';
+        }
+        radios.forEach(function (r) { r.addEventListener('change', update); });
+        update();
+    }
+
+    // Количество и итог: показывать/скрывать и пересчитывать
+    function initQuantityTotal(opts) {
+        // opts: { unitId, costId, qtyRowId, qtyBadgeId, qtyInputId,
+        //         totalHintId, totalValueId, weightId, volumeId }
+        var unitSel   = document.getElementById(opts.unitId);
+        var costInput = document.getElementById(opts.costId);
+        var qtyRow    = document.getElementById(opts.qtyRowId);
+        var qtyBadge  = document.getElementById(opts.qtyBadgeId);
+        var qtyInput  = document.getElementById(opts.qtyInputId);
+        var totalHint = document.getElementById(opts.totalHintId);
+        var totalVal  = document.getElementById(opts.totalValueId);
+        var weightEl  = document.getElementById(opts.weightId);
+        var volumeEl  = document.getElementById(opts.volumeId);
+        if (!unitSel || !costInput) return;
+
+        var UNIT_LABELS = { rub_km: 'км', rub_hour: 'ч' };
+        var UNIT_CARGO  = { rub_kg: 'кг', rub_cbm: 'м³' };
+
+        function formatNum(n) {
+            return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function getQty(unit) {
+            if (unit === 'rub_kg')   return weightEl ? parseFloat(weightEl.value) || null : null;
+            if (unit === 'rub_cbm')  return volumeEl ? parseFloat(volumeEl.value) || null : null;
+            if (unit === 'rub_km' || unit === 'rub_hour')
+                return qtyInput ? parseFloat(qtyInput.value) || null : null;
+            return null;
+        }
+
+        function update() {
+            var unit = unitSel.value;
+            var cost = parseFloat(costInput.value) || null;
+
+            // Поле количества (только для км/часов)
+            if (qtyRow) {
+                var needQtyInput = unit === 'rub_km' || unit === 'rub_hour';
+                qtyRow.style.display = needQtyInput ? '' : 'none';
+                if (qtyBadge) qtyBadge.textContent = UNIT_LABELS[unit] || '';
+            }
+
+            // Итоговая сумма
+            if (!totalHint || !totalVal) return;
+            if (unit === 'rub') {
+                // Фиксированная ставка — итог = ставка
+                if (cost !== null) {
+                    totalHint.style.display = '';
+                    totalVal.textContent = formatNum(cost) + ' ₽';
+                } else {
+                    totalHint.style.display = 'none';
+                }
+                return;
+            }
+            var qty = getQty(unit);
+            var unitLabel = UNIT_LABELS[unit] || UNIT_CARGO[unit] || '';
+            if (cost !== null && qty !== null) {
+                totalHint.style.display = '';
+                totalVal.textContent = formatNum(cost * qty) + ' ₽'
+                    + ' (' + cost + ' × ' + qty + '\u00a0' + unitLabel + ')';
+            } else {
+                totalHint.style.display = 'none';
+            }
+        }
+
+        unitSel.addEventListener('change', update);
+        costInput.addEventListener('input', update);
+        if (qtyInput)  qtyInput.addEventListener('input', update);
+        if (weightEl)  weightEl.addEventListener('input', update);
+        if (volumeEl)  volumeEl.addEventListener('input', update);
+        update();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initVatToggle('id_client_payment_method', 'client-vat-wrap');
+        initVatToggle('id_carrier_payment_method', 'carrier-vat-wrap');
+        initTermToggle('payment_condition', 'id_payment_term');
+        initTermToggle('carrier_payment_condition', 'id_carrier_payment_term');
+
+        initQuantityTotal({
+            unitId:      'id_client_cost_unit',
+            costId:      'id_client_cost',
+            qtyRowId:    'client-qty-row',
+            qtyBadgeId:  'client-qty-badge',
+            qtyInputId:  'id_client_quantity',
+            totalHintId: 'client-total-hint',
+            totalValueId:'client-total-value',
+            weightId:    'id_weight',
+            volumeId:    'id_volume',
+        });
+        initQuantityTotal({
+            unitId:      'id_carrier_cost_unit',
+            costId:      'id_carrier_cost',
+            qtyRowId:    'carrier-qty-row',
+            qtyBadgeId:  'carrier-qty-badge',
+            qtyInputId:  'id_carrier_quantity',
+            totalHintId: 'carrier-total-hint',
+            totalValueId:'carrier-total-value',
+            weightId:    'id_weight',
+            volumeId:    'id_volume',
         });
     });
 })();

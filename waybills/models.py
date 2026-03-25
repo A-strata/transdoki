@@ -76,6 +76,12 @@ class Waybill(UserOwnedModel):
         if self.date:
             self.year = self.date.year
 
+        # Организация должна быть собственной компанией аккаунта.
+        if self.organization_id and not self.organization.is_own_company:
+            raise ValidationError(
+                {"organization": "Можно выбрать только собственную компанию."}
+            )
+
         # Автомобиль и прицеп не должны совпадать.
         if self.trailer and self.truck_id == self.trailer_id:
             raise ValidationError(

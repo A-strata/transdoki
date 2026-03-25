@@ -83,6 +83,8 @@ def organization_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
     qs = Organization.objects.filter(account=account)
+    if request.GET.get("own") == "1":
+        qs = qs.filter(is_own_company=True)
     if q:
         qs = qs.filter(short_name__icontains=q) | Organization.objects.filter(
             account=account, inn__icontains=q

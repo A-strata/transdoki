@@ -11,7 +11,7 @@ from django.db import transaction
 from django.forms.models import model_to_dict
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_GET
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from transdoki.tenancy import get_request_account
 
 from .forms import TripAttachmentUploadForm, TripForm, TripPointForm
-from .models import MAX_FILES_PER_TRIP, Trip, TripAttachment, TripPoint
+from .models import MAX_FILES_PER_TRIP, FinancialStatus, Trip, TripAttachment, TripPoint
 from .services import AgreementRequestGenerator, TNGenerator
 
 load_dotenv()
@@ -47,7 +47,10 @@ class TripCreateView(LoginRequiredMixin, CreateView):
     COPY_EXCLUDE_FIELDS = {
         "created_by", "account", "created_at", "updated_at",
         "num_of_trip", "date_of_trip",
-        "weight", "client_cost", "carrier_cost", "comments",
+        "weight", "volume", "client_cost", "carrier_cost", "comments",
+        "client_quantity", "carrier_quantity",
+        "client_financial_status", "client_total_fixed",
+        "carrier_financial_status", "carrier_total_fixed",
     }
 
     def get_form_kwargs(self):
@@ -525,6 +528,54 @@ class TripAttachmentDownloadView(LoginRequiredMixin, View):
             as_attachment=True,
             filename=attachment.original_name,
         )
+
+
+class TripFixFinancialView(LoginRequiredMixin, View):
+    """Фиксирует итоговую сумму для одной стороны (client/carrier)."""
+
+    def post(self, request, pk):
+        detail_finances_url = reverse("trips:detail", args=[pk]) + "#finances"
+        side = request.POST.get("side")
+        if side not in ("client", "carrier"):
+            messages.error(request, "Неверный параметр.")
+            return redirect(detail_finances_url)
+
+        trip = get_object_or_404(Trip, pk=pk, account=get_request_account(request))
+
+        current_status = (
+            trip.client_financial_status
+            if side == "client"
+            else trip.carrier_financial_status
+        )
+        if current_status != FinancialStatus.OPEN:
+            messages.error(request, "Сумма уже зафиксирована.")
+            return redirect(detail_finances_url)
+
+        total = trip.client_total if side == "client" else trip.carrier_total
+        if total is None:
+            messages.error(
+                request,
+                "Невозможно рассчитать итог: заполните ставку"
+                + (" и фактическое количество." if side == "client" else " и фактическое количество."),
+            )
+            return redirect(detail_finances_url)
+
+        if side == "client":
+            trip.client_total_fixed = total
+            trip.client_financial_status = FinancialStatus.CALCULATED
+            update_fields = ["client_total_fixed", "client_financial_status"]
+            label = "заказчика"
+        else:
+            trip.carrier_total_fixed = total
+            trip.carrier_financial_status = FinancialStatus.CALCULATED
+            update_fields = ["carrier_total_fixed", "carrier_financial_status"]
+            label = "перевозчика"
+
+        trip.save(update_fields=update_fields)
+        messages.success(
+            request, f"Сумма {label} зафиксирована: {total:,.2f} ₽".replace(",", "\u00a0")
+        )
+        return redirect(detail_finances_url)
 
 
 class TripAttachmentDeleteView(LoginRequiredMixin, View):

@@ -34,7 +34,7 @@ class TripAdmin(admin.ModelAdmin):
         "account",
         "created_by",
     )
-    list_filter = ("date_of_trip", "payment_type", "payment_condition", "account")
+    list_filter = ("date_of_trip", "client_payment_method", "payment_condition", "carrier_payment_condition", "account")
     search_fields = (
         "num_of_trip",
         "client__short_name",
@@ -70,8 +70,10 @@ class TripAdmin(admin.ModelAdmin):
             "Финансы и оплата",
             {
                 "fields": (
-                    ("client_cost", "carrier_cost"),
-                    ("payment_type", "payment_condition", "payment_term"),
+                    ("client_cost", "client_cost_unit", "client_payment_method", "client_vat_rate"),
+                    ("payment_condition", "payment_term"),
+                    ("carrier_cost", "carrier_cost_unit", "carrier_payment_method", "carrier_vat_rate"),
+                    ("carrier_payment_condition", "carrier_payment_term"),
                 )
             },
         ),

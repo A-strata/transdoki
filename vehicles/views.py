@@ -126,6 +126,8 @@ def vehicle_search(request):
     q = request.GET.get("q", "").strip()
     vtype = request.GET.get("type", "")
     qs = Vehicle.objects.filter(account=account)
+    if request.GET.get("own") == "1":
+        qs = qs.filter(owner__is_own_company=True)
     if vtype == "truck":
         qs = qs.filter(vehicle_type__in=["truck", "single"])
     elif vtype == "trailer":

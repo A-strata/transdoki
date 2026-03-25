@@ -284,7 +284,7 @@ class WaybillForm(BaseStyledModelForm):
         if account:
             self._setup_ajax_fields(account)
 
-    def _setup_ajax_field(self, fname, full_qs, search_url, search_type=""):
+    def _setup_ajax_field(self, fname, full_qs, search_url, search_type="", open_on_focus=False):
         field = self.fields[fname]
         field._validation_qs = full_qs
         current = getattr(self.instance, fname, None)
@@ -296,12 +296,15 @@ class WaybillForm(BaseStyledModelForm):
         field.widget.attrs["data-search-url"] = search_url
         if search_type:
             field.widget.attrs["data-search-type"] = search_type
+        if open_on_focus:
+            field.widget.attrs["data-open-on-focus"] = "1"
 
     def _setup_ajax_fields(self, account):
         self._setup_ajax_field(
             "organization",
-            Organization.objects.filter(account=account),
-            reverse("organizations:search"),
+            Organization.objects.filter(account=account, is_own_company=True),
+            reverse("organizations:search") + "?own=1",
+            open_on_focus=True,
         )
         self._setup_ajax_field(
             "driver",
@@ -310,14 +313,14 @@ class WaybillForm(BaseStyledModelForm):
         )
         self._setup_ajax_field(
             "truck",
-            Vehicle.objects.filter(account=account),
-            reverse("vehicles:search"),
+            Vehicle.objects.filter(account=account, owner__is_own_company=True),
+            reverse("vehicles:search") + "?own=1",
             "truck",
         )
         self._setup_ajax_field(
             "trailer",
-            Vehicle.objects.filter(account=account),
-            reverse("vehicles:search"),
+            Vehicle.objects.filter(account=account, owner__is_own_company=True),
+            reverse("vehicles:search") + "?own=1",
             "trailer",
         )
 

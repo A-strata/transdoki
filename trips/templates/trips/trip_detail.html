@@ -9,6 +9,10 @@
         gap: 14px;
     }
 
+    #finances {
+        scroll-margin-top: 90px;
+    }
+
     .page-head {
         display: flex;
         justify-content: space-between;
@@ -154,6 +158,38 @@
         cursor: not-allowed;
     }
 
+    .tms-btn-fix {
+        background: #f0fdf4;
+        color: #166534;
+        border-color: #bbf7d0;
+        font-size: 0.85rem;
+        min-height: 32px;
+        padding: 0 12px;
+    }
+
+    .tms-btn-fix:hover {
+        background: #dcfce7;
+        border-color: #86efac;
+    }
+
+    /* Бейдж финансового статуса */
+    .fin-badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 6px;
+        vertical-align: middle;
+    }
+
+    .fin-badge--open       { background: #f3f4f6; color: #6b7280; }
+    .fin-badge--calculated { background: #fef9c3; color: #854d0e; }
+    .fin-badge--invoiced   { background: #dbeafe; color: #1e40af; }
+    .fin-badge--paid       { background: #dcfce7; color: #166534; }
+
+    .kv-total--fixed { font-weight: 700; color: #111827; }
+    .kv-total--calc  { color: #374151; }
+
     .entity-link {
         color: #1d4ed8;
         text-decoration: none;
@@ -236,24 +272,6 @@
 
 {% with trip=object %}
 <section class="trip-detail-page">
-    {% if messages %}
-        <div class="card">
-            {% for message in messages %}
-                <div style="
-                    margin-bottom:8px;
-                    padding:10px 12px;
-                    border-radius:10px;
-                    border:1px solid {% if message.tags == 'success' %}#bbf7d0{% else %}#fecaca{% endif %};
-                    background:{% if message.tags == 'success' %}#f0fdf4{% else %}#fef2f2{% endif %};
-                    color:{% if message.tags == 'success' %}#166534{% else %}#991b1b{% endif %};
-                    font-size:0.9rem;
-                ">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
     <div class="page-head">
         <div>
             <h1 class="page-title">Рейс №{{ trip.num_of_trip }}</h1>
@@ -413,29 +431,80 @@
             </div>
         </div>
 
-        <div class="section">
+        <div class="section" id="finances">
             <h2 class="section-title">Финансы и оплата</h2>
             <div class="kv-grid">
+
+                {# --- Заказчик --- #}
                 <div class="kv">
-                    <p class="kv-label">Стоимость для клиента</p>
-                    <p class="kv-value">{{ trip.client_cost|default:"—" }}</p>
+                    <p class="kv-label">Ставка заказчику</p>
+                    <p class="kv-value">
+                        {% if trip.client_cost %}{{ trip.client_cost }}&nbsp;{{ trip.get_client_cost_unit_display }}{% else %}—{% endif %}
+                    </p>
                 </div>
                 <div class="kv">
-                    <p class="kv-label">Стоимость для перевозчика</p>
-                    <p class="kv-value">{{ trip.carrier_cost|default:"—" }}</p>
+                    <p class="kv-label">Форма оплаты (заказчик)</p>
+                    <p class="kv-value">
+                        {{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless_vat' and trip.client_vat_rate %}&nbsp;{{ trip.client_vat_rate }}%{% endif %}
+                    </p>
                 </div>
                 <div class="kv">
-                    <p class="kv-label">Форма оплаты</p>
-                    <p class="kv-value">{{ trip.get_payment_type_display|default:"—" }}</p>
+                    <p class="kv-label">Срок оплаты (заказчик)</p>
+                    <p class="kv-value">
+                        {% if trip.payment_condition == 'unloading' %}Оплата на выгрузке{% elif trip.payment_term %}{{ trip.payment_term }} банк. дн.{% else %}—{% endif %}
+                    </p>
                 </div>
                 <div class="kv">
-                    <p class="kv-label">Условия оплаты</p>
-                    <p class="kv-value">{{ trip.get_payment_condition_display|default:"—" }}</p>
+                    <p class="kv-label">Итого (заказчик)</p>
+                    {% if trip.client_financial_status != 'open' %}
+                        <p class="kv-value kv-total--fixed">{{ trip.client_total_fixed }} ₽ &nbsp;<span class="fin-badge fin-badge--{{ trip.client_financial_status }}">{{ trip.get_client_financial_status_display }}</span></p>
+                    {% elif trip.client_total %}
+                        <p class="kv-value kv-total--calc">{{ trip.client_total }} ₽ <span class="fin-badge fin-badge--open">расчётно</span></p>
+                        <form method="post" action="{% url 'trips:fix_finance' trip.pk %}" style="margin-top:6px">
+                            {% csrf_token %}
+                            <input type="hidden" name="side" value="client">
+                            <button type="submit" class="tms-btn tms-btn-fix">Зафиксировать сумму</button>
+                        </form>
+                    {% else %}
+                        <p class="kv-value">—</p>
+                    {% endif %}
+                </div>
+
+                {# --- Перевозчик --- #}
+                <div class="kv">
+                    <p class="kv-label">Ставка перевозчику</p>
+                    <p class="kv-value">
+                        {% if trip.carrier_cost %}{{ trip.carrier_cost }}&nbsp;{{ trip.get_carrier_cost_unit_display }}{% else %}—{% endif %}
+                    </p>
                 </div>
                 <div class="kv">
-                    <p class="kv-label">Срок оплаты (дней)</p>
-                    <p class="kv-value">{{ trip.payment_term|default:"—" }}</p>
+                    <p class="kv-label">Форма оплаты (перевозчик)</p>
+                    <p class="kv-value">
+                        {{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %}&nbsp;{{ trip.carrier_vat_rate }}%{% endif %}
+                    </p>
                 </div>
+                <div class="kv">
+                    <p class="kv-label">Срок оплаты (перевозчик)</p>
+                    <p class="kv-value">
+                        {% if trip.carrier_payment_condition == 'unloading' %}Оплата на выгрузке{% elif trip.carrier_payment_term %}{{ trip.carrier_payment_term }} банк. дн.{% else %}—{% endif %}
+                    </p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Итого (перевозчик)</p>
+                    {% if trip.carrier_financial_status != 'open' %}
+                        <p class="kv-value kv-total--fixed">{{ trip.carrier_total_fixed }} ₽ &nbsp;<span class="fin-badge fin-badge--{{ trip.carrier_financial_status }}">{{ trip.get_carrier_financial_status_display }}</span></p>
+                    {% elif trip.carrier_total %}
+                        <p class="kv-value kv-total--calc">{{ trip.carrier_total }} ₽ <span class="fin-badge fin-badge--open">расчётно</span></p>
+                        <form method="post" action="{% url 'trips:fix_finance' trip.pk %}" style="margin-top:6px">
+                            {% csrf_token %}
+                            <input type="hidden" name="side" value="carrier">
+                            <button type="submit" class="tms-btn tms-btn-fix">Зафиксировать сумму</button>
+                        </form>
+                    {% else %}
+                        <p class="kv-value">—</p>
+                    {% endif %}
+                </div>
+
                 <div class="kv kv--full">
                     <p class="kv-label">Комментарии</p>
                     <p class="kv-value">{{ trip.comments|default:"—" }}</p>
