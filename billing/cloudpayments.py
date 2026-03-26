@@ -240,11 +240,18 @@ def handle_pay_webhook(payload: dict) -> None:
 
         # Отклоняем тестовые платежи в production.
         # TestMode=1 приходит при проверке уведомлений в ЛК CP или при тестовых картах.
-        if payload.get("TestMode") and not settings.DEBUG:
+        # Для тестирования интеграции установить CLOUDPAYMENTS_ALLOW_TEST_MODE=true в .env
+        allow_test = getattr(settings, "CLOUDPAYMENTS_ALLOW_TEST_MODE", False)
+        if payload.get("TestMode") and not settings.DEBUG and not allow_test:
             security_logger.warning(
                 "cloudpayments.test_payment_rejected order_id=%s", order_id
             )
             raise CloudPaymentsError("Тестовый платёж отклонён в production")
+        if payload.get("TestMode") and allow_test:
+            logger.info(
+                "cloudpayments.test_payment_allowed order_id=%s (CLOUDPAYMENTS_ALLOW_TEST_MODE=true)",
+                order_id,
+            )
 
         # Идемпотентность: уже обработан — ничего не делаем.
         if order.status == PaymentOrder.Status.PAID:

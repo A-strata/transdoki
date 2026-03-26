@@ -206,6 +206,8 @@ PETROLPLUS_TIMEOUT = int(os.getenv("PETROLPLUS_TIMEOUT", "15"))
 # CloudPayments
 CLOUDPAYMENTS_PUBLIC_ID = os.getenv("CLOUDPAYMENTS_PUBLIC_ID", "")
 CLOUDPAYMENTS_API_SECRET = os.getenv("CLOUDPAYMENTS_API_SECRET", "")
+# Разрешить тестовые платежи (TestMode=1) в production. Только для тестирования интеграции!
+CLOUDPAYMENTS_ALLOW_TEST_MODE = os.getenv("CLOUDPAYMENTS_ALLOW_TEST_MODE", "false").lower() == "true"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

@@ -183,16 +183,29 @@ def cloudpayments_check(request):
     if error:
         return error
 
+    logger.info(
+        "cloudpayments.check_webhook_received order_id=%s test_mode=%s payload=%s",
+        payload.get("InvoiceId"),
+        payload.get("TestMode"),
+        payload,
+    )
+
     try:
         cp_service.handle_check_webhook(payload)
     except (PaymentOrderNotFound, CloudPaymentsError) as e:
         logger.info("cloudpayments.check_rejected: %s", e)
-        return JsonResponse({"code": _CP_REJECT})
+        response = JsonResponse({"code": _CP_REJECT})
+        logger.info("cloudpayments.check_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+        return response
     except Exception:
         logger.exception("cloudpayments.check_error payload=%s", payload.get("InvoiceId"))
-        return JsonResponse({"code": _CP_RETRY})
+        response = JsonResponse({"code": _CP_RETRY})
+        logger.info("cloudpayments.check_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+        return response
 
-    return JsonResponse({"code": _CP_OK})
+    response = JsonResponse({"code": _CP_OK})
+    logger.info("cloudpayments.check_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+    return response
 
 
 @csrf_exempt
@@ -212,21 +225,37 @@ def cloudpayments_pay(request):
     if error:
         return error
 
+    logger.info(
+        "cloudpayments.pay_webhook_received order_id=%s cp_tx=%s test_mode=%s payload=%s",
+        payload.get("InvoiceId"),
+        payload.get("TransactionId"),
+        payload.get("TestMode"),
+        payload,
+    )
+
     try:
         cp_service.handle_pay_webhook(payload)
     except PaymentOrderNotFound as e:
         # Неизвестный заказ — повтор не поможет
         logger.warning("cloudpayments.pay_unknown_order: %s", e)
-        return JsonResponse({"code": _CP_REJECT})
+        response = JsonResponse({"code": _CP_REJECT})
+        logger.info("cloudpayments.pay_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+        return response
     except CloudPaymentsError as e:
         logger.warning("cloudpayments.pay_rejected: %s", e)
-        return JsonResponse({"code": _CP_REJECT})
+        response = JsonResponse({"code": _CP_REJECT})
+        logger.info("cloudpayments.pay_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+        return response
     except Exception:
         logger.exception("cloudpayments.pay_error payload=%s", payload.get("InvoiceId"))
         # Временная ошибка — просим CP повторить, деньги уже списаны с карты
-        return JsonResponse({"code": _CP_RETRY})
+        response = JsonResponse({"code": _CP_RETRY})
+        logger.info("cloudpayments.pay_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+        return response
 
-    return JsonResponse({"code": _CP_OK})
+    response = JsonResponse({"code": _CP_OK})
+    logger.info("cloudpayments.pay_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+    return response
 
 
 @csrf_exempt
@@ -242,10 +271,20 @@ def cloudpayments_fail(request):
     if error:
         return error
 
+    logger.info(
+        "cloudpayments.fail_webhook_received order_id=%s cp_tx=%s test_mode=%s payload=%s",
+        payload.get("InvoiceId"),
+        payload.get("TransactionId"),
+        payload.get("TestMode"),
+        payload,
+    )
+
     try:
         cp_service.handle_fail_webhook(payload)
     except Exception:
         # Не критично: деньги не трогаем, просто логируем
         logger.exception("cloudpayments.fail_error payload=%s", payload.get("InvoiceId"))
 
-    return JsonResponse({"code": _CP_OK})
+    response = JsonResponse({"code": _CP_OK})
+    logger.info("cloudpayments.fail_response order_id=%s body=%s", payload.get("InvoiceId"), response.content.decode())
+    return response
