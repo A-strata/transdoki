@@ -1,160 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block head %}
+<link rel="stylesheet" href="{% static 'accounts/css/register.css' %}">
+{% endblock %}
+
 {% block content %}
-<style>
-    .auth-page {
-        max-width: 440px;
-        margin: 0 auto;
-        padding-top: 12px;
-    }
-
-    .auth-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        padding: 20px;
-    }
-
-    .auth-title {
-        margin: 0 0 4px;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--text);
-    }
-
-    .auth-subtitle {
-        margin: 0 0 20px;
-        color: var(--muted);
-        font-size: 0.92rem;
-    }
-
-    /* Заголовки секций */
-    .section-label {
-        margin: 0 0 12px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--muted);
-    }
-
-    /* Разделитель между секциями */
-    .divider {
-        border: none;
-        border-top: 1px solid var(--border);
-        margin: 18px 0;
-    }
-
-    /* ИНН: спиннер и подсказка */
-    .inn-wrap { position: relative; }
-    .inn-wrap input { padding-right: 34px; }
-
-    .inn-spinner {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: none;
-        color: var(--muted);
-    }
-
-    .inn-spinner.active { display: block; }
-
-    .autofill-hint {
-        display: none;
-        margin-top: 4px;
-        font-size: 0.84rem;
-        color: var(--muted);
-    }
-
-    .autofill-hint.visible { display: block; }
-
-    /* Глазок (для password_toggle.js) */
-    .pwd-wrap { position: relative; }
-    .pwd-wrap input { padding-right: 40px; }
-
-    .pwd-toggle {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        color: var(--muted);
-        display: flex;
-        align-items: center;
-        line-height: 1;
-    }
-
-    .pwd-toggle:hover { color: var(--text); }
-
-    /* Кнопка и оферта */
-    .auth-actions { margin-top: 20px; }
-
-    .tms-btn {
-        width: 100%;
-        min-height: 40px;
-        border-radius: var(--radius-sm);
-        border: 1px solid transparent;
-        padding: 0 14px;
-        font-size: 0.9rem;
-        font-weight: 500;
-        font-family: inherit;
-        cursor: pointer;
-        transition: background .15s, border-color .15s;
-    }
-
-    .tms-btn-primary {
-        background: var(--primary);
-        border-color: var(--primary);
-        color: #fff;
-    }
-
-    .tms-btn-primary:hover {
-        background: var(--primary-hover);
-        border-color: var(--primary-hover);
-    }
-
-    .oferta-text {
-        margin: 10px 0 0;
-        font-size: 0.75rem;
-        color: var(--muted);
-        line-height: 1.5;
-        text-align: center;
-    }
-
-    .oferta-text a {
-        color: #374151;
-        text-decoration: underline;
-    }
-
-    .oferta-text a:hover { color: var(--text); }
-
-    /* Футер карточки */
-    .auth-footer {
-        margin-top: 14px;
-        color: var(--muted);
-        font-size: 0.9rem;
-        text-align: center;
-    }
-
-    .auth-link {
-        color: var(--primary);
-        font-weight: 500;
-        text-decoration: none;
-    }
-
-    .auth-link:hover { text-decoration: underline; }
-
-    @media (max-width: 520px) {
-        .auth-card { padding: 16px; }
-    }
-</style>
-
 <section class="auth-page">
     <div class="auth-card">
         <h1 class="auth-title">Регистрация</h1>
@@ -198,7 +49,7 @@
 
             <div class="field">
                 {{ form.inn.label_tag }}
-                <div class="inn-wrap">
+                <div class="inn-wrap" data-api-url="{% url 'organizations:api_suggestions_by_inn' %}">
                     {{ form.inn }}
                     <svg class="inn-spinner" id="inn-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <circle cx="8" cy="8" r="6" stroke="#e5e7eb" stroke-width="2"/>
@@ -231,7 +82,7 @@
 
         <p class="auth-footer">
             Уже есть аккаунт?
-            <a href="{% url 'login' %}" class="auth-link">Войти</a>
+            <a href="{% url 'login' %}" class="auth-card-link">Войти</a>
         </p>
         <p class="auth-footer" style="margin-top: 6px;">
             <a href="{% url 'home' %}" style="font-size: 0.84rem; color: var(--muted);">← На главную</a>
@@ -242,60 +93,5 @@
 
 {% block extra_js %}
 <script src="{% static 'js/password_toggle.js' %}"></script>
-<script>
-(function () {
-    var innInput = document.getElementById('id_inn');
-    var nameInput = document.getElementById('id_company_name');
-    var hint = document.getElementById('autofill-hint');
-    var spin = document.getElementById('inn-spin');
-    if (!innInput || !nameInput) return;
-
-    var timer = null;
-    var autofilled = false;
-
-    innInput.addEventListener('input', function () {
-        var digits = this.value.replace(/\D/g, '');
-        if (this.value !== digits) this.value = digits;
-
-        clearTimeout(timer);
-        spin.classList.remove('active');
-        hint.classList.remove('visible');
-
-        if (digits.length < 10) {
-            if (autofilled) {
-                nameInput.value = '';
-                autofilled = false;
-            }
-            return;
-        }
-
-        hint.classList.add('visible');
-        spin.classList.add('active');
-        nameInput.placeholder = 'Загружаем…';
-
-        timer = setTimeout(function () {
-            fetch('{% url "organizations:api_suggestions_by_inn" %}?inn=' + encodeURIComponent(digits))
-                .then(function (r) { return r.ok ? r.json() : null; })
-                .then(function (data) {
-                    spin.classList.remove('active');
-                    hint.classList.remove('visible');
-                    nameInput.placeholder = 'Заполнится по ИНН';
-                    if (data && data.short_name) {
-                        nameInput.value = data.short_name;
-                        autofilled = true;
-                    }
-                })
-                .catch(function () {
-                    spin.classList.remove('active');
-                    hint.classList.remove('visible');
-                    nameInput.placeholder = 'Заполнится по ИНН';
-                });
-        }, 600);
-    });
-
-    nameInput.addEventListener('input', function () {
-        autofilled = false;
-    });
-})();
-</script>
+<script src="{% static 'accounts/js/register_inn.js' %}"></script>
 {% endblock %}

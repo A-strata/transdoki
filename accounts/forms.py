@@ -17,23 +17,21 @@ class AccountRegistrationForm(forms.Form):
     first_name = forms.CharField(
         label="Имя",
         max_length=150,
-        widget=forms.TextInput(attrs={"placeholder": "Иван"}),
     )
     email = forms.EmailField(
         label="Email",
         max_length=150,
-        widget=forms.EmailInput(attrs={"placeholder": "ivan@example.com"}),
     )
     password1 = forms.CharField(
         label="Пароль",
-        widget=forms.PasswordInput(attrs={"placeholder": "Минимум 8 символов"}),
+        widget=forms.PasswordInput(),
     )
     # Блок 2: О компании
     inn = forms.CharField(
         label="ИНН",
         max_length=12,
         validators=[validate_inn],
-        widget=forms.TextInput(attrs={"placeholder": "7712345678", "inputmode": "numeric"}),
+        widget=forms.TextInput(attrs={"inputmode": "numeric"}),
     )
     company_name = forms.CharField(
         label="Название компании",

@@ -1,0 +1,95 @@
+/* Страница входа */
+
+.auth-page {
+    max-width: 460px;
+    margin: 0 auto;
+    padding-top: 12px;
+}
+
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+}
+
+.auth-title {
+    margin: 0 0 6px;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.auth-subtitle {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.auth-actions {
+    display: flex;
+    margin-top: 16px;
+}
+
+.tms-btn {
+    width: 100%;
+    min-height: 40px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    padding: 0 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, border-color .2s ease;
+}
+
+.tms-btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.tms-btn-primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.auth-footer {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.auth-card-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-card-link:hover { text-decoration: underline; }
+
+/* Глазок (для password_toggle.js) */
+.pwd-wrap { position: relative; }
+.pwd-wrap input { padding-right: 40px; }
+
+.pwd-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.pwd-toggle:hover { color: var(--text); }
+
+@media (max-width: 520px) {
+    .auth-card { padding: 14px; }
+}
