@@ -122,6 +122,16 @@
         line-height: 1;
     }
 
+    .form-group input.is-valid {
+        border-color: #16a34a;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+    }
+
+    .form-group input.is-invalid {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
     .cat-btn:hover {
         border-color: var(--primary);
         color: var(--primary);
@@ -434,51 +444,145 @@
 <script>
 (function () {
     const phoneInput = document.getElementById('id_phone');
-    const form = document.getElementById('person-form');
+    const form       = document.getElementById('person-form');
 
     if (!phoneInput || !form || typeof IMask === 'undefined') return;
 
-    // Если сервер вернул E.164 (79XXXXXXXXX) — показать в маске при редактировании
-    const initialDigits = phoneInput.value.replace(/\D/g, '');
+    /* ──────────────────────────────────────────────
+       1.  MASK SETUP
+       ────────────────────────────────────────────── */
+    const PHONE_LENGTH = 10;                       // digits after country code
+    const MASK_PATTERN = '+7 (000) 000-00-00';
 
     const mask = IMask(phoneInput, {
-        mask: '+7 (000) 000-00-00',
-        lazy: true,
-        placeholderChar: '_'
+        mask:            MASK_PATTERN,
+        lazy:            true,                     // hide placeholder while idle
+        placeholderChar: '_',
+        overwrite:       'shift',                  // natural insert behaviour
     });
 
-    if (initialDigits.length === 11 && initialDigits.startsWith('7')) {
-        mask.unmaskedValue = initialDigits.slice(1); // 10 цифр после «7»
+    // Show placeholder guides while the field is active
+    phoneInput.addEventListener('focus', () => { mask.updateOptions({ lazy: false }); });
+    phoneInput.addEventListener('blur',  () => {
+        if (mask.unmaskedValue.length === 0) mask.updateOptions({ lazy: true });
+    });
+
+    /* ──────────────────────────────────────────────
+       2.  HYDRATE SERVER VALUE  (E.164 → display)
+       ────────────────────────────────────────────── */
+    const initial = phoneInput.value.replace(/\D/g, '');
+    if (initial.length === 11 && initial.startsWith('7')) {
+        mask.unmaskedValue = initial.slice(1);
+    } else if (initial.length === PHONE_LENGTH) {
+        mask.unmaskedValue = initial;
     }
 
-    // Inline-ошибка на blur: показывает, если номер введён не полностью
+    /* ──────────────────────────────────────────────
+       3.  SMART PASTE  (+7 / 8 / 7 prefixes, spaces, dashes)
+       ────────────────────────────────────────────── */
+    phoneInput.addEventListener('paste', (e) => {
+        e.preventDefault();
+        let digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '');
+
+        if (digits.startsWith('7') && digits.length === 11)  digits = digits.slice(1);
+        else if (digits.startsWith('8') && digits.length === 11) digits = digits.slice(1);
+        else if (digits.startsWith('7') && digits.length === 10) digits = digits.slice(1);
+
+        mask.unmaskedValue = digits.slice(0, PHONE_LENGTH);
+        phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+        validateVisual();
+    });
+
+    /* ──────────────────────────────────────────────
+       4.  INLINE ERROR ELEMENT
+       ────────────────────────────────────────────── */
     const group = phoneInput.closest('.form-group');
-    let inlineError = group && group.querySelector('.errorlist');
-    if (group && !inlineError) {
-        inlineError = document.createElement('ul');
-        inlineError.className = 'errorlist';
-        group.appendChild(inlineError);
+    let errorEl = group?.querySelector('.errorlist');
+    if (group && !errorEl) {
+        errorEl = document.createElement('ul');
+        errorEl.className = 'errorlist';
+        errorEl.setAttribute('role', 'alert');
+        errorEl.setAttribute('aria-live', 'polite');
+        group.appendChild(errorEl);
     }
 
-    phoneInput.addEventListener('blur', function () {
-        if (!inlineError) return;
+    /* ──────────────────────────────────────────────
+       5.  VISUAL STATES  (neutral → valid → error)
+       ────────────────────────────────────────────── */
+    const CSS_VALID = 'is-valid';
+    const CSS_ERROR = 'is-invalid';
+
+    function setFieldState(state) {
+        phoneInput.classList.remove(CSS_VALID, CSS_ERROR);
+        if (state) phoneInput.classList.add(state);
+        phoneInput.setAttribute('aria-invalid', state === CSS_ERROR ? 'true' : 'false');
+    }
+
+    function validateVisual() {
         const len = mask.unmaskedValue.length;
-        if (len > 0 && len < 10) {
-            inlineError.innerHTML = '<li>Введите номер полностью</li>';
-        } else {
-            inlineError.innerHTML = '';
-        }
+        if (len === 0)            { setFieldState(null);      showError('');  }
+        else if (len === PHONE_LENGTH) { setFieldState(CSS_VALID); showError('');  }
+        else                      { setFieldState(CSS_ERROR); showError('Введите номер полностью'); }
+    }
+
+    function showError(msg) {
+        if (!errorEl) return;
+        errorEl.innerHTML = msg ? `<li>${msg}</li>` : '';
+    }
+
+    /* ──────────────────────────────────────────────
+       6.  VALIDATION TRIGGERS
+       ────────────────────────────────────────────── */
+    let blurTimer = null;
+    let touched   = false;            // don't nag before first interaction
+
+    // Real-time: show ✓ the instant 10 digits entered; clear error while typing
+    mask.on('accept', () => {
+        const len = mask.unmaskedValue.length;
+        if (len === PHONE_LENGTH)       { setFieldState(CSS_VALID); showError(''); }
+        else if (touched && len > 0)    { setFieldState(null);      showError(''); }
     });
 
-    phoneInput.addEventListener('focus', function () {
-        if (inlineError) inlineError.innerHTML = '';
+    phoneInput.addEventListener('focus', () => {
+        clearTimeout(blurTimer);
+        showError('');
+        if (mask.unmaskedValue.length !== PHONE_LENGTH) setFieldState(null);
     });
 
-    // Перед отправкой подставить E.164 в поле
-    form.addEventListener('submit', function () {
+    phoneInput.addEventListener('blur', () => {
+        touched = true;
+        // Small delay prevents flash when user clicks a nearby button
+        blurTimer = setTimeout(validateVisual, 120);
+    });
+
+    /* ──────────────────────────────────────────────
+       7.  FORM SUBMISSION GUARD
+       ────────────────────────────────────────────── */
+    form.addEventListener('submit', (e) => {
         const raw = mask.unmaskedValue;
-        phoneInput.value = raw.length === 10 ? '7' + raw : '';
+
+        if (raw.length === PHONE_LENGTH) {
+            // Write E.164 (without '+') into the real field
+            phoneInput.value = '7' + raw;
+            return;                                 // allow submit
+        }
+
+        // Incomplete or empty — block & highlight
+        e.preventDefault();
+        touched = true;
+        validateVisual();
+        phoneInput.focus();
     });
+
+    /* ──────────────────────────────────────────────
+       8.  ACCESSIBILITY
+       ────────────────────────────────────────────── */
+    phoneInput.setAttribute('inputmode',   'tel');
+    phoneInput.setAttribute('autocomplete','tel');
+    phoneInput.setAttribute('aria-label',  'Номер телефона в формате +7');
+    if (errorEl?.id) {
+        phoneInput.setAttribute('aria-describedby', errorEl.id);
+    }
 })();
 
 (function () {
