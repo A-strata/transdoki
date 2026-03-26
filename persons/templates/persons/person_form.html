@@ -94,6 +94,45 @@
         margin-bottom: 12px;
     }
 
+    .form-row-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 12px;
+    }
+
+    .cat-btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 2px;
+    }
+
+    .cat-btn {
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text);
+        font-size: 0.9rem;
+        font-weight: 650;
+        cursor: pointer;
+        transition: background .15s, border-color .15s, color .15s;
+        user-select: none;
+        line-height: 1;
+    }
+
+    .cat-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .cat-btn.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+    }
+
     .form-group {
         margin-bottom: 12px;
         min-width: 0;
@@ -238,7 +277,8 @@
             padding: 12px;
         }
 
-        .form-row {
+        .form-row,
+        .form-row-3 {
             grid-template-columns: 1fr;
             gap: 12px;
         }
@@ -305,7 +345,6 @@
                     {{ form.phone.label_tag }}
                     {{ form.phone }}
                     {{ form.phone.errors }}
-                    <span class="help-text">Формат: +7(999)123-45-67</span>
                 </div>
             </div>
 
@@ -321,16 +360,16 @@
         <section class="form-section">
             <h2>Паспортные данные</h2>
 
-            <div class="form-group">
-                <label for="id_passport_combined">Серия и номер паспорта</label>
-                <input type="text" id="id_passport_combined" autocomplete="off">
-                {{ form.passport_series.errors }}
-                {{ form.passport_number.errors }}
-            </div>
-            {{ form.passport_series.as_hidden }}
-            {{ form.passport_number.as_hidden }}
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label for="id_passport_combined">Серия и номер</label>
+                    <input type="text" id="id_passport_combined" autocomplete="off">
+                    {{ form.passport_series.errors }}
+                    {{ form.passport_number.errors }}
+                </div>
+                {{ form.passport_series.as_hidden }}
+                {{ form.passport_number.as_hidden }}
 
-            <div class="form-row">
                 <div class="form-group">
                     {{ form.passport_issued_date.label_tag }}
                     {{ form.passport_issued_date }}
@@ -356,22 +395,13 @@
         <section class="form-section">
             <h2>Водительское удостоверение</h2>
 
-            <div class="form-row">
+            <div class="form-row-3">
                 <div class="form-group">
                     {{ form.license_number.label_tag }}
                     {{ form.license_number }}
                     {{ form.license_number.errors }}
                 </div>
 
-                <div class="form-group">
-                    {{ form.license_categories.label_tag }}
-                    {{ form.license_categories }}
-                    {{ form.license_categories.errors }}
-                    <span class="help-text">Например: B, C, CE</span>
-                </div>
-            </div>
-
-            <div class="form-row">
                 <div class="form-group">
                     {{ form.license_issued_date.label_tag }}
                     {{ form.license_issued_date }}
@@ -383,6 +413,13 @@
                     {{ form.license_expiry_date }}
                     {{ form.license_expiry_date.errors }}
                 </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.license_categories.label_tag }}
+                <div class="cat-btn-group" id="cat-btn-group"></div>
+                {{ form.license_categories.as_hidden }}
+                {{ form.license_categories.errors }}
             </div>
         </section>
 
@@ -401,14 +438,46 @@
 
     if (!phoneInput || !form || typeof IMask === 'undefined') return;
 
+    // Если сервер вернул E.164 (79XXXXXXXXX) — показать в маске при редактировании
+    const initialDigits = phoneInput.value.replace(/\D/g, '');
+
     const mask = IMask(phoneInput, {
-        mask: '+7(000)000-00-00',
-        lazy: false
+        mask: '+7 (000) 000-00-00',
+        lazy: true,
+        placeholderChar: '_'
     });
 
+    if (initialDigits.length === 11 && initialDigits.startsWith('7')) {
+        mask.unmaskedValue = initialDigits.slice(1); // 10 цифр после «7»
+    }
+
+    // Inline-ошибка на blur: показывает, если номер введён не полностью
+    const group = phoneInput.closest('.form-group');
+    let inlineError = group && group.querySelector('.errorlist');
+    if (group && !inlineError) {
+        inlineError = document.createElement('ul');
+        inlineError.className = 'errorlist';
+        group.appendChild(inlineError);
+    }
+
+    phoneInput.addEventListener('blur', function () {
+        if (!inlineError) return;
+        const len = mask.unmaskedValue.length;
+        if (len > 0 && len < 10) {
+            inlineError.innerHTML = '<li>Введите номер полностью</li>';
+        } else {
+            inlineError.innerHTML = '';
+        }
+    });
+
+    phoneInput.addEventListener('focus', function () {
+        if (inlineError) inlineError.innerHTML = '';
+    });
+
+    // Перед отправкой подставить E.164 в поле
     form.addEventListener('submit', function () {
-        const rawValue = phoneInput.value.replace(/\D/g, '');
-        phoneInput.value = (rawValue === '7') ? '' : rawValue;
+        const raw = mask.unmaskedValue;
+        phoneInput.value = raw.length === 10 ? '7' + raw : '';
     });
 })();
 
@@ -436,6 +505,41 @@
         seriesInput.value = raw.slice(0, 4);
         numberInput.value = raw.slice(4, 10);
     });
+})();
+
+(function () {
+    const CATEGORIES = ['A', 'B', 'C', 'D', 'M', 'BE', 'CE', 'DE'];
+    const group = document.getElementById('cat-btn-group');
+    const input = document.getElementById('id_license_categories');
+    if (!group || !input) return;
+
+    const selected = new Set(
+        (input.value || '').split(',').map(s => s.trim()).filter(Boolean)
+    );
+
+    function syncInput() {
+        input.value = CATEGORIES.filter(c => selected.has(c)).join(', ');
+    }
+
+    CATEGORIES.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cat-btn' + (selected.has(cat) ? ' active' : '');
+        btn.textContent = cat;
+        btn.addEventListener('click', () => {
+            if (selected.has(cat)) {
+                selected.delete(cat);
+                btn.classList.remove('active');
+            } else {
+                selected.add(cat);
+                btn.classList.add('active');
+            }
+            syncInput();
+        });
+        group.appendChild(btn);
+    });
+
+    syncInput();
 })();
 </script>
 {% endblock %}

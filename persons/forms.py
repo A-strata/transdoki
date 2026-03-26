@@ -15,9 +15,25 @@ class PersonForm(forms.ModelForm):
 
     phone = forms.CharField(
         label="Номер телефона",
-        error_messages={"required": "Заполните это поле"},
         required=True,
+        widget=forms.TextInput(attrs={
+            "type": "tel",
+            "inputmode": "tel",
+            "autocomplete": "tel",
+        }),
     )
+
+    def clean_phone(self):
+        value = self.cleaned_data.get("phone", "")
+        digits = "".join(filter(str.isdigit, value))
+        if not digits or digits == "7":
+            raise forms.ValidationError("Заполните это поле")
+        # Нормализация: 8-xxx → 7-xxx
+        if digits.startswith("8") and len(digits) == 11:
+            digits = "7" + digits[1:]
+        if len(digits) != 11 or not digits.startswith("7"):
+            raise forms.ValidationError("Введите корректный российский номер телефона")
+        return digits
 
     birth_date = forms.DateField(
         label="Дата рождения",
