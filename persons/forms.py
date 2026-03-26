@@ -6,12 +6,23 @@ _DATE_WIDGET = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
 
 
 class PersonForm(forms.ModelForm):
+    passport_series_number = forms.CharField(
+        label="Серия и номер паспорта",
+        required=False,
+        widget=forms.TextInput(attrs={"data-passport-mask": ""}),
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Зашифрованные CharField возвращают b'' вместо '' для пустых значений
         for name, value in self.initial.items():
             if value == b"":
                 self.initial[name] = ""
+        # Склеиваем серию и номер для отображения в маске
+        series = self.initial.get("passport_series", "")
+        number = self.initial.get("passport_number", "")
+        if series or number:
+            self.initial["passport_series_number"] = str(series) + str(number)
 
     phone = forms.CharField(
         label="Номер телефона",
@@ -33,6 +44,17 @@ class PersonForm(forms.ModelForm):
             }
         ),
     )
+
+    def clean_passport_series_number(self):
+        value = self.cleaned_data.get("passport_series_number", "")
+        digits = "".join(filter(str.isdigit, value))
+        if not digits:
+            return ""
+        if len(digits) != 10:
+            raise forms.ValidationError("Введите серию и номер паспорта полностью")
+        self.cleaned_data["passport_series"] = digits[:4]
+        self.cleaned_data["passport_number"] = digits[4:]
+        return digits
 
     def clean_phone(self):
         value = self.cleaned_data.get("phone", "")
@@ -67,9 +89,20 @@ class PersonForm(forms.ModelForm):
         widget=_DATE_WIDGET,
     )
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        sn = self.cleaned_data.get("passport_series_number", "")
+        digits = "".join(filter(str.isdigit, sn))
+        instance.passport_series = digits[:4] if len(digits) == 10 else ""
+        instance.passport_number = digits[4:] if len(digits) == 10 else ""
+        if commit:
+            instance.save()
+        return instance
+
     class Meta:
         model = Person
-        exclude = ["created_by", "account", "created_at", "updated_at"]
+        exclude = ["created_by", "account", "created_at", "updated_at",
+                   "passport_series", "passport_number"]
 
     def clean(self):
         cleaned_data = super().clean()

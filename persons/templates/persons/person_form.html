@@ -221,6 +221,11 @@
         line-height: 1.3;
     }
 
+    .form-group input.is-invalid {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
     .form-actions {
         display: flex;
         flex-wrap: wrap;
@@ -363,13 +368,10 @@
 
             <div class="form-row-3">
                 <div class="form-group">
-                    <label for="id_passport_combined">Серия и номер</label>
-                    <input type="text" id="id_passport_combined" autocomplete="off">
-                    {{ form.passport_series.errors }}
-                    {{ form.passport_number.errors }}
+                    {{ form.passport_series_number.label_tag }}
+                    {{ form.passport_series_number }}
+                    {{ form.passport_series_number.errors }}
                 </div>
-                {{ form.passport_series.as_hidden }}
-                {{ form.passport_number.as_hidden }}
 
                 <div class="form-group">
                     {{ form.passport_issued_date.label_tag }}
@@ -432,31 +434,6 @@
 
 <script src="https://unpkg.com/imask"></script>
 <script>
-(function () {
-    const combined = document.getElementById('id_passport_combined');
-    const seriesInput = document.getElementById('id_passport_series');
-    const numberInput = document.getElementById('id_passport_number');
-    const form = document.getElementById('person-form');
-
-    if (!combined || !seriesInput || !numberInput || !form || typeof IMask === 'undefined') return;
-
-    const passportMask = IMask(combined, {
-        mask: '00 00 000000',
-        lazy: false,
-        placeholderChar: '_'
-    });
-
-    const existingDigits = (seriesInput.value || '') + (numberInput.value || '');
-    if (existingDigits) {
-        passportMask.unmaskedValue = existingDigits;
-    }
-
-    form.addEventListener('submit', function () {
-        const raw = passportMask.unmaskedValue;
-        seriesInput.value = raw.slice(0, 4);
-        numberInput.value = raw.slice(4, 10);
-    });
-})();
 
 (function () {
     const CATEGORIES = ['A', 'B', 'C', 'D', 'M', 'BE', 'CE', 'DE'];
@@ -498,4 +475,5 @@
 {% block extra_js %}
 <script src="{% static 'js/phone_mask.js' %}"></script>
 <script src="{% static 'js/code_mask.js' %}"></script>
+<script src="{% static 'js/passport_mask.js' %}"></script>
 {% endblock %}
