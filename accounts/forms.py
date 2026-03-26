@@ -67,7 +67,10 @@ class AccountRegistrationForm(forms.Form):
             return cleaned_data
 
         if password1:
-            validate_password(password1)
+            try:
+                validate_password(password1)
+            except ValidationError as e:
+                self.add_error("password1", e)
 
         return cleaned_data
 
