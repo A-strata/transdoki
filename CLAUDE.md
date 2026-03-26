@@ -117,6 +117,29 @@ python manage.py charge_daily --dry-run   # только расчёт, без з
 - Лимит сессий: 3 на пользователя (`MAX_SESSIONS_PER_USER` в `billing/constants.py`); превышение логируется как `suspicious_activity`, вход не блокируется
 - Роли: `owner`, `admin`, `dispatcher`, `logist` — хранятся в `UserProfile.role`
 
+## Production server
+
+- **Автодеплой**: push в `main` → сервер сам делает git pull
+- **Папка проекта**: `~/projects/transdoki` (пользователь deploy)
+- **Systemd-сервис**: `transdoki.service`
+- **Логи приложения**: `~/projects/transdoki/logs/django.log` и `security.log`
+- **Переменные окружения**: `~/projects/transdoki/.env`
+- **SSH**: два пользователя — `deploy` (файлы, логи) и `root` (systemctl); SSH-ключ и IP хранятся локально в памяти Claude
+- **Python/venv**: poetry не в PATH у deploy, использовать venv напрямую:
+  ```bash
+  ~/projects/transdoki/.venv/bin/python manage.py <cmd>
+  # или: source ~/projects/transdoki/.venv/bin/activate
+  ```
+
+Типичный рабочий цикл:
+```bash
+# push в main → автодеплой
+# перезапустить сервис (нужно при изменении .env или зависимостей):
+ssh root@<server> "systemctl restart transdoki"
+# логи:
+ssh deploy@<server> "tail -f ~/projects/transdoki/logs/django.log"
+```
+
 ## Integration: Petrolplus
 - OAuth2/Keycloak авторизация
 - Код в `integrations/`
