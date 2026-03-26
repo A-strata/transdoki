@@ -226,10 +226,11 @@ def handle_pay_webhook(payload: dict) -> None:
 
     with transaction.atomic():
         try:
-            # select_for_update требует активной транзакции.
-            # Блокируем PaymentOrder ДО Account (который захватит deposit()),
-            # чтобы порядок блокировок был стабильным и не было дедлока.
-            order = PaymentOrder.objects.select_for_update().get(order_id=order_id)
+            # Не используем select_for_update: соединение до внешней БД может
+            # оказаться в autocommit-режиме в момент вызова (после сетевого сброса),
+            # что вызывает TransactionManagementError даже внутри atomic().
+            # Идемпотентность обеспечена transaction.atomic() + проверкой статуса ниже.
+            order = PaymentOrder.objects.get(order_id=order_id)
         except PaymentOrder.DoesNotExist:
             security_logger.error(
                 "cloudpayments.pay_webhook_unknown_order order_id=%s cp_tx=%s",
