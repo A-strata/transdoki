@@ -42,6 +42,7 @@ def _generate_temp_password(length: int = 10) -> str:
 @transaction.atomic
 def register_account_with_owner(
     *,
+    first_name: str,
     company_name: str,
     inn: str,
     email: str,
@@ -61,6 +62,7 @@ def register_account_with_owner(
         username=normalized_email,
         email=normalized_email,
         password=password,
+        first_name=first_name.strip(),
     )
 
     account = Account.objects.create(

@@ -388,6 +388,7 @@
     }
 </style>
 
+    <link rel="stylesheet" href="{% static 'css/forms.css' %}">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -436,7 +437,7 @@
                         Личный кабинет
                     </a>
 
-                    <span class="user-meta">Привет, {{ user.username }}!</span>
+                    <span class="user-meta">Привет, {{ user.first_name|default:user.username }}!</span>
                     <form method="post" action="{% url 'logout' %}" class="logout-form">
                         {% csrf_token %}
                         <button type="submit" class="btn-link">Выйти</button>
@@ -448,7 +449,7 @@
             </div>-->
             <div class="nav-right">
                 {% if user.is_authenticated %}
-                    <span class="user-meta">Привет, {{ user.username }}!</span>
+                    <span class="user-meta">Привет, {{ user.first_name|default:user.username }}!</span>
 
                     {% if billing_account %}
                         {% if billing_account.is_billing_exempt %}

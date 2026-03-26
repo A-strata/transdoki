@@ -13,26 +13,32 @@ from .services import create_account_user_by_admin, register_account_with_owner
 
 
 class AccountRegistrationForm(forms.Form):
-    company_name = forms.CharField(
-        label="Название компании",
-        max_length=200,
-    )
-    inn = forms.CharField(
-        label="ИНН",
-        max_length=12,
-        validators=[validate_inn],
+    # Блок 1: О вас
+    first_name = forms.CharField(
+        label="Имя",
+        max_length=150,
+        widget=forms.TextInput(attrs={"placeholder": "Иван"}),
     )
     email = forms.EmailField(
         label="Email",
         max_length=150,
+        widget=forms.EmailInput(attrs={"placeholder": "ivan@example.com"}),
     )
     password1 = forms.CharField(
         label="Пароль",
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={"placeholder": "Минимум 8 символов"}),
     )
-    password2 = forms.CharField(
-        label="Подтверждение пароля",
-        widget=forms.PasswordInput,
+    # Блок 2: О компании
+    inn = forms.CharField(
+        label="ИНН",
+        max_length=12,
+        validators=[validate_inn],
+        widget=forms.TextInput(attrs={"placeholder": "7712345678", "inputmode": "numeric"}),
+    )
+    company_name = forms.CharField(
+        label="Название компании",
+        max_length=200,
+        widget=forms.TextInput(attrs={"placeholder": "Заполнится по ИНН"}),
     )
 
     def clean_email(self):
@@ -57,25 +63,18 @@ class AccountRegistrationForm(forms.Form):
 
         return inn
 
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get("password1")
-        password2 = cleaned_data.get("password2")
-
-        if password1 and password2 and password1 != password2:
-            self.add_error("password2", "Пароли не совпадают.")
-            return cleaned_data
-
-        if password1:
+    def clean_password1(self):
+        password = self.cleaned_data.get("password1")
+        if password:
             try:
-                validate_password(password1)
+                validate_password(password)
             except ValidationError as e:
-                self.add_error("password1", e)
-
-        return cleaned_data
+                raise ValidationError(e.messages)
+        return password
 
     def save(self):
         return register_account_with_owner(
+            first_name=self.cleaned_data["first_name"],
             company_name=self.cleaned_data["company_name"],
             inn=self.cleaned_data["inn"],
             email=self.cleaned_data["email"],
