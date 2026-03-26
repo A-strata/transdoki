@@ -8,6 +8,7 @@ from django.views import View
 from django.views.generic import FormView, TemplateView
 
 from billing.mixins import BillingProtectedMixin
+from organizations.models import Organization
 from transdoki.tenancy import get_request_account
 
 from .forms import AccountRegistrationForm, AccountUserCreateForm
@@ -54,12 +55,18 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
             UserProfile.Role.ADMIN,
         }
 
+        own_companies = Organization.objects.filter(
+            account=account,
+            is_own_company=True,
+        ).order_by("short_name")
+
         context.update(
             {
                 "account": account,
                 "profile": profile,
                 "users_in_account": users_in_account,
                 "can_manage_users": can_manage_users,
+                "own_companies": own_companies,
             }
         )
         return context

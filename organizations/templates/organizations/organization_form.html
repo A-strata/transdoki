@@ -9,8 +9,10 @@
             <h1 class="page-title">
                 {% if form.instance.pk %}
                     Редактирование организации
+                {% elif is_own %}
+                    Добавить компанию
                 {% else %}
-                    Создание организации
+                    Добавить контрагента
                 {% endif %}
             </h1>
             <p class="page-subtitle">Заполните реквизиты и параметры организации</p>
@@ -131,7 +133,7 @@
                     {% if form.instance.pk %}
                         <a href="{% url 'organizations:detail' form.instance.pk %}" class="tms-btn tms-btn-secondary">Отмена</a>
                     {% else %}
-                        <a href="{% url 'organizations:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
+                        <a href="{% if is_own %}{% url 'organizations:own_list' %}{% else %}{% url 'organizations:list' %}{% endif %}" class="tms-btn tms-btn-secondary">Отмена</a>
                     {% endif %}
                 </div>
             </div>

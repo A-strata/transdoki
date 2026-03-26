@@ -20,9 +20,33 @@ def _get_request_account(request):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ("get_full_name", "phone", "account", "created_by")
+    list_display = ("get_full_name", "phone", "is_own_employee", "account", "created_by")
     search_fields = ("surname", "name", "patronymic", "phone")
-    list_filter = ("account",)
+    list_filter = ("account", "is_own_employee")
+    fieldsets = (
+        ("Основное", {
+            "fields": (
+                "surname", "name", "patronymic",
+                "birth_date", "phone", "is_own_employee",
+                "account", "created_by",
+            ),
+        }),
+        ("Паспортные данные", {
+            "fields": (
+                "passport_series", "passport_number",
+                "passport_issued_date", "passport_department_code",
+                "passport_issued_by",
+            ),
+            "classes": ("collapse",),
+        }),
+        ("Водительское удостоверение", {
+            "fields": (
+                "license_number", "license_categories",
+                "license_issued_date", "license_expiry_date",
+            ),
+            "classes": ("collapse",),
+        }),
+    )
 
     @admin.display(description="ФИО")
     def get_full_name(self, obj):

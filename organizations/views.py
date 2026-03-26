@@ -44,6 +44,17 @@ class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateVi
             form.add_error("inn", "Организация с таким ИНН уже существует.")
             return self.form_invalid(form)
 
+    def get_initial(self):
+        initial = super().get_initial()
+        if self.request.GET.get("own") == "1":
+            initial["is_own_company"] = True
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_own"] = self.request.GET.get("own") == "1"
+        return context
+
     def get_success_url(self):
         return reverse("organizations:detail", kwargs={"pk": self.object.pk})
 
@@ -67,6 +78,28 @@ class OrganizationListView(UserOwnedListView):
     model = Organization
     template_name = "organizations/organization_list.html"
     context_object_name = "organizations"
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_own_company=False)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_own"] = False
+        return context
+
+
+class OwnCompanyListView(UserOwnedListView):
+    model = Organization
+    template_name = "organizations/organization_list.html"
+    context_object_name = "organizations"
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_own_company=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_own"] = True
+        return context
 
 
 class OrganizationDetailView(LoginRequiredMixin, DetailView):

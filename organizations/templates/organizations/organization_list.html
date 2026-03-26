@@ -183,8 +183,8 @@
 
 <section class="org-page">
     <div class="org-header">
-        <h1 class="org-title">Организации</h1>
-        <a href="{% url 'organizations:create' %}" class="tms-btn tms-btn-primary">Добавить организацию</a>
+        <h1 class="org-title">{% if is_own %}Мои компании{% else %}Контрагенты{% endif %}</h1>
+        <a href="{% url 'organizations:create' %}{% if is_own %}?own=1{% endif %}" class="tms-btn tms-btn-primary">{% if is_own %}Добавить компанию{% else %}Добавить контрагента{% endif %}</a>
     </div>
 
     <div class="table-card">
@@ -214,7 +214,7 @@
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="5">Нет организаций</td>
+                        <td colspan="5">{% if is_own %}Нет собственных компаний{% else %}Нет контрагентов{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

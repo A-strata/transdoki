@@ -1,4 +1,5 @@
 from django.db import models
+from django_cryptography.fields import encrypt
 
 from organizations.models import UserOwnedModel
 
@@ -17,6 +18,47 @@ class Person(UserOwnedModel):
     patronymic = models.CharField(max_length=NAME_LENGTH, verbose_name="Отчество")
     phone = models.CharField(
         max_length=25, verbose_name="Номер телефона", validators=[validate_phone_number]
+    )
+
+    is_own_employee = models.BooleanField(
+        default=False,
+        verbose_name="Штатный сотрудник",
+        help_text="Сотрудник одной из ваших организаций",
+    )
+
+    # Персональные данные (шифруются at-rest, ФЗ-152)
+    birth_date = encrypt(models.DateField(null=True, blank=True, verbose_name="Дата рождения"))
+
+    # Паспорт
+    passport_series = encrypt(
+        models.CharField(max_length=4, blank=True, verbose_name="Серия паспорта")
+    )
+    passport_number = encrypt(
+        models.CharField(max_length=6, blank=True, verbose_name="Номер паспорта")
+    )
+    passport_issued_by = encrypt(
+        models.CharField(max_length=255, blank=True, verbose_name="Кем выдан")
+    )
+    passport_issued_date = encrypt(
+        models.DateField(null=True, blank=True, verbose_name="Дата выдачи паспорта")
+    )
+    passport_department_code = encrypt(
+        models.CharField(max_length=7, blank=True, verbose_name="Код подразделения")
+    )
+
+    # Водительское удостоверение
+    license_number = encrypt(
+        models.CharField(max_length=10, blank=True, verbose_name="Номер ВУ")
+    )
+    license_issued_date = encrypt(
+        models.DateField(null=True, blank=True, verbose_name="Дата выдачи ВУ")
+    )
+    license_expiry_date = encrypt(
+        models.DateField(null=True, blank=True, verbose_name="ВУ действует до")
+    )
+    license_categories = models.CharField(
+        max_length=20, blank=True, verbose_name="Категории ВУ",
+        help_text="Например: B, C, CE"
     )
 
     def __str__(self):

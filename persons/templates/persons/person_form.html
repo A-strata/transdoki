@@ -2,12 +2,30 @@
 
 {% block content %}
 <style>
+    :root {
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --danger-bg: #fef2f2;
+        --danger-text: #991b1b;
+        --danger-border: #fecaca;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
     .person-form-page {
         max-width: 760px;
         margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
+        color: var(--text);
+    }
+
+    .page-header {
+        margin-bottom: 18px;
     }
 
     .page-title {
@@ -15,49 +33,81 @@
         font-size: clamp(1.25rem, 1.8vw, 1.6rem);
         line-height: 1.2;
         letter-spacing: -0.01em;
+        font-weight: 700;
     }
 
     .page-subtitle {
         margin: 6px 0 0;
-        color: #6b7280;
+        color: var(--muted);
         font-size: 0.92rem;
     }
 
     .form-card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        padding: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 18px;
     }
 
     .form-errors {
-        margin-bottom: 14px;
-        padding: 10px 12px;
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        border-radius: 10px;
+        margin-bottom: 18px;
+        padding: 12px 14px;
+        background: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        border-radius: var(--radius-sm);
     }
 
     .form-errors .error {
+        color: var(--danger-text);
         margin: 0;
-        color: #991b1b;
-        font-size: 0.9rem;
+        font-size: 0.92rem;
     }
 
     .form-errors .error + .error {
         margin-top: 6px;
     }
 
-    .field {
-        margin-bottom: 12px;
+    .form-section {
+        margin-bottom: 18px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: #fff;
     }
 
-    .field:last-of-type {
+    .form-section:last-of-type {
         margin-bottom: 0;
     }
 
-    .field label {
+    .form-section h2 {
+        margin: 0 0 14px;
+        font-size: 1rem;
+        font-weight: 650;
+        color: var(--text);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+        min-width: 0;
+    }
+
+    .form-row .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-group label {
         display: inline-block;
         margin-bottom: 6px;
         font-size: 0.9rem;
@@ -65,26 +115,58 @@
         color: #374151;
     }
 
-    .field input,
-    .field select,
-    .field textarea {
+    .form-group input[type="text"],
+    .form-group input[type="tel"],
+    .form-group input[type="date"],
+    .form-group textarea,
+    .form-group select {
         width: 100%;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 10px;
         background: #fff;
-        color: #111827;
+        color: var(--text);
         padding: 10px 12px;
         font-size: 0.95rem;
         transition: border-color .2s ease, box-shadow .2s ease;
         box-sizing: border-box;
     }
 
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
         outline: none;
-        border-color: #2563eb;
+        border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .form-group-checkbox {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 0;
+    }
+
+    .form-group-checkbox input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--primary);
+        cursor: pointer;
+    }
+
+    .form-group-checkbox label {
+        margin: 0;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .help-text {
+        width: 100%;
+        color: var(--muted);
+        font-size: 0.86rem;
+        margin-top: 4px;
+        line-height: 1.35;
     }
 
     .errorlist {
@@ -94,21 +176,15 @@
     }
 
     .errorlist li {
-        color: #991b1b;
+        color: var(--danger-text);
         font-size: 0.84rem;
         line-height: 1.3;
     }
 
-    .hint {
-        margin-top: 6px;
-        color: #6b7280;
-        font-size: 0.84rem;
-    }
-
     .form-actions {
         display: flex;
-        gap: 10px;
         flex-wrap: wrap;
+        gap: 10px;
         margin-top: 16px;
     }
 
@@ -116,32 +192,36 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 40px;
-        padding: 0 14px;
+        min-height: 42px;
+        padding: 0 16px;
         border-radius: 10px;
         border: 1px solid transparent;
         text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 600;
+        font-size: 0.92rem;
+        font-weight: 650;
         cursor: pointer;
-        transition: background .2s ease, border-color .2s ease, color .2s ease;
+        transition: background .2s ease, border-color .2s ease, color .2s ease, transform .04s ease;
+    }
+
+    .tms-btn:active {
+        transform: translateY(1px);
     }
 
     .tms-btn-primary {
-        background: #2563eb;
+        background: var(--primary);
         color: #fff;
-        border-color: #2563eb;
+        border-color: var(--primary);
     }
 
     .tms-btn-primary:hover {
-        background: #1d4ed8;
-        border-color: #1d4ed8;
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
     }
 
     .tms-btn-secondary {
         background: #fff;
         color: #374151;
-        border-color: #e5e7eb;
+        border-color: var(--border);
     }
 
     .tms-btn-secondary:hover {
@@ -149,26 +229,37 @@
         border-color: #d1d5db;
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
         .form-card {
+            padding: 14px;
+        }
+
+        .form-section {
             padding: 12px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 12px;
         }
 
         .form-actions {
             flex-direction: column;
         }
 
-        .form-actions .tms-btn {
+        .tms-btn {
             width: 100%;
         }
     }
 </style>
 
-<section class="person-form-page">
-    <div>
-        <h1 class="page-title">Добавить человека</h1>
-        <p class="page-subtitle">Укажите ФИО и контактные данные</p>
-    </div>
+<div class="person-form-page">
+    <header class="page-header">
+        <h1 class="page-title">
+            {% if form.instance.pk %}Редактировать человека{% else %}Добавить человека{% endif %}
+        </h1>
+        <p class="page-subtitle">ФИО, контактные данные, паспорт и водительское удостоверение</p>
+    </header>
 
     <form method="post" id="person-form" class="form-card" novalidate>
         {% csrf_token %}
@@ -181,43 +272,126 @@
             </div>
         {% endif %}
 
-        <div class="field">
-            {{ form.surname.label_tag }}
-            {{ form.surname }}
-            {{ form.surname.errors }}
-        </div>
+        {# ── Основное ────────────────────────────────────────────── #}
+        <section class="form-section">
+            <h2>Основное</h2>
 
-        <div class="field">
-            {{ form.name.label_tag }}
-            {{ form.name }}
-            {{ form.name.errors }}
-        </div>
+            <div class="form-group">
+                {{ form.surname.label_tag }}
+                {{ form.surname }}
+                {{ form.surname.errors }}
+            </div>
 
-        <div class="field">
-            {{ form.patronymic.label_tag }}
-            {{ form.patronymic }}
-            {{ form.patronymic.errors }}
-        </div>
+            <div class="form-group">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
 
-        <div class="field">
-            {{ form.phone.label_tag }}
-            {{ form.phone }}
-            {{ form.phone.errors }}
-            <div class="hint">Формат: +7(999)123-45-67</div>
-        </div>
+            <div class="form-group">
+                {{ form.patronymic.label_tag }}
+                {{ form.patronymic }}
+                {{ form.patronymic.errors }}
+            </div>
 
-        <div class="field">
-            {{ form.email.label_tag }}
-            {{ form.email }}
-            {{ form.email.errors }}
-        </div>
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.birth_date.label_tag }}
+                    {{ form.birth_date }}
+                    {{ form.birth_date.errors }}
+                </div>
+
+                <div class="form-group">
+                    {{ form.phone.label_tag }}
+                    {{ form.phone }}
+                    {{ form.phone.errors }}
+                    <span class="help-text">Формат: +7(999)123-45-67</span>
+                </div>
+            </div>
+
+            <div class="form-group-checkbox">
+                {{ form.is_own_employee }}
+                {{ form.is_own_employee.label_tag }}
+                {{ form.is_own_employee.errors }}
+                <span class="help-text">{{ form.is_own_employee.help_text }}</span>
+            </div>
+        </section>
+
+        {# ── Паспорт ─────────────────────────────────────────────── #}
+        <section class="form-section">
+            <h2>Паспортные данные</h2>
+
+            <div class="form-group">
+                <label for="id_passport_combined">Серия и номер паспорта</label>
+                <input type="text" id="id_passport_combined" autocomplete="off">
+                {{ form.passport_series.errors }}
+                {{ form.passport_number.errors }}
+            </div>
+            {{ form.passport_series.as_hidden }}
+            {{ form.passport_number.as_hidden }}
+
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.passport_issued_date.label_tag }}
+                    {{ form.passport_issued_date }}
+                    {{ form.passport_issued_date.errors }}
+                </div>
+
+                <div class="form-group">
+                    {{ form.passport_department_code.label_tag }}
+                    {{ form.passport_department_code }}
+                    {{ form.passport_department_code.errors }}
+                    <span class="help-text">Формат: 123-456</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.passport_issued_by.label_tag }}
+                {{ form.passport_issued_by }}
+                {{ form.passport_issued_by.errors }}
+            </div>
+        </section>
+
+        {# ── Водительское удостоверение ───────────────────────────── #}
+        <section class="form-section">
+            <h2>Водительское удостоверение</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.license_number.label_tag }}
+                    {{ form.license_number }}
+                    {{ form.license_number.errors }}
+                </div>
+
+                <div class="form-group">
+                    {{ form.license_categories.label_tag }}
+                    {{ form.license_categories }}
+                    {{ form.license_categories.errors }}
+                    <span class="help-text">Например: B, C, CE</span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.license_issued_date.label_tag }}
+                    {{ form.license_issued_date }}
+                    {{ form.license_issued_date.errors }}
+                </div>
+
+                <div class="form-group">
+                    {{ form.license_expiry_date.label_tag }}
+                    {{ form.license_expiry_date }}
+                    {{ form.license_expiry_date.errors }}
+                </div>
+            </div>
+        </section>
 
         <div class="form-actions">
             <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
             <a href="{% url 'persons:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
         </div>
     </form>
-</section>
+</div>
 
 <script src="https://unpkg.com/imask"></script>
 <script>
@@ -233,9 +407,34 @@
     });
 
     form.addEventListener('submit', function () {
-        // Перед отправкой превращаем маску в "чистые" цифры для backend
         const rawValue = phoneInput.value.replace(/\D/g, '');
         phoneInput.value = (rawValue === '7') ? '' : rawValue;
+    });
+})();
+
+(function () {
+    const combined = document.getElementById('id_passport_combined');
+    const seriesInput = document.getElementById('id_passport_series');
+    const numberInput = document.getElementById('id_passport_number');
+    const form = document.getElementById('person-form');
+
+    if (!combined || !seriesInput || !numberInput || !form || typeof IMask === 'undefined') return;
+
+    const passportMask = IMask(combined, {
+        mask: '00 00 000000',
+        lazy: false,
+        placeholderChar: '_'
+    });
+
+    const existingDigits = (seriesInput.value || '') + (numberInput.value || '');
+    if (existingDigits) {
+        passportMask.unmaskedValue = existingDigits;
+    }
+
+    form.addEventListener('submit', function () {
+        const raw = passportMask.unmaskedValue;
+        seriesInput.value = raw.slice(0, 4);
+        numberInput.value = raw.slice(4, 10);
     });
 })();
 </script>

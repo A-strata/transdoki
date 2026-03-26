@@ -409,6 +409,44 @@
 
     <div class="cabinet-card">
         <div class="cabinet-card-header">
+            <h2 class="cabinet-card-title">Мои организации</h2>
+            <a href="{% url 'organizations:own_list' %}" class="history-link">Управлять</a>
+        </div>
+
+        {% if own_companies %}
+            <div class="cab-table-wrap">
+                <table class="cab-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>ИНН</th>
+                            <th>ОГРН</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for org in own_companies %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'organizations:detail' org.pk %}"
+                                   style="color: #2563eb;">{{ org.short_name }}</a>
+                            </td>
+                            <td>{{ org.inn }}</td>
+                            <td>{{ org.ogrn|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: #6b7280; margin: 0;">
+                Нет собственных компаний.
+                <a href="{% url 'organizations:create' %}?own=1" style="color: #2563eb;">Добавить</a>
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="cabinet-card">
+        <div class="cabinet-card-header">
             <h2 class="cabinet-card-title">Пользователи аккаунта</h2>
 
             {% if can_manage_users %}
