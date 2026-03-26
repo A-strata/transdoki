@@ -10,17 +10,28 @@ class PersonForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Зашифрованные CharField возвращают b'' вместо '' для пустых значений
         for name, value in self.initial.items():
-            if value == b'':
-                self.initial[name] = ''
+            if value == b"":
+                self.initial[name] = ""
 
     phone = forms.CharField(
         label="Номер телефона",
         required=True,
-        widget=forms.TextInput(attrs={
-            "type": "tel",
-            "inputmode": "tel",
-            "autocomplete": "tel",
-        }),
+        widget=forms.TextInput(
+            attrs={
+                "type": "tel",
+                "data-phone-mask": "",
+            }
+        ),
+    )
+
+    passport_department_code = forms.CharField(
+        label="Код подразделения",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "data-code-mask": "",
+            }
+        ),
     )
 
     def clean_phone(self):

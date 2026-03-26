@@ -15,6 +15,10 @@ class TripPointForm(forms.ModelForm):
         widgets = {
             "planned_date": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "actual_date": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "contact_phone": forms.TextInput(attrs={
+                "type": "tel",
+                "data-phone-mask": "",
+            }),
         }
 
     def clean(self):

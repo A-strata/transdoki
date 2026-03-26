@@ -379,6 +379,13 @@
             top: 92px;
         }
     }
+
+    /* Состояния валидации полей — используются phone_mask.js и другими скриптами */
+    input.is-invalid,
+    input.is-invalid:focus {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+    }
 </style>
 
     {% block head %}{% endblock %}
@@ -533,5 +540,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

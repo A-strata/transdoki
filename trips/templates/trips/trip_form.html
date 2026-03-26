@@ -116,6 +116,7 @@
         border-color: #2563eb;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
+
     .form-note {
         width: 100%;
         border: 1px solid #e5e7eb;
@@ -1021,33 +1022,6 @@ document.addEventListener('DOMContentLoaded', function () {
     initAddressSuggest("id_unload-address");
 })();
 </script>
-<script src="https://unpkg.com/imask"></script>
-<script>
-(function () {
-    const form = document.querySelector('form.form-card');
-    if (!form || typeof IMask === 'undefined') return;
-
-    const phoneInputs = Array.from(
-        form.querySelectorAll('input[name$="-contact_phone"]')
-    );
-
-    if (!phoneInputs.length) return;
-
-    phoneInputs.forEach((input) => {
-        IMask(input, {
-            mask: '+7(000)000-00-00',
-            lazy: false
-        });
-    });
-
-    form.addEventListener('submit', function () {
-        phoneInputs.forEach((input) => {
-            const rawValue = input.value.replace(/\D/g, '');
-            input.value = (rawValue === '7') ? '' : rawValue;
-        });
-    });
-})();
-</script>
 <script>
 (function () {
     // НДС: показывать селект только при "Безнал с НДС"
@@ -1178,4 +1152,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 })();
 </script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/imask"></script>
+<script src="{% static 'js/phone_mask.js' %}"></script>
 {% endblock %}
