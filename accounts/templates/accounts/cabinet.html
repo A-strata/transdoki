@@ -199,8 +199,36 @@
         width: 380px;
     }
 
+    .cab-table td.col-last-name,
+    .cab-table th:nth-child(2) {
+        min-width: 130px;
+        width: 130px;
+    }
+
+    .cab-table td.col-first-name,
+    .cab-table th:nth-child(3) {
+        min-width: 110px;
+        width: 110px;
+    }
+
     .text-muted-sm {
         color: #9ca3af;
+    }
+
+    .name-edit {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 3px 6px;
+        font-size: 0.9rem;
+        background: #f9fafb;
+        box-sizing: border-box;
+    }
+
+    .name-edit:focus {
+        outline: none;
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, .12);
     }
 
     .role-btn-warning {
@@ -462,65 +490,84 @@
                     <thead>
                         <tr>
                             <th>Email / Логин</th>
+                            <th>Фамилия</th>
                             <th>Имя</th>
-                            <th>Роль</th>
                             <th>Статус</th>
-                            {% if can_manage_users %}
-                                <th class="col-actions">Действия</th>
-                            {% endif %}
+                            <th class="col-actions">Роли</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in users_in_account %}
                             <tr id="user-{{ p.id }}" class="user-row-anchor">
                                 <td>{{ p.user.username }}</td>
-                                <td>
-                                    {% if p.user.get_full_name %}
-                                        {{ p.user.get_full_name }}
-                                    {% else %}
-                                        —
-                                    {% endif %}
+                                <td class="col-last-name">
+                                    <span class="name-display">{{ p.user.last_name|default:"—" }}</span>
+                                    <input class="name-edit" type="text" value="{{ p.user.last_name }}" style="display:none;" placeholder="Фамилия">
                                 </td>
-                                <td>{{ p.get_role_display }}</td>
+                                <td class="col-first-name">
+                                    <span class="name-display">{{ p.user.first_name|default:"—" }}</span>
+                                    <input class="name-edit" type="text" value="{{ p.user.first_name }}" style="display:none;" placeholder="Имя">
+                                </td>
                                 <td>
                                     {% if p.user.is_active %}Активен{% else %}Отключён{% endif %}
                                 </td>
+                                <td class="col-actions">
+                                    {% if can_manage_users and p.user_id == request.user.id %}
+                                        <form method="post"
+                                              action=""
+                                              data-update-url="{% url 'accounts:user_update' p.id %}"
+                                              data-names-only="1"
+                                              class="role-form">
+                                            {% csrf_token %}
+                                            <div class="role-actions">
+                                                <select class="role-select"
+                                                        data-initial="{{ p.role }}"
+                                                        disabled>
+                                                    <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
+                                                    <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
+                                                    <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
+                                                    <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
+                                                </select>
+                                                <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
+                                                <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
+                                            </div>
+                                        </form>
+                                    {% elif can_manage_users and p.role != "owner" %}
+                                        <form method="post"
+                                              action="{% url 'accounts:user_role_update' p.id %}"
+                                              data-update-url="{% url 'accounts:user_update' p.id %}"
+                                              class="role-form">
+                                            {% csrf_token %}
+                                            <div class="role-actions">
+                                                <select name="role"
+                                                        class="role-select"
+                                                        data-initial="{{ p.role }}"
+                                                        disabled>
+                                                    <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Администратор</option>
+                                                    <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
+                                                    <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Логист</option>
+                                                </select>
 
-                                {% if can_manage_users %}
-                                    <td class="col-actions">
-                                        {% if p.user_id == request.user.id %}
-                                            <span class="text-muted-sm">Собственный профиль</span>
-                                        {% elif p.role == "owner" %}
-                                            <span class="text-muted-sm">Роль владельца защищена</span>
-                                        {% else %}
-                                            <form method="post"
-                                                  action="{% url 'accounts:user_role_update' p.id %}"
-                                                  class="role-form">
-                                                {% csrf_token %}
-                                                <div class="role-actions">
-                                                    <select name="role"
-                                                            class="role-select"
-                                                            data-initial="{{ p.role }}"
-                                                            disabled>
-                                                        <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Администратор</option>
-                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
-                                                        <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Логист</option>
-                                                    </select>
-
-                                                    <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
-                                                    <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
-                                                    <button type="button"
-                                                            class="role-btn role-btn-warning reset-pwd-btn"
-                                                            data-profile-id="{{ p.id }}"
-                                                            data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
-                                                            title="Сбросить пароль пользователя">
-                                                        Сбросить пароль
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        {% endif %}
-                                    </td>
-                                {% endif %}
+                                                <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
+                                                <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
+                                                <button type="button"
+                                                        class="role-btn role-btn-warning reset-pwd-btn"
+                                                        data-profile-id="{{ p.id }}"
+                                                        data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
+                                                        title="Сбросить пароль пользователя">
+                                                    Сбросить пароль
+                                                </button>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        <select disabled style="width:140px; min-height:32px; border-radius:8px; border:1px solid #d1d5db; padding:4px 8px; background:#f9fafb; color:#6b7280; opacity:1;">
+                                            <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
+                                            <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
+                                            <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
+                                            <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
+                                        </select>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -735,46 +782,110 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    function getCsrfToken() {
+        for (var c of document.cookie.split(";")) {
+            var p = c.trim().split("=");
+            if (p[0] === "csrftoken") return decodeURIComponent(p[1]);
+        }
+        return "";
+    }
+
     document.querySelectorAll(".role-form").forEach(function (form) {
         const select = form.querySelector(".role-select");
         const toggleBtn = form.querySelector(".role-toggle-btn");
         const saveBtn = form.querySelector(".role-save-btn");
+        const updateUrl = form.dataset.updateUrl;
 
         if (!select || !toggleBtn || !saveBtn) return;
 
-        const initial = select.dataset.initial || select.value;
+        const namesOnly = form.dataset.namesOnly === "1";
+        const row = form.closest("tr");
+        const lastNameDisplay = row ? row.querySelector(".col-last-name .name-display") : null;
+        const lastNameInput   = row ? row.querySelector(".col-last-name .name-edit") : null;
+        const firstNameDisplay = row ? row.querySelector(".col-first-name .name-display") : null;
+        const firstNameInput   = row ? row.querySelector(".col-first-name .name-edit") : null;
+
+        let initialRole = select.dataset.initial || select.value;
+        let initialLast  = lastNameInput  ? lastNameInput.value  : "";
+        let initialFirst = firstNameInput ? firstNameInput.value : "";
         let isEditing = false;
 
+        function hasChanges() {
+            return (!namesOnly && select.value !== initialRole)
+                || (lastNameInput  && lastNameInput.value  !== initialLast)
+                || (firstNameInput && firstNameInput.value !== initialFirst);
+        }
+
         function updateSaveVisibility() {
-            const changed = select.value !== initial;
-            saveBtn.classList.toggle("is-visible", isEditing && changed);
-            saveBtn.disabled = !(isEditing && changed);
+            saveBtn.classList.toggle("is-visible", isEditing && hasChanges());
+            saveBtn.disabled = !(isEditing && hasChanges());
         }
 
         function setEditMode(next) {
             isEditing = next;
-            select.disabled = !isEditing;
+            if (!namesOnly) select.disabled = !isEditing;
             toggleBtn.textContent = isEditing ? "Отмена" : "Редактировать";
 
+            if (lastNameDisplay)  lastNameDisplay.style.display  = isEditing ? "none" : "";
+            if (lastNameInput)    lastNameInput.style.display    = isEditing ? ""     : "none";
+            if (firstNameDisplay) firstNameDisplay.style.display = isEditing ? "none" : "";
+            if (firstNameInput)   firstNameInput.style.display   = isEditing ? ""     : "none";
+
             if (!isEditing) {
-                select.value = initial;
+                select.value = initialRole;
+                if (lastNameInput)  lastNameInput.value  = initialLast;
+                if (firstNameInput) firstNameInput.value = initialFirst;
             }
             updateSaveVisibility();
         }
 
-        toggleBtn.addEventListener("click", function () {
-            setEditMode(!isEditing);
-        });
+        toggleBtn.addEventListener("click", function () { setEditMode(!isEditing); });
+        select.addEventListener("change", updateSaveVisibility);
+        if (lastNameInput)  lastNameInput.addEventListener("input", updateSaveVisibility);
+        if (firstNameInput) firstNameInput.addEventListener("input", updateSaveVisibility);
 
-        select.addEventListener("change", function () {
-            updateSaveVisibility();
-        });
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
 
-        form.addEventListener("submit", function () {
             saveBtn.disabled = true;
             saveBtn.textContent = "Сохраняем…";
             toggleBtn.disabled = true;
-            // select НЕ отключаем, чтобы role отправилась в POST
+
+            var params = new URLSearchParams();
+            params.set("role", select.value);
+            if (lastNameInput)  params.set("last_name",  lastNameInput.value.trim());
+            if (firstNameInput) params.set("first_name", firstNameInput.value.trim());
+
+            try {
+                var resp = await fetch(updateUrl, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCsrfToken(),
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    body: params.toString(),
+                });
+                var data = await resp.json();
+                if (data.ok) {
+                    initialLast  = data.last_name  || "";
+                    initialFirst = data.first_name || "";
+                    initialRole  = select.value;
+
+                    if (lastNameDisplay)  lastNameDisplay.textContent  = data.last_name  || "—";
+                    if (firstNameDisplay) firstNameDisplay.textContent = data.first_name || "—";
+
+                    setEditMode(false);
+                } else {
+                    alert(data.error || "Ошибка сохранения.");
+                }
+            } catch (_) {
+                alert("Ошибка соединения.");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Сохранить";
+                toggleBtn.disabled = false;
+            }
         });
 
         setEditMode(false);

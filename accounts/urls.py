@@ -5,6 +5,7 @@ from .views import (
     AccountUserCreateView,
     AccountUserPasswordResetView,
     AccountUserRoleUpdateView,
+    AccountUserUpdateView,
     RegisterView,
 )
 
@@ -14,6 +15,11 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("cabinet/", AccountCabinetView.as_view(), name="cabinet"),
     path("users/create/", AccountUserCreateView.as_view(), name="user_create"),
+    path(
+        "users/<int:profile_id>/update/",
+        AccountUserUpdateView.as_view(),
+        name="user_update",
+    ),
     path(
         "users/<int:profile_id>/role/",
         AccountUserRoleUpdateView.as_view(),

@@ -148,6 +148,54 @@ class AccountUserPasswordResetView(LoginRequiredMixin, View):
         })
 
 
+class AccountUserUpdateView(LoginRequiredMixin, View):
+    """AJAX-endpoint: обновляет имя, фамилию и роль пользователя аккаунта."""
+
+    allowed_roles = {
+        UserProfile.Role.ADMIN,
+        UserProfile.Role.DISPATCHER,
+        UserProfile.Role.LOGIST,
+    }
+
+    def post(self, request, profile_id):
+        if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+            raise PermissionDenied
+
+        account = get_request_account(request)
+        actor_profile = request.user.profile
+
+        if actor_profile.role not in {UserProfile.Role.OWNER, UserProfile.Role.ADMIN}:
+            return JsonResponse({"ok": False, "error": "Недостаточно прав."}, status=403)
+
+        target_profile = get_object_or_404(
+            UserProfile.objects.select_related("user").filter(account=account),
+            pk=profile_id,
+        )
+
+        is_own_profile = target_profile.user_id == request.user.id
+
+        if not is_own_profile and target_profile.role == UserProfile.Role.OWNER:
+            return JsonResponse({"ok": False, "error": "Нельзя редактировать владельца аккаунта."}, status=400)
+
+        user = target_profile.user
+        user.first_name = request.POST.get("first_name", "").strip()
+        user.last_name = request.POST.get("last_name", "").strip()
+        user.save(update_fields=["first_name", "last_name"])
+
+        if not is_own_profile:
+            new_role = request.POST.get("role")
+            if new_role in self.allowed_roles and new_role != target_profile.role:
+                target_profile.role = new_role
+                target_profile.save(update_fields=["role"])
+
+        return JsonResponse({
+            "ok": True,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role_display": target_profile.get_role_display(),
+        })
+
+
 class AccountUserRoleUpdateView(LoginRequiredMixin, View):
     allowed_roles = {
         UserProfile.Role.ADMIN,
