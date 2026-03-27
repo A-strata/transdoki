@@ -472,6 +472,10 @@
                         {% endif %}
                     {% endif %}
 
+                    {% if user.is_superuser %}
+                        <a href="{% url 'admin:index' %}" class="nav-link">Админка</a>
+                    {% endif %}
+
                     {% url 'accounts:cabinet' as cabinet_url %}
                     <a href="{{ cabinet_url }}"
                     class="cabinet-link {% if request.path == cabinet_url %}active{% endif %}">
