@@ -31,12 +31,35 @@ class AccountRegistrationForm(forms.Form):
         label="ИНН",
         max_length=12,
         validators=[validate_inn],
-        widget=forms.TextInput(attrs={"inputmode": "numeric"}),
+        widget=forms.HiddenInput(),
     )
-    company_name = forms.CharField(
-        label="Название компании",
+    short_name = forms.CharField(
+        label="Краткое наименование",
         max_length=200,
-        widget=forms.TextInput(attrs={"placeholder": "Заполнится по ИНН"}),
+        widget=forms.HiddenInput(),
+    )
+    full_name = forms.CharField(
+        label="Полное наименование",
+        max_length=200,
+        widget=forms.HiddenInput(),
+    )
+    kpp = forms.CharField(
+        label="КПП",
+        max_length=9,
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+    ogrn = forms.CharField(
+        label="ОГРН",
+        max_length=15,
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+    address = forms.CharField(
+        label="Адрес",
+        max_length=200,
+        required=False,
+        widget=forms.HiddenInput(),
     )
 
     def clean_email(self):
@@ -73,8 +96,12 @@ class AccountRegistrationForm(forms.Form):
     def save(self):
         return register_account_with_owner(
             first_name=self.cleaned_data["first_name"],
-            company_name=self.cleaned_data["company_name"],
+            short_name=self.cleaned_data["short_name"],
+            full_name=self.cleaned_data["full_name"],
             inn=self.cleaned_data["inn"],
+            kpp=self.cleaned_data.get("kpp") or None,
+            ogrn=self.cleaned_data.get("ogrn") or None,
+            address=self.cleaned_data.get("address") or None,
             email=self.cleaned_data["email"],
             password=self.cleaned_data["password1"],
         )

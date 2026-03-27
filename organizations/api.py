@@ -10,6 +10,36 @@ DADATA_TOKEN = os.getenv('DADATA_TOKEN')
 DADATA_SECRET = os.getenv('DADATA_SECRET')
 
 
+def suggest_party(request):
+    """Подсказки организаций по частичному ИНН или названию (для автокомплита)."""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'suggestions': []})
+
+    try:
+        dadata = Dadata(DADATA_TOKEN, DADATA_SECRET)
+        results = dadata.suggest("party", query, count=7)
+    except Exception:
+        return JsonResponse({'suggestions': []})
+
+    suggestions = []
+    for item in results:
+        data = item.get('data', {})
+        suggestions.append({
+            'inn':        data.get('inn', ''),
+            'kpp':        data.get('kpp', '') or '',
+            'ogrn':       data.get('ogrn', '') or '',
+            'address':    (data.get('address') or {}).get('unrestricted_value', ''),
+            'short_name': (data.get('name') or {}).get('short_with_opf', ''),
+            'full_name':  (data.get('name') or {}).get('full_with_opf', ''),
+        })
+
+    return JsonResponse({'suggestions': suggestions})
+
+
 def get_org_data(request):
     if request.method == 'GET' and 'inn' in request.GET:
         inn = request.GET['inn']

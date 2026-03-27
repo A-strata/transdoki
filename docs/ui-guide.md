@@ -207,12 +207,17 @@ button, input, select, textarea {
 
 ```html
 <!-- в шаблоне -->
-<div id="inn-wrap" data-api-url="{% url 'organizations:api_suggestions_by_inn' %}"></div>
+<div class="inn-wrap"
+     data-api-url="{% url 'organizations:api_suggestions_by_inn' %}"
+     data-suggest-url="{% url 'organizations:api_party_suggest' %}">
+</div>
 ```
 
 ```javascript
 // в static/<app>/js/script.js
-const url = document.getElementById('inn-wrap').dataset.apiUrl;
+const wrap = document.querySelector('.inn-wrap');
+const apiUrl = wrap.dataset.apiUrl;
+const suggestUrl = wrap.dataset.suggestUrl;
 ```
 
 Инлайн-скрипт с `{% url %}` или переменными контекста — **не исключение**, а повод добавить `data-`атрибут.
@@ -235,7 +240,9 @@ const url = document.getElementById('inn-wrap').dataset.apiUrl;
 | 40       | sticky заголовок колонки actions             |
 | 50       | navbar                                        |
 | 70       | flash-wrap (toast уведомления)               |
+| 200      | inline-дропдауны внутри форм (подсказки ИНН) |
 | 1000     | модальные overlay                            |
+| 1100     | autocomplete-dropdown в полях (trips/waybills) |
 | 1200     | filter-dropdown-panel                        |
 | 1300     | visibility-panel (настройка колонок)         |
 | 1400     | actions-menu (dropdown в таблице)            |

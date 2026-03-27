@@ -43,10 +43,14 @@ def _generate_temp_password(length: int = 10) -> str:
 def register_account_with_owner(
     *,
     first_name: str,
-    company_name: str,
+    short_name: str,
+    full_name: str,
     inn: str,
     email: str,
     password: str,
+    kpp: str | None = None,
+    ogrn: str | None = None,
+    address: str | None = None,
 ) -> User:
     """
     Регистрирует новый tenant:
@@ -56,7 +60,6 @@ def register_account_with_owner(
     - Первая "собственная" Organization
     """
     normalized_email = email.strip().lower()
-    normalized_company_name = company_name.strip()
 
     user = User.objects.create_user(
         username=normalized_email,
@@ -66,7 +69,7 @@ def register_account_with_owner(
     )
 
     account = Account.objects.create(
-        name=normalized_company_name,
+        name=short_name.strip(),
         owner=user,
     )
 
@@ -78,10 +81,12 @@ def register_account_with_owner(
     Organization.objects.create(
         created_by=user,
         account=account,
-        full_name=normalized_company_name,
-        short_name=normalized_company_name,
+        full_name=full_name.strip(),
+        short_name=short_name.strip(),
         inn=inn.strip(),
-        ogrn=None,
+        kpp=kpp,
+        ogrn=ogrn,
+        address=address,
         is_own_company=True,
     )
 

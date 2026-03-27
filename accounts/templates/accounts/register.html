@@ -47,26 +47,64 @@
 
             <p class="section-label">О компании</p>
 
-            <div class="field">
-                {{ form.inn.label_tag }}
-                <div class="inn-wrap" data-api-url="{% url 'organizations:api_suggestions_by_inn' %}">
-                    {{ form.inn }}
-                    <svg class="inn-spinner" id="inn-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <div class="field org-search-field" id="org-search-field">
+                <label for="org-search">Организация</label>
+                <div class="org-wrap">
+                    <input type="text" id="org-search"
+                           placeholder="Введите название или ИНН"
+                           autocomplete="off"
+                           data-suggest-url="{% url 'organizations:api_party_suggest' %}">
+                    <svg class="org-spinner" id="org-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <circle cx="8" cy="8" r="6" stroke="#e5e7eb" stroke-width="2"/>
                         <path d="M8 2a6 6 0 0 1 6 6" stroke="#2563eb" stroke-width="2" stroke-linecap="round">
                             <animateTransform attributeName="transform" type="rotate"
                                 from="0 8 8" to="360 8 8" dur=".7s" repeatCount="indefinite"/>
                         </path>
                     </svg>
+                    <ul class="org-suggestions" id="org-dropdown" role="listbox"></ul>
                 </div>
-                <span class="autofill-hint" id="autofill-hint">Название заполнится автоматически</span>
-                {{ form.inn.errors }}
+                <span class="org-manual-hint">Не нашли компанию?
+                <a href="#" class="auth-card-link org-manual-link" id="org-manual-link">Ввести вручную</a></span>
             </div>
-            <div class="field">
-                {{ form.company_name.label_tag }}
-                {{ form.company_name }}
-                {{ form.company_name.errors }}
+
+            <div class="org-selected-row" id="org-selected-row">
+                <div class="org-selected-info">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                        <circle cx="7" cy="7" r="7" fill="#22c55e"/>
+                        <path d="M4 7l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span id="org-selected-text"></span>
+                </div>
+                <button type="button" class="org-change-btn" id="org-change-btn">Изменить</button>
             </div>
+
+            <div class="org-manual-block" id="org-manual-block">
+                <div class="field">
+                    <label for="org-name-input">Краткое наименование</label>
+                    <input type="text" id="org-name-input" maxlength="200"
+                           autocomplete="organization">
+                </div>
+                <div class="field">
+                    <label for="org-inn-input">ИНН</label>
+                    <input type="text" id="org-inn-input" maxlength="12"
+                           inputmode="numeric" autocomplete="off">
+                </div>
+                <a href="#" class="org-back-link" id="org-back-link">← Назад к поиску</a>
+            </div>
+
+            {{ form.inn }}
+            {{ form.short_name }}
+            {{ form.full_name }}
+            {{ form.kpp }}
+            {{ form.ogrn }}
+            {{ form.address }}
+            {% if form.inn.errors or form.short_name.errors or form.full_name.errors %}
+                <div class="org-field-errors">
+                    {{ form.inn.errors }}
+                    {{ form.short_name.errors }}
+                    {{ form.full_name.errors }}
+                </div>
+            {% endif %}
 
             <div class="auth-actions">
                 <button type="submit" class="tms-btn tms-btn-primary"
