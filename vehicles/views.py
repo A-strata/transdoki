@@ -124,10 +124,14 @@ class VehicleDeleteView(LoginRequiredMixin, DeleteView):
         return Vehicle.objects.filter(account=get_request_account(self.request))
 
     def get_success_url(self):
+        next_url = self.request.POST.get("next") or self.request.GET.get("next")
+        if next_url:
+            return next_url
         return reverse("vehicles:list")
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        owner_pk = self.object.owner_id
         try:
             self.object.delete()
             messages.success(request, f"ТС «{self.object}» удалено.")
@@ -137,6 +141,9 @@ class VehicleDeleteView(LoginRequiredMixin, DeleteView):
                 request,
                 "Невозможно удалить: есть связанные рейсы или путевые листы.",
             )
+            next_url = request.POST.get("next") or request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
             return redirect(reverse("vehicles:list"))
 
 

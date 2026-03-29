@@ -217,18 +217,6 @@
 }
 
 /* Подтверждение удаления */
-.confirm-inline {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.confirm-inline-prompt {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
 /* Метка точки маршрута */
 .point-seq-badge {
     font-size: 0.78rem;

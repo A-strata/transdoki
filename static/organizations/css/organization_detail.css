@@ -1,0 +1,250 @@
+/* ─────────────────────────────────────────────────────
+   organizations / organization_detail
+   Карточка организации (своя компания и контрагент).
+───────────────────────────────────────────────────── */
+
+.org-detail-page {
+    max-width: 780px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ── Карточка (унифицированный .card) ── */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+}
+
+/* ── Шапка ── */
+.page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.page-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.page-title {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.7rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.own-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #166534;
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+}
+
+/* ── Секции ── */
+.section {
+    border: 1px solid #eef2f7;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 14px;
+}
+
+.section-title {
+    margin: 0 0 10px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+/* ── kv-grid (атрибуты объекта) ── */
+.kv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+}
+
+.kv {
+    min-width: 0;
+}
+
+.kv--full {
+    grid-column: 1 / -1;
+}
+
+.kv-label {
+    margin: 0 0 4px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.kv-value {
+    margin: 0;
+    color: var(--text);
+    font-size: 0.95rem;
+    word-break: break-word;
+}
+
+/* ── Заголовок секции с действием справа ── */
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.section-head .section-title {
+    margin: 0;
+}
+
+/* ── Таблица ТС внутри карточки ── */
+.vehicle-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.vehicle-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.vehicle-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+    color: var(--text);
+    vertical-align: top;
+}
+
+.vehicle-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.vehicle-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* ── Мини-список (контакты, банковские реквизиты) ── */
+.mini-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mini-item {
+    border: 1px solid #eef2f7;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    background: #fcfcfd;
+}
+
+.mini-item-title {
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.mini-item-sub {
+    margin: 0;
+    font-size: 0.84rem;
+    color: var(--muted);
+}
+
+/* ── Действия ── */
+.actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+/* ── Пустое состояние секции ── */
+.section-empty {
+    margin: 0;
+    padding: 10px;
+    border: 1px dashed #d1d5db;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 0.84rem;
+    text-align: center;
+}
+
+/* ── Адаптивность ── */
+@media (max-width: 760px) {
+    .card {
+        padding: 12px;
+    }
+
+    .kv-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .actions .tms-btn {
+        width: 100%;
+    }
+
+    .section-head .tms-btn {
+        width: 100%;
+    }
+
+    /* Таблица ТС — карточки */
+    .vehicle-table thead {
+        display: none;
+    }
+
+    .vehicle-table tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        background: var(--surface);
+    }
+
+    .vehicle-table tbody td {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 10px;
+        border-bottom: 1px solid #f3f4f6;
+        padding: 10px 12px;
+    }
+
+    .vehicle-table tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .vehicle-table tbody td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+}

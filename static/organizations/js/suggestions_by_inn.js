@@ -1,31 +1,76 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const fillButton = document.getElementById('btn_fill_inn');
-    
+    var fillButton = document.getElementById('btn_fill_inn');
+    if (!fillButton) return;
+
+    var innInput = document.getElementById('id_inn');
+
+    function clearFieldErrors(input) {
+        if (!input) return;
+        input.classList.remove('is-invalid');
+        var group = input.closest('.form-group') || input.closest('.input-wrap');
+        if (!group) return;
+        var errorList = group.querySelector('.errorlist');
+        if (errorList) errorList.remove();
+    }
+
+    function setFieldError(input, message) {
+        if (!input) return;
+        input.classList.add('is-invalid');
+        var group = input.closest('.form-group') || input.closest('.input-wrap');
+        if (!group) return;
+        var errorList = group.querySelector('.errorlist');
+        if (!errorList) {
+            errorList = document.createElement('ul');
+            errorList.className = 'errorlist';
+            group.appendChild(errorList);
+        }
+        errorList.innerHTML = '<li>' + message + '</li>';
+    }
+
     fillButton.addEventListener('click', function() {
-        const inn = document.getElementById('id_inn').value;  // ✅ Просто id_inn
-        
+        var inn = innInput.value.trim();
+
         if (inn.length !== 10 && inn.length !== 12) {
-            alert('Пожалуйста, введите корректный ИНН (10 или 12 цифр).');
+            setFieldError(innInput, 'Введите корректный ИНН (10 или 12 цифр)');
             return;
         }
-        
-        fetch(`/organizations/api/suggestions_by_inn/?inn=${inn}`)
-            .then(response => response.json())
-            .then(data => {
+
+        clearFieldErrors(innInput);
+        fillButton.disabled = true;
+        fillButton.textContent = 'Загрузка\u2026';
+
+        fetch('/organizations/api/suggestions_by_inn/?inn=' + encodeURIComponent(inn))
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
                 if (data.error) {
-                    alert(data.error);
+                    setFieldError(innInput, data.error);
                     return;
                 }
-                
-                // ✅ Стандартные ID полей Django
-                document.getElementById('id_full_name').value = data.full_name || '';
-                document.getElementById('id_short_name').value = data.short_name || '';
-                document.getElementById('id_address').value = data.address || '';
-                document.getElementById('id_ogrn').value = data.ogrn || '';
-                document.getElementById('id_kpp').value = data.kpp || '';
+
+                var fields = {
+                    'id_full_name': data.full_name,
+                    'id_short_name': data.short_name,
+                    'id_address': data.address,
+                    'id_ogrn': data.ogrn,
+                    'id_kpp': data.kpp
+                };
+
+                for (var id in fields) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        el.value = fields[id] || '';
+                        clearFieldErrors(el);
+                    }
+                }
+
+                clearFieldErrors(innInput);
             })
-            .catch(error => {
-                alert('Произошла ошибка при получении данных');
+            .catch(function() {
+                setFieldError(innInput, 'Ошибка при получении данных');
+            })
+            .finally(function() {
+                fillButton.disabled = false;
+                fillButton.textContent = 'Заполнить по ИНН';
             });
     });
 });

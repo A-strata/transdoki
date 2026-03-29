@@ -151,6 +151,27 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Organization.objects.filter(account=get_request_account(self.request))
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = self.object
+
+        ctx["vehicles"] = org.vehicle_set.all()
+        ctx["bank_accounts"] = org.bank_accounts.select_related("account_bank").all()
+        ctx["employees"] = org.employees.all()
+
+        from trips.models import Trip
+
+        trips_qs = Trip.objects.filter(account=org.account).prefetch_related("points")
+        if org.is_own_company:
+            ctx["recent_trips"] = (
+                trips_qs.filter(carrier=org).order_by("-date_of_trip")[:5]
+            )
+        else:
+            ctx["recent_trips"] = (
+                trips_qs.filter(client=org).order_by("-date_of_trip")[:5]
+            )
+        return ctx
+
 
 @login_required
 @require_GET

@@ -115,3 +115,20 @@ button.tms-btn:disabled {
     cursor: not-allowed;
     pointer-events: none;
 }
+
+/* ── Inline-подтверждение (паттерн data-confirm) ── */
+.confirm-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.confirm-inline-prompt {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.confirm-inline-prompt[hidden] {
+    display: none;
+}

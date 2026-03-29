@@ -131,6 +131,15 @@
     min-width: 0;
 }
 
+.form-group-inn > .errorlist {
+    grid-column: 1 / -1;
+}
+
+.form-group-inn input[type="text"] {
+    height: 40px;
+    padding: 0 12px;
+}
+
 .btn-small {
     height: 40px;
     padding: 0 14px;
