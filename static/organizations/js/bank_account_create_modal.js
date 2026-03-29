@@ -144,6 +144,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     changeBtn.addEventListener("click", resetBankSelection);
 
+    // ── Clear error on account_num input ──
+
+    var accountNumInput = document.getElementById("ba-account-num");
+    accountNumInput.addEventListener("input", function () {
+        accountNumInput.classList.remove("is-invalid");
+        var err = accountNumInput.parentNode.querySelector(".modal-field-error");
+        if (err) err.remove();
+    });
+
     // ── Manual mode ──
 
     manualToggle.addEventListener("click", function () {
