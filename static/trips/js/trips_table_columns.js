@@ -16,10 +16,20 @@
             return;
         }
 
-        const STORAGE_KEY = 'tms_trips_columns_v5';
+        const STORAGE_KEY = 'tms_trips_columns_v6';
         const LOCK_RIGHT = 'actions';
         const MIN_COL_WIDTH = 80;
         const ACTIONS_WIDTH = 60;
+
+        // Колонки, скрытые по умолчанию при первом визите
+        const DEFAULT_HIDDEN = [
+            'consignor', 'consignee', 'trailer',
+            'planned_loading_date', 'planned_unloading_date',
+            'cargo', 'weight',
+            'client_cost', 'carrier_cost',
+            'client_payment_method', 'payment_condition',
+            'carrier_payment_method', 'comments'
+        ];
 
         const ths = Array.from(table.querySelectorAll('thead th[data-col]'));
         const defaultOrder = ths.map(th => th.dataset.col);
@@ -27,23 +37,25 @@
 
         let state = {
             order: [...defaultOrder],
-            hidden: [],
+            hidden: [...DEFAULT_HIDDEN],
             widths: {}
         };
 
         try {
-            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
 
-            if (Array.isArray(saved.order)) {
-                state.order = saved.order.filter(key => defaultOrder.includes(key));
-            }
+            if (saved) {
+                if (Array.isArray(saved.order)) {
+                    state.order = saved.order.filter(key => defaultOrder.includes(key));
+                }
 
-            if (Array.isArray(saved.hidden)) {
-                state.hidden = saved.hidden.filter(key => defaultOrder.includes(key) && key !== LOCK_RIGHT);
-            }
+                if (Array.isArray(saved.hidden)) {
+                    state.hidden = saved.hidden.filter(key => defaultOrder.includes(key) && key !== LOCK_RIGHT);
+                }
 
-            if (saved.widths && typeof saved.widths === 'object') {
-                state.widths = saved.widths;
+                if (saved.widths && typeof saved.widths === 'object') {
+                    state.widths = saved.widths;
+                }
             }
         } catch (_) {}
 
@@ -283,7 +295,7 @@
         visibilityReset.addEventListener('click', function () {
             state = {
                 order: [...defaultOrder.filter(key => key !== LOCK_RIGHT), LOCK_RIGHT],
-                hidden: [],
+                hidden: [...DEFAULT_HIDDEN],
                 widths: {}
             };
 

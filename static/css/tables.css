@@ -22,6 +22,10 @@
     padding: 24px 14px;
 }
 
+.empty-state .tms-btn {
+    margin-top: 12px;
+}
+
 /* Пагинация */
 .pagination {
     display: flex;

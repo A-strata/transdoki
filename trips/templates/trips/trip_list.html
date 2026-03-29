@@ -9,7 +9,7 @@
     <form method="get" class="page-toolbar" data-trip-filters>
 
         <div class="toolbar-brand">
-            <span class="toolbar-title">Поездки</span>
+            <span class="toolbar-title">Рейсы</span>
             <span class="filter-meta toolbar-count">Найдено: {{ page_obj.paginator.count }}</span>
         </div>
 
@@ -199,7 +199,12 @@
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="22">Нет поездок</td>
+                        <td colspan="22">
+                            <div class="empty-state">
+                                <p>Рейсов пока нет</p>
+                                <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary">+ Создать первый рейс</a>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -208,7 +213,7 @@
     </div>
 
     {% if page_obj %}
-        <nav class="pagination" aria-label="Пагинация поездок">
+        <nav class="pagination" aria-label="Пагинация рейсов">
             {% if page_obj.has_previous %}
                 <a class="pagination-link pagination-nav" href="?page=1{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">«</a>
             {% else %}
