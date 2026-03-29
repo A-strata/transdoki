@@ -200,6 +200,17 @@ input.is-invalid:focus {
     line-height: 1.3;
 }
 
+/* ── Строка ИНН с кнопкой (в модалках и формах) ── */
+.inn-row {
+    display: flex;
+    gap: 8px;
+}
+
+.inn-row input {
+    flex: 1;
+    min-width: 0;
+}
+
 .modal-form-errors {
     margin-bottom: 14px;
     padding: 10px 14px;

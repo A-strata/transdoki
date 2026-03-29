@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 
 from transdoki.tenancy import get_request_account
 
+from vehicles.models import PropertyType, VehicleType
+
 from .forms import TripAttachmentUploadForm, TripForm, TripPointForm
 from .models import MAX_FILES_PER_TRIP, FinancialStatus, Trip, TripAttachment, TripPoint
 from .services import AgreementRequestGenerator, TNGenerator
@@ -52,6 +54,12 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         "client_financial_status", "client_total_fixed",
         "carrier_financial_status", "carrier_total_fixed",
     }
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["vehicle_types"] = VehicleType.choices
+        ctx["property_types"] = PropertyType.choices
+        return ctx
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -143,6 +151,12 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
         return Trip.objects.filter(
             account=get_request_account(self.request)
         ).prefetch_related("points")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["vehicle_types"] = VehicleType.choices
+        ctx["property_types"] = PropertyType.choices
+        return ctx
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

@@ -2,6 +2,12 @@ document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("create-vehicle-form");
     if (!form) return;
 
+    // Init GRN mask on the modal's input
+    var grnInput = form.querySelector('[data-grn-mask]');
+    if (grnInput && typeof initGrnMask === 'function') {
+        initGrnMask(grnInput);
+    }
+
     var errorsBox = document.getElementById("cv-errors");
     var submitBtn = form.querySelector('button[type="submit"]');
     var originalText = submitBtn.textContent;

@@ -397,16 +397,153 @@
     </form>
 </section>
 
-<style>
-select[data-search-url] { opacity: 0; pointer-events: none; }
-</style>
+{# ── Config для quick-create модалок ── #}
+<div id="qc-config" hidden
+     data-org-create-url="{% url 'organizations:quick_create' %}"
+     data-person-create-url="{% url 'persons:quick_create' %}"
+     data-vehicle-create-url="{% url 'vehicles:quick_create' %}"
+     data-org-suggestions-url="{% url 'organizations:api_suggestions_by_inn' %}"
+     data-org-search-url="{% url 'organizations:search' %}"
+     data-address-suggest-url="{% url 'trips:address_suggest' %}">
+</div>
 
-<script>
-window.QC_ORG_SUGGESTIONS_URL = "{% url 'organizations:api_suggestions_by_inn' %}";
-window.QC_ORG_SEARCH_URL = "{% url 'organizations:search' %}";
-</script>
-<script src="{% static 'js/quick_create.js' %}"></script>
+{# ── Модал: добавить организацию ── #}
+<div class="modal-overlay" id="qc-org-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Добавить организацию</h3>
+        <form id="qc-org-form" novalidate>
+            {% csrf_token %}
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="qc-org-inn">ИНН</label>
+                    <div class="inn-row">
+                        <input type="text" id="qc-org-inn" name="inn">
+                        <button type="button" id="qc-org-inn-fill" class="tms-btn tms-btn-secondary tms-btn-sm">Заполнить по ИНН</button>
+                    </div>
+                    <p class="modal-field-error" data-err="inn"></p>
+                </div>
+                <div class="modal-field modal-field--full">
+                    <label for="qc-org-full-name">Полное наименование</label>
+                    <input type="text" id="qc-org-full-name" name="full_name">
+                    <p class="modal-field-error" data-err="full_name"></p>
+                </div>
+                <div class="modal-field modal-field--full">
+                    <label for="qc-org-short-name">Краткое наименование</label>
+                    <input type="text" id="qc-org-short-name" name="short_name">
+                    <p class="modal-field-error" data-err="short_name"></p>
+                </div>
+            </div>
+            <input type="hidden" name="ogrn">
+            <input type="hidden" name="kpp">
+            <input type="hidden" name="address">
+            <div class="modal-form-errors" hidden></div>
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Создать</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Модал: добавить водителя ── #}
+<div class="modal-overlay" id="qc-person-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Добавить водителя</h3>
+        <form id="qc-person-form" novalidate>
+            {% csrf_token %}
+            <div class="modal-fields">
+                <div class="modal-field">
+                    <label for="qc-person-surname">Фамилия</label>
+                    <input type="text" id="qc-person-surname" name="surname">
+                    <p class="modal-field-error" data-err="surname"></p>
+                </div>
+                <div class="modal-field">
+                    <label for="qc-person-name">Имя</label>
+                    <input type="text" id="qc-person-name" name="name">
+                    <p class="modal-field-error" data-err="name"></p>
+                </div>
+                <div class="modal-field">
+                    <label for="qc-person-patronymic">Отчество</label>
+                    <input type="text" id="qc-person-patronymic" name="patronymic">
+                    <p class="modal-field-error" data-err="patronymic"></p>
+                </div>
+                <div class="modal-field">
+                    <label for="qc-person-phone">Телефон</label>
+                    <input type="text" id="qc-person-phone" name="phone">
+                    <p class="modal-field-error" data-err="phone"></p>
+                </div>
+            </div>
+            <div class="modal-form-errors" hidden></div>
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Создать</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Модал: добавить ТС ── #}
+<div class="modal-overlay" id="qc-vehicle-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Добавить транспортное средство</h3>
+        <form id="qc-vehicle-form" novalidate>
+            {% csrf_token %}
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="qc-vehicle-type">Тип ТС</label>
+                    <select id="qc-vehicle-type" name="vehicle_type">
+                        {% for value, label in vehicle_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="modal-field-error" data-err="vehicle_type"></p>
+                </div>
+                <div class="modal-field">
+                    <label for="qc-vehicle-grn">Рег. номер</label>
+                    <input type="text" id="qc-vehicle-grn" name="grn" data-grn-mask>
+                    <p class="modal-field-error" data-err="grn"></p>
+                </div>
+                <div class="modal-field">
+                    <label for="qc-vehicle-brand">Марка</label>
+                    <input type="text" id="qc-vehicle-brand" name="brand">
+                    <p class="modal-field-error" data-err="brand"></p>
+                </div>
+                <div class="modal-field">
+                    <label for="qc-vehicle-model">Модель</label>
+                    <input type="text" id="qc-vehicle-model" name="model">
+                    <p class="modal-field-error" data-err="model"></p>
+                </div>
+                <div class="modal-field">
+                    <label for="qc-vehicle-property">Тип владения</label>
+                    <select id="qc-vehicle-property" name="property_type">
+                        {% for value, label in property_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="modal-field-error" data-err="property_type"></p>
+                </div>
+                <div class="modal-field modal-field--full">
+                    <label for="qc-vehicle-owner">Владелец</label>
+                    <select id="qc-vehicle-owner" name="owner_id"
+                            data-search-url="{% url 'organizations:search' %}">
+                        <option value="">— начните вводить —</option>
+                    </select>
+                    <p class="modal-field-error" data-err="owner_id"></p>
+                </div>
+            </div>
+            <div class="modal-form-errors" hidden></div>
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Создать</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="{% static 'js/autocomplete.js' %}"></script>
+<script src="{% static 'js/quick_create.js' %}"></script>
+<script src="{% static 'trips/js/address_suggest.js' %}"></script>
+<script src="{% static 'trips/js/trip_form_finance.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     ['id_client', 'id_consignor', 'id_consignee', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {
@@ -414,294 +551,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-<style>
-.address-suggest-wrap {
-    position: relative;
-}
-.address-suggest-list {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: 30;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-    max-height: 220px;
-    overflow-y: auto;
-    display: none;
-}
-.address-suggest-item {
-    padding: 10px 12px;
-    cursor: pointer;
-    font-size: 0.92rem;
-    border-bottom: 1px solid #f3f4f6;
-}
-.address-suggest-item:last-child {
-    border-bottom: none;
-}
-.address-suggest-item:hover,
-.address-suggest-item.active {
-    background: #f9fafb;
-}
-</style>
-
-<script>
-(function () {
-    const endpoint = "{% url 'trips:address_suggest' %}";
-
-    function debounce(fn, delay = 300) {
-        let timer;
-        return (...args) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
-        };
-    }
-
-    function initAddressSuggest(inputId) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-
-        // Оборачиваем input, чтобы список позиционировался корректно
-        const wrapper = document.createElement("div");
-        wrapper.className = "address-suggest-wrap";
-        input.parentNode.insertBefore(wrapper, input);
-        wrapper.appendChild(input);
-
-        const list = document.createElement("div");
-        list.className = "address-suggest-list";
-        wrapper.appendChild(list);
-
-        let currentItems = [];
-        let activeIndex = -1;
-        let controller = null;
-
-        function closeList() {
-            list.style.display = "none";
-            list.innerHTML = "";
-            currentItems = [];
-            activeIndex = -1;
-        }
-
-        function render(items) {
-            list.innerHTML = "";
-            currentItems = items;
-            activeIndex = -1;
-
-            if (!items.length) {
-                closeList();
-                return;
-            }
-
-            items.forEach((item, idx) => {
-                const el = document.createElement("div");
-                el.className = "address-suggest-item";
-                el.textContent = item.value;
-                el.addEventListener("mousedown", (e) => {
-                    e.preventDefault();
-                    input.value = item.value;
-                    closeList();
-                });
-                list.appendChild(el);
-            });
-
-            list.style.display = "block";
-        }
-
-        const loadSuggestions = debounce(async () => {
-            const q = input.value.trim();
-            if (q.length < 3) {
-                closeList();
-                return;
-            }
-
-            if (controller) controller.abort();
-            controller = new AbortController();
-
-            try {
-                const url = `${endpoint}?q=${encodeURIComponent(q)}`;
-                const resp = await fetch(url, { signal: controller.signal });
-                if (!resp.ok) throw new Error("Request failed");
-                const data = await resp.json();
-                render((data && data.suggestions) ? data.suggestions.slice(0, 5) : []);
-            } catch (e) {
-                if (e.name !== "AbortError") closeList();
-            }
-        }, 300);
-
-        input.addEventListener("input", loadSuggestions);
-
-        input.addEventListener("keydown", (e) => {
-            if (!currentItems.length) return;
-
-            const nodes = list.querySelectorAll(".address-suggest-item");
-            if (!nodes.length) return;
-
-            if (e.key === "ArrowDown") {
-                e.preventDefault();
-                activeIndex = (activeIndex + 1) % nodes.length;
-            } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                activeIndex = (activeIndex - 1 + nodes.length) % nodes.length;
-            } else if (e.key === "Enter" && activeIndex >= 0) {
-                e.preventDefault();
-                input.value = currentItems[activeIndex].value;
-                closeList();
-                return;
-            } else if (e.key === "Escape") {
-                closeList();
-                return;
-            } else {
-                return;
-            }
-
-            nodes.forEach((n, i) => n.classList.toggle("active", i === activeIndex));
-        });
-
-        document.addEventListener("click", (e) => {
-            if (!wrapper.contains(e.target)) closeList();
-        });
-    }
-
-    // IDs с префиксом формы TripPointForm
-    initAddressSuggest("id_load-address");
-    initAddressSuggest("id_unload-address");
-})();
-</script>
-<script>
-(function () {
-    // НДС: показывать селект только при "Безнал с НДС"
-    function initVatToggle(methodId, vatWrapId) {
-        var method = document.getElementById(methodId);
-        var wrap = document.getElementById(vatWrapId);
-        if (!method || !wrap) return;
-        function update() { wrap.style.display = method.value === 'cashless_vat' ? '' : 'none'; }
-        method.addEventListener('change', update);
-        update();
-    }
-
-    // Срок оплаты: блокировать поле дней при "Оплата на выгрузке"
-    function initTermToggle(radioName, termInputId) {
-        var radios = document.querySelectorAll('input[name="' + radioName + '"]');
-        var termInput = document.getElementById(termInputId);
-        if (!radios.length || !termInput) return;
-        function update() {
-            var isUnloading = false;
-            radios.forEach(function (r) { if (r.checked && r.value === 'unloading') isUnloading = true; });
-            termInput.disabled = isUnloading;
-            termInput.style.opacity = isUnloading ? '0.35' : '';
-        }
-        radios.forEach(function (r) { r.addEventListener('change', update); });
-        update();
-    }
-
-    // Количество и итог: показывать/скрывать и пересчитывать
-    function initQuantityTotal(opts) {
-        // opts: { unitId, costId, qtyRowId, qtyBadgeId, qtyInputId,
-        //         totalHintId, totalValueId, weightId, volumeId }
-        var unitSel   = document.getElementById(opts.unitId);
-        var costInput = document.getElementById(opts.costId);
-        var qtyRow    = document.getElementById(opts.qtyRowId);
-        var qtyBadge  = document.getElementById(opts.qtyBadgeId);
-        var qtyInput  = document.getElementById(opts.qtyInputId);
-        var totalHint = document.getElementById(opts.totalHintId);
-        var totalVal  = document.getElementById(opts.totalValueId);
-        var weightEl  = document.getElementById(opts.weightId);
-        var volumeEl  = document.getElementById(opts.volumeId);
-        if (!unitSel || !costInput) return;
-
-        var UNIT_LABELS = { rub_km: 'км', rub_hour: 'ч' };
-        var UNIT_CARGO  = { rub_kg: 'кг', rub_cbm: 'м³' };
-
-        function formatNum(n) {
-            return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        function getQty(unit) {
-            if (unit === 'rub_kg')   return weightEl ? parseFloat(weightEl.value) || null : null;
-            if (unit === 'rub_cbm')  return volumeEl ? parseFloat(volumeEl.value) || null : null;
-            if (unit === 'rub_km' || unit === 'rub_hour')
-                return qtyInput ? parseFloat(qtyInput.value) || null : null;
-            return null;
-        }
-
-        function update() {
-            var unit = unitSel.value;
-            var cost = parseFloat(costInput.value) || null;
-
-            // Поле количества (только для км/часов)
-            if (qtyRow) {
-                var needQtyInput = unit === 'rub_km' || unit === 'rub_hour';
-                qtyRow.style.display = needQtyInput ? '' : 'none';
-                if (qtyBadge) qtyBadge.textContent = UNIT_LABELS[unit] || '';
-            }
-
-            // Итоговая сумма
-            if (!totalHint || !totalVal) return;
-            if (unit === 'rub') {
-                // Фиксированная ставка — итог = ставка
-                if (cost !== null) {
-                    totalHint.style.display = '';
-                    totalVal.textContent = formatNum(cost) + ' ₽';
-                } else {
-                    totalHint.style.display = 'none';
-                }
-                return;
-            }
-            var qty = getQty(unit);
-            var unitLabel = UNIT_LABELS[unit] || UNIT_CARGO[unit] || '';
-            if (cost !== null && qty !== null) {
-                totalHint.style.display = '';
-                totalVal.textContent = formatNum(cost * qty) + ' ₽'
-                    + ' (' + cost + ' × ' + qty + '\u00a0' + unitLabel + ')';
-            } else {
-                totalHint.style.display = 'none';
-            }
-        }
-
-        unitSel.addEventListener('change', update);
-        costInput.addEventListener('input', update);
-        if (qtyInput)  qtyInput.addEventListener('input', update);
-        if (weightEl)  weightEl.addEventListener('input', update);
-        if (volumeEl)  volumeEl.addEventListener('input', update);
-        update();
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        initVatToggle('id_client_payment_method', 'client-vat-wrap');
-        initVatToggle('id_carrier_payment_method', 'carrier-vat-wrap');
-        initTermToggle('payment_condition', 'id_payment_term');
-        initTermToggle('carrier_payment_condition', 'id_carrier_payment_term');
-
-        initQuantityTotal({
-            unitId:      'id_client_cost_unit',
-            costId:      'id_client_cost',
-            qtyRowId:    'client-qty-row',
-            qtyBadgeId:  'client-qty-badge',
-            qtyInputId:  'id_client_quantity',
-            totalHintId: 'client-total-hint',
-            totalValueId:'client-total-value',
-            weightId:    'id_weight',
-            volumeId:    'id_volume',
-        });
-        initQuantityTotal({
-            unitId:      'id_carrier_cost_unit',
-            costId:      'id_carrier_cost',
-            qtyRowId:    'carrier-qty-row',
-            qtyBadgeId:  'carrier-qty-badge',
-            qtyInputId:  'id_carrier_quantity',
-            totalHintId: 'carrier-total-hint',
-            totalValueId:'carrier-total-value',
-            weightId:    'id_weight',
-            volumeId:    'id_volume',
-        });
-    });
-})();
-</script>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://unpkg.com/imask"></script>
 <script src="{% static 'js/phone_mask.js' %}"></script>
+<script src="{% static 'vehicles/js/grn_mask.js' %}"></script>
 {% endblock %}
