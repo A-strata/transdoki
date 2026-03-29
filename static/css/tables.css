@@ -1,21 +1,75 @@
-/* static/css/tables.css */
-table {
+/* Общие стили таблиц — используются на всех списковых страницах */
+
+/* Карточка-обёртка таблицы */
+.table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+/* Прокрутка таблицы по горизонтали */
+.table-wrap {
     width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
+    overflow-x: auto;
 }
 
-th, td {
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+/* Пустое состояние */
+.empty-state {
+    color: var(--muted);
+    text-align: center;
+    padding: 24px 14px;
 }
 
-th {
-    background-color: #f5f5f5;
-    font-weight: bold;
+/* Пагинация */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
-tr:hover {
-    background-color: #f9f9f9;
+.pagination-link,
+.pagination-ellipsis {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    text-decoration: none;
+    color: #374151;
+    box-sizing: border-box;
+}
+
+.pagination-link {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pagination-link:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.pagination-link.is-current {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+.pagination-link.is-disabled {
+    color: #9ca3af;
+    background: #f9fafb;
+    pointer-events: none;
+}
+
+.pagination-ellipsis {
+    color: #9ca3af;
 }

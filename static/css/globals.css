@@ -23,14 +23,16 @@
     --container: 1200px;
 
     /* Z-index слои (не использовать магические числа) */
-    --z-sticky-cell:   20;
-    --z-sticky-header: 30;
-    --z-navbar:        50;
-    --z-toast:         70;
-    --z-modal:         1000;
-    --z-dropdown:      1200;
-    --z-col-panel:     1300;
-    --z-actions-menu:  1400;
+    --z-sticky-cell:        20;
+    --z-sticky-header:      30;
+    --z-sticky-actions-hdr: 40;
+    --z-navbar:             50;
+    --z-toast:              70;
+    --z-inline-dropdown:   200;
+    --z-modal:            1000;
+    --z-dropdown:         1200;
+    --z-col-panel:        1300;
+    --z-actions-menu:     1400;
 }
 
 /* ── Сброс ── */

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Пополнение баланса — Transdoki{% endblock %}
 
@@ -6,150 +7,7 @@
 {# JS-виджет CloudPayments. Загружаем заранее, чтобы он был готов к моменту нажатия кнопки. #}
 {# Если publicId не задан (.env пуст), виджет откроется, но платёж не пройдёт — это ожидаемо до регистрации. #}
 <script src="https://widget.cloudpayments.ru/bundles/cloudpayments.js"></script>
-
-<style>
-    .deposit-card {
-        max-width: 440px;
-        margin: 40px auto;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: var(--radius);
-        padding: 32px;
-        box-shadow: var(--shadow);
-    }
-
-    .deposit-card h1 {
-        margin: 0 0 6px;
-        font-size: 1.3rem;
-    }
-
-    .balance-hint {
-        color: var(--muted);
-        font-size: 0.9rem;
-        margin-bottom: 24px;
-    }
-
-    .field-label {
-        display: block;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 6px;
-    }
-
-    .amount-wrap {
-        position: relative;
-        margin-bottom: 20px;
-    }
-
-    .amount-input {
-        width: 100%;
-        padding: 10px 36px 10px 14px;
-        border: 1px solid #d1d5db;
-        border-radius: 10px;
-        font-size: 1.1rem;
-        outline: none;
-        box-sizing: border-box;
-        transition: border-color .15s;
-    }
-
-    .amount-input:focus { border-color: var(--primary); }
-    .amount-input.is-invalid { border-color: #dc2626; }
-
-    .amount-currency {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--muted);
-        font-size: 1rem;
-        pointer-events: none;
-    }
-
-    .field-error {
-        color: #dc2626;
-        font-size: 0.83rem;
-        margin-top: 4px;
-        display: none;
-    }
-
-    .quick-amounts {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-bottom: 24px;
-    }
-
-    .quick-btn {
-        padding: 6px 14px;
-        border: 1px solid #e5e7eb;
-        border-radius: 20px;
-        background: #f9fafb;
-        color: #374151;
-        font-size: 0.87rem;
-        cursor: pointer;
-        transition: background .12s, border-color .12s;
-    }
-
-    .quick-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: var(--primary); }
-
-    .btn-pay {
-        width: 100%;
-        padding: 12px;
-        background: var(--primary);
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background .15s;
-        position: relative;
-    }
-
-    .btn-pay:hover:not(:disabled) { background: var(--primary-hover); }
-
-    .btn-pay:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .btn-pay .spinner {
-        display: none;
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255,255,255,0.4);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: spin .6s linear infinite;
-        position: absolute;
-        right: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    .btn-pay.loading .spinner { display: block; }
-
-    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
-
-    .global-error {
-        display: none;
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        border-radius: 8px;
-        color: #dc2626;
-        font-size: 0.88rem;
-        padding: 10px 14px;
-        margin-top: 12px;
-    }
-
-    .cp-secure {
-        text-align: center;
-        color: var(--muted);
-        font-size: 0.8rem;
-        margin-top: 16px;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'billing/css/deposit.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -160,7 +18,9 @@
         <strong>{{ account.balance|floatformat:2 }} ₽</strong>
     </p>
 
-    <form id="deposit-form" novalidate>
+    <form id="deposit-form" novalidate
+          data-deposit-url="{% url 'billing:deposit' %}"
+          data-success-url="{% url 'billing:transactions' %}?deposited=1">
         {% csrf_token %}
 
         <label class="field-label" for="id_amount">Сумма пополнения</label>
@@ -201,92 +61,8 @@
     </p>
 </div>
 
-<script>
-(function () {
-    const form      = document.getElementById('deposit-form');
-    const amountEl  = document.getElementById('id_amount');
-    const amountErr = document.getElementById('amount-error');
-    const globalErr = document.getElementById('global-error');
-    const payBtn    = document.getElementById('pay-btn');
+{% endblock %}
 
-    // Быстрый выбор суммы
-    document.querySelectorAll('.quick-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            amountEl.value = btn.dataset.amount;
-            amountEl.focus();
-        });
-    });
-
-    function setLoading(on) {
-        payBtn.disabled = on;
-        payBtn.classList.toggle('loading', on);
-    }
-
-    function showAmountError(msg) {
-        amountEl.classList.add('is-invalid');
-        amountErr.textContent = msg;
-        amountErr.style.display = 'block';
-    }
-
-    function clearErrors() {
-        amountEl.classList.remove('is-invalid');
-        amountErr.style.display = 'none';
-        globalErr.style.display = 'none';
-    }
-
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        clearErrors();
-        setLoading(true);
-
-        // Шаг 1: POST на наш сервер → создаём PaymentOrder → получаем параметры для виджета
-        fetch("{% url 'billing:deposit' %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({ amount: amountEl.value }),
-        })
-        .then(function (resp) { return resp.json(); })
-        .then(function (data) {
-            if (!data.ok) {
-                // Ошибки валидации от сервера
-                if (data.errors && data.errors.amount) {
-                    showAmountError(data.errors.amount[0].message);
-                } else if (data.errors && data.errors.__all__) {
-                    globalErr.textContent = data.errors.__all__[0].message;
-                    globalErr.style.display = 'block';
-                }
-                setLoading(false);
-                return;
-            }
-
-            // Шаг 2: открываем виджет CloudPayments с полученными параметрами
-            var widget = new cp.CloudPayments({ language: 'ru-RU' });
-            widget.pay('charge', data.widget_params, {
-                onSuccess: function () {
-                    // Деньги списаны. Webhook обработается асинхронно,
-                    // поэтому баланс может отобразиться через несколько секунд.
-                    window.location.href = "{% url 'billing:transactions' %}?deposited=1";
-                },
-                onFail: function (reason) {
-                    globalErr.textContent = 'Оплата не прошла: ' + (reason || 'попробуйте ещё раз');
-                    globalErr.style.display = 'block';
-                    setLoading(false);
-                },
-                onComplete: function () {
-                    // onComplete вызывается всегда — после success и fail.
-                    // Кнопку разблокируем только в onFail, чтобы не было двойного нажатия.
-                }
-            });
-        })
-        .catch(function () {
-            globalErr.textContent = 'Ошибка соединения. Проверьте сеть и попробуйте снова.';
-            globalErr.style.display = 'block';
-            setLoading(false);
-        });
-    });
-}());
-</script>
+{% block extra_js %}
+<script src="{% static 'billing/js/deposit.js' %}" defer></script>
 {% endblock %}

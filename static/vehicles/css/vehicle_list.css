@@ -27,15 +27,15 @@
 
 .vehicles-subtitle {
     margin: 4px 0 0;
-    color: #6b7280;
+    color: var(--muted);
     font-size: 0.92rem;
 }
 
 /* ── Filter bar ── */
 .filters-wrap {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
@@ -63,7 +63,7 @@
 .filter-divider {
     width: 1px;
     height: 16px;
-    background: #e5e7eb;
+    background: var(--border);
     flex-shrink: 0;
 }
 
@@ -90,13 +90,13 @@
 }
 
 .filter-chip:hover {
-    background: #e5e7eb;
-    color: #111827;
+    background: var(--border);
+    color: var(--text);
 }
 
 .filter-chip.active {
     background: #eff6ff;
-    color: #1d4ed8;
+    color: var(--primary-hover);
     border-color: #bfdbfe;
     font-weight: 600;
 }
@@ -106,19 +106,6 @@
 }
 
 /* ── Table ── */
-.table-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    overflow: hidden;
-}
-
-.table-wrap {
-    width: 100%;
-    overflow-x: auto;
-}
-
 .tms-table {
     width: 100%;
     border-collapse: collapse;
@@ -133,7 +120,7 @@
     letter-spacing: 0.05em;
     color: #9ca3af;
     background: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
 }
 
@@ -141,7 +128,7 @@
     padding: 12px 14px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.93rem;
-    color: #111827;
+    color: var(--text);
     vertical-align: middle;
 }
 
@@ -174,21 +161,16 @@
     font-size: 0.78rem;
     font-weight: 500;
     background: #f3f4f6;
-    color: #6b7280;
+    color: var(--muted);
     white-space: nowrap;
 }
 
 .property-badge.prop-property { background: #ecfdf5; color: #059669; }
 .property-badge.prop-coproperty { background: #f0fdf4; color: #16a34a; }
 .property-badge.prop-rent { background: #fffbeb; color: #d97706; }
-.property-badge.prop-leasing { background: #eff6ff; color: #2563eb; }
+.property-badge.prop-leasing { background: #eff6ff; color: var(--primary); }
 .property-badge.prop-unpaid { background: #faf5ff; color: #7c3aed; }
 
-.empty-state {
-    color: #9ca3af;
-    text-align: center;
-    padding: 32px 14px;
-}
 
 /* ── Mobile ── */
 @media (max-width: 760px) {
@@ -215,9 +197,9 @@
     .tms-table tbody tr {
         display: block;
         margin: 10px;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
         overflow: hidden;
     }
 

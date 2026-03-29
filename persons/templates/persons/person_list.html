@@ -38,8 +38,7 @@
                             <div class="row-actions">
                                 <a href="{% url 'persons:edit' person.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
                                 <a href="{% url 'persons:delete' person.pk %}"
-                                   class="tms-btn tms-btn-danger tms-btn-sm"
-                                   onclick="return confirm('Удалить {{ person }}?')">
+                                   class="tms-btn tms-btn-danger tms-btn-sm">
                                     Удалить
                                 </a>
                             </div>

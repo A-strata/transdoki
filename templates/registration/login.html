@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block head %}
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
 <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}">
 {% endblock %}
 
@@ -40,14 +41,14 @@
         </form>
 
         <p class="auth-footer">
-            <a href="{% url 'password_reset' %}" style="text-decoration: underline;">Забыли пароль?</a>
+            <a href="{% url 'password_reset' %}" class="auth-forgot-link">Забыли пароль?</a>
         </p>
         <p class="auth-footer">
             Нет аккаунта?
             <a href="{% url 'accounts:register' %}" class="auth-card-link">Зарегистрироваться</a>
         </p>
         <p class="auth-footer">
-            <a href="{% url 'home' %}" style="font-size: 0.84rem; color: var(--muted);">← На главную</a>
+            <a href="{% url 'home' %}" class="auth-back-link">← На главную</a>
         </p>
     </div>
 </section>

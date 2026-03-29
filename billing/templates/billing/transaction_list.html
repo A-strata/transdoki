@@ -1,137 +1,42 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}История транзакций — TMS{% endblock %}
 
 {% block head %}
-<style>
-    .tx-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .tx-table th {
-        text-align: left;
-        border-bottom: 1px solid #e5e7eb;
-        padding: 8px 10px;
-        color: #6b7280;
-        font-weight: 600;
-        font-size: 0.85rem;
-        white-space: nowrap;
-    }
-
-    .tx-table td {
-        border-bottom: 1px solid #f3f4f6;
-        padding: 9px 10px;
-        font-size: 0.92rem;
-        vertical-align: middle;
-    }
-
-    .tx-table tr:last-child td {
-        border-bottom: none;
-    }
-
-    .tx-kind {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 3px 9px;
-        border-radius: 20px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    .tx-deposit {
-        background: #f0fdf4;
-        color: #16a34a;
-        border: 1px solid #bbf7d0;
-    }
-
-    .tx-charge {
-        background: #fef2f2;
-        color: #dc2626;
-        border: 1px solid #fecaca;
-    }
-
-    .tx-amount-deposit { color: #16a34a; font-weight: 600; }
-    .tx-amount-charge  { color: #dc2626; font-weight: 600; }
-
-    .balance-after {
-        color: #374151;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .tx-empty {
-        text-align: center;
-        padding: 40px 0;
-        color: #9ca3af;
-    }
-
-    .pagination {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-        justify-content: center;
-        margin-top: 16px;
-        flex-wrap: wrap;
-    }
-
-    .page-btn {
-        display: inline-flex;
-        align-items: center;
-        padding: 6px 12px;
-        border-radius: 8px;
-        border: 1px solid #e5e7eb;
-        background: #fff;
-        color: #374151;
-        font-size: 0.88rem;
-        text-decoration: none;
-        transition: background .15s ease, border-color .15s ease;
-    }
-
-    .page-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
-    .page-btn.current { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; font-weight: 600; }
-    .page-btn.disabled { color: #d1d5db; pointer-events: none; }
-</style>
+<link rel="stylesheet" href="{% static 'billing/css/transaction_list.css' %}">
 {% endblock %}
 
 {% block content %}
-<section style="max-width: 980px; margin: 0 auto; padding: 12px 0;">
+<section class="tx-page">
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; flex-wrap:wrap;">
-        <h1 style="margin:0;">История транзакций</h1>
+    <div class="tx-toolbar">
+        <h1 class="tx-title">История транзакций</h1>
 
         {% if not account.is_billing_exempt %}
-            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="color:#6b7280; font-size:0.9rem;">Текущий баланс:</span>
+            <div class="tx-toolbar-right">
+                <div class="tx-balance-wrap">
+                    <span class="tx-balance-label">Текущий баланс:</span>
                     {% if account.balance > 0 %}
-                        <strong style="color:#16a34a; font-size:1.1rem;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                        <strong class="balance-positive">{{ account.balance|floatformat:2 }} &#8381;</strong>
                     {% elif account.balance == 0 %}
-                        <strong style="color:#d97706; font-size:1.1rem;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                        <strong class="balance-zero">{{ account.balance|floatformat:2 }} &#8381;</strong>
                     {% else %}
-                        <strong style="color:#dc2626; font-size:1.1rem;">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                        <strong class="balance-negative">{{ account.balance|floatformat:2 }} &#8381;</strong>
                     {% endif %}
                 </div>
-                <a href="{% url 'billing:deposit' %}"
-                   style="display:inline-flex; align-items:center; gap:5px; padding:7px 14px;
-                          background:#2563eb; color:#fff; border-radius:9px; font-size:0.88rem;
-                          font-weight:600; text-decoration:none; transition:background .15s;"
-                   onmouseover="this.style.background='#1d4ed8'"
-                   onmouseout="this.style.background='#2563eb'">
+                <a href="{% url 'billing:deposit' %}" class="tms-btn tms-btn-primary tms-btn-sm">
                     + Пополнить
                 </a>
             </div>
         {% else %}
-            <span style="background:#f3f4f6; color:#6b7280; border:1px solid #e5e7eb; border-radius:9px; padding:6px 12px; font-size:0.88rem;">
-                Аккаунт без ограничений
-            </span>
+            <span class="tx-exempt-badge">Аккаунт без ограничений</span>
         {% endif %}
     </div>
 
-    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px;">
+    <div class="tx-card">
         {% if transactions %}
-            <div style="overflow-x:auto;">
+            <div class="tx-scroll">
                 <table class="tx-table">
                     <thead>
                         <tr>
@@ -145,7 +50,7 @@
                     <tbody>
                         {% for tx in transactions %}
                             <tr>
-                                <td style="color:#6b7280; white-space:nowrap;">
+                                <td class="tx-date-cell">
                                     {{ tx.created_at|date:"d M Y, H:i" }}
                                 </td>
                                 <td>
@@ -165,7 +70,7 @@
                                 <td class="balance-after">
                                     {{ tx.balance_after|floatformat:2 }} &#8381;
                                 </td>
-                                <td style="color:#374151;">{{ tx.description }}</td>
+                                <td>{{ tx.description }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

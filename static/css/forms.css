@@ -54,6 +54,16 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled {
+    background: #f3f4f6;
+    color: var(--muted);
+    cursor: not-allowed;
+    border-color: #d1d5db;
+    opacity: 1;
+}
+
 /* Ошибки полей */
 .errorlist {
     list-style: none;

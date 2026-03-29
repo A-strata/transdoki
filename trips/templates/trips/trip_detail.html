@@ -1,274 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'trips/css/trip_detail.css' %}">
+{% endblock %}
 {% block content %}
-<style>
-    .trip-detail-page {
-        max-width: 980px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-
-    #finances {
-        scroll-margin-top: 90px;
-    }
-
-    .page-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .page-title {
-        margin: 0;
-        font-size: clamp(1.25rem, 1.8vw, 1.7rem);
-        line-height: 1.2;
-        letter-spacing: -0.01em;
-    }
-
-    .page-subtitle {
-        margin: 6px 0 0;
-        color: #6b7280;
-        font-size: 0.92rem;
-    }
-
-    .card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        padding: 16px;
-    }
-
-    .section {
-        border: 1px solid #eef2f7;
-        border-radius: 10px;
-        padding: 12px;
-        margin-bottom: 12px;
-    }
-
-    .section:last-child {
-        margin-bottom: 0;
-    }
-
-    .section-title {
-        margin: 0 0 10px;
-        font-size: 0.98rem;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .kv-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px 16px;
-    }
-
-    .kv {
-        min-width: 0;
-    }
-
-    .kv--full {
-        grid-column: 1 / -1;
-    }
-
-    .kv-label {
-        margin: 0 0 4px;
-        color: #6b7280;
-        font-size: 0.82rem;
-        font-weight: 600;
-    }
-
-    .kv-value {
-        margin: 0;
-        color: #111827;
-        font-size: 0.95rem;
-        word-break: break-word;
-    }
-
-    .two-cols {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    .sub-card {
-        border: 1px solid #eef2f7;
-        border-radius: 10px;
-        padding: 10px;
-        background: #fcfcfd;
-    }
-
-    .sub-title {
-        margin: 0 0 10px;
-        font-size: 0.92rem;
-        font-weight: 700;
-        color: #1f2937;
-    }
-
-    .actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .tms-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 40px;
-        padding: 0 14px;
-        border-radius: 10px;
-        border: 1px solid transparent;
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background .2s ease, border-color .2s ease, color .2s ease;
-    }
-
-    .tms-btn-primary {
-        background: #2563eb;
-        color: #fff;
-        border-color: #2563eb;
-    }
-
-    .tms-btn-primary:hover {
-        background: #1d4ed8;
-        border-color: #1d4ed8;
-    }
-
-    .tms-btn-secondary {
-        background: #fff;
-        color: #374151;
-        border-color: #e5e7eb;
-    }
-
-    .tms-btn-secondary:hover {
-        background: #f9fafb;
-        border-color: #d1d5db;
-    }
-
-    .tms-btn-disabled {
-        background: #f3f4f6;
-        color: #9ca3af;
-        border-color: #e5e7eb;
-        cursor: not-allowed;
-    }
-
-    .tms-btn-fix {
-        background: #f0fdf4;
-        color: #166534;
-        border-color: #bbf7d0;
-        font-size: 0.85rem;
-        min-height: 32px;
-        padding: 0 12px;
-    }
-
-    .tms-btn-fix:hover {
-        background: #dcfce7;
-        border-color: #86efac;
-    }
-
-    /* Бейдж финансового статуса */
-    .fin-badge {
-        display: inline-block;
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 6px;
-        vertical-align: middle;
-    }
-
-    .fin-badge--open       { background: #f3f4f6; color: #6b7280; }
-    .fin-badge--calculated { background: #fef9c3; color: #854d0e; }
-    .fin-badge--invoiced   { background: #dbeafe; color: #1e40af; }
-    .fin-badge--paid       { background: #dcfce7; color: #166534; }
-
-    .kv-total--fixed { font-weight: 700; color: #111827; }
-    .kv-total--calc  { color: #374151; }
-
-    .entity-link {
-        color: #1d4ed8;
-        text-decoration: none;
-        border-bottom: 1px dashed rgba(29, 78, 216, 0.35);
-    }
-
-    .entity-link:hover {
-        color: #1e40af;
-        border-bottom-color: rgba(30, 64, 175, 0.5);
-    }
-
-    @media (max-width: 760px) {
-        .card {
-            padding: 12px;
-        }
-
-        .section {
-            padding: 10px;
-        }
-
-        .kv-grid,
-        .two-cols {
-            grid-template-columns: 1fr;
-        }
-
-        .kv--full {
-            grid-column: auto;
-        }
-
-        .actions .tms-btn {
-            width: 100%;
-        }
-    }
-    .attachment-item {
-    border: 1px solid #eef2f7;
-    border-radius: 10px;
-    padding: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    }
-
-    .attachment-main {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
-    }
-
-    .attachment-icon {
-        width: 34px;
-        height: 34px;
-        border-radius: 8px;
-        background: #2563eb;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex: 0 0 auto;
-    }
-
-    .attachment-icon svg {
-        width: 18px;
-        height: 18px;
-        fill: #fff;
-    }
-
-    .attachment-text {
-        min-width: 0;
-    }
-
-    .attachment-name {
-        margin: 0 0 4px 0;
-        color: #111827;
-        font-size: 0.95rem;
-        word-break: break-word;
-    }
-</style>
 
 {% with trip=object %}
 <section class="trip-detail-page">
@@ -368,7 +103,7 @@
                     <div class="sub-card">
                         <h3 class="sub-title">
                             {{ p.get_point_type_display }}
-                            <span style="font-size:0.78rem; font-weight:400; color:#6b7280;">#{{ p.sequence }}</span>
+                            <span class="point-seq-badge">#{{ p.sequence }}</span>
                         </h3>
                         <div class="kv-grid">
                             <div class="kv kv--full">
@@ -460,7 +195,7 @@
                         <p class="kv-value kv-total--fixed">{{ trip.client_total_fixed }} ₽ &nbsp;<span class="fin-badge fin-badge--{{ trip.client_financial_status }}">{{ trip.get_client_financial_status_display }}</span></p>
                     {% elif trip.client_total %}
                         <p class="kv-value kv-total--calc">{{ trip.client_total }} ₽ <span class="fin-badge fin-badge--open">расчётно</span></p>
-                        <form method="post" action="{% url 'trips:fix_finance' trip.pk %}" style="margin-top:6px">
+                        <form method="post" action="{% url 'trips:fix_finance' trip.pk %}" class="fix-finance-form">
                             {% csrf_token %}
                             <input type="hidden" name="side" value="client">
                             <button type="submit" class="tms-btn tms-btn-fix">Зафиксировать сумму</button>
@@ -495,7 +230,7 @@
                         <p class="kv-value kv-total--fixed">{{ trip.carrier_total_fixed }} ₽ &nbsp;<span class="fin-badge fin-badge--{{ trip.carrier_financial_status }}">{{ trip.get_carrier_financial_status_display }}</span></p>
                     {% elif trip.carrier_total %}
                         <p class="kv-value kv-total--calc">{{ trip.carrier_total }} ₽ <span class="fin-badge fin-badge--open">расчётно</span></p>
-                        <form method="post" action="{% url 'trips:fix_finance' trip.pk %}" style="margin-top:6px">
+                        <form method="post" action="{% url 'trips:fix_finance' trip.pk %}" class="fix-finance-form">
                             {% csrf_token %}
                             <input type="hidden" name="side" value="carrier">
                             <button type="submit" class="tms-btn tms-btn-fix">Зафиксировать сумму</button>
@@ -515,22 +250,21 @@
         <div class="section">
             <h2 class="section-title">Вложения</h2>
 
-            <p class="kv-label" style="margin-bottom:10px;">
+            <p class="kv-label upload-hint">
                 Форматы: pdf, jpg, jpeg, png, doc, docx, xls, xlsx.
             </p>
-            <p class="kv-label" style="margin-bottom:10px;">
+            <p class="kv-label upload-hint">
                 До {{ max_files_per_trip }} файлов на рейс, каждый до 20 МБ.
             </p>
 
             <form method="post" action="{% url 'trips:attachment_upload' trip.pk %}" enctype="multipart/form-data"
-                  style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                  class="file-upload-form">
                 {% csrf_token %}
-                <input type="file" name="files" multiple
-                       style="border:1px solid #e5e7eb; border-radius:10px; padding:8px; background:#fff;">
+                <input type="file" name="files" multiple class="file-input">
                 <button type="submit" class="tms-btn tms-btn-primary">Загрузить файлы</button>
             </form>
 
-            <div style="display:flex; flex-direction:column; gap:8px;">
+            <div class="attachments-list">
                 {% for attachment in trip.attachments.all %}
                 <div class="attachment-item">
                     <div class="attachment-main">
@@ -542,7 +276,7 @@
 
                         <div class="attachment-text">
                             <p class="attachment-name">{{ attachment.original_name }}</p>
-                            <p class="kv-label" style="margin:0;">
+                            <p class="kv-label">
                                 Загружен: {{ attachment.created_at|date:"d.m.Y H:i" }}
                             </p>
                         </div>
@@ -552,13 +286,20 @@
                         <a href="{% url 'trips:attachment_download' object.pk attachment.pk %}"
                         class="tms-btn tms-btn-secondary">Скачать</a>
 
-                        <form method="post"
-                            action="{% url 'trips:attachment_delete' object.pk attachment.pk %}"
-                            onsubmit="return confirm('Удалить файл?');"
-                            style="margin:0;">
-                            {% csrf_token %}
-                            <button type="submit" class="tms-btn tms-btn-secondary">Удалить</button>
-                        </form>
+                        <div class="confirm-inline" data-confirm>
+                            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                    data-confirm-trigger>Удалить</button>
+                            <div class="confirm-inline-prompt" hidden>
+                                <span>Удалить?</span>
+                                <form method="post"
+                                      action="{% url 'trips:attachment_delete' object.pk attachment.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm">Да</button>
+                                </form>
+                                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                        data-confirm-cancel>Нет</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {% empty %}

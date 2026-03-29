@@ -27,21 +27,8 @@
 
 .persons-subtitle {
     margin: 4px 0 0;
-    color: #6b7280;
+    color: var(--muted);
     font-size: 0.92rem;
-}
-
-.table-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    overflow: hidden;
-}
-
-.table-wrap {
-    width: 100%;
-    overflow-x: auto;
 }
 
 .tms-table {
@@ -56,9 +43,9 @@
     font-size: 0.82rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: #6b7280;
+    color: var(--muted);
     background: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
 }
 
@@ -66,7 +53,7 @@
     padding: 12px 14px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.93rem;
-    color: #111827;
+    color: var(--text);
     vertical-align: top;
 }
 
@@ -80,7 +67,7 @@
 
 .person-name {
     font-weight: 600;
-    color: #111827;
+    color: var(--text);
 }
 
 .row-actions {
@@ -90,11 +77,6 @@
 }
 
 
-.empty-state {
-    color: #6b7280;
-    text-align: center;
-    padding: 20px 14px;
-}
 
 @media (max-width: 760px) {
     .table-wrap {
@@ -112,9 +94,9 @@
     .tms-table tbody tr {
         display: block;
         margin: 10px;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
         overflow: hidden;
     }
 
@@ -132,7 +114,7 @@
 
     .tms-table tbody td::before {
         content: attr(data-label);
-        color: #6b7280;
+        color: var(--muted);
         font-size: 0.82rem;
         font-weight: 600;
     }

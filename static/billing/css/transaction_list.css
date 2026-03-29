@@ -1,0 +1,157 @@
+.tx-page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 12px 0;
+}
+
+.tx-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tx-title {
+    margin: 0;
+}
+
+.tx-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tx-balance-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tx-balance-label {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.balance-positive { color: #16a34a; font-size: 1.1rem; }
+.balance-zero     { color: #d97706; font-size: 1.1rem; }
+.balance-negative { color: #dc2626; font-size: 1.1rem; }
+
+.tx-exempt-badge {
+    background: #f3f4f6;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 6px 12px;
+    font-size: 0.88rem;
+}
+
+.tx-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+}
+
+.tx-scroll {
+    overflow-x: auto;
+}
+
+/* Таблица транзакций */
+.tx-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tx-table th {
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 10px;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.tx-table td {
+    border-bottom: 1px solid #f3f4f6;
+    padding: 9px 10px;
+    font-size: 0.92rem;
+    vertical-align: middle;
+}
+
+.tx-table tr:last-child td {
+    border-bottom: none;
+}
+
+.tx-date-cell {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* Бейджи типа транзакции */
+.tx-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tx-deposit {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.tx-charge {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.tx-amount-deposit { color: #16a34a; font-weight: 600; }
+.tx-amount-charge  { color: #dc2626; font-weight: 600; }
+
+.balance-after {
+    color: #374151;
+    font-variant-numeric: tabular-nums;
+}
+
+.tx-empty {
+    text-align: center;
+    padding: 40px 0;
+    color: #9ca3af;
+}
+
+/* Пагинация */
+.pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: #374151;
+    font-size: 0.88rem;
+    text-decoration: none;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.page-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+.page-btn.current { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; font-weight: 600; }
+.page-btn.disabled { color: #d1d5db; pointer-events: none; }
