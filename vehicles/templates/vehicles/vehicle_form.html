@@ -216,11 +216,11 @@
 
         <div class="form-actions">
             <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
-            {% if not organization_pk %}
+            {% if not back_url %}
             <button type="submit" name="add_another" value="1" class="tms-btn tms-btn-secondary">Сохранить и добавить ещё</button>
             {% endif %}
-            {% if organization_pk %}
-            <a href="{% url 'organizations:detail' organization_pk %}" class="tms-btn tms-btn-secondary">Отмена</a>
+            {% if back_url %}
+            <a href="{{ back_url }}" class="tms-btn tms-btn-secondary">Отмена</a>
             {% else %}
             <a href="{% url 'vehicles:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
             {% endif %}

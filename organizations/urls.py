@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .api import get_org_data, suggest_party
+from .api import get_org_data, suggest_bank, suggest_party
 from .views import (
     OrganizationCreateView,
     OrganizationDeleteView,
@@ -8,6 +8,7 @@ from .views import (
     OrganizationListView,
     OrganizationUpdateView,
     OwnCompanyListView,
+    bank_account_quick_create,
     organization_quick_create,
     organization_search,
 )
@@ -23,6 +24,8 @@ urlpatterns = [
     path("<int:pk>/delete/", OrganizationDeleteView.as_view(), name="delete"),
     path("api/suggestions_by_inn/", get_org_data, name="api_suggestions_by_inn"),
     path("api/party_suggest/", suggest_party, name="api_party_suggest"),
+    path("api/bank_suggest/", suggest_bank, name="api_bank_suggest"),
     path("quick-create/", organization_quick_create, name="quick_create"),
+    path("bank-account/quick-create/", bank_account_quick_create, name="bank_account_quick_create"),
     path("search/", organization_search, name="search"),
 ]

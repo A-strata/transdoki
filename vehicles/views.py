@@ -72,11 +72,12 @@ class VehicleUpdateView(LoginRequiredMixin, UpdateView):
         return Vehicle.objects.filter(account=get_request_account(self.request))
 
     def get_success_url(self):
-        return reverse("organizations:detail", kwargs={"pk": self.object.owner.pk})
+        next_url = self.request.GET.get("next", "")
+        return next_url or reverse("vehicles:list")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["organization_pk"] = self.object.owner.pk
+        context["back_url"] = self.request.GET.get("next", "") or reverse("vehicles:list")
         return context
 
     def form_valid(self, form):

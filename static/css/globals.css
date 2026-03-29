@@ -221,6 +221,112 @@ input.is-invalid:focus {
     font-size: 0.9rem;
 }
 
+/* ── Suggest-дропдаун (автокомплит в модалках) ── */
+.suggest-wrap {
+    position: relative;
+}
+
+.suggest-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    right: 0;
+    z-index: var(--z-inline-dropdown);
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+    max-height: 230px;
+    overflow-y: auto;
+}
+
+.suggest-dropdown.visible {
+    display: block;
+}
+
+.suggest-item {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    cursor: pointer;
+    gap: 2px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s ease;
+}
+
+.suggest-item:last-child {
+    border-bottom: none;
+}
+
+.suggest-item:hover,
+.suggest-item.is-active {
+    background: #f9fafb;
+}
+
+.suggest-item-title {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggest-item-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+/* ── Выбранное значение (автокомплит → selected row) ── */
+.selected-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.selected-row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.selected-row-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.selected-row-sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+/* ── Ссылка-кнопка «Ввести вручную» ── */
+.suggest-manual-link {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.84rem;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    transition: color 0.15s ease;
+}
+
+.suggest-manual-link:hover {
+    color: var(--text);
+}
+
 @media (max-width: 560px) {
     main {
         padding: 10px 10px 16px;

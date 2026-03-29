@@ -10,6 +10,33 @@ DADATA_TOKEN = os.getenv('DADATA_TOKEN')
 DADATA_SECRET = os.getenv('DADATA_SECRET')
 
 
+def suggest_bank(request):
+    """Подсказки банков по БИК или названию (для автокомплита)."""
+    if request.method != "GET":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse({"suggestions": []})
+
+    try:
+        dadata_client = Dadata(DADATA_TOKEN, DADATA_SECRET)
+        results = dadata_client.suggest("bank", query, count=7)
+    except Exception:
+        return JsonResponse({"suggestions": []})
+
+    suggestions = []
+    for item in results:
+        data = item.get("data", {})
+        suggestions.append({
+            "bic": data.get("bic", ""),
+            "bank_name": (data.get("name") or {}).get("payment", ""),
+            "corr_account": data.get("correspondent_account", ""),
+        })
+
+    return JsonResponse({"suggestions": suggestions})
+
+
 def suggest_party(request):
     """Подсказки организаций по частичному ИНН или названию (для автокомплита)."""
     if request.method != 'GET':

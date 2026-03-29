@@ -15,7 +15,7 @@ from transdoki.tenancy import get_request_account
 from billing.mixins import BillingProtectedMixin
 
 from .forms import OrganizationForm
-from .models import Organization
+from .models import Bank, Organization, OrganizationBank
 from .validators import validate_inn
 
 
@@ -81,12 +81,16 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["is_own"] = self.object.is_own_company
+        context["back_url"] = self.request.GET.get("next", "")
         return context
 
     def form_valid(self, form):
+        self._back_url = self.request.POST.get("back_url", "")
         return super().form_valid(form)
 
     def get_success_url(self):
+        if self._back_url:
+            return self._back_url
         return reverse("organizations:detail", kwargs={"pk": self.object.pk})
 
 
@@ -155,9 +159,16 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         org = self.object
 
-        ctx["vehicles"] = org.vehicle_set.all()
-        ctx["bank_accounts"] = org.bank_accounts.select_related("account_bank").all()
-        ctx["employees"] = org.employees.all()
+        vehicles = org.vehicle_set.all()
+        bank_accounts = org.bank_accounts.select_related("account_bank").all()
+        employees = org.employees.all()
+
+        ctx["vehicles"] = vehicles
+        ctx["bank_accounts"] = bank_accounts
+        ctx["employees"] = employees
+        ctx["vehicles_count"] = vehicles.count()
+        ctx["bank_accounts_count"] = bank_accounts.count()
+        ctx["employees_count"] = employees.count()
 
         from trips.models import Trip
         from vehicles.models import PropertyType, VehicleType
@@ -255,3 +266,71 @@ def organization_quick_create(request):
         )
 
     return JsonResponse({"id": org.pk, "text": org.short_name})
+
+
+@login_required
+@require_POST
+def bank_account_quick_create(request):
+    account = get_request_account(request)
+    owner_id = request.POST.get("owner_id", "").strip()
+    bic = request.POST.get("bic", "").strip()
+    bank_name = request.POST.get("bank_name", "").strip()
+    corr_account = request.POST.get("corr_account", "").strip()
+    account_num = request.POST.get("account_num", "").strip()
+
+    errors = {}
+    if not bic:
+        errors["bic"] = "Обязательное поле"
+    elif not bic.isdigit() or len(bic) != 9:
+        errors["bic"] = "БИК должен состоять из 9 цифр"
+    if not bank_name:
+        errors["bank_name"] = "Обязательное поле"
+    if not corr_account:
+        errors["corr_account"] = "Обязательное поле"
+    elif not corr_account.isdigit() or len(corr_account) != 20:
+        errors["corr_account"] = "Корр. счёт должен состоять из 20 цифр"
+    if not account_num:
+        errors["account_num"] = "Обязательное поле"
+    elif not account_num.isdigit() or len(account_num) != 20:
+        errors["account_num"] = "Расчётный счёт должен состоять из 20 цифр"
+
+    org = None
+    if owner_id:
+        org = Organization.objects.filter(pk=owner_id, account=account).first()
+    if not org:
+        errors["owner_id"] = "Организация не найдена"
+
+    if errors:
+        return JsonResponse({"errors": errors}, status=400)
+
+    bank, _ = Bank.objects.get_or_create(
+        bic=bic,
+        defaults={"bank_name": bank_name, "corr_account": corr_account},
+    )
+
+    try:
+        ob = OrganizationBank(
+            account_num=account_num,
+            account_owner=org,
+            account_bank=bank,
+            created_by=request.user,
+            account=account,
+        )
+        ob.full_clean()
+        ob.save()
+    except ValidationError as e:
+        errs = {}
+        if hasattr(e, "error_dict"):
+            for field, msgs in e.error_dict.items():
+                msg = msgs[0].messages[0] if hasattr(msgs[0], "messages") else str(msgs[0])
+                errs[field] = msg
+        else:
+            errs["account_num"] = "; ".join(e.messages)
+        return JsonResponse({"errors": errs}, status=400)
+    except IntegrityError:
+        return JsonResponse(
+            {"errors": {"account_num": "Такой счёт в этом банке уже существует"}},
+            status=400,
+        )
+
+    return JsonResponse({"id": ob.pk, "text": f"{account_num} ({bank_name})"})

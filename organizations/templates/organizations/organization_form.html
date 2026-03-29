@@ -20,6 +20,7 @@
 
         <form method="post" novalidate>
             {% csrf_token %}
+            {% if back_url %}<input type="hidden" name="back_url" value="{{ back_url }}">{% endif %}
 
             <div class="form-card">
                 {% if form.non_field_errors %}
@@ -132,7 +133,7 @@
                     <button type="submit" class="tms-btn tms-btn-primary">
                         {% if form.instance.pk %}Сохранить{% else %}Создать{% endif %} организацию
                     </button>
-                    <a href="{% if is_own %}{% url 'organizations:own_list' %}{% else %}{% url 'organizations:list' %}{% endif %}" class="tms-btn tms-btn-secondary">Отмена</a>
+                    <a href="{% if back_url %}{{ back_url }}{% elif is_own %}{% url 'organizations:own_list' %}{% else %}{% url 'organizations:list' %}{% endif %}" class="tms-btn tms-btn-secondary">Отмена</a>
                 </div>
             </div>
         </form>

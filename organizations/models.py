@@ -64,7 +64,36 @@ class Organization(UserOwnedModel):
         max_length=ORG_ADDRESS_LENGTH,
         blank=True,
         null=True,
-        verbose_name="Адрес юридического лица",
+        verbose_name="Юридический адрес",
+    )
+    postal_address = models.CharField(
+        max_length=ORG_ADDRESS_LENGTH,
+        blank=True,
+        default="",
+        verbose_name="Почтовый адрес",
+    )
+    phone = models.CharField(
+        max_length=25,
+        blank=True,
+        default="",
+        verbose_name="Телефон",
+    )
+    email = models.EmailField(
+        blank=True,
+        default="",
+        verbose_name="Email",
+    )
+    director_title = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Должность руководителя",
+    )
+    director_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        verbose_name="ФИО руководителя",
     )
     is_own_company = models.BooleanField(default=False, verbose_name="Моя компания")
     petrolplus_integration_enabled = models.BooleanField(

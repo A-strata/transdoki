@@ -8,7 +8,7 @@
 {% block content %}
 <section class="org-detail-page">
 
-    {# ── Основная карточка ── #}
+    {# ── Шапка ── #}
     <div class="card">
         <div class="page-head">
             <div class="page-title-wrap">
@@ -17,36 +17,89 @@
                     <span class="own-badge">Своя компания</span>
                 {% endif %}
             </div>
+            <div class="page-head-actions">
+                {% if organization.is_own_company %}
+                    <a href="{% url 'organizations:own_list' %}" class="tms-btn tms-btn-light tms-btn-sm">К списку</a>
+                {% else %}
+                    <a href="{% url 'organizations:list' %}" class="tms-btn tms-btn-light tms-btn-sm">К списку</a>
+                {% endif %}
+                <a href="{% url 'organizations:edit' organization.pk %}?next={% url 'organizations:detail' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
+                <a href="{% url 'organizations:delete' organization.pk %}" class="tms-btn tms-btn-danger tms-btn-sm">Удалить</a>
+            </div>
         </div>
 
+        {# ── Реквизиты ── #}
         <div class="section">
-            <h2 class="section-title">Реквизиты</h2>
             <div class="kv-grid">
+                {% if organization.full_name != organization.short_name %}
                 <div class="kv kv--full">
                     <p class="kv-label">Полное наименование</p>
                     <p class="kv-value">{{ organization.full_name }}</p>
                 </div>
+                {% endif %}
                 <div class="kv">
                     <p class="kv-label">ИНН</p>
                     <p class="kv-value">{{ organization.inn }}</p>
                 </div>
                 <div class="kv">
                     <p class="kv-label">КПП</p>
-                    <p class="kv-value">{{ organization.kpp|default:"—" }}</p>
+                    {% if organization.kpp %}
+                        <p class="kv-value">{{ organization.kpp }}</p>
+                    {% else %}
+                        <p class="kv-value kv-value--empty">не указан</p>
+                    {% endif %}
                 </div>
                 <div class="kv">
                     <p class="kv-label">ОГРН</p>
-                    <p class="kv-value">{{ organization.ogrn|default:"—" }}</p>
+                    {% if organization.ogrn %}
+                        <p class="kv-value">{{ organization.ogrn }}</p>
+                    {% else %}
+                        <p class="kv-value kv-value--empty">не указан</p>
+                    {% endif %}
                 </div>
                 <div class="kv">
-                    <p class="kv-label">Адрес</p>
-                    <p class="kv-value">{{ organization.address|default:"—" }}</p>
+                    <p class="kv-label">Телефон</p>
+                    {% if organization.phone %}
+                        <p class="kv-value">{{ organization.phone }}</p>
+                    {% else %}
+                        <p class="kv-value kv-value--empty">не указан</p>
+                    {% endif %}
                 </div>
+                <div class="kv">
+                    <p class="kv-label">Email</p>
+                    {% if organization.email %}
+                        <p class="kv-value">{{ organization.email }}</p>
+                    {% else %}
+                        <p class="kv-value kv-value--empty">не указан</p>
+                    {% endif %}
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Руководитель</p>
+                    {% if organization.director_name %}
+                        <p class="kv-value">{% if organization.director_title %}{{ organization.director_title }} — {% endif %}{{ organization.director_name }}</p>
+                    {% else %}
+                        <p class="kv-value kv-value--empty">не указан</p>
+                    {% endif %}
+                </div>
+                <div class="kv kv--full">
+                    <p class="kv-label">Юридический адрес</p>
+                    {% if organization.address %}
+                        <p class="kv-value">{{ organization.address }}</p>
+                    {% else %}
+                        <p class="kv-value kv-value--empty">не указан</p>
+                    {% endif %}
+                </div>
+                {% if organization.postal_address %}
+                <div class="kv kv--full">
+                    <p class="kv-label">Почтовый адрес</p>
+                    <p class="kv-value">{{ organization.postal_address }}</p>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        {# ── Банковские реквизиты ── #}
-        {% if bank_accounts %}
+        {# ── Банковские реквизиты (для своих компаний — старый стиль внутри основной карточки) ── #}
+        {% if organization.is_own_company and bank_accounts %}
         <div class="section">
             <h2 class="section-title">Банковские реквизиты</h2>
             <div class="mini-list">
@@ -59,38 +112,32 @@
             </div>
         </div>
         {% endif %}
-
-        {# ── Действия ── #}
-        <div class="actions">
-            <a href="{% url 'organizations:edit' organization.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
-
-            {% if not organization.is_own_company and not vehicles %}
-                <button type="button" class="tms-btn tms-btn-secondary" data-modal-open="create-vehicle-modal">+ Добавить ТС</button>
-            {% endif %}
-
-            <a href="{% url 'organizations:delete' organization.pk %}" class="tms-btn tms-btn-danger">Удалить</a>
-
-            {% if request.GET.next %}
-                <a href="{{ request.GET.next }}" class="tms-btn tms-btn-light">Назад</a>
-            {% elif organization.is_own_company %}
-                <a href="{% url 'organizations:own_list' %}" class="tms-btn tms-btn-light">К списку</a>
-            {% else %}
-                <a href="{% url 'organizations:list' %}" class="tms-btn tms-btn-light">К списку</a>
-            {% endif %}
-        </div>
     </div>
 
-    {# ── Транспортные средства (своя компания — всегда, контрагент — только если есть) ── #}
-    {% if organization.is_own_company or vehicles %}
-    <div class="card">
-        <div class="section-head">
-            <h2 class="section-title">Транспортные средства</h2>
-            {% if vehicles %}
-                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm" data-modal-open="create-vehicle-modal">+ Добавить</button>
-            {% endif %}
-        </div>
+    {% if not organization.is_own_company %}
 
-        {% if vehicles %}
+    {# ── Транспортные средства ── #}
+    <div class="card collapsible-section {% if vehicles_count %}is-open{% endif %}"
+         data-collapsible>
+        <div class="collapsible-header" data-collapsible-toggle>
+            <div class="collapsible-title-wrap">
+                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="section-title">Транспортные средства</h2>
+                {% if vehicles_count %}
+                    <span class="collapsible-badge">{{ vehicles_count }}</span>
+                {% else %}
+                    <span class="collapsible-hint">пусто</span>
+                {% endif %}
+            </div>
+            <button type="button"
+                    class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-collapsible-action
+                    data-modal-open="create-vehicle-modal">+ Добавить</button>
+        </div>
+        <div class="collapsible-body">
+            {% if vehicles %}
             <table class="vehicle-table">
                 <thead>
                     <tr>
@@ -111,7 +158,8 @@
                         <td data-label="Тип ТС">{{ vehicle.get_vehicle_type_display }}</td>
                         <td data-label="Тип владения">{{ vehicle.get_property_type_display }}</td>
                         <td data-label="Действия">
-                            <a href="{% url 'vehicles:edit' vehicle.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
+                            <a href="{% url 'vehicles:edit' vehicle.pk %}?next={% url 'organizations:detail' organization.pk %}"
+                               class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
                             <button type="button"
                                     class="tms-btn tms-btn-danger tms-btn-sm"
                                     data-modal-open="delete-vehicle-modal"
@@ -124,16 +172,86 @@
                     {% endfor %}
                 </tbody>
             </table>
-        {% else %}
-            <div class="empty-state">
-                <p>Нет транспортных средств</p>
-                <button type="button" class="tms-btn tms-btn-secondary" data-modal-open="create-vehicle-modal">+ Добавить ТС</button>
-            </div>
-        {% endif %}
+            {% else %}
+            <p class="collapsible-empty">Нет добавленных транспортных средств</p>
+            {% endif %}
+        </div>
     </div>
-    {% endif %}
+
+    {# ── Банковские счета ── #}
+    <div class="card collapsible-section {% if bank_accounts_count %}is-open{% endif %}"
+         data-collapsible>
+        <div class="collapsible-header" data-collapsible-toggle>
+            <div class="collapsible-title-wrap">
+                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="section-title">Банковские счета</h2>
+                {% if bank_accounts_count %}
+                    <span class="collapsible-badge">{{ bank_accounts_count }}</span>
+                {% else %}
+                    <span class="collapsible-hint">пусто</span>
+                {% endif %}
+            </div>
+            <button type="button"
+                    class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-collapsible-action
+                    data-modal-open="create-bank-account-modal">+ Добавить</button>
+        </div>
+        <div class="collapsible-body">
+            {% if bank_accounts %}
+            <div class="mini-list">
+                {% for ba in bank_accounts %}
+                <div class="mini-item">
+                    <p class="mini-item-title">{{ ba.account_bank.bank_name }}</p>
+                    <p class="mini-item-sub">р/с {{ ba.account_num }} &middot; БИК {{ ba.account_bank.bic }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="collapsible-empty">Нет добавленных банковских счетов</p>
+            {% endif %}
+        </div>
+    </div>
 
     {# ── Контактные лица ── #}
+    <div class="card collapsible-section {% if employees_count %}is-open{% endif %}"
+         data-collapsible>
+        <div class="collapsible-header" data-collapsible-toggle>
+            <div class="collapsible-title-wrap">
+                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="section-title">Контактные лица</h2>
+                {% if employees_count %}
+                    <span class="collapsible-badge">{{ employees_count }}</span>
+                {% else %}
+                    <span class="collapsible-hint">пусто</span>
+                {% endif %}
+            </div>
+            <button type="button"
+                    class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-collapsible-action
+                    disabled>+ Добавить</button>
+        </div>
+        <div class="collapsible-body">
+            {% if employees %}
+            <div class="mini-list">
+                {% for person in employees %}
+                <a href="{% url 'persons:detail' person.pk %}" class="mini-item">
+                    <p class="mini-item-title">{{ person }}</p>
+                    <p class="mini-item-sub">{{ person.phone }}</p>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="collapsible-empty">Нет добавленных контактных лиц</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+
     {% if employees %}
     <div class="card">
         <h2 class="section-title">Контактные лица</h2>
@@ -148,7 +266,9 @@
     </div>
     {% endif %}
 
-    {# ── Последние рейсы ── #}
+    {% endif %}
+
+    {# ── Последние рейсы (для всех типов) ── #}
     {% if recent_trips %}
     <div class="card">
         <h2 class="section-title">Последние рейсы</h2>
@@ -169,7 +289,7 @@
 
 </section>
 
-{# ── Модал подтверждения удаления ТС ── #}
+{% if not organization.is_own_company %}
 {# ── Модал создания ТС ── #}
 <div class="modal-overlay" id="create-vehicle-modal" hidden>
     <div class="modal-dialog modal-dialog--wide">
@@ -245,10 +365,91 @@
 </div>
 {% endif %}
 
+{# ── Модал создания банковского счёта ── #}
+<div class="modal-overlay" id="create-bank-account-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Добавить банковский счёт</h3>
+        <p class="modal-body">{{ organization.short_name }}</p>
+
+        <form id="create-bank-account-form"
+              data-url="{% url 'organizations:bank_account_quick_create' %}"
+              data-suggest-url="{% url 'organizations:api_bank_suggest' %}"
+              data-owner-id="{{ organization.pk }}"
+              novalidate>
+            {% csrf_token %}
+
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="ba-account-num">Расчётный счёт</label>
+                    <input type="text" id="ba-account-num" name="account_num" required maxlength="20">
+                </div>
+
+                {# ── Поиск банка ── #}
+                <div class="modal-field modal-field--full suggest-wrap" id="ba-search-wrap">
+                    <label for="ba-search">БИК или название банка</label>
+                    <input type="text" id="ba-search" autocomplete="off" placeholder="Начните вводить...">
+                    <div class="suggest-dropdown" id="ba-suggest-dropdown"></div>
+                </div>
+
+                {# ── Выбранный банк (скрыт, пока не выбран) ── #}
+                <div class="modal-field modal-field--full" id="ba-selected-wrap" hidden>
+                    <div class="selected-row">
+                        <div class="selected-row-info">
+                            <span class="selected-row-title" id="ba-selected-name"></span>
+                            <span class="selected-row-sub" id="ba-selected-details"></span>
+                        </div>
+                        <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm" id="ba-change-bank">Изменить</button>
+                    </div>
+                </div>
+
+                {# ── Скрытые поля для отправки ── #}
+                <input type="hidden" id="ba-bic" name="bic">
+                <input type="hidden" id="ba-bank-name" name="bank_name">
+                <input type="hidden" id="ba-corr-account" name="corr_account">
+
+                {# ── Ручной ввод (фолбэк) ── #}
+                <div id="ba-manual-wrap" hidden>
+                    <div class="modal-fields">
+                        <div class="modal-field modal-field--full">
+                            <label for="ba-manual-bank-name">Наименование банка</label>
+                            <input type="text" id="ba-manual-bank-name">
+                        </div>
+                        <div class="modal-field">
+                            <label for="ba-manual-bic">БИК</label>
+                            <input type="text" id="ba-manual-bic" maxlength="9">
+                        </div>
+                        <div class="modal-field">
+                            <label for="ba-manual-corr-account">Корр. счёт</label>
+                            <input type="text" id="ba-manual-corr-account" maxlength="20">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-field modal-field--full" id="ba-manual-toggle-wrap">
+                    <button type="button" class="suggest-manual-link" id="ba-manual-toggle">Ввести вручную</button>
+                </div>
+            </div>
+
+            <div class="modal-form-errors" id="ba-errors" hidden></div>
+
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Добавить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="{% static 'organizations/js/vehicle_create_modal.js' %}"></script>
+<script src="{% static 'organizations/js/bank_account_create_modal.js' %}"></script>
+{% endif %}
+
+<script src="{% static 'organizations/js/collapsible_sections.js' %}"></script>
 {% endblock %}
 
 {% block extra_js %}
+{% if not organization.is_own_company %}
 <script src="https://unpkg.com/imask"></script>
 <script src="{% static 'vehicles/js/grn_mask.js' %}"></script>
+{% endif %}
 {% endblock %}
