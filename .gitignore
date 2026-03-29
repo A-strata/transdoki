@@ -89,3 +89,4 @@ secrets/
 backups/
 
 .claude/settings.local.json
+style_attrs.txt
