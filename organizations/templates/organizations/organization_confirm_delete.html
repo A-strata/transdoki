@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'organizations/css/organization_confirm_delete.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="delete-page">
+    <div class="delete-card">
+        <h1 class="delete-title">{% if object.is_own_company %}Удаление компании{% else %}Удаление контрагента{% endif %}</h1>
+        <p class="delete-text">Вы уверены, что хотите удалить: <span class="delete-target">«{{ object.short_name }}»</span>?</p>
+        <div class="delete-warning">Это действие нельзя отменить.</div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <a href="{% if object.is_own_company %}{% url 'organizations:own_list' %}{% else %}{% url 'organizations:list' %}{% endif %}" class="tms-btn tms-btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

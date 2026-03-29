@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static person_filters %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'persons/css/person_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="person-detail-page">
+    <div class="detail-card">
+        <div class="person-head">
+            <div class="person-title-wrap">
+                <h1 class="person-title">{{ person }}</h1>
+                {% if person.is_own_employee %}
+                    <span class="own-badge">Штатный сотрудник</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="person-section">
+            <h2 class="section-title">Основные данные</h2>
+            <table class="info-table">
+                <tr>
+                    <td>Фамилия</td>
+                    <td class="info-value">{{ person.surname }}</td>
+                </tr>
+                <tr>
+                    <td>Имя</td>
+                    <td class="info-value">{{ person.name }}</td>
+                </tr>
+                <tr>
+                    <td>Отчество</td>
+                    <td class="info-value">{{ person.patronymic|default:"—" }}</td>
+                </tr>
+                <tr>
+                    <td>Телефон</td>
+                    <td class="info-value">{{ person.phone|phone_format }}</td>
+                </tr>
+                <tr>
+                    <td>Дата рождения</td>
+                    <td class="info-value">{% if person.birth_date %}{{ person.birth_date|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                </tr>
+                {% if person.employer %}
+                <tr>
+                    <td>Работодатель</td>
+                    <td class="info-value">{{ person.employer.short_name }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <div class="person-section">
+            <h2 class="section-title">Паспортные данные</h2>
+            <table class="info-table">
+                <tr>
+                    <td>Серия и номер</td>
+                    <td class="info-value">{% if person.passport_series %}{{ person.passport_series }} {{ person.passport_number }}{% else %}—{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Кем выдан</td>
+                    <td class="info-value">{{ person.passport_issued_by|default:"—" }}</td>
+                </tr>
+                <tr>
+                    <td>Дата выдачи</td>
+                    <td class="info-value">{% if person.passport_issued_date %}{{ person.passport_issued_date|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Код подразделения</td>
+                    <td class="info-value">{{ person.passport_department_code|default:"—" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="person-section">
+            <h2 class="section-title">Водительское удостоверение</h2>
+            <table class="info-table">
+                <tr>
+                    <td>Номер ВУ</td>
+                    <td class="info-value">{{ person.license_number|default:"—" }}</td>
+                </tr>
+                <tr>
+                    <td>Дата выдачи</td>
+                    <td class="info-value">{% if person.license_issued_date %}{{ person.license_issued_date|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Действует до</td>
+                    <td class="info-value">{% if person.license_expiry_date %}{{ person.license_expiry_date|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Категории</td>
+                    <td class="info-value">{{ person.license_categories|default:"—" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="actions-row">
+            <a href="{% url 'persons:edit' person.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
+            <a href="{% url 'persons:delete' person.pk %}" class="tms-btn tms-btn-danger">Удалить</a>
+            <a href="{% url 'persons:list' %}" class="tms-btn tms-btn-secondary">Назад к списку</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

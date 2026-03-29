@@ -46,7 +46,7 @@ class Vehicle(UserOwnedModel):
         default=PropertyType.PROPERTY,
     )
     owner = models.ForeignKey(
-        Organization, on_delete=models.CASCADE, verbose_name="Cобственник ТС", default=1
+        Organization, on_delete=models.PROTECT, verbose_name="Cобственник ТС", default=1
     )
     current_odometer = models.PositiveIntegerField("Текущий одометр", default=0)
     status = models.CharField(

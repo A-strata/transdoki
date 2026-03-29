@@ -106,6 +106,12 @@
     border-color: #fecaca;
 }
 
+.balance-free {
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: var(--border);
+}
+
 .balance-exempt {
     background: #f3f4f6;
     color: #6b7280;

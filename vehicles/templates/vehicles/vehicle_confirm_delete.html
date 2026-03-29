@@ -2,13 +2,13 @@
 {% load static %}
 
 {% block head %}
-<link rel="stylesheet" href="{% static 'persons/css/person_confirm_delete.css' %}">
+<link rel="stylesheet" href="{% static 'vehicles/css/vehicle_confirm_delete.css' %}">
 {% endblock %}
 
 {% block content %}
 <section class="delete-page">
     <div class="delete-card">
-        <h1 class="delete-title">Удаление водителя</h1>
+        <h1 class="delete-title">Удаление транспортного средства</h1>
         <p class="delete-text">
             Вы уверены, что хотите удалить:
             <br>
@@ -19,7 +19,7 @@
             {% csrf_token %}
             <div class="actions">
                 <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
-                <a href="{% url 'persons:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
+                <a href="{% url 'vehicles:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
             </div>
         </form>
     </div>

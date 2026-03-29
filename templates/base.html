@@ -128,16 +128,20 @@
                         {% if billing_account.is_billing_exempt %}
                             <span class="balance-badge balance-exempt">Без ограничений</span>
                         {% else %}
-                            {% with b=billing_account.balance %}
-                                {% url 'billing:transactions' as billing_url %}
-                                {% if b > 100 %}
-                                    <a href="{{ billing_url }}" class="balance-badge balance-ok">&#9679; {{ b|floatformat:2 }} &#8381;</a>
-                                {% elif b >= 0 %}
-                                    <a href="{{ billing_url }}" class="balance-badge balance-warn">&#9651; {{ b|floatformat:2 }} &#8381;</a>
-                                {% else %}
-                                    <a href="{{ billing_url }}" class="balance-badge balance-danger">&#9888; {{ b|floatformat:2 }} &#8381;</a>
-                                {% endif %}
-                            {% endwith %}
+                            {% url 'billing:transactions' as billing_url %}
+                            {% if billing_is_free %}
+                                <a href="{{ billing_url }}" class="balance-badge balance-free">Бесплатно</a>
+                            {% else %}
+                                {% with b=billing_account.balance %}
+                                    {% if b < 0 %}
+                                        <a href="{{ billing_url }}" class="balance-badge balance-danger">&#9888; {{ b|floatformat:2 }} &#8381;</a>
+                                    {% elif b < billing_warn_threshold %}
+                                        <a href="{{ billing_url }}" class="balance-badge balance-warn">{{ b|floatformat:2 }} &#8381;</a>
+                                    {% else %}
+                                        <a href="{{ billing_url }}" class="balance-badge balance-ok">&#9679; {{ b|floatformat:2 }} &#8381;</a>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endif %}
                         {% endif %}
                     {% endif %}
 

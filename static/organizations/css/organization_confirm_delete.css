@@ -1,0 +1,67 @@
+.delete-page {
+    max-width: 620px;
+    margin: 0 auto;
+    padding-top: 8px;
+}
+
+.delete-card {
+    background: var(--surface);
+    border: 1px solid #fecaca;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+}
+
+.delete-title {
+    margin: 0 0 10px;
+    font-size: clamp(1.2rem, 1.7vw, 1.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #991b1b;
+}
+
+.delete-text {
+    margin: 0;
+    color: #374151;
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.delete-target {
+    display: inline-block;
+    margin-top: 4px;
+    font-weight: 700;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.delete-warning {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid #fee2e2;
+    background: #fef2f2;
+    border-radius: var(--radius-sm);
+    color: #b91c1c;
+    font-size: 0.88rem;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+    .delete-card {
+        padding: 14px;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .actions .tms-btn {
+        width: 100%;
+    }
+}

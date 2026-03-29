@@ -34,7 +34,12 @@ class OrganizationForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
+        self.force_is_own = kwargs.pop("force_is_own", None)
         super().__init__(*args, **kwargs)
+
+        if self.force_is_own is not None:
+            self.fields.pop("is_own_company", None)
+
         # Показываем PetrolPlus только для уже сохранённой "своей компании"
         self.show_petrolplus_fields = bool(
             self.instance.pk and self.instance.is_own_company

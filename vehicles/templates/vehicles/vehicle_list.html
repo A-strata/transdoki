@@ -70,6 +70,7 @@
                         <th>Модель</th>
                         <th>Собственник</th>
                         <th>Основание</th>
+                        <th data-col="actions">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,11 +89,17 @@
                         <td data-label="Основание">
                             <span class="property-badge prop-{{ pt }}">{{ vehicle.get_property_type_display }}</span>
                         </td>
+                        <td data-label="Действия" data-col="actions">
+                            <div class="row-actions">
+                                <a href="{% url 'vehicles:edit' vehicle.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
+                                <a href="{% url 'vehicles:delete' vehicle.pk %}" class="tms-btn tms-btn-danger tms-btn-sm">Удалить</a>
+                            </div>
+                        </td>
                     </tr>
                     {% endwith %}
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="empty-state">Нет транспортных средств</td>
+                        <td colspan="7" class="empty-state">Нет транспортных средств</td>
                     </tr>
                     {% endfor %}
                 </tbody>

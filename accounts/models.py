@@ -56,6 +56,14 @@ class Account(models.Model):
         help_text="Баланс ниже этого значения блокирует создание новых сущностей",
     )
 
+    cached_daily_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Суточная стоимость (кеш)",
+        help_text="Обновляется командой charge_daily",
+    )
+
     # --- Кастомные freemium-лимиты (можно расширить для отдельного аккаунта) ---
     free_orgs = models.PositiveSmallIntegerField(
         default=FREE_TIER_ORGS,

@@ -337,6 +337,8 @@
             <a href="{% url 'organizations:edit' organization.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
             {% if request.GET.next %}
                 <a href="{{ request.GET.next }}" class="tms-btn tms-btn-secondary">Назад к рейсу</a>
+            {% elif organization.is_own_company %}
+                <a href="{% url 'organizations:own_list' %}" class="tms-btn tms-btn-secondary">Назад к списку</a>
             {% else %}
                 <a href="{% url 'organizations:list' %}" class="tms-btn tms-btn-secondary">Назад к списку</a>
             {% endif %}

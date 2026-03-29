@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     VehicleCreateStandaloneView,
     VehicleCreateView,
+    VehicleDeleteView,
     VehicleListView,
     VehicleUpdateView,
     vehicle_quick_create,
@@ -19,6 +20,7 @@ urlpatterns = [
         name='create_for_org',
     ),
     path('<int:pk>/edit/', VehicleUpdateView.as_view(), name='edit'),
+    path('<int:pk>/delete/', VehicleDeleteView.as_view(), name='delete'),
     path(
         '',
         VehicleListView.as_view(),

@@ -3,11 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
+from django.db.models import ProtectedError
 from django.db.models import Q
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from organizations.models import Organization
 from transdoki.tenancy import get_request_account
@@ -112,6 +114,30 @@ class VehicleCreateStandaloneView(BillingProtectedMixin, LoginRequiredMixin, Cre
             return self.form_invalid(form)
         messages.success(self.request, f"ТС «{self.object}» добавлено.")
         return response
+
+
+class VehicleDeleteView(LoginRequiredMixin, DeleteView):
+    model = Vehicle
+    template_name = "vehicles/vehicle_confirm_delete.html"
+
+    def get_queryset(self):
+        return Vehicle.objects.filter(account=get_request_account(self.request))
+
+    def get_success_url(self):
+        return reverse("vehicles:list")
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        try:
+            self.object.delete()
+            messages.success(request, f"ТС «{self.object}» удалено.")
+            return redirect(self.get_success_url())
+        except ProtectedError:
+            messages.error(
+                request,
+                "Невозможно удалить: есть связанные рейсы или путевые листы.",
+            )
+            return redirect(reverse("vehicles:list"))
 
 
 class VehicleListView(LoginRequiredMixin, ListView):

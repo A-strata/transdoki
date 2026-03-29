@@ -1,12 +1,14 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import JsonResponse
-from django.urls import reverse_lazy
+from django.shortcuts import redirect
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from transdoki.tenancy import get_request_account
 
@@ -26,26 +28,59 @@ class PersonCreateView(LoginRequiredMixin, CreateView):
     model = Person
     form_class = PersonForm
     template_name = "persons/person_form.html"
-    success_url = reverse_lazy("persons:list")
+
+    def _is_own(self):
+        return self.request.GET.get("own") == "1"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self._is_own():
+            kwargs["force_own_employee"] = True
+        return kwargs
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
+        if self._is_own():
+            form.instance.is_own_employee = True
+            form.instance.employer = getattr(self.request, "current_org", None)
         try:
             return super().form_valid(form)
         except IntegrityError:
             form.add_error(None, "Человек с таким ФИО уже существует.")
             return self.form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_own"] = self._is_own()
+        if self._is_own():
+            context["current_org"] = getattr(self.request, "current_org", None)
+        return context
+
+    def get_success_url(self):
+        return reverse("persons:detail", kwargs={"pk": self.object.pk})
 
 
 class PersonUpdateView(LoginRequiredMixin, UpdateView):
     model = Person
     form_class = PersonForm
     template_name = "persons/person_form.html"
-    success_url = reverse_lazy("persons:list")
 
     def get_queryset(self):
         return Person.objects.filter(account=get_request_account(self.request))
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.object.is_own_employee:
+            kwargs["force_own_employee"] = True
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_own"] = self.object.is_own_employee
+        if self.object.is_own_employee and self.object.employer:
+            context["current_org"] = self.object.employer
+        return context
 
     def form_valid(self, form):
         try:
@@ -54,11 +89,37 @@ class PersonUpdateView(LoginRequiredMixin, UpdateView):
             form.add_error(None, "Человек с таким ФИО уже существует.")
             return self.form_invalid(form)
 
+    def get_success_url(self):
+        return reverse("persons:detail", kwargs={"pk": self.object.pk})
+
 
 class PersonDeleteView(LoginRequiredMixin, DeleteView):
     model = Person
     template_name = "persons/person_confirm_delete.html"
-    success_url = reverse_lazy("persons:list")
+
+    def get_queryset(self):
+        return Person.objects.filter(account=get_request_account(self.request))
+
+    def get_success_url(self):
+        return reverse("persons:list")
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        try:
+            self.object.delete()
+            messages.success(request, f"«{self.object}» удалён.")
+            return redirect(self.get_success_url())
+        except ProtectedError:
+            messages.error(
+                request,
+                "Невозможно удалить: есть связанные рейсы или путевые листы.",
+            )
+            return redirect(self.get_success_url())
+
+
+class PersonDetailView(LoginRequiredMixin, DetailView):
+    model = Person
+    template_name = "persons/person_detail.html"
 
     def get_queryset(self):
         return Person.objects.filter(account=get_request_account(self.request))

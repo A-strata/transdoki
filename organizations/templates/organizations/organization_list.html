@@ -37,9 +37,9 @@
                         <td data-label="Адрес"><span class="org-address">{{ organization.address }}</span></td>
                         <td data-label="Действия" data-col="actions">
                             <div class="row-actions">
-                                <a href="{% url 'organizations:detail' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">
-                                    Карточка компании
-                                </a>
+                                <a href="{% url 'organizations:detail' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Карточка компании</a>
+                                <a href="{% url 'organizations:edit' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
+                                <a href="{% url 'organizations:delete' organization.pk %}" class="tms-btn tms-btn-danger tms-btn-sm">Удалить</a>
                             </div>
                         </td>
                     </tr>

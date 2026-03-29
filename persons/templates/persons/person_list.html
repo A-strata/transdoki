@@ -9,11 +9,11 @@
 <section class="persons-page">
     <div class="list-toolbar">
         <div class="list-toolbar-left">
-            <h1>Люди</h1>
-            <p class="persons-subtitle">Список сотрудников и контактных лиц</p>
+            <h1>Мои водители</h1>
+            <p class="persons-subtitle">Штатные водители ваших организаций</p>
         </div>
         <div class="list-toolbar-right">
-            <a href="{% url 'persons:create' %}" class="tms-btn tms-btn-primary tms-btn-add">+ Добавить человека</a>
+            <a href="{% url 'persons:create' %}?own=1" class="tms-btn tms-btn-primary tms-btn-add">+ Добавить водителя</a>
         </div>
     </div>
 
@@ -36,6 +36,7 @@
                         <td data-label="Отчество">{{ person.patronymic|default:"—" }}</td>
                         <td data-label="Действия" data-col="actions">
                             <div class="row-actions">
+                                <a href="{% url 'persons:detail' person.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Карточка</a>
                                 <a href="{% url 'persons:edit' person.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
                                 <a href="{% url 'persons:delete' person.pk %}"
                                    class="tms-btn tms-btn-danger tms-btn-sm">

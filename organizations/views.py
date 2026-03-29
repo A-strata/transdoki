@@ -1,11 +1,14 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.db.models import ProtectedError
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from transdoki.tenancy import get_request_account
 
@@ -29,9 +32,18 @@ class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateVi
     template_name = "organizations/organization_form.html"
     success_url = reverse_lazy("organizations:list")
 
+    def _is_own(self):
+        return self.request.GET.get("own") == "1"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["force_is_own"] = self._is_own()
+        return kwargs
+
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
+        form.instance.is_own_company = self._is_own()
 
         try:
             return super().form_valid(form)
@@ -44,15 +56,9 @@ class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateVi
             form.add_error("inn", "Организация с таким ИНН уже существует.")
             return self.form_invalid(form)
 
-    def get_initial(self):
-        initial = super().get_initial()
-        if self.request.GET.get("own") == "1":
-            initial["is_own_company"] = True
-        return initial
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["is_own"] = self.request.GET.get("own") == "1"
+        context["is_own"] = self._is_own()
         return context
 
     def get_success_url(self):
@@ -66,6 +72,16 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_queryset(self):
         return Organization.objects.filter(account=get_request_account(self.request))
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["force_is_own"] = self.object.is_own_company
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_own"] = self.object.is_own_company
+        return context
 
     def form_valid(self, form):
         return super().form_valid(form)
@@ -100,6 +116,32 @@ class OwnCompanyListView(UserOwnedListView):
         context = super().get_context_data(**kwargs)
         context["is_own"] = True
         return context
+
+
+class OrganizationDeleteView(LoginRequiredMixin, DeleteView):
+    model = Organization
+    template_name = "organizations/organization_confirm_delete.html"
+
+    def get_queryset(self):
+        return Organization.objects.filter(account=get_request_account(self.request))
+
+    def get_success_url(self):
+        if self.object.is_own_company:
+            return reverse("organizations:own_list")
+        return reverse("organizations:list")
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        try:
+            self.object.delete()
+            messages.success(request, f"Организация «{self.object.short_name}» удалена.")
+            return redirect(self.get_success_url())
+        except ProtectedError:
+            messages.error(
+                request,
+                "Невозможно удалить: есть связанные рейсы, путевые листы или транспортные средства.",
+            )
+            return redirect(reverse("organizations:detail", kwargs={"pk": self.object.pk}))
 
 
 class OrganizationDetailView(LoginRequiredMixin, DetailView):

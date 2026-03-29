@@ -46,6 +46,11 @@ class Command(BaseCommand):
             try:
                 cost, breakdown = billing_services.get_daily_cost(account)
 
+                # Всегда обновляем кеш суточной стоимости (для бейджа в навбаре)
+                if account.cached_daily_cost != cost:
+                    account.cached_daily_cost = cost
+                    account.save(update_fields=["cached_daily_cost", "updated_at"])
+
                 if cost == 0:
                     total_skipped += 1
                     continue

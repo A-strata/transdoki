@@ -13,14 +13,20 @@ class PersonForm(forms.ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
+        self.force_own_employee = kwargs.pop("force_own_employee", None)
         super().__init__(*args, **kwargs)
+
+        if self.force_own_employee is not None:
+            self.fields.pop("is_own_employee", None)
+            self.fields.pop("employer", None)
+
         # Зашифрованные CharField возвращают b'' вместо '' для пустых значений
         for name, value in self.initial.items():
             if value == b"":
                 self.initial[name] = ""
         # Склеиваем серию и номер для отображения в маске
-        series = self.initial.get("passport_series", "")
-        number = self.initial.get("passport_number", "")
+        series = getattr(self.instance, "passport_series", "") or ""
+        number = getattr(self.instance, "passport_number", "") or ""
         if series or number:
             self.initial["passport_series_number"] = str(series) + str(number)
 
