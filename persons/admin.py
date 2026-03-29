@@ -20,14 +20,14 @@ def _get_request_account(request):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ("get_full_name", "phone", "is_own_employee", "account", "created_by")
+    list_display = ("get_full_name", "phone", "employer", "account", "created_by")
     search_fields = ("surname", "name", "patronymic", "phone")
-    list_filter = ("account", "is_own_employee")
+    list_filter = ("account",)
     fieldsets = (
         ("Основное", {
             "fields": (
                 "surname", "name", "patronymic",
-                "birth_date", "phone", "is_own_employee",
+                "birth_date", "phone", "employer",
                 "account", "created_by",
             ),
         }),

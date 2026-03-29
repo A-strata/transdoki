@@ -29,21 +29,10 @@ class PersonCreateView(LoginRequiredMixin, CreateView):
     form_class = PersonForm
     template_name = "persons/person_form.html"
 
-    def _is_own(self):
-        return self.request.GET.get("own") == "1"
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        if self._is_own():
-            kwargs["force_own_employee"] = True
-        return kwargs
-
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
-        if self._is_own():
-            form.instance.is_own_employee = True
-            form.instance.employer = getattr(self.request, "current_org", None)
+        form.instance.employer = getattr(self.request, "current_org", None)
         try:
             return super().form_valid(form)
         except IntegrityError:
@@ -52,9 +41,7 @@ class PersonCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["is_own"] = self._is_own()
-        if self._is_own():
-            context["current_org"] = getattr(self.request, "current_org", None)
+        context["current_org"] = getattr(self.request, "current_org", None)
         return context
 
     def get_success_url(self):
@@ -69,17 +56,9 @@ class PersonUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         return Person.objects.filter(account=get_request_account(self.request))
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        if self.object.is_own_employee:
-            kwargs["force_own_employee"] = True
-        return kwargs
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["is_own"] = self.object.is_own_employee
-        if self.object.is_own_employee and self.object.employer:
-            context["current_org"] = self.object.employer
+        context["current_org"] = self.object.employer
         return context
 
     def form_valid(self, form):
@@ -188,6 +167,7 @@ def person_quick_create(request):
             phone=phone,
             created_by=request.user,
             account=account,
+            employer=getattr(request, "current_org", None),
         )
         person.save()
     except IntegrityError:

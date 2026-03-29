@@ -9,7 +9,7 @@
 <div class="person-form-page">
     <header class="page-header">
         <h1 class="page-title">
-            {% if form.instance.pk %}Редактировать водителя{% elif is_own %}Добавить водителя{% else %}Добавить человека{% endif %}
+            {% if form.instance.pk %}Редактировать водителя{% else %}Добавить водителя{% endif %}
         </h1>
         <p class="page-subtitle">ФИО, контактные данные, паспорт и водительское удостоверение</p>
     </header>
@@ -29,7 +29,7 @@
         <section class="form-section">
             <h2>Основное</h2>
 
-            {% if is_own and current_org %}
+            {% if current_org %}
             <div class="employer-info">
                 <span class="employer-info-label">Компания:</span>
                 <span class="employer-info-value">{{ current_org.short_name }}</span>
@@ -68,14 +68,6 @@
                 </div>
             </div>
 
-            {% if form.is_own_employee %}
-            <div class="form-group-checkbox">
-                {{ form.is_own_employee }}
-                {{ form.is_own_employee.label_tag }}
-                {{ form.is_own_employee.errors }}
-                <span class="help-text">{{ form.is_own_employee.help_text }}</span>
-            </div>
-            {% endif %}
         </section>
 
         {# ── Паспорт ─────────────────────────────────────────────── #}

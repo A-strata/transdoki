@@ -13,12 +13,8 @@ class PersonForm(forms.ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
-        self.force_own_employee = kwargs.pop("force_own_employee", None)
+        kwargs.pop("force_own_employee", None)
         super().__init__(*args, **kwargs)
-
-        if self.force_own_employee is not None:
-            self.fields.pop("is_own_employee", None)
-            self.fields.pop("employer", None)
 
         # Зашифрованные CharField возвращают b'' вместо '' для пустых значений
         for name, value in self.initial.items():
@@ -108,7 +104,7 @@ class PersonForm(forms.ModelForm):
     class Meta:
         model = Person
         exclude = ["created_by", "account", "created_at", "updated_at",
-                   "passport_series", "passport_number"]
+                   "passport_series", "passport_number", "employer"]
 
     def clean(self):
         cleaned_data = super().clean()

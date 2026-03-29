@@ -11,8 +11,8 @@
         <div class="person-head">
             <div class="person-title-wrap">
                 <h1 class="person-title">{{ person }}</h1>
-                {% if person.is_own_employee %}
-                    <span class="own-badge">Штатный сотрудник</span>
+                {% if person.employer %}
+                    <span class="own-badge">{{ person.employer.short_name }}</span>
                 {% endif %}
             </div>
         </div>
