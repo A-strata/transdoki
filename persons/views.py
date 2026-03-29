@@ -125,10 +125,16 @@ class PersonDetailView(LoginRequiredMixin, DetailView):
         return Person.objects.filter(account=get_request_account(self.request))
 
 
-class PersonListView(UserOwnedListView):
+class PersonListView(LoginRequiredMixin, ListView):
     model = Person
     template_name = "persons/person_list.html"
     context_object_name = "persons"
+
+    def get_queryset(self):
+        current_org = self.request.current_org
+        if current_org is None:
+            return Person.objects.none()
+        return Person.objects.filter(employer=current_org).select_related("employer")
 
 
 @login_required
