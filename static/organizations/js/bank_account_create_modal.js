@@ -23,10 +23,14 @@ document.addEventListener("DOMContentLoaded", function () {
     var hiddenBankName = document.getElementById("ba-bank-name");
     var hiddenCorrAccount = document.getElementById("ba-corr-account");
 
+    // Spinner
+    var spin = document.getElementById("ba-spin");
+
     // Manual fallback
     var manualWrap = document.getElementById("ba-manual-wrap");
     var manualToggle = document.getElementById("ba-manual-toggle");
     var manualToggleWrap = document.getElementById("ba-manual-toggle-wrap");
+    var backToSearch = document.getElementById("ba-back-to-search");
     var manualBic = document.getElementById("ba-manual-bic");
     var manualBankName = document.getElementById("ba-manual-bank-name");
     var manualCorrAccount = document.getElementById("ba-manual-corr-account");
@@ -94,15 +98,23 @@ document.addEventListener("DOMContentLoaded", function () {
     searchInput.addEventListener("input", function () {
         var q = searchInput.value.trim();
         clearTimeout(debounceTimer);
-        if (q.length < 2) {
-            dropdown.classList.remove("visible");
-            return;
-        }
+        if (spin) spin.classList.remove("active");
+        dropdown.classList.remove("visible");
+
+        if (q.length < 2) return;
+
+        if (spin) spin.classList.add("active");
         debounceTimer = setTimeout(function () {
             fetch(suggestUrl + "?q=" + encodeURIComponent(q))
                 .then(function (r) { return r.json(); })
-                .then(function (data) { showDropdown(data.suggestions || []); })
-                .catch(function () { dropdown.classList.remove("visible"); });
+                .then(function (data) {
+                    if (spin) spin.classList.remove("active");
+                    showDropdown(data.suggestions || []);
+                })
+                .catch(function () {
+                    if (spin) spin.classList.remove("active");
+                    dropdown.classList.remove("visible");
+                });
         }, 400);
     });
 
@@ -139,6 +151,21 @@ document.addEventListener("DOMContentLoaded", function () {
         searchWrap.hidden = true;
         manualToggleWrap.hidden = true;
         manualWrap.hidden = false;
+    });
+
+    backToSearch.addEventListener("click", function () {
+        isManualMode = false;
+        manualBic.value = "";
+        manualBankName.value = "";
+        manualCorrAccount.value = "";
+        hiddenBic.value = "";
+        hiddenBankName.value = "";
+        hiddenCorrAccount.value = "";
+        manualWrap.hidden = true;
+        searchWrap.hidden = false;
+        manualToggleWrap.hidden = false;
+        searchInput.value = "";
+        searchInput.focus();
     });
 
     function syncManualToHidden() {
@@ -250,6 +277,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     manualWrap.hidden = true;
                     manualToggleWrap.hidden = false;
                     dropdown.classList.remove("visible");
+                    if (spin) spin.classList.remove("active");
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                 }

@@ -385,10 +385,19 @@
                 </div>
 
                 {# ── Поиск банка ── #}
-                <div class="modal-field modal-field--full suggest-wrap" id="ba-search-wrap">
+                <div class="modal-field modal-field--full" id="ba-search-wrap">
                     <label for="ba-search">БИК или название банка</label>
-                    <input type="text" id="ba-search" autocomplete="off" placeholder="Начните вводить...">
-                    <div class="suggest-dropdown" id="ba-suggest-dropdown"></div>
+                    <div class="suggest-wrap">
+                        <input type="text" id="ba-search" autocomplete="off" placeholder="Начните вводить...">
+                        <svg class="suggest-spinner" id="ba-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="6" stroke="#e5e7eb" stroke-width="2"/>
+                            <path d="M8 2a6 6 0 0 1 6 6" stroke="#2563eb" stroke-width="2" stroke-linecap="round">
+                                <animateTransform attributeName="transform" type="rotate"
+                                    from="0 8 8" to="360 8 8" dur=".7s" repeatCount="indefinite"/>
+                            </path>
+                        </svg>
+                        <div class="suggest-dropdown" id="ba-suggest-dropdown"></div>
+                    </div>
                 </div>
 
                 {# ── Выбранный банк (скрыт, пока не выбран) ── #}
@@ -421,6 +430,9 @@
                         <div class="modal-field">
                             <label for="ba-manual-corr-account">Корр. счёт</label>
                             <input type="text" id="ba-manual-corr-account" maxlength="20">
+                        </div>
+                        <div class="modal-field modal-field--full">
+                            <button type="button" class="suggest-manual-link" id="ba-back-to-search">Вернуться к поиску</button>
                         </div>
                     </div>
                 </div>

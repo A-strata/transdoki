@@ -226,6 +226,23 @@ input.is-invalid:focus {
     position: relative;
 }
 
+.suggest-wrap input {
+    padding-right: 34px;
+}
+
+.suggest-spinner {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+    pointer-events: none;
+}
+
+.suggest-spinner.active {
+    display: block;
+}
+
 .suggest-dropdown {
     display: none;
     position: absolute;
