@@ -47,38 +47,38 @@
 
             <p class="section-label">О компании</p>
 
-            <div class="field org-search-field" id="org-search-field">
+            <div class="field" id="org-search-field">
                 <label for="org-search">Организация</label>
-                <div class="org-wrap">
+                <div class="suggest-wrap">
                     <input type="text" id="org-search"
                            placeholder="Введите название или ИНН"
                            autocomplete="off"
                            data-suggest-url="{% url 'organizations:api_party_suggest' %}">
-                    <svg class="org-spinner" id="org-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <svg class="suggest-spinner" id="org-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <circle cx="8" cy="8" r="6" stroke="#e5e7eb" stroke-width="2"/>
                         <path d="M8 2a6 6 0 0 1 6 6" stroke="#2563eb" stroke-width="2" stroke-linecap="round">
                             <animateTransform attributeName="transform" type="rotate"
                                 from="0 8 8" to="360 8 8" dur=".7s" repeatCount="indefinite"/>
                         </path>
                     </svg>
-                    <ul class="org-suggestions" id="org-dropdown" role="listbox"></ul>
+                    <div class="suggest-dropdown" id="org-dropdown" role="listbox"></div>
                 </div>
                 <span class="org-manual-hint">Не нашли компанию?
-                <a href="#" class="auth-card-link org-manual-link" id="org-manual-link">Ввести вручную</a></span>
+                <a href="#" class="auth-card-link" id="org-manual-link">Ввести вручную</a></span>
             </div>
 
-            <div class="org-selected-row" id="org-selected-row">
-                <div class="org-selected-info">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <div class="selected-row selected-row--success" id="org-selected-row" hidden>
+                <div class="selected-row-info">
+                    <svg class="selected-row-check" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                         <circle cx="7" cy="7" r="7" fill="#22c55e"/>
                         <path d="M4 7l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <span id="org-selected-text"></span>
+                    <span class="selected-row-title" id="org-selected-text"></span>
                 </div>
-                <button type="button" class="org-change-btn" id="org-change-btn">Изменить</button>
+                <button type="button" class="selected-row-action" id="org-change-btn">Изменить</button>
             </div>
 
-            <div class="org-manual-block" id="org-manual-block">
+            <div id="org-manual-block" hidden>
                 <div class="field">
                     <label for="org-name-input">Краткое наименование</label>
                     <input type="text" id="org-name-input" maxlength="200"
@@ -89,7 +89,7 @@
                     <input type="text" id="org-inn-input" maxlength="12"
                            inputmode="numeric" autocomplete="off">
                 </div>
-                <a href="#" class="org-back-link" id="org-back-link">← Назад к поиску</a>
+                <button type="button" class="suggest-manual-link" id="org-back-link">← Назад к поиску</button>
             </div>
 
             {{ form.inn }}

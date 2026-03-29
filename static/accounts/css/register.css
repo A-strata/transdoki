@@ -43,70 +43,6 @@
     margin: 18px 0;
 }
 
-/* Поиск организации */
-.org-wrap { position: relative; }
-.org-wrap input { padding-right: 34px; }
-
-.org-spinner {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: none;
-    pointer-events: none;
-}
-
-.org-spinner.active { display: block; }
-
-/* Дропдаун подсказок */
-.org-suggestions {
-    display: none;
-    position: absolute;
-    top: calc(100% + 3px);
-    left: 0;
-    right: 0;
-    z-index: var(--z-inline-dropdown);
-    margin: 0;
-    padding: 4px 0;
-    list-style: none;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
-    max-height: 230px;
-    overflow-y: auto;
-}
-
-.org-suggestions.visible { display: block; }
-
-.org-suggestion-item {
-    display: flex;
-    flex-direction: column;
-    padding: 8px 12px;
-    cursor: pointer;
-    gap: 2px;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.org-suggestion-item:last-child { border-bottom: none; }
-
-.org-suggestion-item:hover,
-.org-suggestion-item.is-active { background: #f9fafb; }
-
-.sug-name {
-    font-size: 0.88rem;
-    font-weight: 500;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.sug-inn {
-    font-size: 0.78rem;
-    color: var(--muted);
-}
-
 /* Подсказка «Не нашли компанию?» */
 .org-manual-hint {
     display: block;
@@ -114,74 +50,6 @@
     font-size: 0.84rem;
     color: var(--muted);
 }
-
-/* Строка выбранной организации */
-.org-selected-row {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: var(--radius-sm);
-    margin-bottom: 4px;
-}
-
-.org-selected-row.org-visible { display: flex; }
-
-.org-selected-row.org-error {
-    background: #fffbeb;
-    border-color: #fde68a;
-}
-
-.org-selected-row.org-error .org-selected-info > svg { display: none; }
-
-.org-selected-info {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.88rem;
-    color: var(--text);
-    min-width: 0;
-    flex: 1;
-}
-
-.org-selected-info span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.org-change-btn {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 0.82rem;
-    color: var(--primary);
-    cursor: pointer;
-    text-decoration: underline;
-}
-
-.org-change-btn:hover { color: var(--primary-hover); }
-
-/* Блок ручного ввода */
-.org-manual-block { display: none; }
-.org-manual-block.org-visible { display: block; }
-
-.org-back-link {
-    display: inline-block;
-    margin-top: 2px;
-    font-size: 0.82rem;
-    color: var(--muted);
-    text-decoration: none;
-}
-
-.org-back-link:hover { color: var(--text); text-decoration: underline; }
-
-/* Управление видимостью состояний */
-.org-search-field.org-hidden { display: none; }
 
 /* Ошибки скрытых полей */
 .org-field-errors { margin-top: 4px; }
@@ -242,6 +110,10 @@
     text-align: center;
 }
 
+.auth-footer--tight {
+    margin-top: 8px;
+}
+
 .auth-card-link {
     color: var(--primary);
     font-weight: 600;
@@ -249,6 +121,14 @@
 }
 
 .auth-card-link:hover { text-decoration: underline; }
+
+.auth-back-link {
+    color: var(--muted);
+    font-size: 0.84rem;
+    text-decoration: none;
+}
+
+.auth-back-link:hover { color: var(--text); text-decoration: underline; }
 
 @media (max-width: 520px) {
     .auth-card { padding: 14px; }

@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Manual fallback
     var manualWrap = document.getElementById("ba-manual-wrap");
     var manualToggle = document.getElementById("ba-manual-toggle");
-    var manualToggleWrap = document.getElementById("ba-manual-toggle-wrap");
+
     var backToSearch = document.getElementById("ba-back-to-search");
     var manualBic = document.getElementById("ba-manual-bic");
     var manualBankName = document.getElementById("ba-manual-bank-name");
@@ -78,7 +78,6 @@ document.addEventListener("DOMContentLoaded", function () {
         selectedDetails.textContent = "БИК " + item.bic + " · К/с " + item.corr_account;
 
         searchWrap.hidden = true;
-        manualToggleWrap.hidden = true;
         selectedWrap.hidden = false;
         dropdown.classList.remove("visible");
         searchInput.value = "";
@@ -90,7 +89,6 @@ document.addEventListener("DOMContentLoaded", function () {
         hiddenCorrAccount.value = "";
         selectedWrap.hidden = true;
         searchWrap.hidden = false;
-        manualToggleWrap.hidden = isManualMode;
         searchInput.value = "";
         searchInput.focus();
     }
@@ -144,13 +142,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     changeBtn.addEventListener("click", resetBankSelection);
 
-    // ── Clear error on account_num input ──
+    // ── Account number: digits only + counter ──
 
     var accountNumInput = document.getElementById("ba-account-num");
+    var accountHint = document.getElementById("ba-account-hint");
+    var ACCOUNT_LENGTH = 20;
+
+    function updateAccountHint() {
+        if (!accountHint) return;
+        var len = accountNumInput.value.length;
+        accountHint.textContent = len === 0 ? "20 цифр" : len + " / " + ACCOUNT_LENGTH;
+    }
+
     accountNumInput.addEventListener("input", function () {
+        accountNumInput.value = accountNumInput.value.replace(/\D/g, "");
         accountNumInput.classList.remove("is-invalid");
         var err = accountNumInput.parentNode.querySelector(".modal-field-error");
         if (err) err.remove();
+        updateAccountHint();
+    });
+
+    accountNumInput.addEventListener("paste", function (e) {
+        e.preventDefault();
+        var pasted = (e.clipboardData || window.clipboardData).getData("text");
+        accountNumInput.value = pasted.replace(/\D/g, "").slice(0, ACCOUNT_LENGTH);
+        accountNumInput.dispatchEvent(new Event("input"));
     });
 
     // ── Manual mode ──
@@ -158,7 +174,6 @@ document.addEventListener("DOMContentLoaded", function () {
     manualToggle.addEventListener("click", function () {
         isManualMode = true;
         searchWrap.hidden = true;
-        manualToggleWrap.hidden = true;
         manualWrap.hidden = false;
     });
 
@@ -172,7 +187,6 @@ document.addEventListener("DOMContentLoaded", function () {
         hiddenCorrAccount.value = "";
         manualWrap.hidden = true;
         searchWrap.hidden = false;
-        manualToggleWrap.hidden = false;
         searchInput.value = "";
         searchInput.focus();
     });
@@ -277,6 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (m.attributeName === "hidden" && modal.hidden) {
                     form.reset();
                     clearErrors();
+                    updateAccountHint();
                     hiddenBic.value = "";
                     hiddenBankName.value = "";
                     hiddenCorrAccount.value = "";
@@ -284,7 +299,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     searchWrap.hidden = false;
                     selectedWrap.hidden = true;
                     manualWrap.hidden = true;
-                    manualToggleWrap.hidden = false;
                     dropdown.classList.remove("visible");
                     if (spin) spin.classList.remove("active");
                     submitBtn.disabled = false;

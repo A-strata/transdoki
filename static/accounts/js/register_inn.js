@@ -1,6 +1,8 @@
 /**
  * Поиск организации по названию или ИНН на странице регистрации.
  * Три состояния: search → selected → manual.
+ * Использует глобальные компоненты: .suggest-wrap, .suggest-dropdown,
+ * .suggest-item, .selected-row, .suggest-spinner, .suggest-manual-link.
  */
 (function () {
     var searchField  = document.getElementById('org-search-field');
@@ -31,9 +33,9 @@
     /* ---------- состояния ---------- */
 
     function setState(state) {
-        searchField.classList.toggle('org-hidden', state !== 'search');
-        selectedRow.classList.toggle('org-visible', state === 'selected');
-        manualBlock.classList.toggle('org-visible', state === 'manual');
+        searchField.hidden = state !== 'search';
+        selectedRow.hidden = state !== 'selected';
+        manualBlock.hidden = state !== 'manual';
     }
 
     function clearHiddenFields() {
@@ -48,7 +50,7 @@
     /* ---------- дропдаун ---------- */
 
     function getItems() {
-        return dropdown.querySelectorAll('.org-suggestion-item');
+        return dropdown.querySelectorAll('.suggest-item');
     }
 
     function setActive(index) {
@@ -69,26 +71,26 @@
             return;
         }
         suggestions.forEach(function (item, i) {
-            var li = document.createElement('li');
-            li.className = 'org-suggestion-item';
-            li.setAttribute('role', 'option');
+            var div = document.createElement('div');
+            div.className = 'suggest-item';
+            div.setAttribute('role', 'option');
 
             var nameSpan = document.createElement('span');
-            nameSpan.className = 'sug-name';
+            nameSpan.className = 'suggest-item-title';
             nameSpan.textContent = item.short_name || item.full_name || '';
 
             var innSpan = document.createElement('span');
-            innSpan.className = 'sug-inn';
+            innSpan.className = 'suggest-item-sub';
             innSpan.textContent = 'ИНН\u00a0' + item.inn;
 
-            li.appendChild(nameSpan);
-            li.appendChild(innSpan);
-            li.addEventListener('mouseenter', function () { setActive(i); });
-            li.addEventListener('mousedown', function (e) {
+            div.appendChild(nameSpan);
+            div.appendChild(innSpan);
+            div.addEventListener('mouseenter', function () { setActive(i); });
+            div.addEventListener('mousedown', function (e) {
                 e.preventDefault();
                 selectSuggestion(item);
             });
-            dropdown.appendChild(li);
+            dropdown.appendChild(div);
         });
         dropdown.classList.add('visible');
     }
@@ -110,6 +112,8 @@
         if (hiddenOgrn)    hiddenOgrn.value    = item.ogrn    || '';
         if (hiddenAddress) hiddenAddress.value = item.address || '';
         selectedText.textContent = shortName + '\u00a0·\u00a0ИНН\u00a0' + item.inn;
+        selectedRow.classList.remove('selected-row--warning');
+        selectedRow.classList.add('selected-row--success');
         hideDropdown();
         clearTimeout(timer);
         if (spin) spin.classList.remove('active');
@@ -119,7 +123,7 @@
     function clearSelection() {
         clearHiddenFields();
         searchInput.value = '';
-        selectedRow.classList.remove('org-error');
+        selectedRow.classList.remove('selected-row--warning');
         hideDropdown();
         setState('search');
         searchInput.focus();
@@ -220,7 +224,8 @@
         selectedText.textContent = hiddenShortName.value + '\u00a0·\u00a0ИНН\u00a0' + hiddenInn.value;
         setState('selected');
         if (document.querySelector('.org-field-errors')) {
-            selectedRow.classList.add('org-error');
+            selectedRow.classList.remove('selected-row--success');
+            selectedRow.classList.add('selected-row--warning');
         }
     } else if (hiddenInn.value || hiddenShortName.value) {
         if (nameInput) nameInput.value = hiddenShortName.value;

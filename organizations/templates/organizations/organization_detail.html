@@ -381,7 +381,8 @@
             <div class="modal-fields">
                 <div class="modal-field modal-field--full">
                     <label for="ba-account-num">Расчётный счёт</label>
-                    <input type="text" id="ba-account-num" name="account_num" required maxlength="20" autocomplete="off">
+                    <input type="text" id="ba-account-num" name="account_num" required maxlength="20" inputmode="numeric" autocomplete="off">
+                    <span class="modal-field-hint" id="ba-account-hint">20 цифр</span>
                 </div>
 
                 {# ── Поиск банка ── #}
@@ -398,6 +399,7 @@
                         </svg>
                         <div class="suggest-dropdown" id="ba-suggest-dropdown"></div>
                     </div>
+                    <span class="modal-field-hint">Не нашли банк? <button type="button" class="suggest-manual-link" id="ba-manual-toggle">Ввести вручную</button></span>
                 </div>
 
                 {# ── Выбранный банк (скрыт, пока не выбран) ── #}
@@ -407,7 +409,7 @@
                             <span class="selected-row-title" id="ba-selected-name"></span>
                             <span class="selected-row-sub" id="ba-selected-details"></span>
                         </div>
-                        <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm" id="ba-change-bank">Изменить</button>
+                        <button type="button" class="selected-row-action" id="ba-change-bank">Изменить</button>
                     </div>
                 </div>
 
@@ -437,9 +439,6 @@
                     </div>
                 </div>
 
-                <div class="modal-field modal-field--full" id="ba-manual-toggle-wrap">
-                    <button type="button" class="suggest-manual-link" id="ba-manual-toggle">Ввести вручную</button>
-                </div>
             </div>
 
             <div class="modal-form-errors" id="ba-errors" hidden></div>
