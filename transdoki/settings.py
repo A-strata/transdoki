@@ -64,6 +64,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Кастомные middleware проекта
     "accounts.middleware.SessionActivityMiddleware",
+    "accounts.middleware.CurrentOrganizationMiddleware",
 ]
 
 ROOT_URLCONF = "transdoki.urls"
@@ -79,6 +80,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "billing.context_processors.billing_account",
+                "accounts.context_processors.current_org_context",
             ],
         },
     },

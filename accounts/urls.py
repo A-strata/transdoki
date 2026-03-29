@@ -7,12 +7,14 @@ from .views import (
     AccountUserRoleUpdateView,
     AccountUserUpdateView,
     RegisterView,
+    SwitchOrganizationView,
 )
 
 app_name = "accounts"
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
+    path("switch-org/", SwitchOrganizationView.as_view(), name="switch_org"),
     path("cabinet/", AccountCabinetView.as_view(), name="cabinet"),
     path("users/create/", AccountUserCreateView.as_view(), name="user_create"),
     path(

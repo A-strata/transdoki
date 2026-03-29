@@ -154,7 +154,7 @@ class VehicleListView(LoginRequiredMixin, ListView):
         context["own_companies"] = Organization.objects.filter(
             account=account, is_own_company=True
         ).order_by("short_name")
-        context["current_org"] = self._get_org_filter()
+        context["vehicle_org_filter"] = self._get_org_filter()
         context["current_type"] = self.request.GET.get("type", "all")
         context["vehicle_types"] = VehicleType.choices
         return context

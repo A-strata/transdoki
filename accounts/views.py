@@ -16,6 +16,20 @@ from .models import UserProfile
 from .services import reset_account_user_password
 
 
+class SwitchOrganizationView(LoginRequiredMixin, View):
+    def post(self, request):
+        account = get_request_account(request)
+        org_id = request.POST.get("org_id")
+        if org_id:
+            exists = Organization.objects.filter(
+                pk=org_id, account=account, is_own_company=True
+            ).exists()
+            if exists:
+                request.session["current_org_id"] = int(org_id)
+        referer = request.META.get("HTTP_REFERER") or reverse("trips:list")
+        return redirect(referer)
+
+
 class RegisterView(FormView):
     form_class = AccountRegistrationForm
     template_name = "accounts/register.html"

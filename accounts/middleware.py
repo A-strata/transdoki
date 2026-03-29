@@ -7,6 +7,48 @@ from django.utils import timezone
 _UPDATE_INTERVAL = timedelta(minutes=5)
 
 
+class CurrentOrganizationMiddleware:
+    """
+    Устанавливает request.current_org — текущую выбранную организацию пользователя
+    (is_own_company=True). Хранится в session["current_org_id"].
+    Если значение в сессии невалидно — подставляет первую свою организацию.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.current_org = None
+
+        if request.user.is_authenticated:
+            self._set_current_org(request)
+
+        return self.get_response(request)
+
+    def _set_current_org(self, request):
+        from organizations.models import Organization
+        from transdoki.tenancy import get_request_account
+
+        account = get_request_account(request)
+        own_orgs = Organization.objects.filter(
+            account=account, is_own_company=True
+        ).order_by("short_name")
+        request.own_orgs = own_orgs
+
+        session_org_id = request.session.get("current_org_id")
+        org = None
+
+        if session_org_id:
+            org = own_orgs.filter(pk=session_org_id).first()
+
+        if org is None:
+            org = own_orgs.first()
+            if org is not None and session_org_id != org.pk:
+                request.session["current_org_id"] = org.pk
+
+        request.current_org = org
+
+
 class SessionActivityMiddleware:
     """
     Обновляет last_activity для текущей UserSession пользователя.

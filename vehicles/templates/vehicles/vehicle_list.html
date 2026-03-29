@@ -24,17 +24,17 @@
             <div class="filter-divider"></div>
             <div class="filter-chips">
                 <a href="?org=all&type={{ current_type }}"
-                   class="filter-chip {% if current_org == 'all' %}active{% endif %}">
+                   class="filter-chip {% if vehicle_org_filter == 'all' %}active{% endif %}">
                     Все ТС
                 </a>
                 {% if own_companies %}
                 <a href="?org=own&type={{ current_type }}"
-                   class="filter-chip {% if current_org == 'own' %}active{% endif %}">
+                   class="filter-chip {% if vehicle_org_filter == 'own' %}active{% endif %}">
                     Все свои
                 </a>
                 {% for org in own_companies %}
                 <a href="?org={{ org.pk }}&type={{ current_type }}"
-                   class="filter-chip {% if current_org == org.pk|stringformat:'s' %}active{% endif %}">
+                   class="filter-chip {% if vehicle_org_filter == org.pk|stringformat:'s' %}active{% endif %}">
                     {{ org.short_name }}
                 </a>
                 {% endfor %}
@@ -45,12 +45,12 @@
             <span class="filter-label">Тип ТС</span>
             <div class="filter-divider"></div>
             <div class="filter-chips">
-                <a href="?org={{ current_org }}&type=all"
+                <a href="?org={{ vehicle_org_filter }}&type=all"
                    class="filter-chip {% if current_type == 'all' %}active{% endif %}">
                     Все типы
                 </a>
                 {% for value, label in vehicle_types %}
-                <a href="?org={{ current_org }}&type={{ value }}"
+                <a href="?org={{ vehicle_org_filter }}&type={{ value }}"
                    class="filter-chip {% if current_type == value %}active{% endif %}">
                     {{ label }}
                 </a>

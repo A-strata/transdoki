@@ -1,0 +1,135 @@
+/* ── Org switcher dropdown ─────────────────────────────────── */
+
+.org-switcher-form {
+    margin: 0;
+}
+
+.org-switcher {
+    position: relative;
+}
+
+.org-switcher-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+    white-space: nowrap;
+    max-width: 220px;
+}
+
+.org-switcher-btn:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.org-switcher-btn.is-open {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: var(--primary);
+}
+
+.org-switcher-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.org-switcher-chevron {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    transition: transform .2s ease;
+    color: var(--muted);
+}
+
+.org-switcher-btn.is-open .org-switcher-chevron {
+    transform: rotate(180deg);
+}
+
+/* ── Dropdown panel ─────────────────────────────────────────── */
+
+.org-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 230px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    z-index: var(--z-dropdown);
+    padding: 6px 0;
+    display: none;
+}
+
+.org-dropdown.is-open {
+    display: block;
+}
+
+.org-dropdown-section {
+    padding: 2px 0;
+}
+
+.org-dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+
+.org-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: background .1s ease;
+    text-decoration: none;
+    border: 0;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+}
+
+.org-dropdown-item:hover {
+    background: #f3f4f6;
+}
+
+.org-dropdown-item.is-current {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.org-dropdown-item.is-muted {
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.org-dropdown-item.is-add {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+/* Радиокнопка/индикатор */
+.org-radio {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+}
+
+.org-radio.is-active {
+    border-color: var(--primary);
+    background: var(--primary);
+}

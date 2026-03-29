@@ -387,6 +387,7 @@
 
     <link rel="stylesheet" href="{% static 'css/forms.css' %}">
     <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
+    <link rel="stylesheet" href="{% static 'css/org_dropdown.css' %}">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -400,55 +401,101 @@
                     {% url 'trips:list' as trips_url %}
                     <a href="{{ trips_url }}"
                        class="nav-link {% if request.path == trips_url %}active{% endif %}">
-                        Поездки
+                        Рейсы
                     </a>
                     {% url 'organizations:list' as organizations_url %}
                     <a href="{{ organizations_url }}"
                        class="nav-link {% if request.path == organizations_url %}active{% endif %}">
                         Контрагенты
                     </a>
-
-                    {% url 'persons:list' as persons_url %}
-                    <a href="{{ persons_url }}"
-                       class="nav-link {% if request.path == persons_url %}active{% endif %}">
-                        Водители
-                    </a>
-
-                    {% url 'vehicles:list' as vehicles_url %}
-                    <a href="{{ vehicles_url }}"
-                       class="nav-link {% if request.path == vehicles_url %}active{% endif %}">
-                        Транспорт
-                    </a>
-                    {% url 'waybills:waybill-list' as waybills_url %}
-                    <a href="{{ waybills_url }}"
-                       class="nav-link {% if request.path == waybills_url %}active{% endif %}">
-                        Путевые листы
-                    </a>
                 {% endif %}
             </div>
 
-            <!--<div class="nav-right">
-                {% if user.is_authenticated %}
-                    {% url 'accounts:cabinet' as cabinet_url %}
-                    <a href="{{ cabinet_url }}"
-                       class="cabinet-link {% if request.path == cabinet_url %}active{% endif %}">
-                        Личный кабинет
-                    </a>
-
-                    <span class="user-meta">Привет, {{ user.first_name|default:user.username }}!</span>
-                    <form method="post" action="{% url 'logout' %}" class="logout-form">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-link">Выйти</button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'login' %}" class="auth-link">Войти</a>
-                    <a href="{% url 'accounts:register' %}" class="auth-link">Регистрация</a>
-                {% endif %}
-            </div>-->
             <div class="nav-right">
                 {% if user.is_authenticated %}
-                    <span class="user-meta">Привет, {{ user.first_name|default:user.username }}!</span>
 
+                    {# ── Org switcher ── #}
+                    <div class="org-switcher">
+                        <button type="button"
+                                class="org-switcher-btn"
+                                aria-haspopup="true"
+                                aria-expanded="false">
+                            <span class="org-switcher-name">
+                                {% if current_org %}{{ current_org.short_name }}{% else %}Организация{% endif %}
+                            </span>
+                            <svg class="org-switcher-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="4 6 8 10 12 6"/>
+                            </svg>
+                        </button>
+
+                        <div class="org-dropdown" role="menu">
+                            {# Ресурсы #}
+                            <div class="org-dropdown-section">
+                                {% url 'vehicles:list' as vehicles_url %}
+                                <a href="{{ vehicles_url }}"
+                                   class="org-dropdown-item {% if request.path == vehicles_url %}is-current{% endif %}"
+                                   role="menuitem">
+                                    Мой парк
+                                </a>
+                                {% url 'persons:list' as persons_url %}
+                                <a href="{{ persons_url }}"
+                                   class="org-dropdown-item {% if request.path == persons_url %}is-current{% endif %}"
+                                   role="menuitem">
+                                    Мои водители
+                                </a>
+                                {% url 'waybills:waybill-list' as waybills_url %}
+                                <a href="{{ waybills_url }}"
+                                   class="org-dropdown-item {% if request.path == waybills_url %}is-current{% endif %}"
+                                   role="menuitem">
+                                    Путевые листы
+                                </a>
+                            </div>
+
+                            <div class="org-dropdown-divider"></div>
+
+                            {# Список своих организаций #}
+                            <div class="org-dropdown-section">
+                                {% for org in own_orgs %}
+                                    <form method="post" action="{% url 'accounts:switch_org' %}" class="org-switcher-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="org_id" value="{{ org.pk }}">
+                                        <button type="submit"
+                                                class="org-dropdown-item {% if current_org and current_org.pk == org.pk %}is-current{% endif %}"
+                                                role="menuitem">
+                                            <span class="org-radio {% if current_org and current_org.pk == org.pk %}is-active{% endif %}"></span>
+                                            {{ org.short_name }}
+                                        </button>
+                                    </form>
+                                {% endfor %}
+                                <a href="{% url 'organizations:create' %}?own=1"
+                                   class="org-dropdown-item is-add"
+                                   role="menuitem">
+                                    + Добавить компанию
+                                </a>
+                            </div>
+
+                            <div class="org-dropdown-divider"></div>
+
+                            {# Кабинет #}
+                            <div class="org-dropdown-section">
+                                {% url 'accounts:cabinet' as cabinet_url %}
+                                <a href="{{ cabinet_url }}"
+                                   class="org-dropdown-item {% if request.path == cabinet_url %}is-current{% endif %}"
+                                   role="menuitem">
+                                    Личный кабинет
+                                </a>
+                                {% if user.is_superuser %}
+                                    <a href="{% url 'admin:index' %}"
+                                       class="org-dropdown-item"
+                                       role="menuitem">
+                                        Админка
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Баланс #}
                     {% if billing_account %}
                         {% if billing_account.is_billing_exempt %}
                             <span class="balance-badge balance-exempt">Без ограничений</span>
@@ -466,24 +513,16 @@
                         {% endif %}
                     {% endif %}
 
-                    {% if user.is_superuser %}
-                        <a href="{% url 'admin:index' %}" class="nav-link">Админка</a>
-                    {% endif %}
-
-                    {% url 'accounts:cabinet' as cabinet_url %}
-                    <a href="{{ cabinet_url }}"
-                    class="cabinet-link {% if request.path == cabinet_url %}active{% endif %}">
-                        Личный кабинет
-                    </a>
-
                     <form method="post" action="{% url 'logout' %}" class="logout-form">
                         {% csrf_token %}
                         <button type="submit" class="btn-link">Выйти</button>
                     </form>
+
                 {% else %}
                     <a href="{% url 'login' %}" class="auth-link">Войти</a>
                     <a href="{% url 'accounts:register' %}" class="auth-link">Регистрация</a>
                 {% endif %}
+            </div>
         </nav>
     </header>
 
@@ -545,5 +584,6 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 {% block extra_js %}{% endblock %}
+<script src="{% static 'js/org_dropdown.js' %}"></script>
 </body>
 </html>

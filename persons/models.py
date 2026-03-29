@@ -26,6 +26,15 @@ class Person(UserOwnedModel):
         help_text="Сотрудник одной из ваших организаций",
     )
 
+    employer = models.ForeignKey(
+        "organizations.Organization",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="employees",
+        verbose_name="Работодатель",
+    )
+
     # Персональные данные (шифруются at-rest, ФЗ-152)
     birth_date = encrypt(models.DateField(null=True, blank=True, verbose_name="Дата рождения"))
 
