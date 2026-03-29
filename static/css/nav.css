@@ -1,28 +1,258 @@
- .nav-container {
+/* ─────────────────────────────────────────────────────
+   Навбар и flash-сообщения.
+   Подключается в base.html после globals.css.
+───────────────────────────────────────────────────── */
+
+/* ── Navbar ── */
+.nav-wrap {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-navbar);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.nav-container {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 10px 16px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 62px;
 }
 
-.nav-left a, .nav-right a {
-    margin: 0 10px;
+.nav-left, .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.brand {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-right: 10px;
+    color: #0f172a;
+}
+
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 11px;
+    border-radius: 9px;
+    font-size: 0.92rem;
+    color: #374151;
+    border: 1px solid transparent;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.nav-link:hover {
+    background: #f3f4f6;
+    border-color: var(--border);
+}
+
+.nav-link.active {
+    background: #eff6ff;
+    color: var(--primary);
+    border-color: #bfdbfe;
+    font-weight: 600;
+}
+
+.user-meta {
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin-right: 4px;
+}
+
+/* ── Баланс ── */
+.balance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    font-size: 0.88rem;
+    font-weight: 600;
     text-decoration: none;
-    color: #007bff;
+    transition: filter .15s ease;
+    white-space: nowrap;
 }
 
-.nav-left a:hover, .nav-right a:hover {
-    text-decoration: underline;
+.balance-badge:hover {
+    filter: brightness(0.95);
 }
 
-.nav-right {
-    text-align: right;
+.balance-ok {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
 }
 
-.nav-left a.active {
-    border-bottom: 2px solid #007bff;
-    font-weight: bold;
-    color: #0056b3;
+.balance-warn {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+
+.balance-danger {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.balance-exempt {
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: var(--border);
+    cursor: default;
+}
+
+/* ── Кнопки в навбаре ── */
+.logout-form {
+    margin: 0;
+}
+
+.btn-link {
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    padding: 7px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background .15s ease, color .15s ease;
+}
+
+.btn-link:hover {
+    background: #eff6ff;
+    color: var(--primary-hover);
+}
+
+.auth-link {
+    color: var(--primary);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background .15s ease;
+}
+
+.auth-link:hover {
+    background: #eff6ff;
+}
+
+/* ── Flash-сообщения (fixed toast) ── */
+.flash-wrap {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(920px, calc(100vw - 20px));
+    z-index: var(--z-toast);
+    pointer-events: none;
+}
+
+.flash {
+    position: relative;
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-radius: 10px;
+    background: #fff;
+    padding: 10px 38px 10px 12px;
+    margin-bottom: 8px;
+    font-size: 0.93rem;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    transition: opacity .22s ease, transform .22s ease, max-height .22s ease,
+                margin .22s ease, padding .22s ease, border-width .22s ease;
+    max-height: 120px;
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.flash-success { border-left-color: #16a34a; background: #f0fdf4; }
+.flash-error   { border-left-color: #dc2626; background: #fef2f2; }
+.flash-warning { border-left-color: #d97706; background: #fffbeb; }
+.flash-info    { border-left-color: #2563eb; background: #eff6ff; }
+
+.flash.is-hiding {
+    opacity: 0;
+    transform: translateY(-4px);
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+}
+
+.flash-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    padding: 0;
+    transition: background .15s ease, color .15s ease;
+}
+
+.flash-close:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #111827;
+}
+
+/* ── Адаптивность ── */
+@media (max-width: 900px) {
+    .nav-container {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .nav-left, .nav-right {
+        width: 100%;
+    }
+
+    .nav-right {
+        justify-content: space-between;
+    }
+
+    .user-meta {
+        margin-right: auto;
+    }
+
+    .flash-wrap {
+        top: 86px;
+    }
+}
+
+@media (max-width: 560px) {
+    .nav-left {
+        gap: 4px;
+    }
+
+    .nav-link {
+        font-size: 0.86rem;
+        padding: 7px 9px;
+    }
+
+    .flash-wrap {
+        width: calc(100vw - 14px);
+        top: 92px;
+    }
 }

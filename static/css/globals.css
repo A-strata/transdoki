@@ -1,0 +1,99 @@
+/* ─────────────────────────────────────────────────────
+   Глобальные CSS-переменные, сброс и базовый layout.
+   Подключается первым в base.html.
+───────────────────────────────────────────────────── */
+
+/* ── Токены дизайн-системы ── */
+:root {
+    /* Цвета */
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+
+    /* Акцент */
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+
+    /* Геометрия */
+    --radius: 12px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    --container: 1200px;
+
+    /* Z-index слои (не использовать магические числа) */
+    --z-sticky-cell:   20;
+    --z-sticky-header: 30;
+    --z-navbar:        50;
+    --z-toast:         70;
+    --z-modal:         1000;
+    --z-dropdown:      1200;
+    --z-col-panel:     1300;
+    --z-actions-menu:  1400;
+}
+
+/* ── Сброс ── */
+* {
+    box-sizing: border-box;
+}
+
+/* Браузер не наследует font-family для form-элементов — фиксируем глобально */
+button, input, select, textarea {
+    font-family: inherit;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* ── Layout shell ── */
+.app-shell {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+main {
+    width: 100%;
+    margin: 0;
+    padding: 8px 8px 10px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ── Состояния фокуса (доступность) ── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.3);
+    outline-offset: 1px;
+}
+
+/* ── Состояния валидации полей ── */
+input.is-invalid,
+input.is-invalid:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+}
+
+@media (max-width: 560px) {
+    main {
+        padding: 10px 10px 16px;
+    }
+}
