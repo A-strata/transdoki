@@ -160,6 +160,7 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
         ctx["employees"] = org.employees.all()
 
         from trips.models import Trip
+        from vehicles.models import PropertyType, VehicleType
 
         trips_qs = Trip.objects.filter(account=org.account).prefetch_related("points")
         if org.is_own_company:
@@ -170,6 +171,9 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
             ctx["recent_trips"] = (
                 trips_qs.filter(client=org).order_by("-date_of_trip")[:5]
             )
+
+        ctx["vehicle_types"] = VehicleType.choices
+        ctx["property_types"] = PropertyType.choices
         return ctx
 
 

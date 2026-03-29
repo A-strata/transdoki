@@ -137,6 +137,85 @@ button:disabled {
 
 Для критичных действий (удаление организации, пользователя) — модальное окно с описанием последствий.
 
+### Модальные окна
+
+Все модалки строятся из глобальных компонентов (`static/css/globals.css` + `static/js/base.js`). Не создавать отдельные CSS-файлы для стилей модалок.
+
+**Структура (подтверждение):**
+
+```html
+<div class="modal-overlay" id="my-modal" hidden>
+    <div class="modal-dialog">
+        <h3 class="modal-title">Заголовок</h3>
+        <p class="modal-body">Описание последствий</p>
+        <div class="modal-actions">
+            <button class="tms-btn tms-btn-danger">Удалить</button>
+            <button class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+        </div>
+    </div>
+</div>
+```
+
+**Структура (форма):**
+
+```html
+<div class="modal-overlay" id="my-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Заголовок</h3>
+        <p class="modal-body">Контекст</p>
+        <form id="my-form" novalidate>
+            {% csrf_token %}
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label>На всю ширину</label>
+                    <select>...</select>
+                </div>
+                <div class="modal-field">
+                    <label>Поле 1</label>
+                    <input type="text">
+                </div>
+                <div class="modal-field">
+                    <label>Поле 2</label>
+                    <input type="text">
+                </div>
+            </div>
+            <div class="modal-form-errors" id="form-errors" hidden></div>
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+```
+
+**Открытие/закрытие** — через `data-`атрибуты (JS в `base.js`):
+
+```html
+<button data-modal-open="my-modal">Открыть</button>    <!-- открывает -->
+<button data-modal-close>Отмена</button>                <!-- закрывает -->
+<!-- Также: клик по overlay, Escape -->
+```
+
+| Класс | Назначение |
+|---|---|
+| `.modal-overlay` | Затемнённый фон, `position: fixed`, `z-index: var(--z-modal)` |
+| `.modal-dialog` | Белая карточка, `max-width: 420px` |
+| `.modal-dialog--wide` | Расширенная карточка, `max-width: 520px` |
+| `.modal-title` | Заголовок модалки |
+| `.modal-body` | Описательный текст |
+| `.modal-fields` | CSS Grid `1fr 1fr` для полей формы |
+| `.modal-field` | Обёртка поля (label + input/select) |
+| `.modal-field--full` | Поле на всю ширину (`grid-column: 1 / -1`) |
+| `.modal-field-error` | Текст ошибки под полем |
+| `.modal-form-errors` | Блок общих ошибок формы |
+| `.modal-actions` | Ряд кнопок внизу |
+
+**Правила:**
+- Ошибки валидации — inline под полями (`.is-invalid` + `.modal-field-error`), не `alert()`
+- При закрытии — сбрасывать форму и ошибки
+- AJAX-формы: отправка через `fetch`, при успехе `location.reload()` или обновление DOM
+
 ---
 
 ## 5. Уведомления (Flash-сообщения)
@@ -655,4 +734,6 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 | Кнопки вторичных действий           | `.tms-btn tms-btn-secondary`                         |
 | Новая списковая страница            | `.ENTITY-page` > `.list-toolbar` + `.table-card`     |
 | Деструктивное действие              | `.confirm-inline` с двумя кнопками (не `confirm()`)  |
+| Модалка подтверждения               | `.modal-overlay` + `.modal-dialog` + `data-modal-open` |
+| Модалка с формой                    | `.modal-dialog--wide` + `.modal-fields` + `.modal-field` |
 | Hover/focus-переход                 | `transition: 0.15s ease`                             |

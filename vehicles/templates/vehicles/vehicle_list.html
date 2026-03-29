@@ -9,48 +9,34 @@
 <section class="vehicles-page">
     <div class="list-toolbar">
         <div class="list-toolbar-left">
-            <h1>Транспортные средства</h1>
-            <p class="vehicles-subtitle">Список всех транспортных средств в системе</p>
+            <h1>Мой парк</h1>
+            <p class="vehicles-subtitle">
+                {% if current_org %}
+                    Транспортные средства {{ current_org.short_name }}
+                {% else %}
+                    Создайте компанию, чтобы добавлять транспортные средства
+                {% endif %}
+            </p>
         </div>
+        {% if current_org %}
         <div class="list-toolbar-right">
-            <a href="{% url 'vehicles:create' %}" class="tms-btn tms-btn-primary">Добавить ТС</a>
+            <a href="{% url 'vehicles:create_for_org' current_org.pk %}" class="tms-btn tms-btn-primary">Добавить ТС</a>
         </div>
+        {% endif %}
     </div>
 
-    <!-- Фильтры -->
+    {% if current_org %}
     <div class="filters-wrap">
-        <div class="filter-group">
-            <span class="filter-label">Компания</span>
-            <div class="filter-divider"></div>
-            <div class="filter-chips">
-                <a href="?org=all&type={{ current_type }}"
-                   class="filter-chip {% if vehicle_org_filter == 'all' %}active{% endif %}">
-                    Все ТС
-                </a>
-                {% if own_companies %}
-                <a href="?org=own&type={{ current_type }}"
-                   class="filter-chip {% if vehicle_org_filter == 'own' %}active{% endif %}">
-                    Все свои
-                </a>
-                {% for org in own_companies %}
-                <a href="?org={{ org.pk }}&type={{ current_type }}"
-                   class="filter-chip {% if vehicle_org_filter == org.pk|stringformat:'s' %}active{% endif %}">
-                    {{ org.short_name }}
-                </a>
-                {% endfor %}
-                {% endif %}
-            </div>
-        </div>
         <div class="filter-group">
             <span class="filter-label">Тип ТС</span>
             <div class="filter-divider"></div>
             <div class="filter-chips">
-                <a href="?org={{ vehicle_org_filter }}&type=all"
+                <a href="?type=all"
                    class="filter-chip {% if current_type == 'all' %}active{% endif %}">
                     Все типы
                 </a>
                 {% for value, label in vehicle_types %}
-                <a href="?org={{ vehicle_org_filter }}&type={{ value }}"
+                <a href="?type={{ value }}"
                    class="filter-chip {% if current_type == value %}active{% endif %}">
                     {{ label }}
                 </a>
@@ -58,6 +44,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <div class="table-card">
         <div class="table-wrap" data-drag-scroll>
@@ -68,7 +55,6 @@
                         <th>Госномер</th>
                         <th>Марка</th>
                         <th>Модель</th>
-                        <th>Собственник</th>
                         <th>Основание</th>
                         <th data-col="actions">Действия</th>
                     </tr>
@@ -83,9 +69,6 @@
                         <td data-label="Модель">
                             {% if vehicle.model %}{{ vehicle.model }}{% else %}<span class="vehicle-muted">—</span>{% endif %}
                         </td>
-                        <td data-label="Собственник">
-                            <span class="owner-name">{{ vehicle.owner.short_name }}</span>
-                        </td>
                         <td data-label="Основание">
                             <span class="property-badge prop-{{ pt }}">{{ vehicle.get_property_type_display }}</span>
                         </td>
@@ -99,7 +82,7 @@
                     {% endwith %}
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="empty-state">Нет транспортных средств</td>
+                        <td colspan="6" class="empty-state">Нет транспортных средств</td>
                     </tr>
                     {% endfor %}
                 </tbody>

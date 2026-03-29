@@ -65,7 +65,7 @@
             <a href="{% url 'organizations:edit' organization.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
 
             {% if not organization.is_own_company and not vehicles %}
-                <a href="{% url 'vehicles:create_for_org' organization.pk %}" class="tms-btn tms-btn-secondary">+ Добавить ТС</a>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-open="create-vehicle-modal">+ Добавить ТС</button>
             {% endif %}
 
             <a href="{% url 'organizations:delete' organization.pk %}" class="tms-btn tms-btn-danger">Удалить</a>
@@ -86,7 +86,7 @@
         <div class="section-head">
             <h2 class="section-title">Транспортные средства</h2>
             {% if vehicles %}
-                <a href="{% url 'vehicles:create_for_org' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">+ Добавить</a>
+                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm" data-modal-open="create-vehicle-modal">+ Добавить</button>
             {% endif %}
         </div>
 
@@ -127,7 +127,7 @@
         {% else %}
             <div class="empty-state">
                 <p>Нет транспортных средств</p>
-                <a href="{% url 'vehicles:create_for_org' organization.pk %}" class="tms-btn tms-btn-secondary">+ Добавить ТС</a>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-open="create-vehicle-modal">+ Добавить ТС</button>
             </div>
         {% endif %}
     </div>
@@ -170,6 +170,64 @@
 </section>
 
 {# ── Модал подтверждения удаления ТС ── #}
+{# ── Модал создания ТС ── #}
+<div class="modal-overlay" id="create-vehicle-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Добавить транспортное средство</h3>
+        <p class="modal-body">{{ organization.short_name }}</p>
+
+        <form id="create-vehicle-form"
+              data-url="{% url 'vehicles:quick_create' %}"
+              data-owner-id="{{ organization.pk }}"
+              novalidate>
+            {% csrf_token %}
+
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="cv-vehicle-type">Тип ТС</label>
+                    <select id="cv-vehicle-type" name="vehicle_type" required>
+                        <option value="">— Выберите —</option>
+                        {% for value, label in vehicle_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="modal-field">
+                    <label for="cv-grn">Регистрационный номер</label>
+                    <input type="text" id="cv-grn" name="grn" required data-grn-mask>
+                </div>
+
+                <div class="modal-field">
+                    <label for="cv-brand">Марка</label>
+                    <input type="text" id="cv-brand" name="brand" required>
+                </div>
+
+                <div class="modal-field">
+                    <label for="cv-model">Модель</label>
+                    <input type="text" id="cv-model" name="model">
+                </div>
+
+                <div class="modal-field">
+                    <label for="cv-property-type">Тип владения</label>
+                    <select id="cv-property-type" name="property_type" required>
+                        {% for value, label in property_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-form-errors" id="cv-errors" hidden></div>
+
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Добавить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% if vehicles %}
 <div class="modal-overlay" id="delete-vehicle-modal" hidden>
     <div class="modal-dialog">
@@ -186,4 +244,6 @@
     </div>
 </div>
 {% endif %}
+
+<script src="{% static 'organizations/js/vehicle_create_modal.js' %}"></script>
 {% endblock %}

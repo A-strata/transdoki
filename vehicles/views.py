@@ -152,29 +152,14 @@ class VehicleListView(LoginRequiredMixin, ListView):
     template_name = "vehicles/vehicle_list.html"
     context_object_name = "vehicles"
 
-    def _get_org_filter(self):
-        """Определяет фильтр организации: 'own' по умолчанию если есть свои компании."""
-        explicit = self.request.GET.get("org")
-        if explicit is not None:
-            return explicit
-        account = get_request_account(self.request)
-        has_own = Organization.objects.filter(
-            account=account, is_own_company=True,
-        ).exists()
-        return "own" if has_own else "all"
-
     def get_queryset(self):
-        account = get_request_account(self.request)
-        qs = Vehicle.objects.filter(account=account).select_related("owner")
+        current_org = self.request.current_org
+        if current_org is None:
+            return Vehicle.objects.none()
 
-        org_filter = self._get_org_filter()
+        qs = Vehicle.objects.filter(owner=current_org).select_related("owner")
+
         type_filter = self.request.GET.get("type", "all")
-
-        if org_filter == "own":
-            qs = qs.filter(owner__is_own_company=True)
-        elif org_filter.isdigit():
-            qs = qs.filter(owner_id=int(org_filter))
-
         valid_types = {vt[0] for vt in VehicleType.choices}
         if type_filter in valid_types:
             qs = qs.filter(vehicle_type=type_filter)
@@ -183,11 +168,6 @@ class VehicleListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        account = get_request_account(self.request)
-        context["own_companies"] = Organization.objects.filter(
-            account=account, is_own_company=True
-        ).order_by("short_name")
-        context["vehicle_org_filter"] = self._get_org_filter()
         context["current_type"] = self.request.GET.get("type", "all")
         context["vehicle_types"] = VehicleType.choices
         return context
