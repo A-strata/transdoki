@@ -608,11 +608,11 @@
                         {{ load_form.planned_date }}
                         {{ load_form.planned_date.errors }}
                     </div>
-                    <div class="field">
+                    <!--<div class="field">
                         {{ load_form.actual_date.label_tag }}
                         {{ load_form.actual_date }}
                         {{ load_form.actual_date.errors }}
-                    </div>
+                    </div>-->
                     <div class="field">
                         {{ load_form.contact_name.label_tag }}
                         {{ load_form.contact_name }}
@@ -658,11 +658,11 @@
                         {{ unload_form.planned_date }}
                         {{ unload_form.planned_date.errors }}
                     </div>
-                    <div class="field">
+                    <!--<div class="field">
                         {{ unload_form.actual_date.label_tag }}
                         {{ unload_form.actual_date }}
                         {{ unload_form.actual_date.errors }}
-                    </div>
+                    </div>-->
                     <div class="field">
                         {{ unload_form.contact_name.label_tag }}
                         {{ unload_form.contact_name }}
@@ -859,7 +859,7 @@ window.QC_ORG_SUGGESTIONS_URL = "{% url 'organizations:api_suggestions_by_inn' %
 window.QC_ORG_SEARCH_URL = "{% url 'organizations:search' %}";
 </script>
 <script src="{% static 'js/quick_create.js' %}"></script>
-<script src="{% static 'trips/js/autocomplete.js' %}"></script>
+<script src="{% static 'js/autocomplete.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     ['id_client', 'id_consignor', 'id_consignee', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {

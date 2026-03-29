@@ -1,14 +1,22 @@
 from django.urls import path
 
-from .views import VehicleCreateView, VehicleListView, VehicleUpdateView, vehicle_quick_create, vehicle_search
+from .views import (
+    VehicleCreateStandaloneView,
+    VehicleCreateView,
+    VehicleListView,
+    VehicleUpdateView,
+    vehicle_quick_create,
+    vehicle_search,
+)
 
 app_name = 'vehicles'
 
 urlpatterns = [
+    path('create/', VehicleCreateStandaloneView.as_view(), name='create'),
     path(
         'create/<int:organization_pk>/',
         VehicleCreateView.as_view(),
-        name='create'
+        name='create_for_org',
     ),
     path('<int:pk>/edit/', VehicleUpdateView.as_view(), name='edit'),
     path(

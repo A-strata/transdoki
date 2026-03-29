@@ -331,13 +331,6 @@
         outline-offset: 1px;
     }
 
-    /* LOADING STATE: кнопка во время отправки формы */
-    .tms-btn.is-loading {
-        opacity: 0.65;
-        cursor: not-allowed;
-        pointer-events: none;
-    }
-
     @media (max-width: 900px) {
         .nav-container {
             align-items: flex-start;
@@ -393,6 +386,7 @@
 </style>
 
     <link rel="stylesheet" href="{% static 'css/forms.css' %}">
+    <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
     {% block head %}{% endblock %}
 </head>
 <body>

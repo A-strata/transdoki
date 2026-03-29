@@ -1,15 +1,18 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block content %}
+{% block head %}
 <link rel="stylesheet" href="{% static 'waybills/css/waybill_list.css' %}">
+{% endblock %}
 
+{% block content %}
 <section class="waybills-page">
 
-    <div class="wl-toolbar">
-        <span class="wl-title">Путевые листы</span>
-
-        <div class="wl-controls">
+    <div class="list-toolbar">
+        <div class="list-toolbar-left">
+            <h1>Путевые листы</h1>
+        </div>
+        <div class="list-toolbar-right">
             <form method="get" class="wl-filter-form">
                 <select name="status" class="wl-select" onchange="this.form.submit()">
                     <option value="" {% if not status_filter %}selected{% endif %}>Все статусы</option>
@@ -17,13 +20,13 @@
                     <option value="CLOSED" {% if status_filter == "CLOSED" %}selected{% endif %}>Закрытые</option>
                 </select>
             </form>
-            <a href="{% url 'waybills:waybill-create' %}" class="tms-btn tms-btn-primary">+ Создать ПЛ</a>
+            <a href="{% url 'waybills:waybill-create' %}" class="tms-btn tms-btn-primary tms-btn-add">+ Создать ПЛ</a>
         </div>
     </div>
 
-    <div class="wl-card">
-        <div class="wl-table-wrap">
-            <table class="wl-table">
+    <div class="table-card">
+        <div class="table-wrap" data-drag-scroll>
+            <table class="tms-table">
                 <thead>
                     <tr>
                         <th>Номер</th>
@@ -33,7 +36,7 @@
                         <th>Автомобиль</th>
                         <th>Прицеп</th>
                         <th>Статус</th>
-                        <th>Действия</th>
+                        <th data-col="actions">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,8 +53,8 @@
                                 {{ wb.get_status_display }}
                             </span>
                         </td>
-                        <td>
-                            <div class="wl-actions">
+                        <td data-col="actions">
+                            <div class="row-actions">
                                 <a href="{% url 'waybills:waybill-detail' wb.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Открыть</a>
                                 <a href="{% url 'waybills:waybill-update' wb.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
                             </div>
@@ -59,7 +62,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="wl-empty">Путевых листов пока нет.</td>
+                        <td colspan="8" class="empty-state">Путевых листов пока нет.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -68,29 +71,29 @@
     </div>
 
     {% if is_paginated %}
-    <nav class="wl-pagination">
+    <nav class="pagination">
         {% if page_obj.has_previous %}
-            <a class="wl-page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}">«</a>
-            <a class="wl-page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">‹</a>
+            <a class="pagination-link pagination-nav" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}">«</a>
+            <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">‹</a>
         {% else %}
-            <span class="wl-page-link is-disabled">«</span>
-            <span class="wl-page-link is-disabled">‹</span>
+            <span class="pagination-link pagination-nav is-disabled">«</span>
+            <span class="pagination-link pagination-nav is-disabled">‹</span>
         {% endif %}
 
         {% for num in page_obj.paginator.page_range %}
             {% if page_obj.number == num %}
-                <span class="wl-page-link is-current">{{ num }}</span>
+                <span class="pagination-link is-current">{{ num }}</span>
             {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-                <a class="wl-page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                <a class="pagination-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
             {% endif %}
         {% endfor %}
 
         {% if page_obj.has_next %}
-            <a class="wl-page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">›</a>
-            <a class="wl-page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}">»</a>
+            <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">›</a>
+            <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}">»</a>
         {% else %}
-            <span class="wl-page-link is-disabled">›</span>
-            <span class="wl-page-link is-disabled">»</span>
+            <span class="pagination-link pagination-nav is-disabled">›</span>
+            <span class="pagination-link pagination-nav is-disabled">»</span>
         {% endif %}
     </nav>
     {% endif %}

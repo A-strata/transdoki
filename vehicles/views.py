@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -13,7 +14,7 @@ from transdoki.tenancy import get_request_account
 
 from billing.mixins import BillingProtectedMixin
 
-from .forms import VehicleForm
+from .forms import VehicleForm, VehicleFormWithOwner
 from .models import Vehicle, VehicleType
 
 
@@ -84,16 +85,56 @@ class VehicleUpdateView(LoginRequiredMixin, UpdateView):
             return self.form_invalid(form)
 
 
+class VehicleCreateStandaloneView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
+    """Создание ТС со страницы списка (с выбором собственника в форме)."""
+
+    model = Vehicle
+    form_class = VehicleFormWithOwner
+    template_name = "vehicles/vehicle_form.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['account'] = get_request_account(self.request)
+        return kwargs
+
+    def get_success_url(self):
+        if self.request.POST.get("add_another"):
+            return reverse("vehicles:create")
+        return reverse("vehicles:list")
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        form.instance.account = get_request_account(self.request)
+        try:
+            response = super().form_valid(form)
+        except IntegrityError:
+            form.add_error("grn", "ТС с таким номером уже существует.")
+            return self.form_invalid(form)
+        messages.success(self.request, f"ТС «{self.object}» добавлено.")
+        return response
+
+
 class VehicleListView(LoginRequiredMixin, ListView):
     model = Vehicle
     template_name = "vehicles/vehicle_list.html"
     context_object_name = "vehicles"
 
+    def _get_org_filter(self):
+        """Определяет фильтр организации: 'own' по умолчанию если есть свои компании."""
+        explicit = self.request.GET.get("org")
+        if explicit is not None:
+            return explicit
+        account = get_request_account(self.request)
+        has_own = Organization.objects.filter(
+            account=account, is_own_company=True,
+        ).exists()
+        return "own" if has_own else "all"
+
     def get_queryset(self):
         account = get_request_account(self.request)
         qs = Vehicle.objects.filter(account=account).select_related("owner")
 
-        org_filter = self.request.GET.get("org", "all")
+        org_filter = self._get_org_filter()
         type_filter = self.request.GET.get("type", "all")
 
         if org_filter == "own":
@@ -113,7 +154,7 @@ class VehicleListView(LoginRequiredMixin, ListView):
         context["own_companies"] = Organization.objects.filter(
             account=account, is_own_company=True
         ).order_by("short_name")
-        context["current_org"] = self.request.GET.get("org", "all")
+        context["current_org"] = self._get_org_filter()
         context["current_type"] = self.request.GET.get("type", "all")
         context["vehicle_types"] = VehicleType.choices
         return context

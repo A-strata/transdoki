@@ -1,0 +1,255 @@
+.vehicles-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.list-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.list-toolbar h1 {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.vehicles-subtitle {
+    margin: 4px 0 0;
+    color: #6b7280;
+    font-size: 0.92rem;
+}
+
+/* ── Filter bar ── */
+.filters-wrap {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    min-width: 64px;
+}
+
+.filter-divider {
+    width: 1px;
+    height: 16px;
+    background: #e5e7eb;
+    flex-shrink: 0;
+}
+
+.filter-chips {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 13px;
+    border-radius: 999px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: #374151;
+    background: #f3f4f6;
+    border: 1.5px solid transparent;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+
+.filter-chip:hover {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.filter-chip.active {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    font-weight: 600;
+}
+
+.filter-chip.active:hover {
+    background: #dbeafe;
+}
+
+/* ── Table ── */
+.table-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.tms-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+
+.tms-table thead th {
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.tms-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.93rem;
+    color: #111827;
+    vertical-align: middle;
+}
+
+.tms-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tms-table tbody tr:hover {
+    background: #fcfcfd;
+}
+
+.vehicle-grn {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.vehicle-muted {
+    color: #d1d5db;
+}
+
+.owner-name {
+    color: #374151;
+    font-size: 0.9rem;
+}
+
+.property-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: #f3f4f6;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.property-badge.prop-property { background: #ecfdf5; color: #059669; }
+.property-badge.prop-coproperty { background: #f0fdf4; color: #16a34a; }
+.property-badge.prop-rent { background: #fffbeb; color: #d97706; }
+.property-badge.prop-leasing { background: #eff6ff; color: #2563eb; }
+.property-badge.prop-unpaid { background: #faf5ff; color: #7c3aed; }
+
+.empty-state {
+    color: #9ca3af;
+    text-align: center;
+    padding: 32px 14px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 760px) {
+    .filters-wrap {
+        padding: 10px 12px;
+    }
+
+    .filter-label {
+        min-width: auto;
+    }
+
+    .table-wrap {
+        overflow: visible;
+    }
+
+    .tms-table {
+        min-width: 100%;
+    }
+
+    .tms-table thead {
+        display: none;
+    }
+
+    .tms-table tbody tr {
+        display: block;
+        margin: 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .tms-table tbody td {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: top;
+    }
+
+    .tms-table tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .tms-table tbody td::before {
+        content: attr(data-label);
+        color: #9ca3af;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        align-self: center;
+    }
+
+    .empty-state {
+        display: block;
+        text-align: center;
+    }
+
+    .empty-state::before {
+        content: none;
+    }
+}

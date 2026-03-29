@@ -244,53 +244,12 @@
     margin-top: 4px;
 }
 
+/* Увеличенный размер кнопок для страниц деталей */
 .tms-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     min-height: 40px;
     padding: 0 14px;
     border-radius: 10px;
-    border: 1px solid transparent;
-    text-decoration: none;
     font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .2s ease, border-color .2s ease, color .2s ease;
-    box-sizing: border-box;
-}
-
-.tms-btn-primary {
-    background: #2563eb;
-    color: #fff;
-    border-color: #2563eb;
-}
-
-.tms-btn-primary:hover:not(:disabled) {
-    background: #1d4ed8;
-    border-color: #1d4ed8;
-}
-
-.tms-btn-secondary {
-    background: #fff;
-    color: #374151;
-    border-color: #e5e7eb;
-}
-
-.tms-btn-secondary:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-}
-
-.tms-btn-light {
-    background: #f9fafb;
-    color: #374151;
-    border-color: #e5e7eb;
-}
-
-.tms-btn-light:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
 }
 
 .timeline-table-wrap {

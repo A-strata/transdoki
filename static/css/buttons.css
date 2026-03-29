@@ -1,0 +1,110 @@
+/* ─────────────────────────────────────────────────────
+   Глобальные стили кнопок .tms-btn
+   Подключается в base.html для всех страниц.
+───────────────────────────────────────────────────── */
+
+.tms-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, border-color .2s ease, color .2s ease;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.tms-btn:active {
+    transform: translateY(1px);
+}
+
+/* ── Варианты ── */
+
+.tms-btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.tms-btn-primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.tms-btn-secondary {
+    background: #fff;
+    color: #374151;
+    border-color: var(--border);
+}
+
+.tms-btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.tms-btn-light {
+    background: #f9fafb;
+    color: #374151;
+    border-color: var(--border);
+}
+
+.tms-btn-light:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.tms-btn-danger {
+    background: #fff;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.tms-btn-danger:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.tms-btn-fix {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+}
+
+.tms-btn-fix:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
+/* ── Размерные модификаторы ── */
+
+.tms-btn-add {
+    padding: 0 14px;
+}
+
+.tms-btn-sm {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 0.82rem;
+    border-radius: 6px;
+}
+
+/* ── Состояния ── */
+
+.tms-btn:disabled,
+button.tms-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.tms-btn.is-loading {
+    opacity: 0.65;
+    cursor: not-allowed;
+    pointer-events: none;
+}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
 <style>
@@ -175,6 +176,14 @@
             </div>
         {% endif %}
 
+        {% if form.owner %}
+        <div class="field">
+            {{ form.owner.label_tag }}
+            {{ form.owner }}
+            {{ form.owner.errors }}
+        </div>
+        {% endif %}
+
         <div class="field">
             {{ form.property_type.label_tag }}
             {{ form.property_type }}
@@ -207,8 +216,23 @@
 
         <div class="form-actions">
             <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+            {% if not organization_pk %}
+            <button type="submit" name="add_another" value="1" class="tms-btn tms-btn-secondary">Сохранить и добавить ещё</button>
+            {% endif %}
+            {% if organization_pk %}
             <a href="{% url 'organizations:detail' organization_pk %}" class="tms-btn tms-btn-secondary">Отмена</a>
+            {% else %}
+            <a href="{% url 'vehicles:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
+            {% endif %}
         </div>
     </form>
 </section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/imask"></script>
+<script src="{% static 'js/autocomplete.js' %}"></script>
+<script src="{% static 'vehicles/js/grn_mask.js' %}"></script>
+<script src="{% static 'vehicles/js/vehicle_form.js' %}"></script>
 {% endblock %}

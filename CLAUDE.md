@@ -145,6 +145,16 @@ ssh deploy@<server> "tail -f ~/projects/transdoki/logs/django.log"
 - Код в `integrations/`
 - Таймаут: `PETROLPLUS_TIMEOUT` (default 15s)
 
+## UI conventions (критические правила)
+- CSS-кнопки: `.tms-btn` + модификатор (`-primary`, `-secondary`, `-light`, `-fix`, `-add`)
+- Одна `.tms-btn-primary` на страницу, остальные — secondary
+- Flash-сообщения: только `messages.success/error/warning()` в view; НЕ дублировать `{% if messages %}` в шаблонах
+- Инлайн `<style>` и `<script>` запрещены — только внешние файлы через `{% static %}`
+- Django-данные в JS — через `data-`атрибуты, не инлайн-скрипты
+- Формы: `.form-card` > `.section` > `.fields-grid` > `.field`
+- Disabled-кнопки: нативный атрибут `disabled`, не CSS-класс
+- Полный справочник: `docs/ui-guide.md`
+
 ## What Claude should do by default
 - Перед изменением файла — прочитать его
 - Предупреждать о деструктивных операциях с БД

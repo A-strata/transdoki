@@ -346,7 +346,7 @@
     <div class="detail-card">
         <div class="vehicles-head">
             <h2 class="section-title">Транспортные средства</h2>
-            <a href="{% url 'vehicles:create' organization.pk %}" class="tms-btn tms-btn-success">+ Добавить транспортное средство</a>
+            <a href="{% url 'vehicles:create_for_org' organization.pk %}" class="tms-btn tms-btn-success">+ Добавить транспортное средство</a>
         </div>
 
         {% if organization.vehicle_set.all %}

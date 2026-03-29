@@ -17,7 +17,20 @@ function initAutocomplete(selectId) {
     input.type = 'text';
     input.placeholder = isAjax ? 'Начните вводить для поиска…' : 'Начните вводить…';
     input.className = 'autocomplete-input';
-    input.style.width = '100%';
+    input.style.cssText = 'width:100%; padding-right:32px;';
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'autocomplete-clear';
+    clearBtn.setAttribute('aria-label', 'Очистить');
+    clearBtn.setAttribute('tabindex', '-1');
+    clearBtn.textContent = '\u00d7';
+    clearBtn.style.cssText = [
+        'display:none; position:absolute; right:8px; top:50%; transform:translateY(-50%);',
+        'border:none; background:none; cursor:pointer; font-size:1.2rem;',
+        'color:#9ca3af; line-height:1; padding:2px 4px; border-radius:4px;',
+        'transition:color .15s ease;',
+    ].join('');
 
     const dropdown = document.createElement('div');
     dropdown.style.cssText = [
@@ -30,11 +43,29 @@ function initAutocomplete(selectId) {
 
     select.parentNode.insertBefore(container, select);
     container.appendChild(input);
+    container.appendChild(clearBtn);
     container.appendChild(dropdown);
     container.appendChild(select);
 
     // Скрываем оригинальный select, оставляем в DOM для отправки формы
     select.style.cssText = 'position:absolute; opacity:0; height:1px; width:1px; pointer-events:none; z-index:-1;';
+
+    // ── Кнопка очистки ────────────────────────────────────────────────────
+    function updateClearBtn() {
+        clearBtn.style.display = select.value ? 'block' : 'none';
+    }
+
+    clearBtn.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        select.value = '';
+        input.value = '';
+        updateClearBtn();
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        input.focus();
+    });
+
+    clearBtn.addEventListener('mouseenter', function () { clearBtn.style.color = '#374151'; });
+    clearBtn.addEventListener('mouseleave', function () { clearBtn.style.color = '#9ca3af'; });
 
     // ── Синхронизация начального значения ─────────────────────────────────
     function syncInputToSelect() {
@@ -44,6 +75,7 @@ function initAutocomplete(selectId) {
         } else {
             input.value = '';
         }
+        updateClearBtn();
     }
     select.addEventListener('change', syncInputToSelect);
     syncInputToSelect();
@@ -116,6 +148,7 @@ function initAutocomplete(selectId) {
             const q = input.value.trim();
             if (!q) {
                 select.value = '';
+                updateClearBtn();
                 select.dispatchEvent(new Event('change', { bubbles: true }));
                 if (openOnFocus) {
                     fetchResults('');
@@ -149,6 +182,7 @@ function initAutocomplete(selectId) {
             const q = input.value.trim();
             if (!q) {
                 select.value = '';
+                updateClearBtn();
                 select.dispatchEvent(new Event('change', { bubbles: true }));
             }
             renderItems(getDomItems(q));

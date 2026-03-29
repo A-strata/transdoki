@@ -226,45 +226,12 @@
     margin-top: 16px;
 }
 
+/* Увеличенный размер кнопок для форм организаций */
 .tms-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     min-height: 42px;
     padding: 0 16px;
     border-radius: 10px;
-    border: 1px solid transparent;
-    text-decoration: none;
     font-size: 0.92rem;
-    font-weight: 650;
-    cursor: pointer;
-    transition: background .2s ease, border-color .2s ease, color .2s ease, transform .04s ease;
-}
-
-.tms-btn:active {
-    transform: translateY(1px);
-}
-
-.tms-btn-primary {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-}
-
-.tms-btn-primary:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
-}
-
-.tms-btn-secondary {
-    background: #fff;
-    color: #374151;
-    border-color: var(--border);
-}
-
-.tms-btn-secondary:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
 }
 
 .is-hidden {

@@ -101,6 +101,42 @@ button:disabled {
 }
 ```
 
+### Состояния интерактивных элементов
+
+Каждый кликабельный элемент (кнопка, ссылка, строка таблицы) должен иметь визуальный отклик на все состояния:
+
+| Состояние | Визуал | CSS |
+|-----------|--------|-----|
+| default   | базовый стиль | — |
+| hover     | затемнение фона на 8–10% | `transition: 0.15s ease` |
+| focus     | синий outline | `outline: 3px solid rgba(37, 99, 235, 0.3)` |
+| active    | лёгкое нажатие | `transform: scale(0.98)` или darken 15% |
+| disabled  | полупрозрачный, некликабельный | `opacity: 0.55; pointer-events: none` |
+| loading   | текст меняется, кнопка disabled | `data-loading-text` паттерн |
+
+**Правило анимаций**: все hover/focus-переходы — `transition: 0.15s ease`. Без анимаций при загрузке страницы. Без `animation` кроме toast-уведомлений.
+
+### Подтверждение деструктивных действий
+
+`onclick="return confirm(...)"` — **антипаттерн**. Нативный `confirm()` не стилизуется, выглядит чужеродно и не даёт описать последствия.
+
+**Целевой паттерн** — inline-подтверждение: при нажатии кнопки «Удалить» она заменяется на блок с вопросом и двумя кнопками:
+
+```html
+<div class="confirm-inline" data-confirm>
+    <button type="button" class="tms-btn tms-btn-danger tms-btn-sm"
+            data-confirm-trigger>Удалить</button>
+    <div class="confirm-inline-prompt" hidden>
+        <span>Удалить?</span>
+        <button type="submit" class="tms-btn tms-btn-danger tms-btn-sm">Да</button>
+        <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                data-confirm-cancel>Нет</button>
+    </div>
+</div>
+```
+
+Для критичных действий (удаление организации, пользователя) — модальное окно с описанием последствий.
+
 ---
 
 ## 5. Уведомления (Flash-сообщения)
@@ -427,7 +463,51 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 ---
 
-## 14. Пустые состояния
+## 14. Списковая страница (стандартный макет)
+
+Все списки основных сущностей строятся по единому каркасу:
+
+```html
+<div class="ENTITY-page">
+    <div class="list-toolbar">
+        <div class="list-toolbar-left">
+            <h1>Заголовок</h1>
+            <p class="list-subtitle">Пояснение (опционально)</p>
+        </div>
+        <div class="list-toolbar-right">
+            <a href="{% url 'app:create' %}" class="tms-btn tms-btn-primary">+ Создать</a>
+            <!-- фильтры, если есть -->
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap" data-drag-scroll>
+            <table class="tms-table">
+                <thead>...</thead>
+                <tbody>
+                    <!-- данные или empty-state -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <nav class="pagination">
+        <!-- если есть пагинация -->
+    </nav>
+</div>
+```
+
+**Правила**:
+- Обёртка: `.ENTITY-page` (например `.trips-page`, `.vehicles-page`)
+- Тулбар: заголовок слева, кнопка создания справа
+- Кнопка «+ Создать» — обязательна в каждом списке
+- Таблица: всегда `.tms-table` внутри `.table-card` > `.table-wrap`
+- Колонка действий: последняя, `data-col="actions"`
+- CSS — только во внешних файлах: `static/<app>/css/<entity>_list.css`
+
+---
+
+## 15. Пустые состояния
 
 Когда нет данных — не оставлять пустое место, показывать `.empty-state`:
 
@@ -439,7 +519,7 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 ---
 
-## 15. Якоря и прокрутка (паттерн)
+## 16. Якоря и прокрутка (паттерн)
 
 | Страница              | Якорь          | Применяется в         |
 |-----------------------|----------------|-----------------------|
@@ -450,7 +530,7 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 ---
 
-## 16. Адаптивность
+## 17. Адаптивность
 
 Проект ориентирован на desktop (B2B, работа за ПК). Мобильная адаптивность — желательная, но не приоритетная. Ключевые брейкпоинты:
 
@@ -463,7 +543,7 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 ---
 
-## 17. Известные проблемы и технический долг
+## 18. Известные проблемы и технический долг
 
 ### 🔴 Высокий приоритет
 
@@ -560,7 +640,7 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 
 ---
 
-## 18. Быстрый справочник
+## 19. Быстрый справочник
 
 | Задача                              | Решение                                              |
 |-------------------------------------|------------------------------------------------------|
@@ -573,3 +653,6 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 | Постоянный алерт на странице        | `.alert alert-{тип}`                                 |
 | Кнопка основного действия           | `.tms-btn tms-btn-primary` (одна на страницу)        |
 | Кнопки вторичных действий           | `.tms-btn tms-btn-secondary`                         |
+| Новая списковая страница            | `.ENTITY-page` > `.list-toolbar` + `.table-card`     |
+| Деструктивное действие              | `.confirm-inline` с двумя кнопками (не `confirm()`)  |
+| Hover/focus-переход                 | `transition: 0.15s ease`                             |

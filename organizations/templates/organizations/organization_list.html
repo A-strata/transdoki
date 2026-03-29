@@ -1,194 +1,23 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'organizations/css/organization_list.css' %}">
+{% endblock %}
 
 {% block content %}
-<style>
-    .org-page {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-
-    .org-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .org-title {
-        margin: 0;
-        font-size: clamp(1.25rem, 1.8vw, 1.6rem);
-        line-height: 1.2;
-        letter-spacing: -0.01em;
-    }
-
-    .tms-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 40px;
-        padding: 0 14px;
-        border-radius: 10px;
-        border: 1px solid transparent;
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background .2s ease, border-color .2s ease, color .2s ease;
-    }
-
-    .tms-btn-primary {
-        background: #2563eb;
-        color: #fff;
-        border-color: #2563eb;
-    }
-
-    .tms-btn-primary:hover {
-        background: #1d4ed8;
-        border-color: #1d4ed8;
-    }
-
-    .tms-btn-secondary {
-        background: #fff;
-        color: #374151;
-        border-color: #e5e7eb;
-    }
-
-    .tms-btn-secondary:hover {
-        background: #f9fafb;
-        border-color: #d1d5db;
-    }
-
-    .table-card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        overflow: hidden;
-    }
-
-    .table-wrap {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .tms-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 760px;
-    }
-
-    .tms-table thead th {
-        text-align: left;
-        padding: 12px 14px;
-        font-size: 0.82rem;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: #6b7280;
-        background: #f9fafb;
-        border-bottom: 1px solid #e5e7eb;
-        white-space: nowrap;
-    }
-
-    .tms-table tbody td {
-        padding: 12px 14px;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 0.93rem;
-        color: #111827;
-        vertical-align: top;
-    }
-
-    .tms-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .tms-table tbody tr:hover {
-        background: #fcfcfd;
-    }
-
-    .org-name {
-        font-weight: 600;
-        color: #111827;
-    }
-
-    .org-address {
-        color: #374151;
-    }
-
-    .empty-row td {
-        color: #6b7280;
-        text-align: center;
-        padding: 20px 14px;
-    }
-
-    /* Mobile: table -> stacked rows */
-    @media (max-width: 760px) {
-        .table-wrap {
-            overflow: visible;
-        }
-
-        .tms-table {
-            min-width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
-        .tms-table thead {
-            display: none;
-        }
-
-        .tms-table tbody tr {
-            display: block;
-            margin: 10px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            background: #fff;
-            overflow: hidden;
-        }
-
-        .tms-table tbody td {
-            display: grid;
-            grid-template-columns: 110px 1fr;
-            gap: 10px;
-            padding: 10px 12px;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .tms-table tbody td:last-child {
-            border-bottom: none;
-        }
-
-        .tms-table tbody td::before {
-            content: attr(data-label);
-            color: #6b7280;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-
-        .empty-row td {
-            display: block;
-            text-align: center;
-        }
-
-        .empty-row td::before {
-            content: none;
-        }
-
-        .org-header .tms-btn {
-            width: 100%;
-        }
-    }
-</style>
-
 <section class="org-page">
-    <div class="org-header">
-        <h1 class="org-title">{% if is_own %}Мои компании{% else %}Контрагенты{% endif %}</h1>
-        <a href="{% url 'organizations:create' %}{% if is_own %}?own=1{% endif %}" class="tms-btn tms-btn-primary">{% if is_own %}Добавить компанию{% else %}Добавить контрагента{% endif %}</a>
+    <div class="list-toolbar">
+        <div class="list-toolbar-left">
+            <h1>{% if is_own %}Мои компании{% else %}Контрагенты{% endif %}</h1>
+        </div>
+        <div class="list-toolbar-right">
+            <a href="{% url 'organizations:create' %}{% if is_own %}?own=1{% endif %}" class="tms-btn tms-btn-primary tms-btn-add">{% if is_own %}+ Добавить компанию{% else %}+ Добавить контрагента{% endif %}</a>
+        </div>
     </div>
 
     <div class="table-card">
-        <div class="table-wrap">
+        <div class="table-wrap" data-drag-scroll>
             <table class="tms-table">
                 <thead>
                     <tr>
@@ -196,7 +25,7 @@
                         <th>ИНН</th>
                         <th>ОГРН</th>
                         <th>Адрес</th>
-                        <th>Действия</th>
+                        <th data-col="actions">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -206,15 +35,17 @@
                         <td data-label="ИНН">{{ organization.inn }}</td>
                         <td data-label="ОГРН">{{ organization.ogrn }}</td>
                         <td data-label="Адрес"><span class="org-address">{{ organization.address }}</span></td>
-                        <td data-label="Действия">
-                            <a href="{% url 'organizations:detail' organization.pk %}" class="tms-btn tms-btn-secondary">
-                                Карточка компании
-                            </a>
+                        <td data-label="Действия" data-col="actions">
+                            <div class="row-actions">
+                                <a href="{% url 'organizations:detail' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">
+                                    Карточка компании
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr class="empty-row">
-                        <td colspan="5">{% if is_own %}Нет собственных компаний{% else %}Нет контрагентов{% endif %}</td>
+                    <tr>
+                        <td colspan="5" class="empty-state">{% if is_own %}Нет собственных компаний{% else %}Нет контрагентов{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
