@@ -89,9 +89,9 @@
 }
 
 .balance-ok {
-    background: #f0fdf4;
-    color: #16a34a;
-    border-color: #bbf7d0;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: var(--border);
 }
 
 .balance-warn {
