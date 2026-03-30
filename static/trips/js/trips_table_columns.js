@@ -259,12 +259,18 @@
         }
 
         // Панель "Вид"
+        function closeVisibilityPanel() {
+            visibilityPanel.classList.add('is-hidden');
+            visibilityToggle.setAttribute('aria-expanded', 'false');
+        }
+
         visibilityToggle.addEventListener('click', function (e) {
             e.stopPropagation();
 
             const willOpen = visibilityPanel.classList.contains('is-hidden');
 
             if (willOpen) {
+                document.dispatchEvent(new CustomEvent('tms:dropdown-open', { detail: { id: 'visibility-panel' } }));
                 visibilityPanel.classList.remove('align-left');
 
                 visibilityPanel.classList.remove('is-hidden');
@@ -279,6 +285,10 @@
 
             const hidden = visibilityPanel.classList.contains('is-hidden');
             visibilityToggle.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+        });
+
+        document.addEventListener('tms:dropdown-open', function (e) {
+            if (e.detail.id !== 'visibility-panel') closeVisibilityPanel();
         });
 
         visibilityPanel.addEventListener('click', function (e) {

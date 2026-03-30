@@ -11,6 +11,7 @@
         if (!btn || !dropdown) return;
 
         function open() {
+            document.dispatchEvent(new CustomEvent('tms:dropdown-open', { detail: { id: 'org-switcher' } }));
             btn.classList.add('is-open');
             dropdown.classList.add('is-open');
             btn.setAttribute('aria-expanded', 'true');
@@ -47,6 +48,11 @@
             if (e.key === 'Escape') {
                 close();
             }
+        });
+
+        // Закрытие при открытии другого дропдауна
+        document.addEventListener('tms:dropdown-open', function (e) {
+            if (e.detail.id !== 'org-switcher') close();
         });
 
         // Закрытие при клике по пункту меню

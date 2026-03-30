@@ -47,6 +47,7 @@
         }
 
         function openPanel() {
+            document.dispatchEvent(new CustomEvent('tms:dropdown-open', { detail: { id: 'filters-panel' } }));
             panel.classList.add('is-open');
             toggle.setAttribute('aria-expanded', 'true');
         }
@@ -67,6 +68,10 @@
 
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closePanel();
+        });
+
+        document.addEventListener('tms:dropdown-open', function (e) {
+            if (e.detail.id !== 'filters-panel') closePanel();
         });
 
         if (resetBtn) {

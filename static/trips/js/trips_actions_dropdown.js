@@ -136,6 +136,7 @@
                 closeAll();
 
                 if (!isOpen) {
+                    document.dispatchEvent(new CustomEvent('tms:dropdown-open', { detail: { id: 'actions-menu' } }));
                     moveMenuToBody(dd, menu);
                     menu.classList.add('is-open');
                     btn.setAttribute('aria-expanded', 'true');
@@ -154,6 +155,10 @@
 
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeAll();
+        });
+
+        document.addEventListener('tms:dropdown-open', function (e) {
+            if (e.detail.id !== 'actions-menu') closeAll();
         });
 
         document.addEventListener('tms:drag-scroll-start', closeAll);
