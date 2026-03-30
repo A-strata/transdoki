@@ -73,12 +73,16 @@ class Trip(UserOwnedModel):
         on_delete=models.PROTECT,
         related_name="trips_as_consignor",
         verbose_name="Отправитель",
+        null=True,
+        blank=True,
     )
     consignee = models.ForeignKey(
         Organization,
         on_delete=models.PROTECT,
         related_name="trips_as_consignee",
         verbose_name="Получатель",
+        null=True,
+        blank=True,
     )
     carrier = models.ForeignKey(
         Organization,

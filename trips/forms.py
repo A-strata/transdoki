@@ -188,13 +188,14 @@ class TripForm(forms.ModelForm):
         field = self.fields[fname]
         field._validation_qs = full_qs
 
-        # display queryset: только текущее значение (при edit) или initial (при copy)
+        # display queryset: текущее значение (edit), initial (copy) или POST-данные (ошибка валидации)
         current = getattr(self.instance, fname, None)
-        initial_pk = self.initial.get(fname) if not (current and current.pk) else None
-        if current and current.pk:
-            field.queryset = full_qs.filter(pk=current.pk)
-        elif initial_pk:
-            field.queryset = full_qs.filter(pk=initial_pk)
+        current_pk = current.pk if (current and current.pk) else None
+        initial_pk = self.initial.get(fname) if not current_pk else None
+        submitted_pk = self.data.get(fname) if (self.is_bound and not current_pk and not initial_pk) else None
+        pk = current_pk or initial_pk or submitted_pk
+        if pk:
+            field.queryset = full_qs.filter(pk=pk)
         # else: остаётся none()
 
         field.widget.attrs["data-search-url"] = search_url
