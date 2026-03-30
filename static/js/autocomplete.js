@@ -5,7 +5,6 @@ function initAutocomplete(selectId) {
 
     const searchUrl = select.dataset.searchUrl || '';
     const searchType = select.dataset.searchType || '';
-    const openOnFocus = select.dataset.openOnFocus === '1';
     const isAjax = !!searchUrl;
 
     // ── DOM setup ─────────────────────────────────────────────────────────
@@ -128,7 +127,7 @@ function initAutocomplete(selectId) {
             if (controller) controller.abort();
             controller = new AbortController();
 
-            const url = new URL(searchUrl, location.origin);
+            const url = new URL(select.dataset.searchUrl || searchUrl, location.origin);
             if (q) url.searchParams.set('q', q);
             if (searchType) url.searchParams.set('type', searchType);
 
@@ -138,11 +137,9 @@ function initAutocomplete(selectId) {
                 .catch(function () {});
         }
 
-        if (openOnFocus) {
-            input.addEventListener('focus', function () {
-                if (!input.value.trim()) fetchResults('');
-            });
-        }
+        input.addEventListener('focus', function () {
+            if (select.dataset.openOnFocus === '1' && !input.value.trim()) fetchResults('');
+        });
 
         input.addEventListener('input', function () {
             const q = input.value.trim();
@@ -150,7 +147,7 @@ function initAutocomplete(selectId) {
                 select.value = '';
                 updateClearBtn();
                 select.dispatchEvent(new Event('change', { bubbles: true }));
-                if (openOnFocus) {
+                if (select.dataset.openOnFocus === '1') {
                     fetchResults('');
                 } else {
                     closeDropdown();

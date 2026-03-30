@@ -130,6 +130,9 @@ def person_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
     qs = Person.objects.filter(account=account)
+    carrier_id = request.GET.get("carrier_id", "").strip()
+    if carrier_id.isdigit():
+        qs = qs.filter(employer_id=int(carrier_id))
     if q:
         for part in q.split():
             qs = qs.filter(

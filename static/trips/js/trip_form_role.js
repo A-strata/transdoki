@@ -118,9 +118,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Смена значения в select (крестик, выбор из дропдауна)
         select.addEventListener('change', function () {
-            if (activeRole !== role) return;
-            if (String(select.value) === String(orgId)) return;
-            deactivateRole(role);
+            if (activeRole === role) {
+                // Карточка активна — деактивировать при любом другом значении
+                if (String(select.value) !== String(orgId)) {
+                    deactivateRole(role);
+                }
+            } else {
+                // Карточка не активна — подсветить если выбрана своя организация
+                if (String(select.value) === String(orgId)) {
+                    cards.forEach(function (c) { c.classList.remove('is-active'); });
+                    if (activeRole && ROLE_TO_SELECT[activeRole]) {
+                        var prevField = getField(ROLE_TO_SELECT[activeRole]);
+                        if (prevField) removePrefilled(prevField);
+                    }
+                    activeRole = role;
+                    var card = document.querySelector('.role-card[data-role="' + role + '"]');
+                    if (card) card.classList.add('is-active');
+                }
+            }
         });
 
         // Ввод текста в видимый input автокомплита
@@ -135,7 +150,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Автодетекция при загрузке
-    if (hasVehicles) {
+    var clientSelect = document.getElementById('id_client');
+    var carrierSelect = document.getElementById('id_carrier');
+    var clientIsOrg = clientSelect && String(clientSelect.value) === String(orgId);
+    var carrierIsOrg = carrierSelect && String(carrierSelect.value) === String(orgId);
+    var formHasValues = (clientSelect && clientSelect.value) || (carrierSelect && carrierSelect.value);
+
+    if (clientIsOrg) {
+        // Своя org в поле «Заказчик» — подсветить карточку без prefilled
+        activeRole = 'client';
+        var card = document.querySelector('.role-card[data-role="client"]');
+        if (card) card.classList.add('is-active');
+    } else if (carrierIsOrg) {
+        // Своя org в поле «Перевозчик» — подсветить карточку без prefilled
+        activeRole = 'carrier';
+        var card = document.querySelector('.role-card[data-role="carrier"]');
+        if (card) card.classList.add('is-active');
+    } else if (hasVehicles && !formHasValues) {
+        // Пустая форма — автоподстановка
         activateRole('carrier');
     }
 });
