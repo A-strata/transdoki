@@ -1,9 +1,14 @@
-from django.contrib import admin
+import logging
+
+from django.contrib import admin, messages
 from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
+from django.shortcuts import redirect
 
 from .models import Account, UserProfile, UserSession
+
+security_logger = logging.getLogger("security")
 
 
 @admin.register(Account)
@@ -79,6 +84,7 @@ class UserAdmin(BaseUserAdmin):
         "is_staff",
         "is_active",
     )
+    actions = ["impersonate_user"]
 
     @admin.display(description="Роль")
     def role_display(self, obj):
@@ -89,6 +95,32 @@ class UserAdmin(BaseUserAdmin):
     def account_display(self, obj):
         profile = getattr(obj, "profile", None)
         return profile.account if profile and profile.account else "—"
+
+    @admin.action(description="Войти от имени выбранного пользователя")
+    def impersonate_user(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, "Выберите ровно одного пользователя.", messages.ERROR)
+            return
+
+        target = queryset.first()
+        if target.is_superuser:
+            self.message_user(request, "Нельзя войти от имени суперпользователя.", messages.ERROR)
+            return
+
+        request.session["_impersonate_user_id"] = target.pk
+        security_logger.warning(
+            "impersonate_start: superuser %s (%s) → user %s (%s)",
+            request.user.pk,
+            request.user.username,
+            target.pk,
+            target.username,
+        )
+        self.message_user(
+            request,
+            f"Вы работаете от имени {target.get_full_name() or target.username}.",
+            messages.SUCCESS,
+        )
+        return redirect("trips:list")
 
 
 # Перерегистрация стандартной модели User

@@ -63,6 +63,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Кастомные middleware проекта
+    "accounts.middleware.ImpersonationMiddleware",
     "accounts.middleware.SessionActivityMiddleware",
     "accounts.middleware.CurrentOrganizationMiddleware",
 ]

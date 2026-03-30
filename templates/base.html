@@ -158,6 +158,16 @@
         </nav>
     </header>
 
+    {% if request.is_impersonating %}
+        <div class="impersonate-bar">
+            <span>Вы работаете от имени <strong>{{ user.get_full_name|default:user.username }}</strong> ({{ user.username }})</span>
+            <form method="post" action="{% url 'accounts:impersonate_stop' %}">
+                {% csrf_token %}
+                <button type="submit" class="impersonate-bar-btn">Вернуться к своему аккаунту</button>
+            </form>
+        </div>
+    {% endif %}
+
     <main>
         {% if messages %}
             <div class="flash-wrap">

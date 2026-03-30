@@ -1,6 +1,38 @@
+import logging
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.utils import timezone
+
+security_logger = logging.getLogger("security")
+User = get_user_model()
+
+
+class ImpersonationMiddleware:
+    """
+    Позволяет суперпользователю просматривать систему от имени другого пользователя.
+    В сессии хранится _impersonate_user_id. Оригинальный пользователь доступен
+    как request.real_user. Если impersonation не активен, request.real_user == request.user.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.real_user = request.user
+        request.is_impersonating = False
+
+        impersonate_id = request.session.get("_impersonate_user_id")
+        if impersonate_id and request.user.is_authenticated and request.user.is_superuser:
+            try:
+                target = User.objects.select_related("profile").get(pk=impersonate_id)
+                request.real_user = request.user
+                request.user = target
+                request.is_impersonating = True
+            except User.DoesNotExist:
+                del request.session["_impersonate_user_id"]
+
+        return self.get_response(request)
 
 # Обновляем last_activity не чаще одного раза в 5 минут,
 # чтобы не писать в БД на каждый запрос.

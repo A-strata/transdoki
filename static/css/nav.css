@@ -262,3 +262,35 @@
         top: 92px;
     }
 }
+
+
+/* ── Impersonation bar ── */
+.impersonate-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 6px 16px;
+    background: #fef3c7;
+    border-bottom: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 0.84rem;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.impersonate-bar-btn {
+    padding: 3px 12px;
+    border: 1px solid #d97706;
+    border-radius: 6px;
+    background: #fff;
+    color: #92400e;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+.impersonate-bar-btn:hover {
+    background: #fef3c7;
+}

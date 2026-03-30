@@ -6,6 +6,8 @@ from .views import (
     AccountUserPasswordResetView,
     AccountUserRoleUpdateView,
     AccountUserUpdateView,
+    ImpersonateStartView,
+    ImpersonateStopView,
     RegisterView,
     SwitchOrganizationView,
 )
@@ -31,5 +33,15 @@ urlpatterns = [
         "users/<int:profile_id>/reset-password/",
         AccountUserPasswordResetView.as_view(),
         name="user_reset_password",
+    ),
+    path(
+        "impersonate/<int:user_id>/",
+        ImpersonateStartView.as_view(),
+        name="impersonate_start",
+    ),
+    path(
+        "impersonate/stop/",
+        ImpersonateStopView.as_view(),
+        name="impersonate_stop",
     ),
 ]

@@ -15,6 +15,56 @@ from .forms import AccountRegistrationForm, AccountUserCreateForm
 from .models import UserProfile
 from .services import reset_account_user_password
 
+import logging
+
+security_logger = logging.getLogger("security")
+
+
+class ImpersonateStartView(LoginRequiredMixin, View):
+    """Суперпользователь начинает просмотр от имени другого пользователя."""
+
+    def post(self, request, user_id):
+        if not request.real_user.is_superuser:
+            raise PermissionDenied
+
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        target = get_object_or_404(User, pk=user_id)
+
+        if target.is_superuser:
+            messages.error(request, "Нельзя войти от имени другого суперпользователя.")
+            return redirect(request.META.get("HTTP_REFERER", "admin:index"))
+
+        request.session["_impersonate_user_id"] = target.pk
+        security_logger.warning(
+            "impersonate_start: superuser %s (%s) → user %s (%s)",
+            request.real_user.pk,
+            request.real_user.username,
+            target.pk,
+            target.username,
+        )
+        messages.success(request, f"Вы работаете от имени {target.get_full_name() or target.username}.")
+        return redirect("trips:list")
+
+
+class ImpersonateStopView(LoginRequiredMixin, View):
+    """Прекращение impersonation — возврат к своему аккаунту."""
+
+    def post(self, request):
+        if not request.is_impersonating:
+            return redirect("trips:list")
+
+        impersonated_username = request.user.username
+        del request.session["_impersonate_user_id"]
+        security_logger.warning(
+            "impersonate_stop: superuser %s (%s) stopped impersonating %s",
+            request.real_user.pk,
+            request.real_user.username,
+            impersonated_username,
+        )
+        messages.success(request, "Вы вернулись к своему аккаунту.")
+        return redirect("admin:index")
+
 
 class SwitchOrganizationView(LoginRequiredMixin, View):
     def post(self, request):
