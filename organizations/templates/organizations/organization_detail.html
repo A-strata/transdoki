@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static vehicle_filters %}
+{% load static vehicle_filters person_filters %}
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'organizations/css/organization_detail.css' %}">
@@ -116,6 +116,139 @@
 
     {% if not organization.is_own_company %}
 
+    {# ── Банковские счета ── #}
+    <div class="card collapsible-section {% if bank_accounts_count %}is-open{% endif %}"
+         data-collapsible>
+        <div class="collapsible-header" data-collapsible-toggle>
+            <div class="collapsible-title-wrap">
+                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="section-title">Банковские счета</h2>
+                {% if bank_accounts_count %}
+                    <span class="collapsible-badge">{{ bank_accounts_count }}</span>
+                {% else %}
+                    <span class="collapsible-hint">пусто</span>
+                {% endif %}
+            </div>
+            <button type="button"
+                    class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-collapsible-action
+                    data-modal-open="create-bank-account-modal">+ Добавить</button>
+        </div>
+        <div class="collapsible-body">
+            {% if bank_accounts %}
+            <div class="mini-list">
+                {% for ba in bank_accounts %}
+                <div class="mini-item mini-item--hoverable">
+                    <div class="mini-item-content">
+                        <p class="mini-item-title">{{ ba.account_bank.bank_name }}</p>
+                        <p class="mini-item-sub">р/с {{ ba.account_num }} &middot; БИК {{ ba.account_bank.bic }}</p>
+                    </div>
+                    <div class="mini-item-actions">
+                        <button type="button"
+                                class="mini-action mini-action--edit"
+                                title="Редактировать"
+                                data-modal-open="edit-bank-account-modal"
+                                data-ba-id="{{ ba.pk }}"
+                                data-ba-account-num="{{ ba.account_num }}"
+                                data-ba-bic="{{ ba.account_bank.bic }}"
+                                data-ba-bank-name="{{ ba.account_bank.bank_name }}"
+                                data-ba-corr-account="{{ ba.account_bank.corr_account }}">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M11.2 1.6a1.4 1.4 0 0 1 2 0l1.2 1.2a1.4 1.4 0 0 1 0 2L5.6 13.6l-3.6.8.8-3.6L11.2 1.6z"
+                                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9.5 3.5l3 3"
+                                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <button type="button"
+                                class="mini-action mini-action--danger"
+                                title="Удалить"
+                                data-modal-open="delete-bank-account-modal"
+                                data-ba-id="{{ ba.pk }}"
+                                data-ba-label="{{ ba.account_bank.bank_name }} — р/с {{ ba.account_num }}">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M4.5 3V2.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1V3M2.5 3h11M5.5 6v5.5M8 6v5.5M10.5 6v5.5M3.5 3h9l-.6 9.4a1 1 0 0 1-1 .9H5.1a1 1 0 0 1-1-.9L3.5 3z"
+                                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="collapsible-empty">Нет добавленных банковских счетов</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Контактные лица ── #}
+    <div class="card collapsible-section {% if contacts_count %}is-open{% endif %}"
+         data-collapsible>
+        <div class="collapsible-header" data-collapsible-toggle>
+            <div class="collapsible-title-wrap">
+                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="section-title">Контактные лица</h2>
+                {% if contacts_count %}
+                    <span class="collapsible-badge">{{ contacts_count }}</span>
+                {% else %}
+                    <span class="collapsible-hint">пусто</span>
+                {% endif %}
+            </div>
+            <button type="button"
+                    class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-collapsible-action
+                    data-modal-open="create-contact-modal">+ Добавить</button>
+        </div>
+        <div class="collapsible-body">
+            {% if contacts %}
+            <div class="mini-list">
+                {% for contact in contacts %}
+                <div class="mini-item mini-item--hoverable">
+                    <div class="mini-item-content">
+                        <p class="mini-item-title">{{ contact.name }}{% if contact.position %} <span class="mini-item-tag">{{ contact.position }}</span>{% endif %}</p>
+                        <p class="mini-item-sub">{{ contact.phone|phone_format|default:"телефон не указан" }}</p>
+                    </div>
+                    <div class="mini-item-actions">
+                        <button type="button"
+                                class="mini-action mini-action--edit"
+                                title="Редактировать"
+                                data-modal-open="edit-contact-modal"
+                                data-contact-id="{{ contact.pk }}"
+                                data-contact-name="{{ contact.name }}"
+                                data-contact-phone="{{ contact.phone }}"
+                                data-contact-position="{{ contact.position }}">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M11.2 1.6a1.4 1.4 0 0 1 2 0l1.2 1.2a1.4 1.4 0 0 1 0 2L5.6 13.6l-3.6.8.8-3.6L11.2 1.6z"
+                                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9.5 3.5l3 3"
+                                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <button type="button"
+                                class="mini-action mini-action--danger"
+                                title="Удалить"
+                                data-modal-open="delete-contact-modal"
+                                data-contact-id="{{ contact.pk }}"
+                                data-contact-name="{{ contact.name }}">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M4.5 3V2.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1V3M2.5 3h11M5.5 6v5.5M8 6v5.5M10.5 6v5.5M3.5 3h9l-.6 9.4a1 1 0 0 1-1 .9H5.1a1 1 0 0 1-1-.9L3.5 3z"
+                                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="collapsible-empty">Нет добавленных контактных лиц</p>
+            {% endif %}
+        </div>
+    </div>
+
     {# ── Транспортные средства ── #}
     <div class="card collapsible-section {% if vehicles_count %}is-open{% endif %}"
          data-collapsible>
@@ -146,7 +279,7 @@
                         <th>Модель</th>
                         <th>Тип ТС</th>
                         <th>Тип владения</th>
-                        <th>Действия</th>
+                        <th class="th-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -158,15 +291,31 @@
                         <td data-label="Тип ТС">{{ vehicle.get_vehicle_type_display }}</td>
                         <td data-label="Тип владения">{{ vehicle.get_property_type_display }}</td>
                         <td data-label="Действия">
-                            <a href="{% url 'vehicles:edit' vehicle.pk %}?next={% url 'organizations:detail' organization.pk %}"
-                               class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
-                            <button type="button"
-                                    class="tms-btn tms-btn-danger tms-btn-sm"
-                                    data-modal-open="delete-vehicle-modal"
-                                    data-delete-url="{% url 'vehicles:delete' vehicle.pk %}"
-                                    data-delete-grn="{{ vehicle.grn }}"
-                                    data-delete-type="{{ vehicle.vehicle_type }}"
-                                    data-delete-brand="{{ vehicle.brand }}">Удалить</button>
+                            <div class="row-actions">
+                                <a href="{% url 'vehicles:edit' vehicle.pk %}?next={% url 'organizations:detail' organization.pk %}"
+                                   class="mini-action mini-action--edit"
+                                   title="Редактировать">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M11.2 1.6a1.4 1.4 0 0 1 2 0l1.2 1.2a1.4 1.4 0 0 1 0 2L5.6 13.6l-3.6.8.8-3.6L11.2 1.6z"
+                                              stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M9.5 3.5l3 3"
+                                              stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                    </svg>
+                                </a>
+                                <button type="button"
+                                        class="mini-action mini-action--danger"
+                                        title="Удалить"
+                                        data-modal-open="delete-vehicle-modal"
+                                        data-delete-url="{% url 'vehicles:delete' vehicle.pk %}"
+                                        data-delete-grn="{{ vehicle.grn }}"
+                                        data-delete-type="{{ vehicle.vehicle_type }}"
+                                        data-delete-brand="{{ vehicle.brand }}">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M4.5 3V2.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1V3M2.5 3h11M5.5 6v5.5M8 6v5.5M10.5 6v5.5M3.5 3h9l-.6 9.4a1 1 0 0 1-1 .9H5.1a1 1 0 0 1-1-.9L3.5 3z"
+                                              stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -178,89 +327,17 @@
         </div>
     </div>
 
-    {# ── Банковские счета ── #}
-    <div class="card collapsible-section {% if bank_accounts_count %}is-open{% endif %}"
-         data-collapsible>
-        <div class="collapsible-header" data-collapsible-toggle>
-            <div class="collapsible-title-wrap">
-                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <h2 class="section-title">Банковские счета</h2>
-                {% if bank_accounts_count %}
-                    <span class="collapsible-badge">{{ bank_accounts_count }}</span>
-                {% else %}
-                    <span class="collapsible-hint">пусто</span>
-                {% endif %}
-            </div>
-            <button type="button"
-                    class="tms-btn tms-btn-secondary tms-btn-sm"
-                    data-collapsible-action
-                    data-modal-open="create-bank-account-modal">+ Добавить</button>
-        </div>
-        <div class="collapsible-body">
-            {% if bank_accounts %}
-            <div class="mini-list">
-                {% for ba in bank_accounts %}
-                <div class="mini-item">
-                    <p class="mini-item-title">{{ ba.account_bank.bank_name }}</p>
-                    <p class="mini-item-sub">р/с {{ ba.account_num }} &middot; БИК {{ ba.account_bank.bic }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="collapsible-empty">Нет добавленных банковских счетов</p>
-            {% endif %}
-        </div>
-    </div>
-
-    {# ── Контактные лица ── #}
-    <div class="card collapsible-section {% if employees_count %}is-open{% endif %}"
-         data-collapsible>
-        <div class="collapsible-header" data-collapsible-toggle>
-            <div class="collapsible-title-wrap">
-                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <h2 class="section-title">Контактные лица</h2>
-                {% if employees_count %}
-                    <span class="collapsible-badge">{{ employees_count }}</span>
-                {% else %}
-                    <span class="collapsible-hint">пусто</span>
-                {% endif %}
-            </div>
-            <button type="button"
-                    class="tms-btn tms-btn-secondary tms-btn-sm"
-                    data-collapsible-action
-                    disabled>+ Добавить</button>
-        </div>
-        <div class="collapsible-body">
-            {% if employees %}
-            <div class="mini-list">
-                {% for person in employees %}
-                <a href="{% url 'persons:detail' person.pk %}" class="mini-item">
-                    <p class="mini-item-title">{{ person }}</p>
-                    <p class="mini-item-sub">{{ person.phone }}</p>
-                </a>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="collapsible-empty">Нет добавленных контактных лиц</p>
-            {% endif %}
-        </div>
-    </div>
-
     {% else %}
 
-    {% if employees %}
+    {% if contacts %}
     <div class="card">
         <h2 class="section-title">Контактные лица</h2>
         <div class="mini-list">
-            {% for person in employees %}
-            <a href="{% url 'persons:detail' person.pk %}" class="mini-item">
-                <p class="mini-item-title">{{ person }}</p>
-                <p class="mini-item-sub">{{ person.phone }}</p>
-            </a>
+            {% for contact in contacts %}
+            <div class="mini-item">
+                <p class="mini-item-title">{{ contact.name }}{% if contact.position %} <span class="mini-item-tag">{{ contact.position }}</span>{% endif %}</p>
+                <p class="mini-item-sub">{{ contact.phone|phone_format|default:"телефон не указан" }}</p>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -451,8 +528,205 @@
     </div>
 </div>
 
+{# ── Модал создания контактного лица ── #}
+<div class="modal-overlay" id="create-contact-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Добавить контактное лицо</h3>
+        <p class="modal-body">{{ organization.short_name }}</p>
+
+        <form id="create-contact-form"
+              data-url="{% url 'organizations:contact_quick_create' %}"
+              data-org-id="{{ organization.pk }}"
+              novalidate>
+            {% csrf_token %}
+
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="cp-name">ФИО</label>
+                    <input type="text" id="cp-name" name="name" required autocomplete="off">
+                </div>
+
+                <div class="modal-field">
+                    <label for="cp-phone">Телефон</label>
+                    <input type="tel" id="cp-phone" name="phone" data-phone-mask autocomplete="off">
+                </div>
+
+                <div class="modal-field">
+                    <label for="cp-position">Должность</label>
+                    <input type="text" id="cp-position" name="position" autocomplete="off" placeholder="Например: Бухгалтер, Логист">
+                </div>
+            </div>
+
+            <div class="modal-form-errors" id="cp-errors" hidden></div>
+
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Добавить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Модал редактирования контактного лица ── #}
+<div class="modal-overlay" id="edit-contact-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Редактировать контактное лицо</h3>
+
+        <form id="edit-contact-form"
+              data-url="{% url 'organizations:contact_update' %}"
+              novalidate>
+            {% csrf_token %}
+            <input type="hidden" id="ecp-id" name="contact_id">
+
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="ecp-name">ФИО</label>
+                    <input type="text" id="ecp-name" name="name" required autocomplete="off">
+                </div>
+
+                <div class="modal-field">
+                    <label for="ecp-phone">Телефон</label>
+                    <input type="tel" id="ecp-phone" name="phone" data-phone-mask autocomplete="off">
+                </div>
+
+                <div class="modal-field">
+                    <label for="ecp-position">Должность</label>
+                    <input type="text" id="ecp-position" name="position" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="modal-form-errors" id="ecp-errors" hidden></div>
+
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Модал удаления контактного лица ── #}
+<div class="modal-overlay" id="delete-contact-modal" hidden>
+    <div class="modal-dialog">
+        <h3 class="modal-title">Удалить контактное лицо?</h3>
+        <p class="modal-body"><span id="delete-contact-name"></span></p>
+        <form id="delete-contact-form"
+              data-url="{% url 'organizations:contact_delete' %}"
+              data-org-id="{{ organization.pk }}">
+            {% csrf_token %}
+            <input type="hidden" id="delete-contact-id" name="contact_id">
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Модал редактирования банковского счёта ── #}
+<div class="modal-overlay" id="edit-bank-account-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Редактировать банковский счёт</h3>
+
+        <form id="edit-bank-account-form"
+              data-url="{% url 'organizations:bank_account_update' %}"
+              data-suggest-url="{% url 'organizations:api_bank_suggest' %}"
+              novalidate>
+            {% csrf_token %}
+            <input type="hidden" id="eba-id" name="ba_id">
+
+            <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="eba-account-num">Расчётный счёт</label>
+                    <input type="text" id="eba-account-num" name="account_num" required maxlength="20" inputmode="numeric" autocomplete="off">
+                    <span class="modal-field-hint" id="eba-account-hint">20 цифр</span>
+                </div>
+
+                {# ── Поиск банка ── #}
+                <div class="modal-field modal-field--full" id="eba-search-wrap">
+                    <label for="eba-search">БИК или название банка</label>
+                    <div class="suggest-wrap">
+                        <input type="text" id="eba-search" autocomplete="off" placeholder="Начните вводить...">
+                        <svg class="suggest-spinner" id="eba-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="6" stroke="#e5e7eb" stroke-width="2"/>
+                            <path d="M8 2a6 6 0 0 1 6 6" stroke="#2563eb" stroke-width="2" stroke-linecap="round">
+                                <animateTransform attributeName="transform" type="rotate"
+                                    from="0 8 8" to="360 8 8" dur=".7s" repeatCount="indefinite"/>
+                            </path>
+                        </svg>
+                        <div class="suggest-dropdown" id="eba-suggest-dropdown"></div>
+                    </div>
+                    <span class="modal-field-hint">Не нашли банк? <button type="button" class="suggest-manual-link" id="eba-manual-toggle">Ввести вручную</button></span>
+                </div>
+
+                {# ── Выбранный банк ── #}
+                <div class="modal-field modal-field--full" id="eba-selected-wrap" hidden>
+                    <div class="selected-row">
+                        <div class="selected-row-info">
+                            <span class="selected-row-title" id="eba-selected-name"></span>
+                            <span class="selected-row-sub" id="eba-selected-details"></span>
+                        </div>
+                        <button type="button" class="selected-row-action" id="eba-change-bank">Изменить</button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="eba-bic" name="bic">
+                <input type="hidden" id="eba-bank-name" name="bank_name">
+                <input type="hidden" id="eba-corr-account" name="corr_account">
+
+                {# ── Ручной ввод ── #}
+                <div id="eba-manual-wrap" hidden>
+                    <div class="modal-fields">
+                        <div class="modal-field modal-field--full">
+                            <label for="eba-manual-bank-name">Наименование банка</label>
+                            <input type="text" id="eba-manual-bank-name">
+                        </div>
+                        <div class="modal-field">
+                            <label for="eba-manual-bic">БИК</label>
+                            <input type="text" id="eba-manual-bic" maxlength="9">
+                        </div>
+                        <div class="modal-field">
+                            <label for="eba-manual-corr-account">Корр. счёт</label>
+                            <input type="text" id="eba-manual-corr-account" maxlength="20">
+                        </div>
+                        <div class="modal-field modal-field--full">
+                            <button type="button" class="suggest-manual-link" id="eba-back-to-search">Вернуться к поиску</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-form-errors" id="eba-errors" hidden></div>
+
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Модал удаления банковского счёта ── #}
+<div class="modal-overlay" id="delete-bank-account-modal" hidden>
+    <div class="modal-dialog">
+        <h3 class="modal-title">Удалить банковский счёт?</h3>
+        <p class="modal-body"><span id="delete-ba-label"></span></p>
+        <form id="delete-bank-account-form"
+              data-url="{% url 'organizations:bank_account_delete' %}">
+            {% csrf_token %}
+            <input type="hidden" id="delete-ba-id" name="ba_id">
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="{% static 'organizations/js/vehicle_create_modal.js' %}"></script>
 <script src="{% static 'organizations/js/bank_account_create_modal.js' %}"></script>
+<script src="{% static 'organizations/js/bank_account_edit_modal.js' %}"></script>
+<script src="{% static 'organizations/js/contact_create_modal.js' %}"></script>
 {% endif %}
 
 <script src="{% static 'organizations/js/collapsible_sections.js' %}"></script>
@@ -462,5 +736,6 @@
 {% if not organization.is_own_company %}
 <script src="https://unpkg.com/imask"></script>
 <script src="{% static 'vehicles/js/grn_mask.js' %}"></script>
+<script src="{% static 'js/phone_mask.js' %}"></script>
 {% endif %}
 {% endblock %}

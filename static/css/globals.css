@@ -167,6 +167,7 @@ input.is-invalid:focus {
 }
 
 .modal-field input[type="text"],
+.modal-field input[type="tel"],
 .modal-field input[type="number"],
 .modal-field select {
     width: 100%;
@@ -307,6 +308,10 @@ input.is-invalid:focus {
 }
 
 /* ── Выбранное значение (автокомплит → selected row) ── */
+.selected-row[hidden] {
+    display: none;
+}
+
 .selected-row {
     display: flex;
     align-items: center;

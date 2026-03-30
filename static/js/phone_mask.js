@@ -112,6 +112,9 @@
         input.setAttribute('autocomplete', 'tel');
         input.setAttribute('aria-label',   'Номер телефона в формате +7');
 
+        /* Store instance on the element for external access */
+        input._phoneMask = mask;
+
         return mask;
     }
 

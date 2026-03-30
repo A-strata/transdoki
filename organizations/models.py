@@ -145,6 +145,27 @@ class Organization(UserOwnedModel):
         super().save(*args, **kwargs)
 
 
+class OrganizationContact(UserOwnedModel):
+    """Контактное лицо организации (справочник)."""
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="contacts",
+        verbose_name="Организация",
+    )
+    name = models.CharField(max_length=150, verbose_name="ФИО")
+    phone = models.CharField(max_length=25, blank=True, default="", verbose_name="Телефон")
+    position = models.CharField(max_length=100, blank=True, default="", verbose_name="Должность")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Контактное лицо"
+        verbose_name_plural = "Контактные лица"
+
+
 class Bank(models.Model):
     bank_name = models.CharField(
         max_length=ORG_NAME_LENGTH,

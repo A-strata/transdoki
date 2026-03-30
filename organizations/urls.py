@@ -8,7 +8,12 @@ from .views import (
     OrganizationListView,
     OrganizationUpdateView,
     OwnCompanyListView,
+    bank_account_delete,
     bank_account_quick_create,
+    bank_account_update,
+    contact_delete,
+    contact_quick_create,
+    contact_update,
     organization_quick_create,
     organization_search,
 )
@@ -27,5 +32,10 @@ urlpatterns = [
     path("api/bank_suggest/", suggest_bank, name="api_bank_suggest"),
     path("quick-create/", organization_quick_create, name="quick_create"),
     path("bank-account/quick-create/", bank_account_quick_create, name="bank_account_quick_create"),
+    path("bank-account/update/", bank_account_update, name="bank_account_update"),
+    path("bank-account/delete/", bank_account_delete, name="bank_account_delete"),
+    path("contact/quick-create/", contact_quick_create, name="contact_quick_create"),
+    path("contact/update/", contact_update, name="contact_update"),
+    path("contact/delete/", contact_delete, name="contact_delete"),
     path("search/", organization_search, name="search"),
 ]

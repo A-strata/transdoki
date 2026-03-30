@@ -8,14 +8,19 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
-
-from transdoki.tenancy import get_request_account
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
 from billing.mixins import BillingProtectedMixin
+from transdoki.tenancy import get_request_account
 
 from .forms import OrganizationForm
-from .models import Bank, Organization, OrganizationBank
+from .models import Bank, Organization, OrganizationBank, OrganizationContact
 from .validators import validate_inn
 
 
@@ -161,14 +166,14 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
 
         vehicles = org.vehicle_set.all()
         bank_accounts = org.bank_accounts.select_related("account_bank").all()
-        employees = org.employees.all()
+        contacts = org.contacts.all()
 
         ctx["vehicles"] = vehicles
         ctx["bank_accounts"] = bank_accounts
-        ctx["employees"] = employees
+        ctx["contacts"] = contacts
         ctx["vehicles_count"] = vehicles.count()
         ctx["bank_accounts_count"] = bank_accounts.count()
-        ctx["employees_count"] = employees.count()
+        ctx["contacts_count"] = contacts.count()
 
         from trips.models import Trip
         from vehicles.models import PropertyType, VehicleType
@@ -334,3 +339,181 @@ def bank_account_quick_create(request):
         )
 
     return JsonResponse({"id": ob.pk, "text": f"{account_num} ({bank_name})"})
+
+
+@login_required
+@require_POST
+def bank_account_update(request):
+    account = get_request_account(request)
+    ba_id = request.POST.get("ba_id", "").strip()
+    account_num = request.POST.get("account_num", "").strip()
+    bic = request.POST.get("bic", "").strip()
+    bank_name = request.POST.get("bank_name", "").strip()
+    corr_account = request.POST.get("corr_account", "").strip()
+
+    ob = OrganizationBank.objects.filter(pk=ba_id, account=account).select_related("account_bank").first()
+    if not ob:
+        return JsonResponse({"errors": {"ba_id": "Счёт не найден"}}, status=404)
+
+    errors = {}
+    if not bic:
+        errors["bic"] = "Обязательное поле"
+    elif not bic.isdigit() or len(bic) != 9:
+        errors["bic"] = "БИК должен состоять из 9 цифр"
+    if not bank_name:
+        errors["bank_name"] = "Обязательное поле"
+    if not corr_account:
+        errors["corr_account"] = "Обязательное поле"
+    elif not corr_account.isdigit() or len(corr_account) != 20:
+        errors["corr_account"] = "Корр. счёт должен состоять из 20 цифр"
+    if not account_num:
+        errors["account_num"] = "Обязательное поле"
+    elif not account_num.isdigit() or len(account_num) != 20:
+        errors["account_num"] = "Расчётный счёт должен состоять из 20 цифр"
+
+    if errors:
+        return JsonResponse({"errors": errors}, status=400)
+
+    bank, _ = Bank.objects.get_or_create(
+        bic=bic,
+        defaults={"bank_name": bank_name, "corr_account": corr_account},
+    )
+
+    ob.account_num = account_num
+    ob.account_bank = bank
+    try:
+        ob.full_clean()
+        ob.save()
+    except ValidationError as e:
+        errs = {}
+        if hasattr(e, "error_dict"):
+            for field, msgs in e.error_dict.items():
+                msg = msgs[0].messages[0] if hasattr(msgs[0], "messages") else str(msgs[0])
+                errs[field] = msg
+        else:
+            errs["account_num"] = "; ".join(e.messages)
+        return JsonResponse({"errors": errs}, status=400)
+    except IntegrityError:
+        return JsonResponse(
+            {"errors": {"account_num": "Такой счёт в этом банке уже существует"}},
+            status=400,
+        )
+
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def bank_account_delete(request):
+    account = get_request_account(request)
+    ba_id = request.POST.get("ba_id", "").strip()
+
+    ob = OrganizationBank.objects.filter(pk=ba_id, account=account).first()
+    if not ob:
+        return JsonResponse({"error": "Счёт не найден"}, status=404)
+
+    ob.delete()
+    return JsonResponse({"ok": True})
+
+
+def _clean_phone(phone):
+    """Нормализация и валидация российского номера. Возвращает (digits, error)."""
+    if not phone:
+        return "", None
+    digits = "".join(filter(str.isdigit, phone))
+    if not digits or digits == "7":
+        return "", None
+    if digits.startswith("8") and len(digits) == 11:
+        digits = "7" + digits[1:]
+    if len(digits) != 11 or not digits.startswith("7"):
+        return phone, "Введите корректный российский номер телефона"
+    return digits, None
+
+
+@login_required
+@require_POST
+def contact_quick_create(request):
+    account = get_request_account(request)
+    org_id = request.POST.get("org_id", "").strip()
+    name = request.POST.get("name", "").strip()
+    phone = request.POST.get("phone", "").strip()
+    position = request.POST.get("position", "").strip()
+
+    errors = {}
+    if not name:
+        errors["name"] = "Обязательное поле"
+
+    org = None
+    if org_id:
+        org = Organization.objects.filter(pk=org_id, account=account).first()
+    if not org:
+        errors["org_id"] = "Организация не найдена"
+
+    phone, phone_error = _clean_phone(phone)
+    if phone_error:
+        errors["phone"] = phone_error
+
+    if errors:
+        return JsonResponse({"errors": errors}, status=400)
+
+    contact = OrganizationContact.objects.create(
+        organization=org,
+        name=name,
+        phone=phone,
+        position=position,
+        created_by=request.user,
+        account=account,
+    )
+
+    return JsonResponse({"id": contact.pk, "text": str(contact)})
+
+
+@login_required
+@require_POST
+def contact_update(request):
+    account = get_request_account(request)
+    contact_id = request.POST.get("contact_id", "").strip()
+    name = request.POST.get("name", "").strip()
+    phone = request.POST.get("phone", "").strip()
+    position = request.POST.get("position", "").strip()
+
+    contact = OrganizationContact.objects.filter(
+        pk=contact_id, account=account,
+    ).first()
+    if not contact:
+        return JsonResponse({"errors": {"contact_id": "Контакт не найден"}}, status=404)
+
+    errors = {}
+    if not name:
+        errors["name"] = "Обязательное поле"
+
+    phone, phone_error = _clean_phone(phone)
+    if phone_error:
+        errors["phone"] = phone_error
+
+    if errors:
+        return JsonResponse({"errors": errors}, status=400)
+
+    contact.name = name
+    contact.phone = phone
+    contact.position = position
+    contact.save()
+
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def contact_delete(request):
+    account = get_request_account(request)
+    contact_id = request.POST.get("contact_id", "").strip()
+
+    contact = OrganizationContact.objects.filter(
+        pk=contact_id, account=account,
+    ).first()
+
+    if not contact:
+        return JsonResponse({"error": "Контакт не найден"}, status=404)
+
+    contact.delete()
+    return JsonResponse({"ok": True})

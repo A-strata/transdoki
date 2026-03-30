@@ -11,7 +11,7 @@ PHONE_LENGTH = 13
 
 
 class Person(UserOwnedModel):
-    """Водители, контактные лица, руководители"""
+    """Водители."""
 
     name = models.CharField(max_length=NAME_LENGTH, verbose_name="Имя")
     surname = models.CharField(max_length=NAME_LENGTH, verbose_name="Фамилия")

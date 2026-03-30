@@ -161,6 +161,22 @@
     background: #f8fafc;
 }
 
+.vehicle-table .th-actions {
+    width: 1%;
+}
+
+.vehicle-table .row-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.vehicle-table tbody tr:hover .row-actions {
+    opacity: 1;
+}
+
 /* ── Мини-список (контакты, банковские реквизиты) ── */
 .mini-list {
     display: flex;
@@ -186,6 +202,72 @@
     margin: 0;
     font-size: 0.84rem;
     color: var(--muted);
+}
+
+/* ── Строка с действиями по ховеру ── */
+.mini-item--hoverable {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: background 0.15s ease;
+}
+
+.mini-item--hoverable:hover {
+    background: #f8fafc;
+}
+
+.mini-item-content {
+    min-width: 0;
+}
+
+.mini-item-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    flex-shrink: 0;
+}
+
+.mini-item--hoverable:hover .mini-item-actions {
+    opacity: 1;
+}
+
+.mini-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mini-action--edit:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.mini-action--danger:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.mini-item-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f3f4f6;
+    border: 1px solid var(--border);
+    vertical-align: middle;
 }
 
 /* ── Действия ── */

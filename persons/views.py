@@ -8,7 +8,13 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
 from transdoki.tenancy import get_request_account
 
@@ -113,7 +119,9 @@ class PersonListView(LoginRequiredMixin, ListView):
         current_org = self.request.current_org
         if current_org is None:
             return Person.objects.none()
-        return Person.objects.filter(employer=current_org).select_related("employer")
+        return Person.objects.filter(
+            employer=current_org,
+        ).select_related("employer")
 
 
 @login_required
