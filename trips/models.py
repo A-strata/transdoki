@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -61,7 +62,7 @@ class Trip(UserOwnedModel):
     num_of_trip = models.PositiveSmallIntegerField(
         verbose_name="Номер заявки", editable=False
     )
-    date_of_trip = models.DateField(verbose_name="Дата заявки", null=True, blank=True)
+    date_of_trip = models.DateField(verbose_name="Дата заявки", default=date(2000, 1, 1))
     client = models.ForeignKey(
         Organization,
         on_delete=models.PROTECT,
