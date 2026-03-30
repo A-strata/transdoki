@@ -527,34 +527,85 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 ## 13. Таблицы
 
-Используется только в списковых представлениях. Базовая структура:
+Используется только в списковых представлениях.
+
+### Базовая структура
 
 ```html
-<div data-drag-scroll class="table-scroll-wrap">
-    <table class="tms-table">
-        <thead>
-            <tr>
-                <th>Колонка</th>
-                <th data-col="actions">Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Значение</td>
-                <td data-col="actions">
-                    <!-- actions dropdown -->
-                </td>
-            </tr>
-        </tbody>
-    </table>
+<div class="table-card">
+    <div class="table-wrap" data-drag-scroll>
+        <table class="tms-table" data-trips-table>
+            <thead>
+                <tr>
+                    <th data-col="name">Название</th>
+                    <th data-col="date">Дата</th>
+                    <th class="row-actions-cell"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-trip-row>
+                    <td data-col="name">Значение</td>
+                    <td data-col="date">01.01.2026</td>
+                    <td class="row-actions-cell" data-row-actions>
+                        <div class="row-actions">
+                            <!-- hover-иконки -->
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 ```
 
 **Правила**:
-- Последняя колонка — всегда `data-col="actions"` со sticky-позиционированием вправо
+- `table-layout: fixed`, ширина таблицы = сумма колонок или ширина контейнера
+- Spacer-колонка (`.col-spacer`) вставляется JS последней, заполняет разницу при малом количестве столбцов
 - Заголовки: uppercase, `0.78rem`, `--muted` цвет
 - Ячейки: `0.89rem`, строки с `cursor: grab` для drag-scroll
 - Hover строк: `#f8fafc`
+
+### Действия строки (hover-иконки)
+
+Действия над записью в таблицах и компактных списках — не в отдельном столбце и не постоянно видимыми кнопками, а в иконках, появляющихся при наведении на строку. В карточках деталей, формах и модалках действия остаются обычными кнопками `.tms-btn`.
+
+```html
+<td class="row-actions-cell" data-row-actions>
+    <div class="row-actions">
+        <a href="..." class="row-action row-action--view" title="Просмотр">
+            <!-- SVG глаз 16×16 -->
+        </a>
+        <a href="..." class="row-action row-action--copy" title="Дублировать">
+            <!-- SVG копия 16×16 -->
+        </a>
+        <div class="row-action-docs" data-docs-dropdown>
+            <button type="button" class="row-action row-action--print"
+                    title="Документы" data-docs-toggle>
+                <!-- SVG принтер 16×16 -->
+            </button>
+            <div class="docs-menu" data-docs-menu>
+                <a href="...">Скачать документ</a>
+            </div>
+        </div>
+    </div>
+</td>
+```
+
+**Правила**:
+- `.row-actions-cell` — sticky `right: 0`, ширина 100px, `overflow: visible`
+- `.row-actions` — `opacity: 0` → `1` при hover строки или при открытом меню (`is-docs-open`)
+- `.row-action` — 28×28px, иконка 16×16px SVG (`stroke="currentColor"`, `stroke-width="1.2"`, `fill="none"`, `round` caps/joins)
+- Цвета hover: `--view` синий, `--copy` зелёный, `--print` синий
+- Docs-dropdown: меню переносится в `body` (обход `overflow: hidden`), `position: fixed`, умное позиционирование, плавное появление (0.15s)
+- При открытом меню строка подсвечивается `#eef6ff`
+
+### Resize колонок
+
+- Handle на правой стороне `th[data-col]` — `.col-resize-handle`, hit area 16px, линия 2px
+- Доп. handle на левой стороне `.row-actions-cell` header (`.col-resize-edge`) — управляет последним видимым столбцом, всегда доступен
+- Ширины по умолчанию подбираются по контенту (заголовок + данные), max 300px
+- Double-click на handle — авто-подбор ширины
+- Ширины, порядок, видимость сохраняются в `localStorage`
 
 ---
 
@@ -597,7 +648,7 @@ const suggestUrl = wrap.dataset.suggestUrl;
 - Тулбар: заголовок слева, кнопка создания справа
 - Кнопка «+ Создать» — обязательна в каждом списке
 - Таблица: всегда `.tms-table` внутри `.table-card` > `.table-wrap`
-- Колонка действий: последняя, `data-col="actions"`
+- Действия строки: hover-иконки в `.row-actions-cell` (см. раздел 13)
 - CSS — только во внешних файлах: `static/<app>/css/<entity>_list.css`
 
 ---

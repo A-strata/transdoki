@@ -611,8 +611,17 @@ tbody .row-actions-cell {
     transition: opacity 0.15s ease;
 }
 
-.tms-table tbody tr:hover .row-actions {
+.tms-table tbody tr:hover .row-actions,
+.tms-table tbody tr.is-docs-open .row-actions {
     opacity: 1;
+}
+
+.tms-table tbody tr.is-docs-open td {
+    background: #eef6ff;
+}
+
+.tms-table tbody tr.is-docs-open .row-actions-cell {
+    background: #eef6ff;
 }
 
 .row-action {
@@ -647,15 +656,10 @@ tbody .row-actions-cell {
 }
 
 /* Docs dropdown */
-.row-action-docs {
-    position: relative;
-}
-
 .docs-menu {
-    display: none;
-    position: absolute;
-    bottom: calc(100% + 6px);
-    right: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
     z-index: var(--z-actions-menu);
     min-width: 220px;
     width: max-content;
@@ -665,10 +669,18 @@ tbody .row-actions-cell {
     border-radius: var(--radius-sm);
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
     padding: 6px;
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    display: none;
 }
 
 .docs-menu.is-open {
     display: block;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 .docs-menu a {

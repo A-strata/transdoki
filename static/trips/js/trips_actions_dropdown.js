@@ -1,43 +1,110 @@
 // Dropdown "Документы" в строках таблицы рейсов:
-// - открывается по клику на иконку принтера
+// - меню переносится в body (не обрезается overflow таблицы)
+// - умное позиционирование: вниз по умолчанию, вверх если мало места
+// - подсветка строки при открытом меню
 // - закрывается по клику вне, Escape, скроллу таблицы
 (function () {
     function init() {
-        let openMenu = null;
+        var openState = null;
 
         function closeAll() {
-            if (!openMenu) return;
+            if (!openState) return;
 
-            openMenu.menu.classList.remove('is-open');
-            openMenu.btn.setAttribute('aria-expanded', 'false');
-            openMenu = null;
+            var s = openState;
+            openState = null;
+
+            s.menu.classList.remove('is-open');
+            s.btn.setAttribute('aria-expanded', 'false');
+
+            if (s.row) {
+                s.row.classList.remove('is-docs-open');
+            }
+
+            // Вернуть меню в DOM после завершения анимации
+            setTimeout(function () {
+                if (s.placeholder && s.placeholder.parentNode) {
+                    s.placeholder.parentNode.insertBefore(s.menu, s.placeholder);
+                    s.placeholder.remove();
+                }
+                s.menu.style.top = '';
+                s.menu.style.left = '';
+            }, 150);
+        }
+
+        function placeMenu(btn, menu) {
+            var btnRect = btn.getBoundingClientRect();
+            var gap = 6;
+
+            // Показать для замера, но невидимо
+            menu.style.visibility = 'hidden';
+            menu.style.opacity = '0';
+            menu.classList.add('is-open');
+
+            var menuRect = menu.getBoundingClientRect();
+
+            var spaceBelow = window.innerHeight - btnRect.bottom;
+            var spaceAbove = btnRect.top;
+
+            // Вниз по умолчанию, вверх если снизу не влезает
+            var top;
+            if (spaceBelow >= menuRect.height + gap || spaceBelow >= spaceAbove) {
+                top = btnRect.bottom + gap;
+            } else {
+                top = btnRect.top - menuRect.height - gap;
+            }
+
+            // Правый край меню по правому краю кнопки
+            var left = btnRect.right - menuRect.width;
+
+            // Ограничения viewport
+            if (left < 8) left = 8;
+            if (left + menuRect.width > window.innerWidth - 8) {
+                left = window.innerWidth - menuRect.width - 8;
+            }
+            if (top < 8) top = 8;
+            if (top + menuRect.height > window.innerHeight - 8) {
+                top = Math.max(8, window.innerHeight - menuRect.height - 8);
+            }
+
+            menu.style.top = top + 'px';
+            menu.style.left = left + 'px';
+            menu.style.visibility = '';
+            menu.style.opacity = '';
         }
 
         document.addEventListener('click', function (e) {
-            const toggle = e.target.closest('[data-docs-toggle]');
+            var toggle = e.target.closest('[data-docs-toggle]');
 
             if (toggle) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                const dropdown = toggle.closest('[data-docs-dropdown]');
-                const menu = dropdown ? dropdown.querySelector('[data-docs-menu]') : null;
+                var dropdown = toggle.closest('[data-docs-dropdown]');
+                var menu = dropdown ? dropdown.querySelector('[data-docs-menu]') : null;
                 if (!menu) return;
 
-                const wasOpen = menu.classList.contains('is-open');
+                var wasOpen = openState && openState.menu === menu;
                 closeAll();
 
                 if (!wasOpen) {
                     document.dispatchEvent(new CustomEvent('tms:dropdown-open', { detail: { id: 'docs-menu' } }));
-                    menu.classList.add('is-open');
+
+                    var placeholder = document.createComment('docs-menu-placeholder');
+                    dropdown.insertBefore(placeholder, menu);
+                    document.body.appendChild(menu);
+
+                    var row = toggle.closest('tr[data-trip-row]');
+                    if (row) row.classList.add('is-docs-open');
+
+                    placeMenu(toggle, menu);
                     toggle.setAttribute('aria-expanded', 'true');
-                    openMenu = { menu: menu, btn: toggle };
+                    openState = { menu: menu, btn: toggle, placeholder: placeholder, row: row };
                 }
 
                 return;
             }
 
-            if (openMenu && !openMenu.menu.contains(e.target)) {
+            if (openState && !openState.menu.contains(e.target)) {
                 closeAll();
             }
         });
@@ -56,6 +123,14 @@
         if (tableWrap) {
             tableWrap.addEventListener('scroll', closeAll);
         }
+
+        window.addEventListener('scroll', function () {
+            if (openState) placeMenu(openState.btn, openState.menu);
+        }, true);
+
+        window.addEventListener('resize', function () {
+            if (openState) closeAll();
+        });
     }
 
     if (document.readyState === 'loading') {
