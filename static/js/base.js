@@ -92,6 +92,41 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    /* ── Очистка серверных ошибок валидации при вводе ── */
+    document.addEventListener("input", function (e) {
+        var el = e.target;
+        // Прямое поле (input, textarea, select)
+        if (el.classList.contains("is-invalid")) {
+            el.classList.remove("is-invalid");
+        }
+        // Autocomplete: ввод в .autocomplete-input → снять is-invalid с скрытого select
+        if (el.classList.contains("autocomplete-input")) {
+            var select = el.closest(".autocomplete-container");
+            if (select) {
+                var sel = select.querySelector("select.is-invalid");
+                if (sel) sel.classList.remove("is-invalid");
+            }
+        }
+        // Скрыть .errorlist ближайшего .field / .form-group
+        var field = el.closest(".field, .form-group");
+        if (field) {
+            var errList = field.querySelector(".errorlist");
+            if (errList) errList.hidden = true;
+        }
+    });
+
+    document.addEventListener("change", function (e) {
+        var el = e.target;
+        if (el.classList.contains("is-invalid")) {
+            el.classList.remove("is-invalid");
+        }
+        var field = el.closest(".field, .form-group");
+        if (field) {
+            var errList = field.querySelector(".errorlist");
+            if (errList) errList.hidden = true;
+        }
+    });
+
     document.querySelectorAll("form").forEach(function (form) {
         form.addEventListener("submit", function () {
             const btn = form.querySelector("[data-loading-text]");

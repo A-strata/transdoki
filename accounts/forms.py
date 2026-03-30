@@ -3,16 +3,15 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-
-
 from organizations.models import Organization
 from organizations.validators import validate_inn
+from transdoki.forms import ErrorHighlightMixin
 
 from .models import UserProfile
 from .services import create_account_user_by_admin, register_account_with_owner
 
 
-class AccountRegistrationForm(forms.Form):
+class AccountRegistrationForm(ErrorHighlightMixin, forms.Form):
     # Блок 1: О вас
     first_name = forms.CharField(
         label="Имя",
@@ -107,7 +106,7 @@ class AccountRegistrationForm(forms.Form):
         )
 
 
-class AccountUserCreateForm(forms.Form):
+class AccountUserCreateForm(ErrorHighlightMixin, forms.Form):
     ROLE_CHOICES = [
         (UserProfile.Role.ADMIN, "Администратор"),
         (UserProfile.Role.DISPATCHER, "Диспетчер"),

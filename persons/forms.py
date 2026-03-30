@@ -1,11 +1,13 @@
 from django import forms
 
+from transdoki.forms import ErrorHighlightMixin
+
 from .models import Person
 
 _DATE_WIDGET = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
 
 
-class PersonForm(forms.ModelForm):
+class PersonForm(ErrorHighlightMixin, forms.ModelForm):
     passport_series_number = forms.CharField(
         label="Серия и номер паспорта",
         required=False,

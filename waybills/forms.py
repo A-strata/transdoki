@@ -4,6 +4,8 @@ from django import forms
 from django.urls import reverse
 from django.utils import timezone
 
+from transdoki.forms import ErrorHighlightMixin
+
 from organizations.models import Organization
 from persons.models import Person
 from trips.models import Trip
@@ -239,7 +241,7 @@ def validate_next_transition(current_code, current_kind, next_record):
     return None
 
 
-class BaseStyledModelForm(forms.ModelForm):
+class BaseStyledModelForm(ErrorHighlightMixin, forms.ModelForm):
     """Базовое добавление css-классов ко всем полям."""
 
     def __init__(self, *args, **kwargs):

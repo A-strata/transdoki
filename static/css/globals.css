@@ -16,6 +16,12 @@
     --primary: #2563eb;
     --primary-hover: #1d4ed8;
 
+    /* Состояния ошибок */
+    --danger-text: #991b1b;
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --danger: #dc2626;
+
     /* Геометрия */
     --radius: 12px;
     --radius-sm: 10px;
@@ -89,8 +95,19 @@ textarea:focus-visible {
 
 /* ── Состояния валидации полей ── */
 input.is-invalid,
-input.is-invalid:focus {
-    border-color: #dc2626 !important;
+select.is-invalid,
+textarea.is-invalid,
+input.is-invalid:focus,
+select.is-invalid:focus,
+textarea.is-invalid:focus {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+}
+
+/* Autocomplete: скрытый select.is-invalid → подсвечиваем видимый input */
+.autocomplete-container:has(select.is-invalid) .autocomplete-input,
+.autocomplete-container:has(select.is-invalid) .autocomplete-input:focus {
+    border-color: var(--danger) !important;
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
 }
 

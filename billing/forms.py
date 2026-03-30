@@ -1,9 +1,11 @@
 from django import forms
 
+from transdoki.forms import ErrorHighlightMixin
+
 from .cloudpayments import MAX_DEPOSIT_AMOUNT, MIN_DEPOSIT_AMOUNT
 
 
-class DepositForm(forms.Form):
+class DepositForm(ErrorHighlightMixin, forms.Form):
     amount = forms.DecimalField(
         label="Сумма пополнения (₽)",
         min_value=MIN_DEPOSIT_AMOUNT,

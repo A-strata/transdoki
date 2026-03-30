@@ -2,12 +2,13 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from organizations.models import Organization
+from transdoki.forms import ErrorHighlightMixin
 
 from .models import Vehicle
 from .validators import validate_grn_by_type
 
 
-class VehicleForm(forms.ModelForm):
+class VehicleForm(ErrorHighlightMixin, forms.ModelForm):
     class Meta:
         model = Vehicle
         fields = ['grn', 'brand', 'model', 'vehicle_type', 'property_type']

@@ -1,11 +1,12 @@
 from django import forms
 
+from transdoki.forms import ErrorHighlightMixin
 from vehicles.models import Vehicle
 
 from .models import Organization
 
 
-class OrganizationForm(forms.ModelForm):
+class OrganizationForm(ErrorHighlightMixin, forms.ModelForm):
     petrolplus_client_secret = forms.CharField(
         required=False,
         label="PetrolPlus Client Secret",
@@ -109,7 +110,7 @@ class OrganizationForm(forms.ModelForm):
         return obj
 
 
-class VehicleForm(forms.ModelForm):
+class VehicleForm(ErrorHighlightMixin, forms.ModelForm):
     class Meta:
         model = Vehicle
         fields = ["grn", "brand", "model", "vehicle_type", "property_type"]

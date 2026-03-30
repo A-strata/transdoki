@@ -2,10 +2,12 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 
+from transdoki.forms import ErrorHighlightMixin
+
 from .models import Trip, TripPoint
 
 
-class TripPointForm(forms.ModelForm):
+class TripPointForm(ErrorHighlightMixin, forms.ModelForm):
     class Meta:
         model = TripPoint
         fields = [
@@ -69,7 +71,7 @@ from .validators import (
 )
 
 
-class TripForm(forms.ModelForm):
+class TripForm(ErrorHighlightMixin, forms.ModelForm):
     num_of_trip = forms.IntegerField(
         label="Номер заявки", required=False, disabled=True
     )
@@ -255,7 +257,7 @@ class MultipleFileField(forms.FileField):
         return [single_file_clean(data, initial)]
 
 
-class TripAttachmentUploadForm(forms.Form):
+class TripAttachmentUploadForm(ErrorHighlightMixin, forms.Form):
     files = MultipleFileField(
         label="Файлы",
         required=True,
