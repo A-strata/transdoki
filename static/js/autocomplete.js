@@ -195,7 +195,16 @@ function initAutocomplete(selectId) {
 
     // ── Общие обработчики ─────────────────────────────────────────────────
     input.addEventListener('blur', function () {
-        setTimeout(closeDropdown, 200);
+        setTimeout(function () {
+            // Автовыбор единственного совпадения при уходе из поля
+            if (!select.value && input.value.trim()) {
+                var items = dropdown.querySelectorAll('div');
+                if (items.length === 1) {
+                    items[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                }
+            }
+            closeDropdown();
+        }, 200);
     });
 
     document.addEventListener('click', function (e) {

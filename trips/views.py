@@ -59,6 +59,13 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx["vehicle_types"] = VehicleType.choices
         ctx["property_types"] = PropertyType.choices
+        org = getattr(self.request, "current_org", None)
+        if org:
+            ctx["role_org"] = {
+                "id": org.id,
+                "name": str(org),
+                "has_vehicles": org.vehicle_set.exists(),
+            }
         return ctx
 
     def get_form_kwargs(self):
