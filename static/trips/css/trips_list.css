@@ -510,8 +510,8 @@
 .col-resize-handle {
     position: absolute;
     top: 0;
-    right: -3px;
-    width: 10px;
+    right: -7px;
+    width: 16px;
     height: 100%;
     cursor: col-resize;
     z-index: 35;
@@ -522,7 +522,7 @@
     position: absolute;
     top: 8px;
     bottom: 8px;
-    left: 4px;
+    left: 7px;
     width: 2px;
     background: transparent;
     border-radius: 2px;
@@ -534,12 +534,16 @@
     background: #cbd5e1;
 }
 
+.tms-table thead th.is-last-visible:not(.is-resizing) .col-resize-handle::after {
+    background: transparent;
+}
+
 /* Resize-handle на левой стороне row-actions header */
 .col-resize-edge {
     position: absolute;
     top: 0;
-    left: -3px;
-    width: 10px;
+    left: 0;
+    width: 16px;
     height: 100%;
     cursor: col-resize;
     z-index: 35;
@@ -550,7 +554,7 @@
     position: absolute;
     top: 8px;
     bottom: 8px;
-    right: 4px;
+    left: 0;
     width: 2px;
     background: transparent;
     border-radius: 2px;

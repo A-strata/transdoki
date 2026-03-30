@@ -15,8 +15,9 @@
             return;
         }
 
-        const STORAGE_KEY = 'tms_trips_columns_v7';
+        const STORAGE_KEY = 'tms_trips_columns_v8';
         const MIN_COL_WIDTH = 80;
+        const MAX_AUTO_WIDTH = 300;
         const ROW_ACTIONS_WIDTH = 100;
 
         // Колонки, скрытые по умолчанию при первом визите
@@ -87,33 +88,56 @@
             });
         }
 
-        function measureHeaderWidth(th) {
-            const text = th.dataset.labelText || th.textContent.trim();
-
+        function measureTextWidth(text, refElement) {
             const probe = document.createElement('span');
             probe.textContent = text;
             probe.style.position = 'absolute';
             probe.style.visibility = 'hidden';
             probe.style.whiteSpace = 'nowrap';
-            probe.style.fontSize = getComputedStyle(th).fontSize;
-            probe.style.fontWeight = getComputedStyle(th).fontWeight;
-            probe.style.letterSpacing = getComputedStyle(th).letterSpacing;
-            probe.style.textTransform = getComputedStyle(th).textTransform;
+
+            const style = getComputedStyle(refElement);
+            probe.style.fontSize = style.fontSize;
+            probe.style.fontWeight = style.fontWeight;
+            probe.style.letterSpacing = style.letterSpacing;
+            probe.style.textTransform = style.textTransform;
 
             document.body.appendChild(probe);
-            const width = Math.ceil(probe.getBoundingClientRect().width) + 34;
+            const width = Math.ceil(probe.getBoundingClientRect().width);
             probe.remove();
+            return width;
+        }
 
-            return Math.max(width, MIN_COL_WIDTH);
+        function measureAutoWidth(key) {
+            var th = getHeaderCell(key);
+            if (!th) return MIN_COL_WIDTH;
+
+            var headerText = th.dataset.labelText || th.textContent.trim();
+            var headerPad = 34; // padding + resize handle
+            var cellPad = 24;   // cell padding (12px * 2)
+
+            var headerWidth = measureTextWidth(headerText, th) + headerPad;
+            var maxDataWidth = 0;
+
+            var dataCells = table.querySelectorAll('tbody td[data-col="' + key + '"]');
+            if (dataCells.length) {
+                var refCell = dataCells[0];
+                dataCells.forEach(function (td) {
+                    var text = td.textContent.trim();
+                    if (text && text !== '—') {
+                        var w = measureTextWidth(text, refCell) + cellPad;
+                        if (w > maxDataWidth) maxDataWidth = w;
+                    }
+                });
+            }
+
+            var autoWidth = Math.max(headerWidth, maxDataWidth);
+            return Math.max(MIN_COL_WIDTH, Math.min(autoWidth, MAX_AUTO_WIDTH));
         }
 
         function ensureDefaultWidths() {
             state.order.forEach(key => {
                 if (!state.widths[key]) {
-                    const th = getHeaderCell(key);
-                    if (th) {
-                        state.widths[key] = measureHeaderWidth(th);
-                    }
+                    state.widths[key] = measureAutoWidth(key);
                 }
             });
         }
@@ -172,12 +196,19 @@
         }
 
         function applyVisibility() {
+            const lastKey = getLastVisibleKey();
+
             state.order.forEach(key => {
                 const isHidden = state.hidden.includes(key);
 
                 getCellsByKey(key).forEach(cell => {
                     cell.style.display = isHidden ? 'none' : '';
                 });
+
+                const th = getHeaderCell(key);
+                if (th) {
+                    th.classList.toggle('is-last-visible', key === lastKey);
+                }
             });
         }
 
@@ -342,6 +373,18 @@
             let resizing = false;
             let targetKey = null;
             let targetTh = null;
+
+            handle.addEventListener('dblclick', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                var key = getTargetKey();
+                if (!key) return;
+
+                state.widths[key] = measureAutoWidth(key);
+                saveState();
+                applyWidths();
+            });
 
             handle.addEventListener('mousedown', function (e) {
                 e.preventDefault();
