@@ -392,8 +392,6 @@
 
 /* 11) Таблица */
 .tms-table {
-    width: max-content;
-    min-width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     table-layout: fixed;
@@ -505,7 +503,7 @@
     position: sticky;
 }
 
-.tms-table thead th[data-col]:not([data-col="actions"]) {
+.tms-table thead th[data-col] {
     padding-right: 24px;
 }
 
@@ -536,58 +534,124 @@
     background: #cbd5e1;
 }
 
-/* 13) Sticky actions column */
-.tms-table thead th[data-col="actions"],
-.tms-table tbody td[data-col="actions"] {
+/* Resize-handle на левой стороне row-actions header */
+.col-resize-edge {
+    position: absolute;
+    top: 0;
+    left: -3px;
+    width: 10px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 35;
+}
+
+.col-resize-edge::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    right: 4px;
+    width: 2px;
+    background: transparent;
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.row-actions-cell:hover .col-resize-edge::after,
+.row-actions-cell.is-edge-hover .col-resize-edge::after {
+    background: #cbd5e1;
+}
+
+/* 13) Spacer column — заполняет пустоту между data-колонками и actions */
+.col-spacer {
+    padding: 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+thead .col-spacer {
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+}
+
+/* 14) Row actions — hover-иконки */
+.row-actions-cell {
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    padding: 0 8px;
+    cursor: default;
+    overflow: visible;
     position: sticky;
     right: 0;
 }
 
-.tms-table thead th[data-col="actions"] {
+thead .row-actions-cell {
     z-index: var(--z-sticky-actions-hdr);
     background: #f9fafb;
-    box-shadow: -1px 0 0 var(--border);
 }
 
-.tms-table tbody td[data-col="actions"] {
+tbody .row-actions-cell {
     z-index: var(--z-sticky-cell);
     background: var(--surface);
-    box-shadow: -1px 0 0 var(--border);
 }
 
-.tms-table tbody tr:hover td[data-col="actions"] {
+.tms-table tbody tr:hover .row-actions-cell {
     background: #f8fafc;
 }
 
-.tms-table tbody tr.is-dropdown-open td[data-col="actions"],
-.tms-table tbody tr.is-dropdown-open:hover td[data-col="actions"] {
-    background: #eef6ff;
+.row-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
 }
 
-.table-wrap.is-dragging .tms-table tbody tr.is-drag-source td[data-col="actions"],
-.table-wrap.is-dragging .tms-table tbody tr.is-drag-source:hover td[data-col="actions"] {
-    background: #eef6ff;
+.tms-table tbody tr:hover .row-actions {
+    opacity: 1;
 }
 
-/* 14) Actions dropdown */
-.actions {
-    position: relative;
+.row-action {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    text-decoration: none;
 }
 
-.actions-toggle {
-    min-height: 30px;
-    min-width: 36px;
-    padding: 0 8px;
-    font-size: 1rem;
-    letter-spacing: 0.05em;
+.row-action--view:hover {
+    background: #eff6ff;
+    color: #2563eb;
 }
 
-.actions-menu {
-    position: fixed;
-    top: 0;
-    left: 0;
+.row-action--copy:hover {
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.row-action--print:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+/* Docs dropdown */
+.row-action-docs {
+    position: relative;
+}
+
+.docs-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
     z-index: var(--z-actions-menu);
     min-width: 220px;
     width: max-content;
@@ -597,14 +661,13 @@
     border-radius: var(--radius-sm);
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
     padding: 6px;
-    display: none;
 }
 
-.actions-menu.is-open {
+.docs-menu.is-open {
     display: block;
 }
 
-.actions-menu a {
+.docs-menu a {
     display: block;
     padding: 9px 10px;
     border-radius: 8px;
@@ -613,7 +676,7 @@
     font-size: 0.88rem;
 }
 
-.actions-menu a:hover {
+.docs-menu a:hover {
     background: #f3f4f6;
 }
 

@@ -150,7 +150,7 @@
                         <th data-col="payment_condition">Срок (заказчик)</th>
                         <th data-col="carrier_payment_method">Оплата (перевозчик)</th>
                         <th data-col="comments">Комментарии</th>
-                        <th data-col="actions">Действия</th>
+                        <th class="row-actions-cell"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -177,29 +177,39 @@
                         <td data-col="payment_condition">{% if trip.payment_condition == 'unloading' %}На выгрузке{% elif trip.payment_term %}{{ trip.payment_term }} дн.{% else %}—{% endif %}</td>
                         <td data-col="carrier_payment_method">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %} {{ trip.carrier_vat_rate }}%{% endif %}</td>
                         <td data-col="comments">{{ trip.comments|default:"—" }}</td>
-                        <td data-col="actions">
-                            <div class="actions" data-actions-dropdown>
-                                <button
-                                    type="button"
-                                    class="tms-btn tms-btn-secondary actions-toggle"
-                                    data-actions-toggle
-                                    aria-expanded="false"
-                                >
-                                    ···
-                                </button>
-                                <div class="actions-menu" data-actions-menu>
-                                    <a href="{% url 'trips:detail' trip.pk %}">Просмотр</a>
-                                    <a href="{% url 'trips:download_agreement' trip.pk %}">Скачать договор-заявку</a>
-                                    <a href="{% url 'trips:download_tn' trip.pk %}">Скачать ТН</a>
-                                    <a href="{% url 'trips:edit' trip.pk %}">Редактировать</a>
-                                    <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}">Дублировать</a>
+                        <td class="row-actions-cell" data-row-actions>
+                            <div class="row-actions">
+                                <a href="{% url 'trips:detail' trip.pk %}" class="row-action row-action--view" title="Просмотр">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                    </svg>
+                                </a>
+                                <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}" class="row-action row-action--copy" title="Дублировать">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </a>
+                                <div class="row-action-docs" data-docs-dropdown>
+                                    <button type="button" class="row-action row-action--print" title="Документы" data-docs-toggle>
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                            <path d="M4 10.5H2.5A1.5 1.5 0 0 1 1 9V6a1.5 1.5 0 0 1 1.5-1.5h11A1.5 1.5 0 0 1 15 6v3a1.5 1.5 0 0 1-1.5 1.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <rect x="4" y="9" width="8" height="5" rx="1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M4 4.5V2h8v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </button>
+                                    <div class="docs-menu" data-docs-menu>
+                                        <a href="{% url 'trips:download_agreement' trip.pk %}">Скачать договор-заявку</a>
+                                        <a href="{% url 'trips:download_tn' trip.pk %}">Скачать ТН</a>
+                                    </div>
                                 </div>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="22">
+                        <td colspan="23">
                             <div class="empty-state">
                                 <p>Рейсов пока нет</p>
                                 <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary">+ Создать первый рейс</a>

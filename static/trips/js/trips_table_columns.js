@@ -2,7 +2,6 @@
 // - изменение ширины перетаскиванием границы
 // - показ / скрытие колонок через меню "Вид"
 // - изменение порядка через кнопки ↑ / ↓
-// - колонка actions всегда справа и не скрывается
 (function () {
     function init() {
         const table = document.querySelector('[data-trips-table]');
@@ -16,10 +15,9 @@
             return;
         }
 
-        const STORAGE_KEY = 'tms_trips_columns_v6';
-        const LOCK_RIGHT = 'actions';
+        const STORAGE_KEY = 'tms_trips_columns_v7';
         const MIN_COL_WIDTH = 80;
-        const ACTIONS_WIDTH = 60;
+        const ROW_ACTIONS_WIDTH = 100;
 
         // Колонки, скрытые по умолчанию при первом визите
         const DEFAULT_HIDDEN = [
@@ -50,7 +48,7 @@
                 }
 
                 if (Array.isArray(saved.hidden)) {
-                    state.hidden = saved.hidden.filter(key => defaultOrder.includes(key) && key !== LOCK_RIGHT);
+                    state.hidden = saved.hidden.filter(key => defaultOrder.includes(key));
                 }
 
                 if (saved.widths && typeof saved.widths === 'object') {
@@ -59,14 +57,12 @@
             }
         } catch (_) {}
 
-        // actions всегда последняя
-        state.order = state.order.filter(key => key !== LOCK_RIGHT);
+        // Добавить новые колонки, которых нет в сохранённом порядке
         defaultOrder.forEach(key => {
-            if (key !== LOCK_RIGHT && !state.order.includes(key)) {
+            if (!state.order.includes(key)) {
                 state.order.push(key);
             }
         });
-        state.order.push(LOCK_RIGHT);
 
         function saveState() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -85,7 +81,7 @@
         }
 
         function updateEmptyRowsColspan() {
-            const span = visibleColumnsCount();
+            const span = visibleColumnsCount() + 2; // +1 spacer, +1 row-actions
             table.querySelectorAll('.empty-row td').forEach(td => {
                 td.colSpan = span;
             });
@@ -113,11 +109,6 @@
 
         function ensureDefaultWidths() {
             state.order.forEach(key => {
-                if (key === LOCK_RIGHT) {
-                    state.widths[key] = ACTIONS_WIDTH;
-                    return;
-                }
-
                 if (!state.widths[key]) {
                     const th = getHeaderCell(key);
                     if (th) {
@@ -131,18 +122,41 @@
             const rows = Array.from(table.querySelectorAll('tr'));
 
             rows.forEach(row => {
+                if (row.classList.contains('empty-row')) return;
+
                 state.order.forEach(key => {
                     const cell = row.querySelector(`[data-col="${key}"]`);
                     if (cell) row.appendChild(cell);
                 });
+
+                const actionsCell = row.querySelector('[data-row-actions], th.row-actions-cell');
+                if (actionsCell) row.appendChild(actionsCell);
+
+                const spacer = row.querySelector('.col-spacer');
+                if (spacer) row.appendChild(spacer);
+            });
+        }
+
+        function ensureSpacerCells() {
+            table.querySelectorAll('tr').forEach(row => {
+                if (row.classList.contains('empty-row')) return;
+                if (row.querySelector('.col-spacer')) return;
+
+                const isHead = row.closest('thead') !== null;
+                const spacer = document.createElement(isHead ? 'th' : 'td');
+                spacer.className = 'col-spacer';
+                row.appendChild(spacer);
             });
         }
 
         function applyWidths() {
+            let totalWidth = 0;
+
             state.order.forEach(key => {
-                const width = key === LOCK_RIGHT
-                    ? ACTIONS_WIDTH
-                    : Math.max(Number(state.widths[key] || MIN_COL_WIDTH), MIN_COL_WIDTH);
+                if (state.hidden.includes(key)) return;
+
+                const width = Math.max(Number(state.widths[key] || MIN_COL_WIDTH), MIN_COL_WIDTH);
+                totalWidth += width;
 
                 getCellsByKey(key).forEach(cell => {
                     cell.style.width = width + 'px';
@@ -150,11 +164,16 @@
                     cell.style.maxWidth = width + 'px';
                 });
             });
+
+            totalWidth += ROW_ACTIONS_WIDTH;
+
+            const containerWidth = table.closest('.table-wrap').clientWidth;
+            table.style.width = Math.max(totalWidth, containerWidth) + 'px';
         }
 
         function applyVisibility() {
             state.order.forEach(key => {
-                const isHidden = key !== LOCK_RIGHT && state.hidden.includes(key);
+                const isHidden = state.hidden.includes(key);
 
                 getCellsByKey(key).forEach(cell => {
                     cell.style.display = isHidden ? 'none' : '';
@@ -165,6 +184,7 @@
         function applyAll() {
             ensureDefaultWidths();
             applyOrder();
+            ensureSpacerCells();
             applyVisibility();
             applyWidths();
             updateEmptyRowsColspan();
@@ -172,17 +192,13 @@
         }
 
         function moveColumn(key, direction) {
-            if (key === LOCK_RIGHT) return;
-
-            const movable = state.order.filter(col => col !== LOCK_RIGHT);
-            const index = movable.indexOf(key);
+            const index = state.order.indexOf(key);
             if (index === -1) return;
 
             const nextIndex = index + direction;
-            if (nextIndex < 0 || nextIndex >= movable.length) return;
+            if (nextIndex < 0 || nextIndex >= state.order.length) return;
 
-            [movable[index], movable[nextIndex]] = [movable[nextIndex], movable[index]];
-            state.order = movable.concat([LOCK_RIGHT]);
+            [state.order[index], state.order[nextIndex]] = [state.order[nextIndex], state.order[index]];
 
             saveState();
             renderVisibilityMenu();
@@ -192,9 +208,7 @@
         function renderVisibilityMenu() {
             visibilityList.innerHTML = '';
 
-            const movable = state.order.filter(key => key !== LOCK_RIGHT);
-
-            movable.forEach((key, index) => {
+            state.order.forEach((key, index) => {
                 const li = document.createElement('li');
                 li.className = 'visibility-item';
 
@@ -243,7 +257,7 @@
                 downBtn.type = 'button';
                 downBtn.className = 'visibility-move-btn';
                 downBtn.textContent = '↓';
-                downBtn.disabled = index === movable.length - 1;
+                downBtn.disabled = index === state.order.length - 1;
                 downBtn.addEventListener('click', function () {
                     moveColumn(key, 1);
                 });
@@ -304,7 +318,7 @@
 
         visibilityReset.addEventListener('click', function () {
             state = {
-                order: [...defaultOrder.filter(key => key !== LOCK_RIGHT), LOCK_RIGHT],
+                order: [...defaultOrder],
                 hidden: [...DEFAULT_HIDDEN],
                 widths: {}
             };
@@ -315,6 +329,67 @@
         });
 
         // Resize колонок
+        function getLastVisibleKey() {
+            for (let i = state.order.length - 1; i >= 0; i--) {
+                if (!state.hidden.includes(state.order[i])) return state.order[i];
+            }
+            return null;
+        }
+
+        function attachResizeHandle(handle, getTargetKey, getTargetTh) {
+            let startX = 0;
+            let startWidth = 0;
+            let resizing = false;
+            let targetKey = null;
+            let targetTh = null;
+
+            handle.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                targetKey = getTargetKey();
+                targetTh = getTargetTh(targetKey);
+                if (!targetKey || !targetTh) return;
+
+                resizing = true;
+                startX = e.clientX;
+                startWidth = targetTh.getBoundingClientRect().width;
+
+                targetTh.classList.add('is-resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+
+                function onMove(ev) {
+                    if (!resizing) return;
+
+                    const nextWidth = Math.max(
+                        MIN_COL_WIDTH,
+                        Math.round(startWidth + (ev.clientX - startX))
+                    );
+
+                    state.widths[targetKey] = nextWidth;
+                    applyWidths();
+                }
+
+                function onUp() {
+                    if (!resizing) return;
+
+                    resizing = false;
+                    if (targetTh) targetTh.classList.remove('is-resizing');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+
+                    saveState();
+
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                }
+
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+        }
+
         function bindResizeHandles() {
             const headers = Array.from(table.querySelectorAll('thead th[data-col]'));
 
@@ -324,8 +399,6 @@
                 const oldHandle = th.querySelector('.col-resize-handle');
                 if (oldHandle) oldHandle.remove();
 
-                if (key === LOCK_RIGHT) return;
-
                 th.dataset.labelText = th.textContent.trim();
 
                 const handle = document.createElement('span');
@@ -333,52 +406,43 @@
                 handle.setAttribute('aria-hidden', 'true');
                 th.appendChild(handle);
 
-                let startX = 0;
-                let startWidth = 0;
-                let resizing = false;
-
-                handle.addEventListener('mousedown', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    resizing = true;
-                    startX = e.clientX;
-                    startWidth = th.getBoundingClientRect().width;
-
-                    th.classList.add('is-resizing');
-                    document.body.style.cursor = 'col-resize';
-                    document.body.style.userSelect = 'none';
-
-                    function onMove(ev) {
-                        if (!resizing) return;
-
-                        const nextWidth = Math.max(
-                            MIN_COL_WIDTH,
-                            Math.round(startWidth + (ev.clientX - startX))
-                        );
-
-                        state.widths[key] = nextWidth;
-                        applyWidths();
-                    }
-
-                    function onUp() {
-                        if (!resizing) return;
-
-                        resizing = false;
-                        th.classList.remove('is-resizing');
-                        document.body.style.cursor = '';
-                        document.body.style.userSelect = '';
-
-                        saveState();
-
-                        document.removeEventListener('mousemove', onMove);
-                        document.removeEventListener('mouseup', onUp);
-                    }
-
-                    document.addEventListener('mousemove', onMove);
-                    document.addEventListener('mouseup', onUp);
-                });
+                attachResizeHandle(
+                    handle,
+                    function () { return key; },
+                    function () { return th; }
+                );
             });
+
+            // Handle на левой стороне row-actions header —
+            // ресайзит последний видимый data-столбец
+            var actionsHeader = table.querySelector('thead th.row-actions-cell');
+            if (actionsHeader) {
+                var oldEdge = actionsHeader.querySelector('.col-resize-edge');
+                if (oldEdge) oldEdge.remove();
+
+                var edge = document.createElement('span');
+                edge.className = 'col-resize-edge';
+                edge.setAttribute('aria-hidden', 'true');
+                actionsHeader.appendChild(edge);
+
+                attachResizeHandle(
+                    edge,
+                    getLastVisibleKey,
+                    function (key) { return key ? getHeaderCell(key) : null; }
+                );
+
+                // Показывать edge-handle при hover на последний видимый столбец
+                headers.forEach(function (th) {
+                    th.addEventListener('mouseenter', function () {
+                        if (th.dataset.col === getLastVisibleKey()) {
+                            actionsHeader.classList.add('is-edge-hover');
+                        }
+                    });
+                    th.addEventListener('mouseleave', function () {
+                        actionsHeader.classList.remove('is-edge-hover');
+                    });
+                });
+            }
         }
 
         renderVisibilityMenu();
