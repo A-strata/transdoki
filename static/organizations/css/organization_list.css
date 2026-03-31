@@ -34,7 +34,7 @@
 
 /* Скролл внутри карточки — sticky header работает, но не растягивает при малом контенте */
 .org-page .table-wrap {
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 180px);
     overflow-y: auto;
 }
 
