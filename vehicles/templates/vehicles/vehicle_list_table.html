@@ -1,0 +1,110 @@
+<div class="table-card">
+    <div class="table-wrap" data-drag-scroll>
+        <table class="tms-table">
+            <thead>
+                <tr>
+                    <th>Тип ТС</th>
+                    <th>Госномер</th>
+                    <th>Марка</th>
+                    <th>Модель</th>
+                    <th>Основание</th>
+                    <th class="row-actions-header"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehicle in vehicles %}
+                {% with pt=vehicle.property_type %}
+                <tr>
+                    <td data-label="Тип ТС">{{ vehicle.get_vehicle_type_display }}</td>
+                    <td data-label="Госномер"><span class="vehicle-grn">{{ vehicle.grn }}</span></td>
+                    <td data-label="Марка">{{ vehicle.brand }}</td>
+                    <td data-label="Модель">
+                        {% if vehicle.model %}{{ vehicle.model }}{% else %}<span class="vehicle-muted">—</span>{% endif %}
+                    </td>
+                    <td data-label="Основание">
+                        <span class="property-badge prop-{{ pt }}">{{ vehicle.get_property_type_display }}</span>
+                    </td>
+                    <td class="row-actions-cell">
+                        <div class="row-actions">
+                            <a href="{% url 'vehicles:edit' vehicle.pk %}" class="row-action row-action--view" title="Просмотр">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                </svg>
+                            </a>
+                            <a href="{% url 'vehicles:edit' vehicle.pk %}" class="row-action row-action--edit" title="Редактировать">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </a>
+                            <a href="{% url 'vehicles:delete' vehicle.pk %}" class="row-action row-action--delete" title="Удалить">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M2 4h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M13 4v9.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-state">Нет транспортных средств</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj and page_obj.paginator.count > 0 %}
+<div class="pagination-footer">
+    <div class="pagination-footer-left">
+        <span class="pagination-meta">
+            Показано {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ page_obj.paginator.count }}
+        </span>
+    </div>
+    <div class="pagination-footer-center">
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Пагинация">
+            {% if page_obj.has_previous %}
+                <a class="pagination-link pagination-nav" href="?page=1{{ query_string }}">«</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{{ query_string }}">‹</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">«</span>
+                <span class="pagination-link pagination-nav is-disabled">‹</span>
+            {% endif %}
+
+            {% for item in pagination_items %}
+                {% if item.type == 'ellipsis' %}
+                    <span class="pagination-ellipsis">…</span>
+                {% elif item.current %}
+                    <span class="pagination-link is-current">{{ item.number }}</span>
+                {% else %}
+                    <a class="pagination-link" href="?page={{ item.number }}{{ query_string }}">{{ item.number }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{{ query_string }}">›</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}">»</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">›</span>
+                <span class="pagination-link pagination-nav is-disabled">»</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </div>
+    <div class="pagination-footer-right">
+        <label class="page-size-control">
+            <span class="page-size-label">Показывать:</span>
+            <select class="page-size-select" data-page-size-select>
+                {% for size in page_size_options %}
+                    <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+</div>
+{% endif %}

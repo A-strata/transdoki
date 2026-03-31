@@ -1,20 +1,20 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
-from django.db.models import ProtectedError
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
+from billing.mixins import BillingProtectedMixin
 from organizations.models import Organization
 from transdoki.tenancy import get_request_account
-
-from billing.mixins import BillingProtectedMixin
 
 from .forms import VehicleForm, VehicleFormWithOwner
 from .models import Vehicle, VehicleType
@@ -151,7 +151,23 @@ class VehicleDeleteView(LoginRequiredMixin, DeleteView):
 class VehicleListView(LoginRequiredMixin, ListView):
     model = Vehicle
     template_name = "vehicles/vehicle_list.html"
+    partial_template_name = "vehicles/vehicle_list_table.html"
     context_object_name = "vehicles"
+    paginate_by = 25
+    page_size_options = [25, 50, 100]
+
+    def get_template_names(self):
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return [self.partial_template_name]
+        return [self.template_name]
+
+    def get_paginate_by(self, queryset):
+        raw = (self.request.GET.get("page_size") or "").strip()
+        if raw.isdigit():
+            value = int(raw)
+            if value in self.page_size_options:
+                return value
+        return self.paginate_by
 
     def get_queryset(self):
         current_org = self.request.current_org
@@ -167,10 +183,55 @@ class VehicleListView(LoginRequiredMixin, ListView):
 
         return qs
 
+    def _build_pagination_items(self, page_obj):
+        current = page_obj.number
+        total = page_obj.paginator.num_pages
+
+        if total <= 7:
+            return [
+                {"type": "page", "number": n, "current": n == current}
+                for n in range(1, total + 1)
+            ]
+
+        pages = {1, total, current - 2, current - 1, current, current + 1, current + 2}
+        pages = sorted(n for n in pages if 1 <= n <= total)
+
+        items = []
+        prev = None
+
+        for n in pages:
+            if prev is not None and n - prev > 1:
+                items.append({"type": "ellipsis"})
+            items.append({"type": "page", "number": n, "current": n == current})
+            prev = n
+
+        return items
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["current_type"] = self.request.GET.get("type", "all")
+        current_type = self.request.GET.get("type", "all")
+        context["current_type"] = current_type
         context["vehicle_types"] = VehicleType.choices
+
+        page_obj = context.get("page_obj")
+        context["pagination_items"] = (
+            self._build_pagination_items(page_obj) if page_obj else []
+        )
+        context["page_size_options"] = self.page_size_options
+
+        current_page_size = self.get_paginate_by(self.object_list)
+        context["filters"] = {
+            "type": current_type,
+            "page_size": str(current_page_size),
+        }
+
+        params = {}
+        if current_type != "all":
+            params["type"] = current_type
+        if str(current_page_size) != str(self.paginate_by):
+            params["page_size"] = current_page_size
+        context["query_string"] = ("&" + urlencode(params)) if params else ""
+
         return context
 
 

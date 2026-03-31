@@ -46,48 +46,12 @@
     </div>
     {% endif %}
 
-    <div class="table-card">
-        <div class="table-wrap" data-drag-scroll>
-            <table class="tms-table">
-                <thead>
-                    <tr>
-                        <th>Тип ТС</th>
-                        <th>Госномер</th>
-                        <th>Марка</th>
-                        <th>Модель</th>
-                        <th>Основание</th>
-                        <th data-col="actions">Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for vehicle in vehicles %}
-                    {% with pt=vehicle.property_type %}
-                    <tr>
-                        <td data-label="Тип ТС">{{ vehicle.get_vehicle_type_display }}</td>
-                        <td data-label="Госномер"><span class="vehicle-grn">{{ vehicle.grn }}</span></td>
-                        <td data-label="Марка">{{ vehicle.brand }}</td>
-                        <td data-label="Модель">
-                            {% if vehicle.model %}{{ vehicle.model }}{% else %}<span class="vehicle-muted">—</span>{% endif %}
-                        </td>
-                        <td data-label="Основание">
-                            <span class="property-badge prop-{{ pt }}">{{ vehicle.get_property_type_display }}</span>
-                        </td>
-                        <td data-label="Действия" data-col="actions">
-                            <div class="row-actions">
-                                <a href="{% url 'vehicles:edit' vehicle.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
-                                <a href="{% url 'vehicles:delete' vehicle.pk %}" class="tms-btn tms-btn-danger tms-btn-sm">Удалить</a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endwith %}
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="empty-state">Нет транспортных средств</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div data-list-content>
+        {% include "vehicles/vehicle_list_table.html" %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vehicles/js/vehicle_list.js' %}"></script>
 {% endblock %}

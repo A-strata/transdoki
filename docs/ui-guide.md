@@ -10,6 +10,7 @@
 - **Предсказуемость** — одинаковые сущности выглядят одинаково везде
 - **Не прерывать пользователя** — после действий (сохранение, фиксация) держать его в контексте, а не кидать наверх страницы
 - **Иерархия через типографику и отступы**, не через цвет
+- **Явные состояния** — каждый интерактивный элемент и каждый процесс (загрузка, ошибка, пустота) должен иметь визуальное представление
 
 ---
 
@@ -24,16 +25,42 @@
 --text: #111827        /* основной текст */
 --muted: #6b7280       /* второстепенный текст */
 --border: #e5e7eb      /* линии и рамки */
+--hover: #f8fafc       /* подсветка строк при наведении */
+--hover-active: #eef6ff /* подсветка строк с активным элементом (открытое меню) */
 
 /* Акцент */
 --primary: #2563eb
 --primary-hover: #1d4ed8
+
+/* Деструктивные действия */
+--danger: #dc2626
+--danger-hover: #b91c1c
 
 /* Геометрия */
 --radius: 12px         /* основной radius */
 --radius-sm: 10px
 --shadow: 0 8px 24px rgba(15, 23, 42, 0.06)
 --container: 1200px
+
+/* Типографика (шкала ×1.25 — major third) */
+--text-xs:   0.75rem    /* 12px — бейджи, хедеры таблиц */
+--text-sm:   0.875rem   /* 14px — метки форм, подписи, вспомогательный текст */
+--text-base: 1rem       /* 16px — тело, значения, заголовки секций (через weight) */
+--text-lg:   1.25rem    /* 20px — заголовки карточек / компонентов */
+--text-xl:   1.5rem     /* 24px — заголовок страницы */
+
+/* Z-index слои */
+--z-sticky-cell:     20
+--z-sticky-header:   30
+--z-sticky-actions:  40
+--z-navbar:          50
+--z-toast:           70
+--z-inline-dropdown: 200
+--z-modal:           1000
+--z-autocomplete:    1100
+--z-filter-dropdown: 1200
+--z-column-panel:    1300
+--z-actions-menu:    1400
 ```
 
 ### Семантическая палитра состояний
@@ -43,7 +70,7 @@
 | success     | `#16a34a`   | `#f0fdf4` | `#bbf7d0` |
 | warning     | `#d97706`   | `#fffbeb` | `#fde68a` |
 | error       | `#dc2626`   | `#fef2f2` | `#fecaca` |
-| info        | `#2563eb`   | `#eff6ff` | `#bfdbfe` |
+| info        | `#0e7490`   | `#ecfeff` | `#a5f3fc` |
 | neutral     | `#6b7280`   | `#f3f4f6` | `#e5e7eb` |
 
 ---
@@ -52,21 +79,23 @@
 
 Шрифт: **Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif**
 
-### Шкала размеров (использовать только эти значения)
+### Шкала размеров (×1.25 — major third)
 
-| Роль                        | Размер     | Weight |
-|-----------------------------|------------|--------|
-| Заголовок страницы (полная ширина) | `clamp(1.25rem, 1.8vw, 1.7rem)` | 700 |
-| Заголовок карточки / компонента | `1.4rem` | 700 |
-| Заголовок секции            | `0.98rem`  | 700    |
-| Тело / значения             | `0.95rem`  | 400    |
-| Метки форм, kv-label        | `0.82–0.9rem` | 600 |
-| Вспомогательный текст       | `0.84rem`  | 400    |
-| Мелкие бейджи, хедеры таблиц| `0.75–0.78rem` | 600–700 |
+В проекте используются **5 ступеней**. Шаг между ними — множитель ×1.25, каждая ступень визуально отличима от соседней. При создании новых шаблонов использовать только CSS-переменные, не произвольные значения.
 
-`clamp()` — только для заголовков в полноширинном контексте (списки, детальные страницы). Для компонентов с фиксированной шириной (карточки, модалки, формы) — фиксированный `rem`.
+| Переменная    | Размер     | ~px | Роль                                          | Weight  |
+|---------------|------------|-----|-----------------------------------------------|---------|
+| `--text-xs`   | `0.75rem`  | 12  | Бейджи, хедеры таблиц                        | 600     |
+| `--text-sm`   | `0.875rem` | 14  | Метки форм, kv-label, подписи, вспомогательный текст | 400–600 |
+| `--text-base` | `1rem`     | 16  | Тело текста, значения, **заголовки секций** (через `font-weight: 700`) | 400–700 |
+| `--text-lg`   | `1.25rem`  | 20  | Заголовки карточек / компонентов              | 700     |
+| `--text-xl`   | `1.5rem`   | 24  | Заголовок страницы                            | 700     |
 
-> ⚠️ **Проблема**: в проекте сейчас 16+ разных font-size — от 0.7rem до 1.05rem с шагом 0.01–0.02rem. Это даёт визуальный шум. При создании новых шаблонов строго придерживаться таблицы выше.
+Заголовок секции и обычный текст — один размер (`--text-base`), различаются жирностью. Это сокращает количество ступеней без потери иерархии.
+
+Для заголовка страницы на полноширинных макетах (списки, детальные страницы) допускается `clamp(1.25rem, 1.8vw, 1.5rem)` вместо фиксированного `1.5rem`. Это единственное исключение. Для компонентов с фиксированной шириной (карточки, модалки, формы) — только фиксированный `rem`.
+
+> ⚠️ **Техдолг**: в проекте сейчас 16+ разных font-size — от 0.7rem до 1.05rem с шагом 0.01–0.02rem. При рефакторинге приводить к переменным из таблицы выше. Новый код — **только через переменные**.
 
 ---
 
@@ -85,11 +114,14 @@
 | `tms-btn-primary`    | Главное действие страницы (одно на страницу)               |
 | `tms-btn-secondary`  | Вторичные действия: редактировать, скачать, к списку       |
 | `tms-btn-light`      | Лёгкая навигация: «Назад», «К списку» без акцента          |
+| `tms-btn-danger`     | Деструктивные действия: удалить, отменить необратимо (красный, `--danger`) |
 | `tms-btn-fix`        | Фиксация/подтверждение финансовых данных (зелёный)         |
 | `tms-btn-add`        | Добавить строку, добавить элемент (иконка +)               |
-| `tms-btn-sm`         | Кнопки внутри таблиц и компактных блоков                   |
+| `tms-btn-sm`         | Размерный модификатор для кнопок внутри таблиц и компактных блоков |
 
-**Правило**: не более одной `tms-btn-primary` в видимой области. Остальные — secondary или light.
+**Правила**:
+- Не более одной `tms-btn-primary` в видимой области. Остальные — secondary или light
+- `tms-btn-danger` — **только** внутри подтверждающих контекстов (confirm-inline, модалка). Не ставить как основную кнопку в toolbar или форме
 
 **Недоступные кнопки**: использовать нативный атрибут `disabled`, а не CSS-класс. Класс вместо атрибута — антипаттерн: теряется доступность (keyboard nav, screen readers), форма не блокируется. Курсор задаётся через CSS:
 
@@ -230,7 +262,7 @@ messages.error(request, "Произошла ошибка")
 messages.warning(request, "Обратите внимание")
 ```
 
-`base.html` автоматически рендерит их как фиксированный toast вверху экрана (позиция `fixed`, z-index 70). Success и info скрываются через 4 секунды, error/warning — по клику.
+`base.html` автоматически рендерит их как фиксированный toast вверху экрана (позиция `fixed`, z-index `var(--z-toast)`). Success и info скрываются через 4 секунды, error/warning — по клику.
 
 ### ❌ Запрещено
 
@@ -291,6 +323,8 @@ static/
   css/forms.css        # общие компоненты форм (.field, .errorlist, .helptext, .form-errors)
   css/nav.css          # навбар
   css/tables.css       # таблицы
+  css/globals.css      # глобальные компоненты (модалки, алерты, бейджи)
+  js/base.js           # глобальный JS (модалки, data-confirm, data-loading)
   js/password_toggle.js
   js/phone_mask.js
   js/code_mask.js
@@ -345,22 +379,26 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 ## 8. Z-index слои
 
-Не использовать произвольные числа. Таблица слоёв:
+Использовать только CSS-переменные из `:root` (раздел 2). Не использовать произвольные числа.
 
-| Значение | Назначение                                   |
-|----------|----------------------------------------------|
-| 0        | базовый контент                              |
-| 20       | sticky ячейки таблицы (td actions)           |
-| 30       | sticky заголовки таблицы                     |
-| 40       | sticky заголовок колонки actions             |
-| 50       | navbar                                        |
-| 70       | flash-wrap (toast уведомления)               |
-| 200      | inline-дропдауны внутри форм (подсказки ИНН) |
-| 1000     | модальные overlay                            |
-| 1100     | autocomplete-dropdown в полях (trips/waybills) |
-| 1200     | filter-dropdown-panel                        |
-| 1300     | visibility-panel (настройка колонок)         |
-| 1400     | actions-menu (dropdown в таблице)            |
+| Переменная            | Значение | Назначение                                   |
+|-----------------------|----------|----------------------------------------------|
+| (нет, базовый)        | 0        | базовый контент                              |
+| `--z-sticky-cell`     | 20       | sticky ячейки таблицы (td actions)           |
+| `--z-sticky-header`   | 30       | sticky заголовки таблицы                     |
+| `--z-sticky-actions`  | 40       | sticky заголовок колонки actions             |
+| `--z-navbar`          | 50       | navbar                                        |
+| `--z-toast`           | 70       | flash-wrap (toast уведомления)               |
+| `--z-inline-dropdown` | 200      | inline-дропдауны внутри форм (подсказки ИНН) |
+| `--z-modal`           | 1000     | модальные overlay                            |
+| `--z-autocomplete`    | 1100     | autocomplete-dropdown в полях (trips/waybills)|
+| `--z-filter-dropdown` | 1200     | filter-dropdown-panel                        |
+| `--z-column-panel`    | 1300     | visibility-panel (настройка колонок)         |
+| `--z-actions-menu`    | 1400     | actions-menu (dropdown в таблице)            |
+
+**Правило**: при добавлении нового слоя — сначала проверить, подходит ли существующий. Если нужен новый — добавить переменную в `:root` и в эту таблицу.
+
+> **Рекомендация на будущее**: при рефакторинге модалок применить `isolation: isolate` на `.modal-overlay`. Это создаёт изолированный stacking context — внутри модалки можно использовать z-index 1, 2, 3 без конфликтов с остальной страницей. Тогда дропдауны и автокомплиты внутри модалок не потребуют значений выше `--z-modal`.
 
 ---
 
@@ -376,7 +414,7 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 `card` = `page-card` по семантике — **использовать единый класс `card`**.
 
-> ⚠️ **Проблема**: в проекте сосуществуют `.card` и `.page-card` с почти идентичными стилями. При рефакторинге унифицировать в `.card`.
+> ⚠️ **Техдолг**: в проекте сосуществуют `.card` и `.page-card` с почти идентичными стилями. При рефакторинге унифицировать в `.card`.
 
 ### Секция внутри карточки
 
@@ -422,33 +460,44 @@ const suggestUrl = wrap.dataset.suggestUrl;
 </div>
 ```
 
-> ⚠️ **Проблема**: параллельно существует `.info-grid` / `.info-item` (waybill_detail) с тем же назначением. При рефакторинге привести к `.kv-grid`.
+> ⚠️ **Техдолг**: параллельно существует `.info-grid` / `.info-item` (waybill_detail) с тем же назначением. При рефакторинге привести к `.kv-grid`.
 
 ---
 
 ## 11. Бейджи статусов
 
-### Финансовые статусы рейса
+### Целевой компонент: `.status-badge`
+
+Единый компонент для всех статусных бейджей. Модификаторы — по **семантическому цвету**, а не по бизнес-статусу:
 
 ```html
-<span class="fin-badge fin-badge--open">Открыт</span>
-<span class="fin-badge fin-badge--calculated">Зафиксирован</span>
-<span class="fin-badge fin-badge--invoiced">Документы выставлены</span>
-<span class="fin-badge fin-badge--paid">Оплачен</span>
+<span class="status-badge status-badge--success">Оплачен</span>
+<span class="status-badge status-badge--warning">Ожидает</span>
+<span class="status-badge status-badge--error">Отменён</span>
+<span class="status-badge status-badge--info">В работе</span>
+<span class="status-badge status-badge--neutral">Черновик</span>
 ```
 
-### Статусы путевых листов
+Цвета берутся из семантической палитры состояний (раздел 2).
 
-```html
-<span class="wl-status wl-status--open">Открыт</span>
-<span class="wl-status wl-status--closed">Закрыт</span>
-```
+### Маппинг существующих статусов
+
+| Сущность       | Статус              | Модификатор  |
+|----------------|---------------------|--------------|
+| Рейс (финансы) | Открыт              | `--neutral`  |
+| Рейс (финансы) | Зафиксирован        | `--info`     |
+| Рейс (финансы) | Документы выставлены | `--warning`  |
+| Рейс (финансы) | Оплачен             | `--success`  |
+| Путевой лист   | Открыт              | `--info`     |
+| Путевой лист   | Закрыт              | `--neutral`  |
+
+### Текущие реализации (техдолг)
+
+> ⚠️ В проекте три системы бейджей: `.fin-badge`, `.wl-status`, `.badge` (timeline). Новый код писать через `.status-badge`. При рефакторинге — переводить старые бейджи на `.status-badge`.
 
 ### Баланс в навбаре
 
-Автоматически проставляется через контекст-процессор. Классы: `.balance-ok`, `.balance-warn`, `.balance-danger`, `.balance-exempt`.
-
-> ⚠️ **Проблема**: три разных системы бейджей (`.fin-badge`, `.wl-status`, `.badge` в timeline) с похожей семантикой, но разными реализациями. Новые статусы создавать на основе `.fin-badge` как наиболее полной.
+Автоматически проставляется через контекст-процессор. Классы: `.balance-ok`, `.balance-warn`, `.balance-danger`, `.balance-exempt`. Это **не** бейдж статуса — отдельный компонент, не трогать.
 
 ---
 
@@ -493,7 +542,6 @@ const suggestUrl = wrap.dataset.suggestUrl;
 **Правила:**
 - Поля с предсказуемой длиной (числовые коды, телефоны) — ограничивать `width` в CSS. Не `max-width` на `1fr` grid-колонке (трек всё равно растянется), а фиксированная ширина контейнера поля.
 - Кнопка, связанная с полем (напр. «Заполнить по ИНН»), ставится вплотную к полю — не через всю ширину формы.
-- На мобилке (`≤ 768px`) все поля возвращаются в `width: 100%`.
 
 ### Чекбокс / Toggle
 
@@ -522,6 +570,67 @@ const suggestUrl = wrap.dataset.suggestUrl;
     </div>
 {% endif %}
 ```
+
+### Зависимые поля (Cascading Selects)
+
+Когда значение одного поля определяет содержимое другого (организация → водители, водитель → ТС).
+
+**Паттерн:**
+
+1. **Родительское поле** — `data-cascade-source` с указанием URL:
+```html
+<select name="organization"
+        data-cascade-source
+        data-cascade-url="{% url 'persons:api_by_org' %}"
+        data-cascade-target="#id_driver">
+    ...
+</select>
+```
+
+2. **Зависимое поле** — обычный `<select>`, становится целью:
+```html
+<select name="driver" id="id_driver">
+    <option value="">Выберите водителя</option>
+</select>
+```
+
+3. **JS-обработчик** (`static/js/cascade_select.js`):
+```javascript
+document.querySelectorAll('[data-cascade-source]').forEach(source => {
+    source.addEventListener('change', async () => {
+        const target = document.querySelector(source.dataset.cascadeTarget);
+        const url = `${source.dataset.cascadeUrl}?${source.name}=${source.value}`;
+
+        // Состояние загрузки
+        target.disabled = true;
+        target.innerHTML = '<option value="">Загрузка...</option>';
+
+        try {
+            const resp = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const items = await resp.json();
+
+            target.innerHTML = '<option value="">Выберите</option>';
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = item.name;
+                target.appendChild(opt);
+            });
+        } catch {
+            target.innerHTML = '<option value="">Ошибка загрузки</option>';
+        } finally {
+            target.disabled = false;
+        }
+    });
+});
+```
+
+**Правила:**
+- При очистке родителя — сбрасывать зависимое поле в дефолтное состояние
+- При ошибке загрузки — показывать «Ошибка загрузки» в option, не оставлять пустым
+- View для API — возвращает JSON-список `[{id, name}, ...]`, проверяет `is_authenticated`
 
 ---
 
@@ -561,9 +670,9 @@ const suggestUrl = wrap.dataset.suggestUrl;
 **Правила**:
 - `table-layout: fixed`, ширина таблицы = сумма колонок или ширина контейнера
 - Spacer-колонка (`.col-spacer`) вставляется JS последней, заполняет разницу при малом количестве столбцов
-- Заголовки: uppercase, `0.78rem`, `--muted` цвет
-- Ячейки: `0.89rem`, строки с `cursor: grab` для drag-scroll
-- Hover строк: `#f8fafc`
+- Заголовки: uppercase, `var(--text-xs)`, `--muted` цвет
+- Ячейки: `var(--text-sm)`, строки с `cursor: grab` для drag-scroll
+- Hover строк: `var(--hover)`
 
 ### Действия строки (hover-иконки)
 
@@ -594,10 +703,10 @@ const suggestUrl = wrap.dataset.suggestUrl;
 **Правила**:
 - `.row-actions-cell` — sticky `right: 0`, ширина 100px, `overflow: visible`
 - `.row-actions` — `opacity: 0` → `1` при hover строки или при открытом меню (`is-docs-open`)
-- `.row-action` — 28×28px, иконка 16×16px SVG (`stroke="currentColor"`, `stroke-width="1.2"`, `fill="none"`, `round` caps/joins)
+- `.row-action` — 28×28px, иконка 16×16px SVG (см. раздел 18 «Иконки»)
 - Цвета hover: `--view` синий, `--copy` зелёный, `--print` синий
 - Docs-dropdown: меню переносится в `body` (обход `overflow: hidden`), `position: fixed`, умное позиционирование, плавное появление (0.15s)
-- При открытом меню строка подсвечивается `#eef6ff`
+- При открытом меню строка подсвечивается `var(--hover-active)`
 
 ### Resize колонок
 
@@ -725,18 +834,153 @@ def get_template_names(self):
 
 ## 17. Адаптивность
 
-Проект ориентирован на desktop (B2B, работа за ПК). Мобильная адаптивность — желательная, но не приоритетная. Ключевые брейкпоинты:
+Проект ориентирован на desktop (B2B, работа за ПК). Минимальная поддерживаемая ширина — **1024px**. Мобильная адаптивность — отдельный этап, будет реализован позже.
+
+Ключевые брейкпоинты (для текущего уровня поддержки):
 
 | Брейкпоинт | Поведение                                              |
 |------------|--------------------------------------------------------|
 | `≤ 980px`  | detail-layout → 1 колонка, sidebar вверх               |
 | `≤ 768px`  | fields-grid → 1 колонка; toolbar переносится           |
 | `≤ 560px`  | navbar → column; flash смещается ниже                  |
-| `≤ 760px`  | уменьшение padding карточек; кнопки actions на всю ширину |
 
 ---
 
-## 18. Известные проблемы и технический долг
+## 18. Иконки
+
+### Спецификация
+
+Все иконки — inline SVG. Единый стиль:
+
+| Параметр        | Значение                           |
+|-----------------|------------------------------------|
+| Размер (таблицы)| 16×16px                            |
+| Размер (кнопки) | 20×20px                            |
+| `stroke`        | `currentColor`                     |
+| `stroke-width`  | `1.2`                              |
+| `fill`          | `none`                             |
+| `stroke-linecap`| `round`                            |
+| `stroke-linejoin`| `round`                           |
+| `viewBox`       | `0 0 24 24`                        |
+
+### Источник
+
+Набор — **Lucide** (https://lucide.dev). При необходимости новой иконки — брать из Lucide, не рисовать с нуля. Если в Lucide нет подходящей — рисовать по спецификации выше.
+
+### Подключение
+
+Inline SVG прямо в шаблоне. Не использовать `<img>` для иконок (нет контроля цвета через `currentColor`). Не создавать SVG-спрайты — для текущего масштаба проекта inline проще и надёжнее.
+
+### Правила
+
+- Иконка **без текста** — обязателен `title` или `aria-label` для доступности
+- Иконка **с текстом рядом** — добавить `aria-hidden="true"` к SVG
+- Цвет иконки наследуется от родительского `color` через `currentColor`
+
+---
+
+## 19. Состояния загрузки
+
+### Отправка форм
+
+При нажатии кнопки отправки — визуальная обратная связь через `data-loading-text`:
+
+```html
+<button class="tms-btn tms-btn-primary" data-loading-text="Сохранение...">
+    Сохранить
+</button>
+```
+
+```javascript
+// static/js/base.js
+document.querySelectorAll("form").forEach(form => {
+    form.addEventListener("submit", () => {
+        const btn = form.querySelector("[data-loading-text]");
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = btn.dataset.loadingText;
+        }
+    });
+});
+```
+
+**Правило**: каждая кнопка отправки формы должна иметь `data-loading-text`.
+
+### Partial-загрузка контента (таблицы, списки)
+
+Во время fetch-запроса (поиск, сортировка, пагинация) показывать, что контент обновляется:
+
+```css
+[data-list-content].is-loading {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+```
+
+```javascript
+// Перед запросом
+container.classList.add('is-loading');
+
+// После получения ответа
+container.innerHTML = html;
+container.classList.remove('is-loading');
+```
+
+Не использовать skeleton-loader или spinner для partial-обновлений — достаточно приглушения контента. Skeleton уместен только при первой загрузке страницы, если контент грузится асинхронно (в текущем проекте таких случаев нет).
+
+---
+
+## 20. Обработка ошибок
+
+### В формах
+
+Описано в разделе 12: `.errorlist` под полями, `.form-errors` наверху формы.
+
+### При fetch-запросах (Partial HTML, cascading selects, AJAX-формы)
+
+Три сценария:
+
+**1. Сетевая ошибка** (fetch упал, нет соединения):
+
+```javascript
+catch (error) {
+    if (error.name === 'AbortError') return; // отменённый запрос — не ошибка
+    container.innerHTML = `
+        <div class="alert alert-error">
+            Не удалось загрузить данные.
+            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                    onclick="location.reload()">Обновить</button>
+        </div>`;
+}
+```
+
+**2. Ошибка авторизации** (сессия истекла, 401/403):
+
+```javascript
+if (resp.status === 401 || resp.status === 403) {
+    location.href = '/accounts/login/?next=' + encodeURIComponent(location.pathname);
+    return;
+}
+```
+
+**3. Серверная ошибка** (500):
+
+```javascript
+if (!resp.ok) {
+    container.innerHTML = `
+        <div class="alert alert-error">
+            Произошла ошибка на сервере. Попробуйте обновить страницу.
+        </div>`;
+    return;
+}
+```
+
+**Правило**: каждый `fetch` в проекте должен обрабатывать все три сценария. Необработанный fetch — техдолг.
+
+---
+
+## 21. Известные проблемы и технический долг
 
 ### 🔴 Высокий приоритет
 
@@ -758,7 +1002,7 @@ grep -r "{% if messages %}" templates/
 
 **3. Слишком много вариаций font-size**
 
-Сейчас в коде 16+ уникальных значений от `0.7rem` до `1.05rem`. Привести к шкале из раздела «Типографика».
+Сейчас в коде 16+ уникальных значений от `0.7rem` до `1.05rem`. Привести к CSS-переменным `--text-xs` ... `--text-xl` из раздела 2.
 
 ---
 
@@ -766,64 +1010,31 @@ grep -r "{% if messages %}" templates/
 
 **4. Дублирование карточечных компонентов**
 
-- `.card` vs `.page-card` — одно и то же
-- `.kv-grid`/`.kv` vs `.info-grid`/`.info-item` — одно и то же
-- `.fin-badge` vs `.wl-status` vs `.badge` — схожая семантика, разные реализации
-
-Решение: при рефакторинге шаблонов унифицировать. Новый код писать только через `.card` и `.kv-grid`.
+- `.card` vs `.page-card` — одно и то же → унифицировать в `.card`
+- `.kv-grid`/`.kv` vs `.info-grid`/`.info-item` — одно и то же → унифицировать в `.kv-grid`
+- `.fin-badge` vs `.wl-status` vs `.badge` — схожая семантика → переводить на `.status-badge` (раздел 11)
 
 ---
 
-**5. Отсутствие состояния загрузки при отправке форм**
+**5. Z-index magic numbers**
 
-После нажатия кнопки «Сохранить» нет визуальной обратной связи. При медленном соединении пользователь может нажать повторно.
+Перевести все z-index в CSS-переменные из раздела 2. Grep для поиска:
 
-Решение: добавить `data-loading` паттерн:
-
-```html
-<button class="tms-btn tms-btn-primary" data-loading-text="Сохранение...">
-    Сохранить
-</button>
-```
-
-```javascript
-document.querySelectorAll("form").forEach(form => {
-    form.addEventListener("submit", () => {
-        const btn = form.querySelector("[data-loading-text]");
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = btn.dataset.loadingText;
-        }
-    });
-});
+```bash
+grep -rn "z-index" static/
 ```
 
 ---
 
-**6. Z-index без системы**
+**6. Fetch без обработки ошибок**
 
-Magic numbers вроде `z-index: 1400` разбросаны по CSS. Перевести в переменные:
-
-```css
-:root {
-    --z-sticky-cell:    20;
-    --z-sticky-header:  30;
-    --z-navbar:         50;
-    --z-toast:          70;
-    --z-modal:          1000;
-    --z-dropdown:       1200;
-    --z-column-panel:   1300;
-    --z-actions-menu:   1400;
-}
-```
+Проверить все `fetch()` в JS-файлах на соответствие паттерну из раздела 20.
 
 ---
 
-### 🟢 Низкий приоритет / к рассмотрению
+### 🟢 Низкий приоритет
 
----
-
-**8. Фокус и доступность**
+**7. Фокус и доступность**
 
 Базовый focus-ring настроен:
 ```css
@@ -833,7 +1044,7 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 
 ---
 
-## 19. Быстрый справочник
+## 22. Быстрый справочник
 
 | Задача                              | Решение                                              |
 |-------------------------------------|------------------------------------------------------|
@@ -841,13 +1052,21 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 | Не прокручивать страницу после POST | Якорь `#id` + `redirect(url + "#id")`                |
 | Новая секция с данными              | `.section` + `.section-title` + `.kv-grid`           |
 | Новая форма                         | `.form-card` + `.section` + `.fields-grid` + `.field`|
-| Статус объекта                      | `.fin-badge fin-badge--{статус}`                     |
+| Статус объекта                      | `.status-badge status-badge--{семантика}`            |
 | Пустой список                       | `.empty-state`                                       |
 | Постоянный алерт на странице        | `.alert alert-{тип}`                                 |
 | Кнопка основного действия           | `.tms-btn tms-btn-primary` (одна на страницу)        |
 | Кнопки вторичных действий           | `.tms-btn tms-btn-secondary`                         |
+| Деструктивное действие              | `.tms-btn tms-btn-danger` (только в confirm/модалке) |
 | Новая списковая страница            | `.ENTITY-page` > `.list-toolbar` + `.table-card`     |
-| Деструктивное действие              | `.confirm-inline` с двумя кнопками (не `confirm()`)  |
+| Подтверждение удаления              | `.confirm-inline` с двумя кнопками (не `confirm()`)  |
 | Модалка подтверждения               | `.modal-overlay` + `.modal-dialog` + `data-modal-open` |
 | Модалка с формой                    | `.modal-dialog--wide` + `.modal-fields` + `.modal-field` |
 | Hover/focus-переход                 | `transition: 0.15s ease`                             |
+| Зависимые поля                      | `data-cascade-source` + `data-cascade-target` (раздел 12) |
+| Состояние загрузки кнопки           | `data-loading-text` на `<button>` (раздел 19)        |
+| Загрузка partial-контента           | `.is-loading` на контейнере (раздел 19)              |
+| Ошибка fetch                        | `.alert alert-error` в контейнере (раздел 20)        |
+| Размер шрифта                       | Только `--text-xs` ... `--text-xl` (раздел 2)        |
+| Z-index                             | Только `--z-*` переменные (раздел 2)                 |
+| Новая иконка                        | Lucide, inline SVG, спецификация в разделе 18        |

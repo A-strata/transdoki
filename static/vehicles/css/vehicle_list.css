@@ -105,39 +105,39 @@
     background: #dbeafe;
 }
 
-/* ── Table ── */
-.tms-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 760px;
+/* ── Контейнер таблицы + пагинации ── */
+[data-list-content] {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.tms-table thead th {
-    text-align: left;
-    padding: 12px 14px;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #9ca3af;
-    background: #f9fafb;
-    border-bottom: 1px solid var(--border);
+/* ── Ширина колонок: по содержимому с ограничителем ── */
+.vehicles-page .tms-table td:nth-child(1),
+.vehicles-page .tms-table td:nth-child(2),
+.vehicles-page .tms-table td:nth-child(5) {
     white-space: nowrap;
+    width: 1%;
 }
 
-.tms-table tbody td {
-    padding: 12px 14px;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.93rem;
-    color: var(--text);
+.vehicles-page .tms-table td:nth-child(3),
+.vehicles-page .tms-table td:nth-child(4) {
+    white-space: nowrap;
+    width: 1%;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Row actions ── */
+.row-actions-header {
+    width: 100px;
+}
+
+.row-actions-cell {
+    width: 100px;
+    padding: 0 8px;
     vertical-align: middle;
-}
-
-.tms-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.tms-table tbody tr:hover {
-    background: #fcfcfd;
 }
 
 .vehicle-grn {
@@ -226,6 +226,19 @@
         align-self: center;
     }
 
+    .row-actions-cell {
+        width: auto;
+        padding: 10px 12px;
+    }
+
+    .row-actions-cell::before {
+        content: none;
+    }
+
+    .row-actions {
+        opacity: 1;
+    }
+
     .empty-state {
         display: block;
         text-align: center;
@@ -233,5 +246,16 @@
 
     .empty-state::before {
         content: none;
+    }
+
+    .pagination-footer {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 8px;
+    }
+
+    .pagination-footer-left,
+    .pagination-footer-right {
+        justify-self: center;
     }
 }
