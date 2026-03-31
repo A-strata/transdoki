@@ -141,7 +141,13 @@ class OrganizationListMixin:
 
     model = Organization
     template_name = "organizations/organization_list.html"
+    partial_template_name = "organizations/organization_list_table.html"
     context_object_name = "organizations"
+
+    def get_template_names(self):
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return [self.partial_template_name]
+        return [self.template_name]
 
     def _parse_sort(self):
         sort_field = self.request.GET.get("sort", "short_name").strip()

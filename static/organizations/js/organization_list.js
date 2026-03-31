@@ -3,61 +3,140 @@
 
     var searchInput = document.querySelector("[data-search-input]");
     var clearBtn = document.querySelector("[data-search-clear]");
-    var pageSizeSelect = document.querySelector("[data-page-size-select]");
+    var contentContainer = document.querySelector("[data-list-content]");
 
-    if (!searchInput) return;
+    if (!searchInput || !contentContainer) return;
 
     var debounceTimer;
+    var currentController = null;
 
-    function buildUrl(params) {
-        var url = new URL(window.location.pathname, window.location.origin);
-        var keys = Object.keys(params);
-        for (var i = 0; i < keys.length; i++) {
-            if (params[keys[i]]) {
-                url.searchParams.set(keys[i], params[keys[i]]);
-            }
-        }
-        return url.toString();
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────
 
-    function getCurrentParams() {
+    function getParams() {
         var params = new URLSearchParams(window.location.search);
         return {
-            q: searchInput.value.trim(),
+            q: params.get("q") || "",
             sort: params.get("sort") || "",
             dir: params.get("dir") || "",
             page_size: params.get("page_size") || "",
+            page: params.get("page") || "",
         };
     }
 
-    function navigateWithParams(overrides) {
-        var base = getCurrentParams();
+    function buildSearch(overrides) {
+        var params = getParams();
         var keys = Object.keys(overrides);
         for (var i = 0; i < keys.length; i++) {
-            base[keys[i]] = overrides[keys[i]];
+            params[keys[i]] = overrides[keys[i]];
         }
-        window.location.href = buildUrl(base);
+        var search = new URLSearchParams();
+        var pkeys = Object.keys(params);
+        for (var j = 0; j < pkeys.length; j++) {
+            if (params[pkeys[j]]) {
+                search.set(pkeys[j], params[pkeys[j]]);
+            }
+        }
+        var str = search.toString();
+        return str ? "?" + str : "";
     }
+
+    // ── Fetch + DOM replace ──────────────────────────────────────────────
+
+    function loadContent(queryString, pushHistory) {
+        if (currentController) {
+            currentController.abort();
+        }
+        currentController = new AbortController();
+
+        var url = window.location.pathname + queryString;
+
+        fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            signal: currentController.signal,
+        })
+            .then(function (response) {
+                if (!response.ok) throw new Error(response.status);
+                return response.text();
+            })
+            .then(function (html) {
+                contentContainer.innerHTML = html;
+                bindContentEvents();
+                if (pushHistory) {
+                    history.pushState({ queryString: queryString }, "", url);
+                }
+            })
+            .catch(function (err) {
+                if (err.name !== "AbortError") {
+                    // Fallback — полная навигация при ошибке
+                    window.location.href = url;
+                }
+            });
+    }
+
+    // ── Search ───────────────────────────────────────────────────────────
 
     searchInput.addEventListener("input", function () {
         clearTimeout(debounceTimer);
         clearBtn.hidden = !this.value;
+        var value = this.value.trim();
         debounceTimer = setTimeout(function () {
-            navigateWithParams({ q: searchInput.value.trim() });
-        }, 200);
+            var qs = buildSearch({ q: value, page: "" });
+            loadContent(qs, true);
+        }, 300);
     });
 
     if (clearBtn) {
         clearBtn.addEventListener("click", function () {
             searchInput.value = "";
             clearBtn.hidden = true;
-            navigateWithParams({ q: "" });
+            clearTimeout(debounceTimer);
+            var qs = buildSearch({ q: "", page: "" });
+            loadContent(qs, true);
+            searchInput.focus();
         });
     }
 
-    if (pageSizeSelect) {
-        pageSizeSelect.addEventListener("change", function () {
-            navigateWithParams({ page_size: this.value });
+    // ── Delegated events (sort, pagination, page-size) ───────────────────
+
+    function bindContentEvents() {
+        // Sort headers
+        contentContainer.querySelectorAll(".sortable-header").forEach(function (link) {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                var href = this.getAttribute("href");
+                loadContent(href, true);
+            });
         });
+
+        // Pagination links
+        contentContainer.querySelectorAll(".pagination-link:not(.is-current):not(.is-disabled)").forEach(function (link) {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                var href = this.getAttribute("href");
+                loadContent(href, true);
+            });
+        });
+
+        // Page-size select
+        var pageSizeSelect = contentContainer.querySelector("[data-page-size-select]");
+        if (pageSizeSelect) {
+            pageSizeSelect.addEventListener("change", function () {
+                var qs = buildSearch({ page_size: this.value, page: "" });
+                loadContent(qs, true);
+            });
+        }
     }
+
+    bindContentEvents();
+
+    // ── History: кнопка «Назад» / «Вперёд» ──────────────────────────────
+
+    window.addEventListener("popstate", function (e) {
+        var qs = window.location.search;
+        // Обновляем поле поиска из URL
+        var params = new URLSearchParams(qs);
+        searchInput.value = params.get("q") || "";
+        clearBtn.hidden = !searchInput.value;
+        loadContent(qs, false);
+    });
 })();

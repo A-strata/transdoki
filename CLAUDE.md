@@ -87,6 +87,7 @@ python manage.py charge_daily --dry-run   # только расчёт, без з
 - Шаблоны: `templates/<app>/<model>_<action>.html` (list, detail, form)
 - Новые поля с чувствительными данными шифровать через `django-cryptography-5`
 - Не использовать `raw()` и `extra()` без крайней необходимости (SQL injection)
+- Списковые страницы с поиском/сортировкой — через Partial HTML over Fetch (partial-шаблон + `X-Requested-With` в view + fetch в JS). Подробности в `docs/ui-guide.md` раздел 14.
 
 ## Safety rules (важно!)
 - **Миграции**: перед `makemigrations` убедиться что изменения в models.py корректны.

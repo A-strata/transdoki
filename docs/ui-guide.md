@@ -651,6 +651,53 @@ const suggestUrl = wrap.dataset.suggestUrl;
 - Действия строки: hover-иконки в `.row-actions-cell` (см. раздел 13)
 - CSS — только во внешних файлах: `static/<app>/css/<entity>_list.css`
 
+### Живой поиск, сортировка, пагинация (паттерн Partial HTML over Fetch)
+
+Списковые страницы с поиском/сортировкой/пагинацией используют серверный partial-рендеринг вместо полной перезагрузки страницы.
+
+**Архитектура:**
+
+1. **Partial-шаблон** — таблица + pagination footer выносятся в `<app>/templates/<app>/<entity>_list_table.html`. Основной шаблон подключает через `{% include %}` внутри контейнера `<div data-list-content>`.
+
+2. **View** — один view, два режима:
+   - Обычный запрос → полная страница (`base.html` + контент)
+   - AJAX (`X-Requested-With: XMLHttpRequest`) → только partial-фрагмент
+
+```python
+def get_template_names(self):
+    if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return [self.partial_template_name]
+    return [self.template_name]
+```
+
+3. **JS** — `fetch` + замена `innerHTML` контейнера `[data-list-content]`:
+   - Поиск: debounce 300ms, `AbortController` для отмены предыдущего запроса
+   - Сортировка, пагинация, page-size: перехват кликов внутри контейнера
+   - `history.pushState` + обработка `popstate` для навигации «Назад»/«Вперёд»
+   - После замены DOM — перепривязка обработчиков (`bindContentEvents`)
+
+4. **Graceful degradation** — без JS страница работает как обычный GET с перезагрузкой.
+
+**Реализовано**: список контрагентов (`organizations`), список своих компаний.
+
+**Структура файлов:**
+
+```
+<app>/
+  templates/<app>/
+    <entity>_list.html         # основной шаблон (тулбар + include)
+    <entity>_list_table.html   # partial (таблица + pagination footer)
+  static/<app>/js/
+    <entity>_list.js           # fetch + DOM + pushState
+```
+
+**Правила:**
+- Поиск сбрасывает пагинацию на первую страницу
+- Сортировка сбрасывает на первую страницу
+- Смена page-size сбрасывает на первую страницу
+- Счётчик «Показано X–Y из Z» входит в partial и обновляется автоматически
+- URL всегда отражает текущее состояние (bookmarkable)
+
 ---
 
 ## 15. Пустые состояния
