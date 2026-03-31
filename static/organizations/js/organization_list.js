@@ -10,6 +10,14 @@
     var debounceTimer;
     var currentController = null;
 
+    function updateSearchState() {
+        var hasValue = !!searchInput.value;
+        clearBtn.hidden = !hasValue;
+        searchInput.classList.toggle("is-filtered", hasValue);
+    }
+
+    updateSearchState();
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     function getParams() {
@@ -77,7 +85,7 @@
 
     searchInput.addEventListener("input", function () {
         clearTimeout(debounceTimer);
-        clearBtn.hidden = !this.value;
+        updateSearchState();
         var value = this.value.trim();
         debounceTimer = setTimeout(function () {
             var qs = buildSearch({ q: value, page: "" });
@@ -88,8 +96,8 @@
     if (clearBtn) {
         clearBtn.addEventListener("click", function () {
             searchInput.value = "";
-            clearBtn.hidden = true;
             clearTimeout(debounceTimer);
+            updateSearchState();
             var qs = buildSearch({ q: "", page: "" });
             loadContent(qs, true);
             searchInput.focus();
@@ -136,7 +144,7 @@
         // Обновляем поле поиска из URL
         var params = new URLSearchParams(qs);
         searchInput.value = params.get("q") || "";
-        clearBtn.hidden = !searchInput.value;
+        updateSearchState();
         loadContent(qs, false);
     });
 })();

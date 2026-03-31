@@ -74,7 +74,7 @@
 <div class="pagination-footer">
     <div class="pagination-footer-left">
         <span class="pagination-meta">
-            Показано {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ page_obj.paginator.count }}
+            {% if total_count %}Найдено {{ page_obj.paginator.count }} из {{ total_count }}, показано{% else %}Показано{% endif %} {{ page_obj.start_index }}–{{ page_obj.end_index }}{% if not total_count %} из {{ page_obj.paginator.count }}{% endif %}
         </span>
     </div>
     <div class="pagination-footer-center">

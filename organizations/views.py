@@ -185,6 +185,13 @@ class OrganizationListMixin:
         context["page_size_options"] = self.page_size_options
 
         q = self.request.GET.get("q", "").strip()
+        if q:
+            context["total_count"] = (
+                self.model.objects.filter(
+                    account=get_request_account(self.request),
+                    is_own_company=context.get("is_own", False),
+                ).count()
+            )
         sort_field, sort_dir = self._parse_sort()
         current_page_size = self.get_paginate_by(self.object_list)
 

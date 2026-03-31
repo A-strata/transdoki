@@ -220,6 +220,11 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+.table-search.is-filtered {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
 .table-search-clear {
     position: absolute;
     right: 8px;
