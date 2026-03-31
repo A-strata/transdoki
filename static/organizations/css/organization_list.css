@@ -25,6 +25,12 @@
     letter-spacing: -0.01em;
 }
 
+/* Скролл внутри карточки — sticky header работает */
+.org-page .table-wrap {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+}
+
 /* Название и ИНН — жмутся к контенту */
 .org-page .tms-table td:nth-child(1),
 .org-page .tms-table td:nth-child(2) {
