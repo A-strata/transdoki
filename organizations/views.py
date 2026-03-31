@@ -1,9 +1,11 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
@@ -27,8 +29,43 @@ from .validators import validate_inn
 class UserOwnedListView(LoginRequiredMixin, ListView):
     """Базовый View показывающий только записи текущего account (tenant)."""
 
+    paginate_by = 25
+    page_size_options = [25, 50, 100]
+
+    def get_paginate_by(self, queryset):
+        raw = (self.request.GET.get("page_size") or "").strip()
+        if raw.isdigit():
+            value = int(raw)
+            if value in self.page_size_options:
+                return value
+        return self.paginate_by
+
     def get_queryset(self):
         return self.model.objects.filter(account=get_request_account(self.request))
+
+    def _build_pagination_items(self, page_obj):
+        current = page_obj.number
+        total = page_obj.paginator.num_pages
+
+        if total <= 7:
+            return [
+                {"type": "page", "number": n, "current": n == current}
+                for n in range(1, total + 1)
+            ]
+
+        pages = {1, total, current - 2, current - 1, current, current + 1, current + 2}
+        pages = sorted(n for n in pages if 1 <= n <= total)
+
+        items = []
+        prev = None
+
+        for n in pages:
+            if prev is not None and n - prev > 1:
+                items.append({"type": "ellipsis"})
+            items.append({"type": "page", "number": n, "current": n == current})
+            prev = n
+
+        return items
 
 
 class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
@@ -99,32 +136,101 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
         return reverse("organizations:detail", kwargs={"pk": self.object.pk})
 
 
-class OrganizationListView(UserOwnedListView):
+class OrganizationListMixin:
+    """Поиск, сортировка и контекст для списков организаций."""
+
     model = Organization
     template_name = "organizations/organization_list.html"
     context_object_name = "organizations"
 
+    def _parse_sort(self):
+        sort_field = self.request.GET.get("sort", "short_name").strip()
+        sort_dir = self.request.GET.get("dir", "asc").strip()
+        if sort_field not in ("short_name", "inn"):
+            sort_field = "short_name"
+        if sort_dir not in ("asc", "desc"):
+            sort_dir = "asc"
+        return sort_field, sort_dir
+
+    def _apply_search_and_sort(self, qs):
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(Q(short_name__icontains=q) | Q(inn__icontains=q))
+        sort_field, sort_dir = self._parse_sort()
+        order = sort_field if sort_dir == "asc" else f"-{sort_field}"
+        return qs.order_by(order)
+
+    def _build_sort_url(self, field, current_sort, current_dir, q, page_size):
+        params = {"sort": field}
+        params["dir"] = (
+            "desc" if (field == current_sort and current_dir == "asc") else "asc"
+        )
+        if q:
+            params["q"] = q
+        if str(page_size) != str(self.paginate_by):
+            params["page_size"] = page_size
+        return "?" + urlencode(params)
+
+    def _get_org_list_context(self, context):
+        page_obj = context.get("page_obj")
+        context["pagination_items"] = (
+            self._build_pagination_items(page_obj) if page_obj else []
+        )
+        context["page_size_options"] = self.page_size_options
+
+        q = self.request.GET.get("q", "").strip()
+        sort_field, sort_dir = self._parse_sort()
+        current_page_size = self.get_paginate_by(self.object_list)
+
+        context["filters"] = {
+            "q": q,
+            "sort": sort_field,
+            "dir": sort_dir,
+            "page_size": str(current_page_size),
+        }
+
+        params = {}
+        if q:
+            params["q"] = q
+        if sort_field != "short_name":
+            params["sort"] = sort_field
+        if sort_dir != "asc":
+            params["dir"] = sort_dir
+        if str(current_page_size) != str(self.paginate_by):
+            params["page_size"] = current_page_size
+        context["query_string"] = ("&" + urlencode(params)) if params else ""
+
+        context["sort_urls"] = {
+            "short_name": self._build_sort_url(
+                "short_name", sort_field, sort_dir, q, current_page_size
+            ),
+            "inn": self._build_sort_url(
+                "inn", sort_field, sort_dir, q, current_page_size
+            ),
+        }
+        return context
+
+
+class OrganizationListView(OrganizationListMixin, UserOwnedListView):
     def get_queryset(self):
-        return super().get_queryset().filter(is_own_company=False)
+        qs = super().get_queryset().filter(is_own_company=False)
+        return self._apply_search_and_sort(qs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["is_own"] = False
-        return context
+        return self._get_org_list_context(context)
 
 
-class OwnCompanyListView(UserOwnedListView):
-    model = Organization
-    template_name = "organizations/organization_list.html"
-    context_object_name = "organizations"
-
+class OwnCompanyListView(OrganizationListMixin, UserOwnedListView):
     def get_queryset(self):
-        return super().get_queryset().filter(is_own_company=True)
+        qs = super().get_queryset().filter(is_own_company=True)
+        return self._apply_search_and_sort(qs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["is_own"] = True
-        return context
+        return self._get_org_list_context(context)
 
 
 class OrganizationDeleteView(LoginRequiredMixin, DeleteView):

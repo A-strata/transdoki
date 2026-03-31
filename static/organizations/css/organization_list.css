@@ -25,54 +25,43 @@
     letter-spacing: -0.01em;
 }
 
-
-.tms-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 760px;
-}
-
-.tms-table thead th {
-    text-align: left;
-    padding: 12px 14px;
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--muted);
-    background: #f9fafb;
-    border-bottom: 1px solid var(--border);
+/* Название и ИНН — жмутся к контенту */
+.org-page .tms-table td:nth-child(1),
+.org-page .tms-table td:nth-child(2) {
     white-space: nowrap;
-}
-
-.tms-table tbody td {
-    padding: 12px 14px;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.93rem;
-    color: var(--text);
-    vertical-align: top;
-}
-
-.tms-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.tms-table tbody tr:hover {
-    background: #fcfcfd;
+    width: 1%;
 }
 
 .org-name {
+    display: inline-block;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
     font-weight: 600;
     color: var(--text);
 }
 
+/* Адрес — забирает оставшееся пространство, текст обрезается */
 .org-address {
+    display: inline-block;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
     color: #374151;
 }
 
-.row-actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
+.row-actions-header {
+    width: 90px;
+}
+
+.row-actions-cell {
+    width: 90px;
+    padding: 0 8px;
+    vertical-align: middle;
 }
 
 
@@ -119,6 +108,24 @@
         font-weight: 600;
     }
 
+    .row-actions-cell {
+        width: auto;
+        padding: 10px 12px;
+    }
+
+    .row-actions-cell::before {
+        content: none;
+    }
+
+    .row-actions {
+        opacity: 1;
+    }
+
+    .org-address {
+        max-width: none;
+        white-space: normal;
+    }
+
     .empty-state {
         display: block;
         text-align: center;
@@ -128,7 +135,27 @@
         content: none;
     }
 
-    .list-toolbar .tms-btn {
+    .list-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .list-toolbar-right {
+        flex-direction: column;
+    }
+
+    .table-search {
         width: 100%;
+    }
+
+    .pagination-footer {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 8px;
+    }
+
+    .pagination-footer-left,
+    .pagination-footer-right {
+        justify-self: center;
     }
 }

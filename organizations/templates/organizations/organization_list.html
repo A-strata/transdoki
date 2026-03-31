@@ -12,45 +12,143 @@
             <h1>{% if is_own %}Мои компании{% else %}Контрагенты{% endif %}</h1>
         </div>
         <div class="list-toolbar-right">
+            <div class="table-search-wrap">
+                <input type="text"
+                       class="table-search"
+                       placeholder="Поиск по названию или ИНН…"
+                       value="{{ filters.q }}"
+                       data-search-input>
+                <button type="button" class="table-search-clear" data-search-clear {% if not filters.q %}hidden{% endif %}>×</button>
+            </div>
             <a href="{% url 'organizations:create' %}{% if is_own %}?own=1{% endif %}" class="tms-btn tms-btn-primary tms-btn-add">{% if is_own %}+ Добавить компанию{% else %}+ Добавить контрагента{% endif %}</a>
         </div>
     </div>
 
     <div class="table-card">
-        <div class="table-wrap" data-drag-scroll>
+        <div class="table-wrap">
             <table class="tms-table">
                 <thead>
                     <tr>
-                        <th>Название</th>
-                        <th>ИНН</th>
-                        <th>ОГРН</th>
+                        <th>
+                            <a href="{{ sort_urls.short_name }}" class="sortable-header {% if filters.sort == 'short_name' %}is-active{% endif %}">
+                                Название
+                                {% if filters.sort == 'short_name' %}
+                                    <span class="sort-indicator">{% if filters.dir == 'asc' %}↑{% else %}↓{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ sort_urls.inn }}" class="sortable-header {% if filters.sort == 'inn' %}is-active{% endif %}">
+                                ИНН
+                                {% if filters.sort == 'inn' %}
+                                    <span class="sort-indicator">{% if filters.dir == 'asc' %}↑{% else %}↓{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>Адрес</th>
-                        <th data-col="actions">Действия</th>
+                        <th class="row-actions-header"></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for organization in organizations %}
                     <tr>
-                        <td data-label="Название"><span class="org-name">{{ organization.short_name }}</span></td>
+                        <td data-label="Название"><span class="org-name" title="{{ organization.short_name }}">{{ organization.short_name }}</span></td>
                         <td data-label="ИНН">{{ organization.inn }}</td>
-                        <td data-label="ОГРН">{{ organization.ogrn }}</td>
-                        <td data-label="Адрес"><span class="org-address">{{ organization.address }}</span></td>
-                        <td data-label="Действия" data-col="actions">
+                        <td data-label="Адрес"><span class="org-address" title="{{ organization.address }}">{{ organization.address }}</span></td>
+                        <td class="row-actions-cell">
                             <div class="row-actions">
-                                <a href="{% url 'organizations:detail' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Карточка компании</a>
-                                <a href="{% url 'organizations:edit' organization.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
-                                <a href="{% url 'organizations:delete' organization.pk %}" class="tms-btn tms-btn-danger tms-btn-sm">Удалить</a>
+                                <a href="{% url 'organizations:detail' organization.pk %}" class="row-action row-action--view" title="Просмотр">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                    </svg>
+                                </a>
+                                <a href="{% url 'organizations:edit' organization.pk %}" class="row-action row-action--edit" title="Редактировать">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </a>
+                                <a href="{% url 'organizations:delete' organization.pk %}" class="row-action row-action--delete" title="Удалить">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M2 4h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M13 4v9.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="empty-state">{% if is_own %}Нет собственных компаний{% else %}Нет контрагентов{% endif %}</td>
+                        <td colspan="4" class="empty-state">
+                            {% if filters.q %}
+                                Ничего не найдено
+                            {% elif is_own %}
+                                Нет собственных компаний
+                            {% else %}
+                                Нет контрагентов
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    {% if page_obj and page_obj.paginator.count > 0 %}
+    <div class="pagination-footer">
+        <div class="pagination-footer-left">
+            <span class="pagination-meta">
+                Показано {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ page_obj.paginator.count }}
+            </span>
+        </div>
+        <div class="pagination-footer-center">
+            {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="pagination" aria-label="Пагинация">
+                {% if page_obj.has_previous %}
+                    <a class="pagination-link pagination-nav" href="?page=1{{ query_string }}">«</a>
+                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{{ query_string }}">‹</a>
+                {% else %}
+                    <span class="pagination-link pagination-nav is-disabled">«</span>
+                    <span class="pagination-link pagination-nav is-disabled">‹</span>
+                {% endif %}
+
+                {% for item in pagination_items %}
+                    {% if item.type == 'ellipsis' %}
+                        <span class="pagination-ellipsis">…</span>
+                    {% elif item.current %}
+                        <span class="pagination-link is-current">{{ item.number }}</span>
+                    {% else %}
+                        <a class="pagination-link" href="?page={{ item.number }}{{ query_string }}">{{ item.number }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{{ query_string }}">›</a>
+                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}">»</a>
+                {% else %}
+                    <span class="pagination-link pagination-nav is-disabled">›</span>
+                    <span class="pagination-link pagination-nav is-disabled">»</span>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+        <div class="pagination-footer-right">
+            <label class="page-size-control">
+                <span class="page-size-label">Показывать:</span>
+                <select class="page-size-select" data-page-size-select>
+                    {% for size in page_size_options %}
+                        <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+    </div>
+    {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'organizations/js/organization_list.js' %}"></script>
 {% endblock %}
