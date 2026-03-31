@@ -1,0 +1,133 @@
+﻿.vehicle-detail-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+}
+
+.vehicle-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.vehicle-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.vehicle-title {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.vehicle-type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--primary-hover);
+    background: var(--hover-active);
+    border: 1px solid var(--primary);
+}
+
+.vehicle-section {
+    margin-top: 14px;
+}
+
+.section-title {
+    margin: 0 0 10px;
+    font-size: var(--text-base);
+    font-weight: 650;
+    color: var(--text);
+}
+
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.info-table tr + tr td {
+    border-top: 1px solid var(--border);
+}
+
+.info-table td {
+    padding: 10px 12px;
+    vertical-align: top;
+    font-size: var(--text-sm);
+}
+
+.info-table td:first-child {
+    width: 230px;
+    color: var(--muted);
+    background: var(--hover);
+    font-weight: 600;
+}
+
+.info-value {
+    color: var(--text);
+    word-break: break-word;
+}
+
+.actions-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+@media (max-width: 760px) {
+    .detail-card {
+        padding: 12px;
+    }
+
+    .info-table,
+    .info-table tbody,
+    .info-table tr,
+    .info-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .info-table td:first-child {
+        width: 100%;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-table tr + tr td {
+        border-top: none;
+    }
+
+    .info-table tr {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 8px;
+        overflow: hidden;
+    }
+
+    .actions-row {
+        flex-direction: column;
+    }
+
+    .actions-row .tms-btn {
+        width: 100%;
+    }
+}

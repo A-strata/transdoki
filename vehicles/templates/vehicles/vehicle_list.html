@@ -50,6 +50,20 @@
         {% include "vehicles/vehicle_list_table.html" %}
     </div>
 </section>
+
+<div class="modal-overlay" id="delete-vehicle-modal" hidden>
+    <div class="modal-dialog">
+        <h3 class="modal-title">Удалить транспортное средство?</h3>
+        <p class="modal-body"><span id="delete-vehicle-name"></span></p>
+        <form method="post" id="delete-vehicle-form">
+            {% csrf_token %}
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}

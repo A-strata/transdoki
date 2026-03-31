@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from billing.mixins import BillingProtectedMixin
 from organizations.models import Organization
@@ -86,6 +86,14 @@ class VehicleUpdateView(LoginRequiredMixin, UpdateView):
         except IntegrityError:
             form.add_error("grn", "ТС с таким номером уже существует.")
             return self.form_invalid(form)
+
+
+class VehicleDetailView(LoginRequiredMixin, DetailView):
+    model = Vehicle
+    template_name = "vehicles/vehicle_detail.html"
+
+    def get_queryset(self):
+        return Vehicle.objects.filter(account=get_request_account(self.request))
 
 
 class VehicleCreateStandaloneView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
