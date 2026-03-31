@@ -1,4 +1,4 @@
-.trip-form-page {
+﻿.trip-form-page {
     max-width: 980px;
     margin: 0 auto;
     display: flex;
@@ -28,7 +28,7 @@
 }
 
 .section {
-    border: 1px solid #eef2f7;
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 12px;
     margin-bottom: 12px;
@@ -68,14 +68,14 @@
     margin-bottom: 6px;
     font-size: var(--text-sm);
     font-weight: 600;
-    color: #374151;
+    color: var(--text);
 }
 
 .form-note {
     width: 100%;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    background: #f9fafb;
+    background: var(--hover);
     color: var(--muted);
     padding: 10px 12px;
     font-size: var(--text-sm);
@@ -111,12 +111,12 @@
 }
 
 .role-card:hover {
-    border-color: #bfdbfe;
-    background: #f0f4ff;
+    border-color: var(--primary);
+    background: var(--hover-active);
 }
 
 .role-card:focus {
-    outline: 3px solid rgba(37, 99, 235, 0.3);
+    outline: 3px solid var(--primary-ring);
 }
 
 .role-card:active {
@@ -124,8 +124,8 @@
 }
 
 .role-card.is-active {
-    border-color: #bfdbfe;
-    background: #eff6ff;
+    border-color: var(--primary);
+    background: var(--hover-active);
 }
 
 .role-card-title {
@@ -135,7 +135,7 @@
 }
 
 .role-card.is-active .role-card-title {
-    color: #2563eb;
+    color: var(--primary);
 }
 
 .role-card-hint {
@@ -147,14 +147,14 @@
 /* ── Состояние is-prefilled для полей формы ── */
 .field.is-prefilled .autocomplete-container input,
 .field.is-prefilled select {
-    border-color: #bfdbfe;
-    background: #eff6ff;
+    border-color: var(--primary);
+    background: var(--hover-active);
 }
 
 .prefilled-hint {
     margin-top: 4px;
     font-size: var(--text-xs);
-    color: #2563eb;
+    color: var(--primary);
 }
 
 /* Участники: заказчик + перевозчик */
@@ -165,10 +165,10 @@
 }
 
 .parties-col {
-    border: 1px solid #eef2f7;
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 10px;
-    background: #fcfcfd;
+    background: var(--surface);
 }
 
 .parties-col-title {
@@ -194,10 +194,10 @@
 }
 
 .finance-col {
-    border: 1px solid #eef2f7;
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 10px;
-    background: #fcfcfd;
+    background: var(--surface);
     min-width: 0;
     overflow: hidden;
 }
@@ -240,7 +240,7 @@
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
     border-left: 1px solid var(--border) !important;
     flex: 0 0 108px;
-    background: #f9fafb;
+    background: var(--hover);
 }
 
 /* Форма оплаты + НДС */
@@ -289,7 +289,7 @@
 
 .radio-label-text {
     font-size: var(--text-sm);
-    color: #374151;
+    color: var(--text);
     white-space: nowrap;
 }
 
@@ -311,7 +311,7 @@
     border: 1px solid var(--border);
     border-left: none;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    background: #f9fafb;
+    background: var(--hover);
     font-size: var(--text-sm);
     color: var(--muted);
     white-space: nowrap;
@@ -323,11 +323,11 @@
 .finance-total {
     margin-top: 10px;
     padding: 8px 12px;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
     border-radius: 8px;
     font-size: var(--text-sm);
-    color: #166534;
+    color: var(--success-text);
 }
 
 /* Погрузка/выгрузка */
@@ -338,10 +338,10 @@
 }
 
 .logistics-col {
-    border: 1px solid #eef2f7;
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 10px;
-    background: #fcfcfd;
+    background: var(--surface);
 }
 
 .logistics-title {
@@ -384,12 +384,12 @@
     width: 36px;
     height: 40px;
     border-radius: 8px;
-    border: 1px solid #d1d5db;
-    background: #f9fafb;
+    border: 1px solid var(--border);
+    background: var(--hover);
     font-size: var(--text-lg);
     line-height: 1;
     cursor: pointer;
-    color: #374151;
+    color: var(--text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -455,7 +455,7 @@ select[data-search-url] {
     padding: 10px 12px;
     cursor: pointer;
     font-size: var(--text-sm);
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--border);
     transition: background 0.15s ease;
 }
 
@@ -465,5 +465,5 @@ select[data-search-url] {
 
 .address-suggest-item:hover,
 .address-suggest-item.active {
-    background: #f8fafc;
+    background: var(--hover);
 }
