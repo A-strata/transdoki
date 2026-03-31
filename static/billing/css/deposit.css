@@ -1,4 +1,4 @@
-.deposit-card {
+﻿.deposit-card {
     max-width: 440px;
     margin: 40px auto;
     background: var(--surface);
@@ -23,7 +23,7 @@
     display: block;
     font-size: var(--text-xs);
     font-weight: 600;
-    color: #374151;
+    color: var(--text);
     margin-bottom: 6px;
 }
 
@@ -35,7 +35,7 @@
 .amount-input {
     width: 100%;
     padding: 10px 36px 10px 14px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-size: var(--text-lg);
     outline: none;
@@ -44,7 +44,7 @@
 }
 
 .amount-input:focus { border-color: var(--primary); }
-.amount-input.is-invalid { border-color: #dc2626; }
+.amount-input.is-invalid { border-color: var(--danger); }
 
 .amount-currency {
     position: absolute;
@@ -57,7 +57,7 @@
 }
 
 .field-error {
-    color: #dc2626;
+    color: var(--danger);
     font-size: var(--text-xs);
     margin-top: 4px;
     display: none;
@@ -74,20 +74,20 @@
     padding: 6px 14px;
     border: 1px solid var(--border);
     border-radius: 20px;
-    background: #f9fafb;
-    color: #374151;
+    background: var(--hover);
+    color: var(--text);
     font-size: var(--text-sm);
     cursor: pointer;
     transition: background .12s, border-color .12s;
 }
 
-.quick-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: var(--primary); }
+.quick-btn:hover { background: var(--hover-active); border-color: var(--primary); color: var(--primary); }
 
 .btn-pay {
     width: 100%;
     padding: 12px;
     background: var(--primary);
-    color: #fff;
+    color: var(--surface);
     border: none;
     border-radius: var(--radius-sm);
     font-size: var(--text-base);
@@ -109,7 +109,7 @@
     width: 16px;
     height: 16px;
     border: 2px solid rgba(255,255,255,0.4);
-    border-top-color: #fff;
+    border-top-color: var(--surface);
     border-radius: 50%;
     animation: spin .6s linear infinite;
     position: absolute;
@@ -124,10 +124,10 @@
 
 .global-error {
     display: none;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
     border-radius: 8px;
-    color: #dc2626;
+    color: var(--danger);
     font-size: var(--text-sm);
     padding: 10px 14px;
     margin-top: 12px;

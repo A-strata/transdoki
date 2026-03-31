@@ -1,4 +1,4 @@
-/* Общие стили для страниц авторизации */
+﻿/* Общие стили для страниц авторизации */
 
 .auth-page {
     max-width: 460px;
@@ -53,7 +53,7 @@
 
 /* Текст под заголовком в статичных auth-страницах */
 .auth-msg {
-    color: #374151;
+    color: var(--text);
     font-size: var(--text-sm);
     margin: 12px 0 0;
 }
@@ -71,26 +71,26 @@
 .field-errors {
     margin-top: 4px;
     font-size: var(--text-xs);
-    color: #991b1b;
+    color: var(--danger);
 }
 
 /* Поле с ошибкой */
 .field input.is-invalid {
-    border-color: #ef4444;
+    border-color: var(--danger);
 }
 
 /* Кнопка-призрак (отмена) */
 .tms-btn-ghost {
     background: var(--surface);
     border-color: var(--border);
-    color: #374151;
+    color: var(--text);
     display: inline-flex;
     align-items: center;
     text-decoration: none;
 }
 
 .tms-btn-ghost:hover {
-    background: #f3f4f6;
+    background: var(--hover);
 }
 
 /* Глазок пароля (для password_toggle.js) */

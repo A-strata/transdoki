@@ -1,4 +1,4 @@
-.persons-page {
+﻿.persons-page {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -44,14 +44,14 @@
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: var(--muted);
-    background: #f9fafb;
+    background: var(--hover);
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
 }
 
 .tms-table tbody td {
     padding: 12px 14px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border);
     font-size: var(--text-sm);
     color: var(--text);
     vertical-align: top;
@@ -62,7 +62,7 @@
 }
 
 .tms-table tbody tr:hover {
-    background: #fcfcfd;
+    background: var(--hover);
 }
 
 .person-name {
@@ -105,7 +105,7 @@
         grid-template-columns: 110px 1fr;
         gap: 10px;
         padding: 10px 12px;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid var(--border);
     }
 
     .tms-table tbody td:last-child {

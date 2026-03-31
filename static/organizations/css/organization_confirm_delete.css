@@ -1,4 +1,4 @@
-.delete-page {
+﻿.delete-page {
     max-width: 620px;
     margin: 0 auto;
     padding-top: 8px;
@@ -6,7 +6,7 @@
 
 .delete-card {
     background: var(--surface);
-    border: 1px solid #fecaca;
+    border: 1px solid var(--error-border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 18px;
@@ -17,12 +17,12 @@
     font-size: clamp(1.25rem, 1.8vw, 1.5rem);
     line-height: 1.2;
     letter-spacing: -0.01em;
-    color: #991b1b;
+    color: var(--danger);
 }
 
 .delete-text {
     margin: 0;
-    color: #374151;
+    color: var(--text);
     font-size: var(--text-sm);
     line-height: 1.45;
 }
@@ -38,10 +38,10 @@
 .delete-warning {
     margin-top: 12px;
     padding: 10px 12px;
-    border: 1px solid #fee2e2;
-    background: #fef2f2;
+    border: 1px solid var(--error-border);
+    background: var(--error-bg);
     border-radius: var(--radius-sm);
-    color: #b91c1c;
+    color: var(--danger-hover);
     font-size: var(--text-sm);
 }
 

@@ -1,4 +1,4 @@
-.tx-page {
+﻿.tx-page {
     max-width: 980px;
     margin: 0 auto;
     padding: 12px 0;
@@ -35,12 +35,12 @@
     font-size: var(--text-sm);
 }
 
-.balance-positive { color: #16a34a; font-size: var(--text-lg); }
-.balance-zero     { color: #d97706; font-size: var(--text-lg); }
-.balance-negative { color: #dc2626; font-size: var(--text-lg); }
+.balance-positive { color: var(--success-text); font-size: var(--text-lg); }
+.balance-zero     { color: var(--warning-text); font-size: var(--text-lg); }
+.balance-negative { color: var(--danger); font-size: var(--text-lg); }
 
 .tx-exempt-badge {
-    background: #f3f4f6;
+    background: var(--neutral-bg);
     color: var(--muted);
     border: 1px solid var(--border);
     border-radius: 9px;
@@ -76,7 +76,7 @@
 }
 
 .tx-table td {
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--border);
     padding: 9px 10px;
     font-size: var(--text-sm);
     vertical-align: middle;
@@ -104,29 +104,29 @@
 }
 
 .tx-deposit {
-    background: #f0fdf4;
-    color: #16a34a;
-    border: 1px solid #bbf7d0;
+    background: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
 }
 
 .tx-charge {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: var(--error-bg);
+    color: var(--danger);
+    border: 1px solid var(--error-border);
 }
 
-.tx-amount-deposit { color: #16a34a; font-weight: 600; }
-.tx-amount-charge  { color: #dc2626; font-weight: 600; }
+.tx-amount-deposit { color: var(--success-text); font-weight: 600; }
+.tx-amount-charge  { color: var(--danger); font-weight: 600; }
 
 .balance-after {
-    color: #374151;
+    color: var(--text);
     font-variant-numeric: tabular-nums;
 }
 
 .tx-empty {
     text-align: center;
     padding: 40px 0;
-    color: #9ca3af;
+    color: var(--muted);
 }
 
 /* Пагинация */
@@ -146,12 +146,12 @@
     border-radius: 8px;
     border: 1px solid var(--border);
     background: var(--surface);
-    color: #374151;
+    color: var(--text);
     font-size: var(--text-sm);
     text-decoration: none;
     transition: background .15s ease, border-color .15s ease;
 }
 
-.page-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
-.page-btn.current { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; font-weight: 600; }
-.page-btn.disabled { color: #d1d5db; pointer-events: none; }
+.page-btn:hover { background: var(--neutral-bg); border-color: var(--border); }
+.page-btn.current { background: var(--hover-active); color: var(--primary); border-color: var(--primary); font-weight: 600; }
+.page-btn.disabled { color: var(--muted); pointer-events: none; }

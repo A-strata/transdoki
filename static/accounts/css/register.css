@@ -1,4 +1,4 @@
-/* Страница регистрации */
+﻿/* Страница регистрации */
 
 .auth-page {
     max-width: 460px;
@@ -96,7 +96,7 @@
 }
 
 .oferta-text a {
-    color: #374151;
+    color: var(--text);
     text-decoration: underline;
 }
 

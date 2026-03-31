@@ -1,4 +1,4 @@
-/* ── Org switcher dropdown ─────────────────────────────────── */
+﻿/* ── Org switcher dropdown ─────────────────────────────────── */
 
 .org-switcher-form {
     margin: 0;
@@ -26,13 +26,13 @@
 }
 
 .org-switcher-btn:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
+    background: var(--neutral-bg);
+    border-color: var(--border);
 }
 
 .org-switcher-btn.is-open {
-    background: #eff6ff;
-    border-color: #bfdbfe;
+    background: var(--hover-active);
+    border-color: var(--primary);
     color: var(--primary);
 }
 
@@ -65,7 +65,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow);
-    z-index: var(--z-dropdown);
+    z-index: var(--z-filter-dropdown);
     padding: 6px 0;
     display: none;
 }
@@ -101,7 +101,7 @@
 }
 
 .org-dropdown-item:hover {
-    background: #f3f4f6;
+    background: var(--hover);
 }
 
 .org-dropdown-item.is-current {

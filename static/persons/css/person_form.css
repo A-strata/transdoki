@@ -1,4 +1,4 @@
-.person-form-page {
+﻿.person-form-page {
     max-width: 760px;
     margin: 0 auto;
     color: var(--text);
@@ -33,13 +33,13 @@
 .form-errors {
     margin-bottom: 18px;
     padding: 12px 14px;
-    background: var(--danger-bg);
-    border: 1px solid var(--danger-border);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
     border-radius: var(--radius-sm);
 }
 
 .form-errors .error {
-    color: var(--danger-text);
+    color: var(--danger);
     margin: 0;
     font-size: var(--text-sm);
 }
@@ -53,7 +53,7 @@
     padding: 16px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    background: #fff;
+    background: var(--surface);
 }
 
 .form-section:last-of-type {
@@ -92,7 +92,7 @@
     padding: 7px 14px;
     border-radius: 8px;
     border: 1px solid var(--border);
-    background: #fff;
+    background: var(--surface);
     color: var(--text);
     font-size: var(--text-sm);
     font-weight: 650;
@@ -110,7 +110,7 @@
 .cat-btn.active {
     background: var(--primary);
     border-color: var(--primary);
-    color: #fff;
+    color: var(--surface);
 }
 
 .form-group {
@@ -131,7 +131,7 @@
     margin-bottom: 6px;
     font-size: var(--text-sm);
     font-weight: 600;
-    color: #374151;
+    color: var(--text);
 }
 
 .form-group input[type="text"],
@@ -142,7 +142,7 @@
     width: 100%;
     border: 1px solid var(--border);
     border-radius: 10px;
-    background: #fff;
+    background: var(--surface);
     color: var(--text);
     padding: 10px 12px;
     font-size: var(--text-sm);
@@ -202,8 +202,8 @@
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
+    background: var(--hover-active);
+    border: 1px solid var(--primary);
     border-radius: 8px;
     margin-bottom: 12px;
 }
@@ -211,7 +211,7 @@
 .employer-info-label {
     font-size: var(--text-sm);
     font-weight: 600;
-    color: #374151;
+    color: var(--text);
 }
 
 .employer-info-value {

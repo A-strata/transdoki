@@ -1,4 +1,4 @@
-.organization-page {
+﻿.organization-page {
     background: var(--bg);
     min-height: calc(100vh - 120px);
     padding: 24px 16px 40px;
@@ -37,7 +37,7 @@
 }
 
 .form-errors .error {
-    color: #991b1b;
+    color: var(--danger);
     margin: 0;
     font-size: var(--text-sm);
 }
@@ -87,7 +87,7 @@
     margin-bottom: 6px;
     font-size: var(--text-sm);
     font-weight: 600;
-    color: #374151;
+    color: var(--text);
 }
 
 .form-group input[type="text"],
@@ -220,7 +220,7 @@
     position: absolute;
     inset: 0;
     cursor: pointer;
-    background-color: #d1d5db;
+    background-color: var(--border);
     border-radius: 999px;
     transition: .2s ease;
 }
