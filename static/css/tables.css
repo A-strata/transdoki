@@ -27,7 +27,7 @@
     z-index: var(--z-sticky-header);
     text-align: left;
     padding: 12px 14px;
-    font-size: 0.82rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: var(--muted);
@@ -39,7 +39,7 @@
 .tms-table tbody td {
     padding: 12px 14px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 0.93rem;
+    font-size: var(--text-sm);
     color: var(--text);
     vertical-align: top;
 }
@@ -85,7 +85,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     text-decoration: none;
     color: #374151;
     box-sizing: border-box;
@@ -143,7 +143,7 @@
 }
 
 .sort-indicator {
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
 }
 
 /* Row actions — hover-иконки */
@@ -202,7 +202,7 @@
     padding: 0 32px 0 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     background: var(--surface);
     color: var(--text);
     width: 260px;
@@ -233,7 +233,7 @@
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: var(--text-lg);
     color: #9ca3af;
     line-height: 1;
     padding: 2px 4px;
@@ -268,7 +268,7 @@
 
 .pagination-meta {
     color: var(--muted);
-    font-size: 0.84rem;
+    font-size: var(--text-xs);
     white-space: nowrap;
 }
 
@@ -277,7 +277,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.86rem;
+    font-size: var(--text-xs);
 }
 
 .page-size-label {
@@ -293,7 +293,7 @@
     padding: 0 8px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    font-size: 0.86rem;
+    font-size: var(--text-xs);
     background: var(--surface);
     color: var(--text);
     box-sizing: border-box;

@@ -10,18 +10,18 @@
 
 .deposit-card h1 {
     margin: 0 0 6px;
-    font-size: 1.3rem;
+    font-size: var(--text-lg);
 }
 
 .balance-hint {
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     margin-bottom: 24px;
 }
 
 .field-label {
     display: block;
-    font-size: 0.85rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     color: #374151;
     margin-bottom: 6px;
@@ -37,7 +37,7 @@
     padding: 10px 36px 10px 14px;
     border: 1px solid #d1d5db;
     border-radius: var(--radius-sm);
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     outline: none;
     box-sizing: border-box;
     transition: border-color .15s;
@@ -52,13 +52,13 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--muted);
-    font-size: 1rem;
+    font-size: var(--text-base);
     pointer-events: none;
 }
 
 .field-error {
     color: #dc2626;
-    font-size: 0.83rem;
+    font-size: var(--text-xs);
     margin-top: 4px;
     display: none;
 }
@@ -76,7 +76,7 @@
     border-radius: 20px;
     background: #f9fafb;
     color: #374151;
-    font-size: 0.87rem;
+    font-size: var(--text-sm);
     cursor: pointer;
     transition: background .12s, border-color .12s;
 }
@@ -90,7 +90,7 @@
     color: #fff;
     border: none;
     border-radius: var(--radius-sm);
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 600;
     cursor: pointer;
     transition: background .15s;
@@ -128,7 +128,7 @@
     border: 1px solid #fecaca;
     border-radius: 8px;
     color: #dc2626;
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     padding: 10px 14px;
     margin-top: 12px;
 }
@@ -136,6 +136,6 @@
 .cp-secure {
     text-align: center;
     color: var(--muted);
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     margin-top: 16px;
 }

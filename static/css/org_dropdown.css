@@ -17,7 +17,7 @@
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     cursor: pointer;
     transition: background .15s ease, border-color .15s ease;
@@ -89,7 +89,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     color: var(--text);
     cursor: pointer;
     transition: background .1s ease;
@@ -111,7 +111,7 @@
 
 .org-dropdown-item.is-muted {
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
 }
 
 .org-dropdown-item.is-add {

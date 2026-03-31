@@ -20,7 +20,7 @@
 
 .list-toolbar h1 {
     margin: 0;
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 700;
     color: var(--text);
 }
@@ -41,7 +41,7 @@
     padding: 0 10px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    font-size: 0.86rem;
+    font-size: var(--text-xs);
     background: var(--surface);
     color: var(--text);
     cursor: pointer;
@@ -63,7 +63,7 @@
 .tms-table thead th {
     text-align: left;
     padding: 10px 14px;
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -76,7 +76,7 @@
 .tms-table tbody td {
     padding: 10px 14px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     color: var(--text);
     vertical-align: middle;
 }
@@ -105,7 +105,7 @@
     min-height: 22px;
     padding: 0 8px;
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     white-space: nowrap;
 }

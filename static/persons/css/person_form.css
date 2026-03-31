@@ -10,7 +10,7 @@
 
 .page-title {
     margin: 0;
-    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
     line-height: 1.2;
     letter-spacing: -0.01em;
     font-weight: 700;
@@ -19,7 +19,7 @@
 .page-subtitle {
     margin: 6px 0 0;
     color: var(--muted);
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
 }
 
 .form-card {
@@ -41,7 +41,7 @@
 .form-errors .error {
     color: var(--danger-text);
     margin: 0;
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
 }
 
 .form-errors .error + .error {
@@ -62,7 +62,7 @@
 
 .form-section h2 {
     margin: 0 0 14px;
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 650;
     color: var(--text);
 }
@@ -94,7 +94,7 @@
     border: 1px solid var(--border);
     background: #fff;
     color: var(--text);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 650;
     cursor: pointer;
     transition: background .15s, border-color .15s, color .15s;
@@ -129,7 +129,7 @@
 .form-group label {
     display: inline-block;
     margin-bottom: 6px;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     color: #374151;
 }
@@ -145,7 +145,7 @@
     background: #fff;
     color: var(--text);
     padding: 10px 12px;
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     transition: border-color .2s ease, box-shadow .2s ease;
     box-sizing: border-box;
 }
@@ -183,7 +183,7 @@
 .help-text {
     width: 100%;
     color: var(--muted);
-    font-size: 0.86rem;
+    font-size: var(--text-xs);
     margin-top: 4px;
     line-height: 1.35;
 }
@@ -209,13 +209,13 @@
 }
 
 .employer-info-label {
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     color: #374151;
 }
 
 .employer-info-value {
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 700;
     color: var(--primary);
 }

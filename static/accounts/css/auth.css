@@ -16,7 +16,7 @@
 
 .auth-title {
     margin: 0 0 6px;
-    font-size: clamp(1.2rem, 1.8vw, 1.5rem);
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
     line-height: 1.2;
     letter-spacing: -0.01em;
     font-weight: 700;
@@ -25,7 +25,7 @@
 .auth-subtitle {
     margin: 0 0 14px;
     color: var(--muted);
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
 }
 
 .auth-actions {
@@ -37,7 +37,7 @@
 .auth-footer {
     margin-top: 14px;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     text-align: center;
 }
 
@@ -54,7 +54,7 @@
 /* Текст под заголовком в статичных auth-страницах */
 .auth-msg {
     color: #374151;
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     margin: 12px 0 0;
 }
 
@@ -62,7 +62,7 @@
 .auth-footer-link {
     color: var(--muted);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
 }
 
 .auth-footer-link:hover { text-decoration: underline; }
@@ -70,7 +70,7 @@
 /* Инлайн-ошибки полей */
 .field-errors {
     margin-top: 4px;
-    font-size: 0.82rem;
+    font-size: var(--text-xs);
     color: #991b1b;
 }
 
@@ -121,7 +121,7 @@
 
 /* Ссылка «← На главную» */
 .auth-back-link {
-    font-size: 0.84rem;
+    font-size: var(--text-xs);
     color: var(--muted);
 }
 

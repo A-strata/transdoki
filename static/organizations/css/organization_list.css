@@ -20,7 +20,7 @@
 
 .list-toolbar h1 {
     margin: 0;
-    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
     line-height: 1.2;
     letter-spacing: -0.01em;
 }
@@ -117,7 +117,7 @@
     .tms-table tbody td::before {
         content: attr(data-label);
         color: var(--muted);
-        font-size: 0.82rem;
+        font-size: var(--text-xs);
         font-weight: 600;
     }
 
