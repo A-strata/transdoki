@@ -32,7 +32,7 @@
     gap: 14px;
 }
 
-/* Скролл внутри карточки — sticky header работает */
+/* Скролл внутри карточки — sticky header работает, но не растягивает при малом контенте */
 .org-page .table-wrap {
     max-height: calc(100vh - 220px);
     overflow-y: auto;
