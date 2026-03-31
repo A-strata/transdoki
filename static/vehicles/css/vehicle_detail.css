@@ -1,4 +1,4 @@
-﻿.person-detail-page {
+﻿.vehicle-detail-page {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -12,7 +12,7 @@
     padding: 16px;
 }
 
-.person-head {
+.vehicle-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -20,30 +20,34 @@
     flex-wrap: wrap;
 }
 
-.person-title-wrap {
+.vehicle-title-wrap {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.person-title {
+.vehicle-title {
     margin: 0;
     font-size: clamp(1.25rem, 1.8vw, 1.5rem);
     line-height: 1.2;
     letter-spacing: -0.01em;
 }
 
-.own-badge {
+.vehicle-type-badge {
     display: inline-flex;
     align-items: center;
     padding: 3px 8px;
     border-radius: 999px;
     font-size: var(--text-xs);
     font-weight: 700;
-    color: var(--success-text);
-    background: var(--success-bg);
-    border: 1px solid var(--success-border);
+    color: var(--primary-hover);
+    background: var(--hover-active);
+    border: 1px solid var(--primary);
+}
+
+.vehicle-section {
+    margin-top: 14px;
 }
 
 .section-title {
@@ -51,10 +55,6 @@
     font-size: var(--text-base);
     font-weight: 650;
     color: var(--text);
-}
-
-.person-section {
-    margin-top: 14px;
 }
 
 .info-table {

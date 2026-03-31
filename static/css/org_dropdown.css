@@ -1,4 +1,4 @@
-/* ── Org switcher dropdown ─────────────────────────────────── */
+﻿/* ── Org switcher dropdown ─────────────────────────────────── */
 
 .org-switcher-form {
     margin: 0;
@@ -17,7 +17,7 @@
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     cursor: pointer;
     transition: background .15s ease, border-color .15s ease;
@@ -26,13 +26,13 @@
 }
 
 .org-switcher-btn:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
+    background: var(--neutral-bg);
+    border-color: var(--border);
 }
 
 .org-switcher-btn.is-open {
-    background: #eff6ff;
-    border-color: #bfdbfe;
+    background: var(--hover-active);
+    border-color: var(--primary);
     color: var(--primary);
 }
 
@@ -65,7 +65,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow);
-    z-index: var(--z-dropdown);
+    z-index: var(--z-filter-dropdown);
     padding: 6px 0;
     display: none;
 }
@@ -89,7 +89,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     color: var(--text);
     cursor: pointer;
     transition: background .1s ease;
@@ -101,7 +101,7 @@
 }
 
 .org-dropdown-item:hover {
-    background: #f3f4f6;
+    background: var(--hover);
 }
 
 .org-dropdown-item.is-current {
@@ -111,7 +111,7 @@
 
 .org-dropdown-item.is-muted {
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
 }
 
 .org-dropdown-item.is-add {

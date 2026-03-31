@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────────────
    Навбар и flash-сообщения.
    Подключается в base.html после globals.css.
 ───────────────────────────────────────────────────── */
@@ -8,7 +8,7 @@
     position: sticky;
     top: 0;
     z-index: var(--z-navbar);
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--surface-translucent);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
@@ -33,11 +33,11 @@
 }
 
 .brand {
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 700;
     letter-spacing: 0.02em;
     margin-right: 10px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .nav-link {
@@ -45,27 +45,27 @@
     align-items: center;
     padding: 8px 11px;
     border-radius: 9px;
-    font-size: 0.92rem;
-    color: #374151;
+    font-size: var(--text-sm);
+    color: var(--text);
     border: 1px solid transparent;
     transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 
 .nav-link:hover {
-    background: #f3f4f6;
+    background: var(--neutral-bg);
     border-color: var(--border);
 }
 
 .nav-link.active {
-    background: #eff6ff;
+    background: var(--hover-active);
     color: var(--primary);
-    border-color: #bfdbfe;
+    border-color: var(--primary);
     font-weight: 600;
 }
 
 .user-meta {
     color: var(--muted);
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
     margin-right: 4px;
 }
 
@@ -77,7 +77,7 @@
     padding: 6px 11px;
     border-radius: 9px;
     border: 1px solid transparent;
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     text-decoration: none;
     transition: filter .15s ease;
@@ -89,32 +89,32 @@
 }
 
 .balance-ok {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--neutral-bg);
+    color: var(--muted);
     border-color: var(--border);
 }
 
 .balance-warn {
-    background: #fffbeb;
-    color: #d97706;
-    border-color: #fde68a;
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border-color: var(--warning-border);
 }
 
 .balance-danger {
-    background: #fef2f2;
-    color: #dc2626;
-    border-color: #fecaca;
+    background: var(--error-bg);
+    color: var(--danger);
+    border-color: var(--error-border);
 }
 
 .balance-free {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--neutral-bg);
+    color: var(--muted);
     border-color: var(--border);
 }
 
 .balance-exempt {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--neutral-bg);
+    color: var(--muted);
     border-color: var(--border);
     cursor: default;
 }
@@ -131,13 +131,13 @@
     padding: 7px 8px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     transition: background .15s ease, color .15s ease;
 }
 
 .btn-link:hover {
-    background: #eff6ff;
+    background: var(--hover-active);
     color: var(--primary-hover);
 }
 
@@ -145,13 +145,13 @@
     color: var(--primary);
     padding: 8px 10px;
     border-radius: 8px;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     transition: background .15s ease;
 }
 
 .auth-link:hover {
-    background: #eff6ff;
+    background: var(--hover-active);
 }
 
 /* ── Flash-сообщения (fixed toast) ── */
@@ -170,10 +170,10 @@
     border: 1px solid var(--border);
     border-left-width: 4px;
     border-radius: 10px;
-    background: #fff;
+    background: var(--surface);
     padding: 10px 38px 10px 12px;
     margin-bottom: 8px;
-    font-size: 0.93rem;
+    font-size: var(--text-sm);
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
     transition: opacity .22s ease, transform .22s ease, max-height .22s ease,
                 margin .22s ease, padding .22s ease, border-width .22s ease;
@@ -182,10 +182,10 @@
     pointer-events: auto;
 }
 
-.flash-success { border-left-color: #16a34a; background: #f0fdf4; }
-.flash-error   { border-left-color: #dc2626; background: #fef2f2; }
-.flash-warning { border-left-color: #d97706; background: #fffbeb; }
-.flash-info    { border-left-color: #2563eb; background: #eff6ff; }
+.flash-success { border-left-color: var(--success-text); background: var(--success-bg); }
+.flash-error   { border-left-color: var(--danger); background: var(--error-bg); }
+.flash-warning { border-left-color: var(--warning-text); background: var(--warning-bg); }
+.flash-info    { border-left-color: var(--primary); background: var(--hover-active); }
 
 .flash.is-hiding {
     opacity: 0;
@@ -206,9 +206,9 @@
     border: 0;
     border-radius: 6px;
     background: transparent;
-    color: #6b7280;
+    color: var(--muted);
     cursor: pointer;
-    font-size: 16px;
+    font-size: var(--text-base);
     line-height: 24px;
     text-align: center;
     padding: 0;
@@ -216,8 +216,8 @@
 }
 
 .flash-close:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: #111827;
+    background: var(--hover-inverse);
+    color: var(--text);
 }
 
 /* ── Адаптивность ── */
@@ -253,7 +253,7 @@
     }
 
     .nav-link {
-        font-size: 0.86rem;
+        font-size: var(--text-xs);
         padding: 7px 9px;
     }
 
@@ -271,26 +271,26 @@
     justify-content: center;
     gap: 12px;
     padding: 6px 16px;
-    background: #fef3c7;
-    border-bottom: 1px solid #fde68a;
-    color: #92400e;
-    font-size: 0.84rem;
+    background: var(--warning-bg);
+    border-bottom: 1px solid var(--warning-border);
+    color: var(--warning-text);
+    font-size: var(--text-xs);
     font-weight: 500;
     flex-shrink: 0;
 }
 
 .impersonate-bar-btn {
     padding: 3px 12px;
-    border: 1px solid #d97706;
+    border: 1px solid var(--warning-text);
     border-radius: 6px;
-    background: #fff;
-    color: #92400e;
-    font-size: 0.82rem;
+    background: var(--surface);
+    color: var(--warning-text);
+    font-size: var(--text-xs);
     font-weight: 600;
     cursor: pointer;
     transition: 0.15s ease;
 }
 
 .impersonate-bar-btn:hover {
-    background: #fef3c7;
+    background: var(--warning-bg);
 }

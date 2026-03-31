@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────────────
    Глобальные CSS-переменные, сброс и базовый layout.
    Подключается первым в base.html.
 ───────────────────────────────────────────────────── */
@@ -11,16 +11,29 @@
     --text: #111827;
     --muted: #6b7280;
     --border: #e5e7eb;
+    --hover: #f8fafc;
+    --hover-active: #eef6ff;
 
     /* Акцент */
     --primary: #2563eb;
     --primary-hover: #1d4ed8;
 
-    /* Состояния ошибок */
-    --danger-text: #991b1b;
-    --danger-bg: #fef2f2;
-    --danger-border: #fecaca;
+    /* Деструктивные действия */
     --danger: #dc2626;
+    --danger-hover: #b91c1c;
+
+    /* Наложения и специальные поверхности */
+    --modal-overlay:       rgba(0, 0, 0, 0.4);
+    --surface-translucent: rgba(255, 255, 255, 0.92);
+    --hover-inverse:       rgba(0, 0, 0, 0.05);
+    --primary-ring:        rgba(37, 99, 235, 0.3);
+
+    /* Типографика (шкала ×1.25 — major third) */
+    --text-xs:   0.75rem;   /* 12px — бейджи, хедеры таблиц */
+    --text-sm:   0.875rem;  /* 14px — метки форм, подписи, вспомогательный текст */
+    --text-base: 1rem;      /* 16px — тело, значения, заголовки секций (через weight) */
+    --text-lg:   1.25rem;   /* 20px — заголовки карточек / компонентов */
+    --text-xl:   1.5rem;    /* 24px — заголовок страницы */
 
     /* Геометрия */
     --radius: 12px;
@@ -29,16 +42,38 @@
     --container: 1200px;
 
     /* Z-index слои (не использовать магические числа) */
-    --z-sticky-cell:        20;
-    --z-sticky-header:      30;
-    --z-sticky-actions-hdr: 40;
-    --z-navbar:             50;
-    --z-toast:              70;
-    --z-inline-dropdown:   200;
-    --z-modal:            1000;
-    --z-dropdown:         1200;
-    --z-col-panel:        1300;
-    --z-actions-menu:     1400;
+    --z-sticky-cell:      20;
+    --z-sticky-header:    30;
+    --z-sticky-actions:   40;
+    --z-navbar:           50;
+    --z-toast:            70;
+    --z-inline-dropdown: 200;
+    --z-modal:          1000;
+    --z-autocomplete:   1100;
+    --z-filter-dropdown:1200;
+    --z-column-panel:   1300;
+    --z-actions-menu:   1400;
+
+    /* Семантические состояния */
+    --success-text:   #16a34a;
+    --success-bg:     #f0fdf4;
+    --success-border: #bbf7d0;
+
+    --warning-text:   #d97706;
+    --warning-bg:     #fffbeb;
+    --warning-border: #fde68a;
+
+    --error-text:     #dc2626;
+    --error-bg:       #fef2f2;
+    --error-border:   #fecaca;
+
+    --info-text:      #0e7490;
+    --info-bg:        #ecfeff;
+    --info-border:    #a5f3fc;
+
+    --neutral-text:   #6b7280;
+    --neutral-bg:     #f3f4f6;
+    --neutral-border: #e5e7eb;
 }
 
 /* ── Сброс ── */
@@ -89,7 +124,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 3px solid rgba(37, 99, 235, 0.3);
+    outline: 3px solid var(--primary-ring);
     outline-offset: 1px;
 }
 
@@ -115,7 +150,7 @@ textarea.is-invalid:focus {
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--modal-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -138,14 +173,14 @@ textarea.is-invalid:focus {
 
 .modal-title {
     margin: 0 0 8px;
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     font-weight: 700;
     color: var(--text);
 }
 
 .modal-body {
     margin: 0 0 20px;
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     color: var(--muted);
     line-height: 1.5;
 }
@@ -178,7 +213,7 @@ textarea.is-invalid:focus {
 .modal-field label {
     display: block;
     margin-bottom: 5px;
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     color: var(--text);
 }
@@ -193,7 +228,7 @@ textarea.is-invalid:focus {
     background: var(--surface);
     color: var(--text);
     padding: 9px 12px;
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
     box-sizing: border-box;
 }
@@ -207,21 +242,21 @@ textarea.is-invalid:focus {
 
 .modal-field input.is-invalid,
 .modal-field select.is-invalid {
-    border-color: #dc2626;
+    border-color: var(--danger);
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
 }
 
 .modal-field-error {
     margin: 4px 0 0;
-    font-size: 0.84rem;
-    color: #dc2626;
+    font-size: var(--text-xs);
+    color: var(--danger);
     line-height: 1.3;
 }
 
 .modal-field-hint {
     display: block;
     margin: 4px 0 0;
-    font-size: 0.84rem;
+    font-size: var(--text-xs);
     color: var(--muted);
     line-height: 1.3;
 }
@@ -241,10 +276,10 @@ textarea.is-invalid:focus {
     margin-bottom: 14px;
     padding: 10px 14px;
     border-radius: var(--radius-sm);
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #dc2626;
-    font-size: 0.9rem;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--danger);
+    font-size: var(--text-sm);
 }
 
 /* ── Suggest-дропдаун (автокомплит в модалках) ── */
@@ -297,7 +332,7 @@ textarea.is-invalid:focus {
     padding: 8px 12px;
     cursor: pointer;
     gap: 2px;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--border);
     transition: background 0.15s ease;
 }
 
@@ -307,11 +342,11 @@ textarea.is-invalid:focus {
 
 .suggest-item:hover,
 .suggest-item.is-active {
-    background: #f9fafb;
+    background: var(--hover);
 }
 
 .suggest-item-title {
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     font-weight: 500;
     color: var(--text);
     white-space: nowrap;
@@ -320,7 +355,7 @@ textarea.is-invalid:focus {
 }
 
 .suggest-item-sub {
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     color: var(--muted);
 }
 
@@ -335,7 +370,7 @@ textarea.is-invalid:focus {
     justify-content: space-between;
     gap: 8px;
     padding: 8px 12px;
-    background: #f8fafc;
+    background: var(--hover);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
 }
@@ -348,13 +383,13 @@ textarea.is-invalid:focus {
 }
 
 .selected-row-title {
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     color: var(--text);
 }
 
 .selected-row-sub {
-    font-size: 0.82rem;
+    font-size: var(--text-xs);
     color: var(--muted);
 }
 
@@ -363,7 +398,7 @@ textarea.is-invalid:focus {
     background: none;
     border: none;
     padding: 0;
-    font-size: 0.84rem;
+    font-size: var(--text-xs);
     color: var(--primary);
     cursor: pointer;
     text-decoration: underline;
@@ -375,13 +410,13 @@ textarea.is-invalid:focus {
 }
 
 .selected-row--success {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
+    background: var(--success-bg);
+    border-color: var(--success-border);
 }
 
 .selected-row--warning {
-    background: #fffbeb;
-    border-color: #fde68a;
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
 }
 
 .selected-row--success .selected-row-check {
@@ -402,7 +437,7 @@ textarea.is-invalid:focus {
     background: none;
     border: none;
     color: var(--primary);
-    font-size: 0.84rem;
+    font-size: var(--text-xs);
     cursor: pointer;
     padding: 0;
     text-decoration: underline;

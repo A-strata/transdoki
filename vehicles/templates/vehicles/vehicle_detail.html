@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'vehicles/css/vehicle_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="vehicle-detail-page">
+    <div class="detail-card">
+        <div class="vehicle-head">
+            <div class="vehicle-title-wrap">
+                <h1 class="vehicle-title">{{ vehicle.grn }}</h1>
+                <span class="vehicle-type-badge">{{ vehicle.get_vehicle_type_display }}</span>
+            </div>
+        </div>
+
+        <div class="vehicle-section">
+            <h2 class="section-title">Основные данные</h2>
+            <table class="info-table">
+                <tr>
+                    <td>Госномер</td>
+                    <td class="info-value">{{ vehicle.grn }}</td>
+                </tr>
+                <tr>
+                    <td>Марка</td>
+                    <td class="info-value">{{ vehicle.brand }}</td>
+                </tr>
+                <tr>
+                    <td>Модель</td>
+                    <td class="info-value">{{ vehicle.model|default:"—" }}</td>
+                </tr>
+                <tr>
+                    <td>Тип ТС</td>
+                    <td class="info-value">{{ vehicle.get_vehicle_type_display }}</td>
+                </tr>
+                <tr>
+                    <td>Тип владения</td>
+                    <td class="info-value">{{ vehicle.get_property_type_display }}</td>
+                </tr>
+                <tr>
+                    <td>Собственник</td>
+                    <td class="info-value">{{ vehicle.owner.short_name }}</td>
+                </tr>
+                <tr>
+                    <td>Одометр</td>
+                    <td class="info-value">{{ vehicle.current_odometer }} км</td>
+                </tr>
+                <tr>
+                    <td>Статус</td>
+                    <td class="info-value">{{ vehicle.get_status_display }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="actions-row">
+            <a href="{% url 'vehicles:edit' vehicle.pk %}" class="tms-btn tms-btn-primary">Редактировать</a>
+            <a href="{% url 'vehicles:delete' vehicle.pk %}" class="tms-btn tms-btn-danger">Удалить</a>
+            <a href="{% url 'vehicles:list' %}" class="tms-btn tms-btn-secondary">Назад к списку</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

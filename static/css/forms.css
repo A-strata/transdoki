@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Общие стили компонентов форм.
  * Подключается в base.html и применяется ко всем шаблонам.
  *
@@ -20,9 +20,9 @@
 .field label {
     display: block;
     margin-bottom: 6px;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
-    color: #374151;
+    color: var(--text);
 }
 
 /* Элементы ввода */
@@ -35,8 +35,7 @@
     background: var(--surface);
     color: var(--text);
     padding: 10px 12px;
-    font-size: 0.95rem;
-    font-family: inherit;
+    font-size: var(--text-sm);
     transition: border-color .2s ease, box-shadow .2s ease;
     box-sizing: border-box;
 }
@@ -57,10 +56,10 @@
 .field input:disabled,
 .field select:disabled,
 .field textarea:disabled {
-    background: #f3f4f6;
+    background: var(--neutral-bg);
     color: var(--muted);
     cursor: not-allowed;
-    border-color: #d1d5db;
+    border-color: var(--border);
     opacity: 1;
 }
 
@@ -72,8 +71,8 @@
 }
 
 .errorlist li {
-    color: var(--danger-text);
-    font-size: 0.84rem;
+    color: var(--danger);
+    font-size: var(--text-xs);
     line-height: 1.3;
 }
 
@@ -82,7 +81,7 @@
     display: block;
     margin-top: 5px;
     color: var(--muted);
-    font-size: 0.84rem;
+    font-size: var(--text-xs);
     line-height: 1.35;
 }
 
@@ -90,15 +89,15 @@
 .form-errors {
     margin-bottom: 14px;
     padding: 10px 12px;
-    background: var(--danger-bg);
-    border: 1px solid var(--danger-border);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
     border-radius: var(--radius-sm);
 }
 
 .form-errors p {
     margin: 0;
-    color: var(--danger-text);
-    font-size: 0.9rem;
+    color: var(--danger);
+    font-size: var(--text-sm);
 }
 
 .form-errors p + p {

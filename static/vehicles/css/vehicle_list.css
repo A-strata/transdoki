@@ -1,4 +1,4 @@
-.vehicles-page {
+﻿.vehicles-page {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -20,7 +20,7 @@
 
 .list-toolbar h1 {
     margin: 0;
-    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
     line-height: 1.2;
     letter-spacing: -0.01em;
 }
@@ -28,7 +28,7 @@
 .vehicles-subtitle {
     margin: 4px 0 0;
     color: var(--muted);
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
 }
 
 /* ── Filter bar ── */
@@ -51,9 +51,9 @@
 }
 
 .filter-label {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-weight: 700;
-    color: #9ca3af;
+    color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     white-space: nowrap;
@@ -78,10 +78,10 @@
     align-items: center;
     padding: 4px 13px;
     border-radius: 999px;
-    font-size: 0.84rem;
+    font-size: var(--text-xs);
     font-weight: 500;
-    color: #374151;
-    background: #f3f4f6;
+    color: var(--text);
+    background: var(--neutral-bg);
     border: 1.5px solid transparent;
     text-decoration: none;
     transition: background 0.12s, color 0.12s, border-color 0.12s;
@@ -95,14 +95,14 @@
 }
 
 .filter-chip.active {
-    background: #eff6ff;
+    background: var(--hover-active);
     color: var(--primary-hover);
-    border-color: #bfdbfe;
+    border-color: var(--primary);
     font-weight: 600;
 }
 
 .filter-chip.active:hover {
-    background: #dbeafe;
+    background: var(--hover-active);
 }
 
 /* ── Контейнер таблицы + пагинации ── */
@@ -146,30 +146,30 @@
 }
 
 .vehicle-muted {
-    color: #d1d5db;
+    color: var(--muted);
 }
 
 .owner-name {
-    color: #374151;
-    font-size: 0.9rem;
+    color: var(--text);
+    font-size: var(--text-sm);
 }
 
 .property-badge {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 6px;
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     font-weight: 500;
-    background: #f3f4f6;
+    background: var(--neutral-bg);
     color: var(--muted);
     white-space: nowrap;
 }
 
-.property-badge.prop-property { background: #ecfdf5; color: #059669; }
-.property-badge.prop-coproperty { background: #f0fdf4; color: #16a34a; }
-.property-badge.prop-rent { background: #fffbeb; color: #d97706; }
-.property-badge.prop-leasing { background: #eff6ff; color: var(--primary); }
-.property-badge.prop-unpaid { background: #faf5ff; color: #7c3aed; }
+.property-badge.prop-property { background: var(--success-bg); color: var(--success-text); }
+.property-badge.prop-coproperty { background: var(--success-bg); color: var(--success-text); }
+.property-badge.prop-rent { background: var(--warning-bg); color: var(--warning-text); }
+.property-badge.prop-leasing { background: var(--warning-bg); color: var(--warning-text); }
+.property-badge.prop-unpaid { background: var(--warning-bg); color: var(--warning-text); }
 
 
 /* ── Mobile ── */
@@ -208,7 +208,7 @@
         grid-template-columns: 130px 1fr;
         gap: 10px;
         padding: 10px 12px;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid var(--border);
         vertical-align: top;
     }
 
@@ -218,8 +218,8 @@
 
     .tms-table tbody td::before {
         content: attr(data-label);
-        color: #9ca3af;
-        font-size: 0.78rem;
+        color: var(--muted);
+        font-size: var(--text-xs);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;

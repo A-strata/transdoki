@@ -36,6 +36,12 @@
 --danger: #dc2626
 --danger-hover: #b91c1c
 
+/* Наложения и специальные поверхности */
+--modal-overlay:       rgba(0, 0, 0, 0.4)    /* затемнение за модальным окном */
+--surface-translucent: rgba(255, 255, 255, 0.92) /* полупрозрачный фон навбара (frosted glass) */
+--hover-inverse:       rgba(0, 0, 0, 0.05)   /* тёмный hover поверх цветного фона (flash-кнопки) */
+--primary-ring:        rgba(37, 99, 235, 0.3) /* outline фокуса и hover-рамки в цвет акцента */
+
 /* Геометрия */
 --radius: 12px         /* основной radius */
 --radius-sm: 10px
@@ -61,17 +67,38 @@
 --z-filter-dropdown: 1200
 --z-column-panel:    1300
 --z-actions-menu:    1400
+
+/* Семантические состояния */
+--success-text:   #16a34a
+--success-bg:     #f0fdf4
+--success-border: #bbf7d0
+
+--warning-text:   #d97706
+--warning-bg:     #fffbeb
+--warning-border: #fde68a
+
+--error-text:     #dc2626
+--error-bg:       #fef2f2
+--error-border:   #fecaca
+
+--info-text:      #0e7490
+--info-bg:        #ecfeff
+--info-border:    #a5f3fc
+
+--neutral-text:   #6b7280
+--neutral-bg:     #f3f4f6
+--neutral-border: #e5e7eb
 ```
 
 ### Семантическая палитра состояний
 
-| Состояние   | Текст       | Фон       | Рамка     |
-|-------------|-------------|-----------|-----------|
-| success     | `#16a34a`   | `#f0fdf4` | `#bbf7d0` |
-| warning     | `#d97706`   | `#fffbeb` | `#fde68a` |
-| error       | `#dc2626`   | `#fef2f2` | `#fecaca` |
-| info        | `#0e7490`   | `#ecfeff` | `#a5f3fc` |
-| neutral     | `#6b7280`   | `#f3f4f6` | `#e5e7eb` |
+| Состояние | Текст              | Фон              | Рамка              |
+|-----------|--------------------|--------------------|---------------------|
+| success   | `--success-text`   | `--success-bg`     | `--success-border`  |
+| warning   | `--warning-text`   | `--warning-bg`     | `--warning-border`  |
+| error     | `--error-text`     | `--error-bg`       | `--error-border`    |
+| info      | `--info-text`      | `--info-bg`        | `--info-border`     |
+| neutral   | `--neutral-text`   | `--neutral-bg`     | `--neutral-border`  |
 
 ---
 

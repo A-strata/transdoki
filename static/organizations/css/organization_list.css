@@ -1,4 +1,4 @@
-.org-page {
+﻿.org-page {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -20,7 +20,7 @@
 
 .list-toolbar h1 {
     margin: 0;
-    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
     line-height: 1.2;
     letter-spacing: -0.01em;
 }
@@ -64,7 +64,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     vertical-align: bottom;
-    color: #374151;
+    color: var(--text);
 }
 
 .row-actions-header {
@@ -107,7 +107,7 @@
         grid-template-columns: 110px 1fr;
         gap: 10px;
         padding: 10px 12px;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid var(--border);
     }
 
     .tms-table tbody td:last-child {
@@ -117,7 +117,7 @@
     .tms-table tbody td::before {
         content: attr(data-label);
         color: var(--muted);
-        font-size: 0.82rem;
+        font-size: var(--text-xs);
         font-weight: 600;
     }
 
