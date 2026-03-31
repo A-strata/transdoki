@@ -8,6 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Q
 from django.forms.models import model_to_dict
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -353,6 +354,10 @@ class TripListView(UserOwnedListView):
             )
             .prefetch_related("points")
         )
+
+        current_org = getattr(self.request, "current_org", None)
+        if current_org:
+            qs = qs.filter(Q(client=current_org) | Q(carrier=current_org))
 
         qs = self._apply_date_filters(qs)
         qs = self._apply_contractor_filter(qs)
