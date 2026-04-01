@@ -49,7 +49,7 @@ def validate_client_cannot_be_carrier(client, carrier):
         )
 
 
-def validate_our_company_participation(client, consignor, consignee, carrier):
+def validate_our_company_participation(client, carrier):
     """
     Валидатор для проверки, что в заявке участвует наша фирма
     """

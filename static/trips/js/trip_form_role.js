@@ -65,6 +65,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (hint) hint.remove();
     }
 
+    // ── Уведомление об изменении роли ──
+    function dispatchRoleChange(role) {
+        document.dispatchEvent(new CustomEvent('trip-role-change', { detail: { role: role } }));
+    }
+
     function activateRole(role) {
         // Очистить предыдущее подставленное значение
         if (activeRole && ROLE_TO_SELECT[activeRole]) {
@@ -77,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Повторный клик — снять выбор
         if (activeRole === role) {
             activeRole = null;
+            dispatchRoleChange(null);
             return;
         }
 
@@ -91,6 +97,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (selectId) {
             setSelectValue(selectId);
         }
+
+        dispatchRoleChange(role);
     }
 
     // Клик по карточкам
@@ -108,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (field) removePrefilled(field);
         }
         activeRole = null;
+        dispatchRoleChange(null);
     }
 
     // Любое изменение подставленного поля — сбросить карточку роли
@@ -161,13 +170,17 @@ document.addEventListener('DOMContentLoaded', function () {
         activeRole = 'client';
         var card = document.querySelector('.role-card[data-role="client"]');
         if (card) card.classList.add('is-active');
+        dispatchRoleChange('client');
     } else if (carrierIsOrg) {
         // Своя org в поле «Перевозчик» — подсветить карточку без prefilled
         activeRole = 'carrier';
         var card = document.querySelector('.role-card[data-role="carrier"]');
         if (card) card.classList.add('is-active');
+        dispatchRoleChange('carrier');
     } else if (hasVehicles && !formHasValues) {
         // Пустая форма — автоподстановка
         activateRole('carrier');
+    } else {
+        dispatchRoleChange(null);
     }
 });

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -42,7 +43,109 @@ class UserOwnedListView(LoginRequiredMixin, ListView):
         return self.model.objects.filter(account=get_request_account(self.request))
 
 
-class TripCreateView(LoginRequiredMixin, CreateView):
+class RoutePointsMixin:
+    """Миксин для работы с мультиточечным маршрутом в формах создания/редактирования рейса."""
+
+    DEFAULT_POINTS = [
+        {"point_type": "LOAD", "address": "", "planned_date": "", "organization": "",
+         "organization_name": "", "loading_type": "", "contact_name": "", "contact_phone": ""},
+        {"point_type": "UNLOAD", "address": "", "planned_date": "", "organization": "",
+         "organization_name": "", "loading_type": "", "contact_name": "", "contact_phone": ""},
+    ]
+
+    def _points_from_db(self, trip):
+        """Сериализует точки из БД в список dict для JSON."""
+        points = []
+        for p in trip.points.select_related("organization").all():
+            points.append({
+                "id": p.pk,
+                "point_type": p.point_type,
+                "address": p.address,
+                "planned_date": p.planned_date.strftime("%Y-%m-%dT%H:%M") if p.planned_date else "",
+                "organization": p.organization_id or "",
+                "organization_name": str(p.organization) if p.organization else "",
+                "loading_type": p.loading_type,
+                "contact_name": p.contact_name,
+                "contact_phone": p.contact_phone,
+            })
+        return points
+
+    def _points_from_post(self, post_data):
+        """Парсит points_json из POST."""
+        raw = post_data.get("points_json", "[]")
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def _validate_points(self, points_data, user):
+        """Валидирует каждую точку через TripPointForm. Возвращает (forms, is_valid, global_errors)."""
+        forms = []
+        all_valid = True
+        global_errors = []
+
+        if not points_data:
+            global_errors.append("Необходимо добавить хотя бы одну точку погрузки и одну точку выгрузки.")
+            return forms, False, global_errors
+
+        has_load = any(p.get("point_type") == "LOAD" for p in points_data)
+        has_unload = any(p.get("point_type") == "UNLOAD" for p in points_data)
+        if not has_load or not has_unload:
+            global_errors.append("Маршрут должен содержать минимум одну точку погрузки и одну точку выгрузки.")
+
+        for pt in points_data:
+            form = TripPointForm(data=pt, user=user)
+            if not form.is_valid():
+                all_valid = False
+            forms.append(form)
+
+        if global_errors:
+            all_valid = False
+
+        return forms, all_valid, global_errors
+
+    def _enrich_points_with_errors(self, points_data, point_forms):
+        """Добавляет ошибки валидации к данным точек для передачи в шаблон."""
+        enriched = []
+        for pt_data, form in zip(points_data, point_forms):
+            entry = dict(pt_data)
+            if form.errors:
+                entry["errors"] = {
+                    field: [str(e) for e in errs]
+                    for field, errs in form.errors.items()
+                }
+            enriched.append(entry)
+        return enriched
+
+    @transaction.atomic
+    def _save_points(self, trip, point_forms, points_data):
+        """Сохраняет точки маршрута и синхронизирует Trip.consignor/consignee."""
+        # Удаляем старые точки
+        trip.points.all().delete()
+
+        saved_points = []
+        for seq, (form, pt_data) in enumerate(zip(point_forms, points_data), start=1):
+            point = form.save(commit=False)
+            point.trip = trip
+            point.sequence = seq
+            point.save()
+            saved_points.append(point)
+
+        # Обратная совместимость: заполняем Trip.consignor / Trip.consignee
+        consignor = None
+        consignee = None
+        for p in saved_points:
+            if p.point_type == TripPoint.Type.LOAD and consignor is None:
+                consignor = p.organization
+            elif p.point_type == TripPoint.Type.UNLOAD and consignee is None:
+                consignee = p.organization
+
+        trip.consignor = consignor
+        trip.consignee = consignee
+        trip.save(update_fields=["consignor", "consignee"])
+
+
+class TripCreateView(RoutePointsMixin, LoginRequiredMixin, CreateView):
     model = Trip
     form_class = TripForm
     template_name = "trips/trip_form.html"
@@ -81,7 +184,7 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         account = get_request_account(self.request)
         return Trip.objects.filter(
             pk=copy_from_id, account=account
-        ).prefetch_related("points").first()
+        ).prefetch_related("points", "points__organization").first()
 
     def get_initial(self):
         initial = super().get_initial()
@@ -93,64 +196,47 @@ class TripCreateView(LoginRequiredMixin, CreateView):
         initial.update(model_to_dict(source, fields=fields_to_copy))
         return initial
 
-    def _point_initials_from_copy(self):
+    def _get_initial_points(self):
         source = self._get_copy_source()
-        if not source:
-            return {}, {}
-        load_p = source.load_point
-        unload_p = source.unload_point
-        load_initial = (
-            {"address": load_p.address, "loading_type": load_p.loading_type}
-            if load_p else {}
-        )
-        unload_initial = (
-            {"address": unload_p.address, "loading_type": unload_p.loading_type}
-            if unload_p else {}
-        )
-        return load_initial, unload_initial
+        if source:
+            return self._points_from_db(source)
+        return list(self.DEFAULT_POINTS)
 
     def get(self, request, *args, **kwargs):
         self.object = None
         form = self.get_form()
-        load_initial, unload_initial = self._point_initials_from_copy()
-        load_form = TripPointForm(prefix="load", initial=load_initial)
-        unload_form = TripPointForm(prefix="unload", initial=unload_initial)
+        points_data = self._get_initial_points()
         return self.render_to_response(
-            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
+            self.get_context_data(form=form, points_json=json.dumps(points_data, ensure_ascii=False))
         )
 
     def post(self, request, *args, **kwargs):
         self.object = None
         form = self.get_form()
-        load_form = TripPointForm(request.POST, prefix="load")
-        unload_form = TripPointForm(request.POST, prefix="unload")
-        if form.is_valid() and load_form.is_valid() and unload_form.is_valid():
-            return self._save_all(form, load_form, unload_form)
-        return self.render_to_response(
-            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
-        )
+        points_data = self._points_from_post(request.POST)
+        point_forms, points_valid, points_errors = self._validate_points(points_data, request.user)
 
-    def _save_all(self, form, load_form, unload_form):
-        form.instance.created_by = self.request.user
-        form.instance.account = get_request_account(self.request)
-        self.object = form.save()
-        load_p = load_form.save(commit=False)
-        load_p.trip = self.object
-        load_p.point_type = TripPoint.Type.LOAD
-        load_p.sequence = 1
-        load_p.save()
-        unload_p = unload_form.save(commit=False)
-        unload_p.trip = self.object
-        unload_p.point_type = TripPoint.Type.UNLOAD
-        unload_p.sequence = 2
-        unload_p.save()
-        return redirect(self.get_success_url())
+        if form.is_valid() and points_valid:
+            form.instance.created_by = request.user
+            form.instance.account = get_request_account(request)
+            self.object = form.save()
+            self._save_points(self.object, point_forms, points_data)
+            return redirect(self.get_success_url())
+
+        enriched = self._enrich_points_with_errors(points_data, point_forms) if point_forms else points_data
+        return self.render_to_response(
+            self.get_context_data(
+                form=form,
+                points_json=json.dumps(enriched, ensure_ascii=False),
+                points_errors=points_errors,
+            )
+        )
 
     def get_success_url(self):
         return reverse_lazy("trips:detail", kwargs={"pk": self.object.pk})
 
 
-class TripUpdateView(LoginRequiredMixin, UpdateView):
+class TripUpdateView(RoutePointsMixin, LoginRequiredMixin, UpdateView):
     model = Trip
     form_class = TripForm
     template_name = "trips/trip_form.html"
@@ -158,12 +244,19 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         return Trip.objects.filter(
             account=get_request_account(self.request)
-        ).prefetch_related("points")
+        ).prefetch_related("points", "points__organization")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["vehicle_types"] = VehicleType.choices
         ctx["property_types"] = PropertyType.choices
+        org = getattr(self.request, "current_org", None)
+        if org:
+            ctx["role_org"] = {
+                "id": org.id,
+                "name": str(org),
+                "has_vehicles": org.vehicle_set.exists(),
+            }
         return ctx
 
     def get_form_kwargs(self):
@@ -174,40 +267,30 @@ class TripUpdateView(LoginRequiredMixin, UpdateView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        load_form = TripPointForm(instance=self.object.load_point, prefix="load")
-        unload_form = TripPointForm(instance=self.object.unload_point, prefix="unload")
+        points_data = self._points_from_db(self.object)
         return self.render_to_response(
-            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
+            self.get_context_data(form=form, points_json=json.dumps(points_data, ensure_ascii=False))
         )
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        load_form = TripPointForm(
-            request.POST, instance=self.object.load_point, prefix="load"
-        )
-        unload_form = TripPointForm(
-            request.POST, instance=self.object.unload_point, prefix="unload"
-        )
-        if form.is_valid() and load_form.is_valid() and unload_form.is_valid():
-            return self._save_all(form, load_form, unload_form)
-        return self.render_to_response(
-            self.get_context_data(form=form, load_form=load_form, unload_form=unload_form)
-        )
+        points_data = self._points_from_post(request.POST)
+        point_forms, points_valid, points_errors = self._validate_points(points_data, request.user)
 
-    def _save_all(self, form, load_form, unload_form):
-        self.object = form.save()
-        load_p = load_form.save(commit=False)
-        load_p.trip = self.object
-        load_p.point_type = TripPoint.Type.LOAD
-        load_p.sequence = 1
-        load_p.save()
-        unload_p = unload_form.save(commit=False)
-        unload_p.trip = self.object
-        unload_p.point_type = TripPoint.Type.UNLOAD
-        unload_p.sequence = 2
-        unload_p.save()
-        return redirect(self.get_success_url())
+        if form.is_valid() and points_valid:
+            self.object = form.save()
+            self._save_points(self.object, point_forms, points_data)
+            return redirect(self.get_success_url())
+
+        enriched = self._enrich_points_with_errors(points_data, point_forms) if point_forms else points_data
+        return self.render_to_response(
+            self.get_context_data(
+                form=form,
+                points_json=json.dumps(enriched, ensure_ascii=False),
+                points_errors=points_errors,
+            )
+        )
 
     def get_success_url(self):
         return reverse_lazy("trips:detail", kwargs={"pk": self.object.pk})
@@ -220,13 +303,48 @@ class TripDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Trip.objects.filter(
             account=get_request_account(self.request)
-        ).prefetch_related("attachments", "points")
+        ).prefetch_related("attachments", "points", "points__organization")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["attachment_form"] = TripAttachmentUploadForm()
         context["max_files_per_trip"] = MAX_FILES_PER_TRIP
+
+        trip = self.object
+        client_total = trip.client_total
+        carrier_total = trip.carrier_total
+        if client_total is not None and carrier_total is not None:
+            context["margin"] = client_total - carrier_total
+            if client_total:
+                context["margin_percent"] = round(
+                    (client_total - carrier_total) / client_total * 100
+                )
+        context["route_summary"] = self._build_route_summary(trip)
+
+        # Определение роли пользователя в рейсе
+        org = getattr(self.request, "current_org", None)
+        if org:
+            if trip.client_id == org.id:
+                context["trip_role"] = "client"
+            elif trip.carrier_id == org.id:
+                context["trip_role"] = "carrier"
+            else:
+                context["trip_role"] = "forwarder"
+
         return context
+
+    @staticmethod
+    def _build_route_summary(trip):
+        points = list(trip.points.all())
+        if not points:
+            return ""
+        cities = []
+        for p in points:
+            if p.address:
+                city = p.address.split(",")[0].strip()
+                if not cities or cities[-1] != city:
+                    cities.append(city)
+        return " → ".join(cities) if cities else ""
 
 
 class TripListView(UserOwnedListView):
@@ -244,8 +362,8 @@ class TripListView(UserOwnedListView):
     contractor_role_options = [
         ("client", "Заказчик"),
         ("carrier", "Перевозчик"),
-        ("consignor", "Отправитель"),
-        ("consignee", "Получатель"),
+        ("consignor", "Отправитель (погрузка)"),
+        ("consignee", "Получатель (выгрузка)"),
         ("driver", "Водитель"),
     ]
 
@@ -295,10 +413,22 @@ class TripListView(UserOwnedListView):
         if not contractor_role or not contractor_query:
             return qs
 
-        if contractor_role in ["client", "carrier", "consignor", "consignee"]:
+        if contractor_role in ["client", "carrier"]:
             return qs.filter(
                 **{f"{contractor_role}__short_name__icontains": contractor_query}
             )
+
+        if contractor_role == "consignor":
+            return qs.filter(
+                points__point_type="LOAD",
+                points__organization__short_name__icontains=contractor_query,
+            ).distinct()
+
+        if contractor_role == "consignee":
+            return qs.filter(
+                points__point_type="UNLOAD",
+                points__organization__short_name__icontains=contractor_query,
+            ).distinct()
 
         if contractor_role == "driver":
             parts = [part for part in contractor_query.split() if part]
@@ -346,13 +476,11 @@ class TripListView(UserOwnedListView):
             .select_related(
                 "client",
                 "carrier",
-                "consignor",
-                "consignee",
                 "driver",
                 "truck",
                 "trailer",
             )
-            .prefetch_related("points")
+            .prefetch_related("points", "points__organization")
         )
 
         current_org = getattr(self.request, "current_org", None)

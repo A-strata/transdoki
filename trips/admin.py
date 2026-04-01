@@ -53,7 +53,6 @@ class TripAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     ("client", "carrier"),
-                    ("consignor", "consignee"),
                     ("driver", "truck", "trailer"),
                 )
             },
@@ -93,7 +92,7 @@ class TripAdmin(admin.ModelAdmin):
         if request.user.is_superuser or not account:
             return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-        if db_field.name in ("client", "carrier", "consignor", "consignee"):
+        if db_field.name in ("client", "carrier"):
             kwargs["queryset"] = Organization.objects.filter(account=account)
         elif db_field.name == "driver":
             kwargs["queryset"] = Person.objects.filter(account=account)

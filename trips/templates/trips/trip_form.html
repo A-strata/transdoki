@@ -2,17 +2,33 @@
 {% load static %}
 {% block head %}
 <link rel="stylesheet" href="{% static 'trips/css/trip_form.css' %}">
+<link rel="stylesheet" href="{% static 'trips/css/trip_form_route.css' %}">
 {% endblock %}
 {% block content %}
 
 <section class="trip-form-page">
-    <div>
-        <h1 class="page-title">{% if object %}Редактировать рейс{% else %}Создать рейс{% endif %}</h1>
-        <p class="page-subtitle">Заполните данные по заявке, участникам и условиям перевозки</p>
-    </div>
-
     <form method="post" class="form-card" novalidate>
         {% csrf_token %}
+
+        {# ── Sticky-навигация по секциям ── #}
+        <div class="sticky-nav" id="sticky-nav">
+            <h1 class="sticky-nav-title">{% if object %}Редактировать рейс{% else %}Создать рейс{% endif %}</h1>
+            <div class="sticky-nav-links">
+                <button type="button" class="sticky-nav-link is-active" data-nav-target="section-role">Роль</button>
+                <button type="button" class="sticky-nav-link" data-nav-target="section-participants">Участники</button>
+                <button type="button" class="sticky-nav-link" data-nav-target="section-route">Маршрут</button>
+                <button type="button" class="sticky-nav-link" data-nav-target="section-cargo">Груз</button>
+                <button type="button" class="sticky-nav-link" data-nav-target="section-finance">Финансы</button>
+            </div>
+            <div class="sticky-nav-actions">
+                {% if object %}
+                <a href="{% url 'trips:detail' object.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Отмена</a>
+                {% else %}
+                <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">Отмена</a>
+                {% endif %}
+                <button type="submit" class="tms-btn tms-btn-primary tms-btn-sm">Сохранить</button>
+            </div>
+        </div>
 
         {% if form.non_field_errors %}
             <div class="form-errors" role="alert">
@@ -22,7 +38,7 @@
             </div>
         {% endif %}
 
-        <div class="section">
+        <div class="section" id="section-role">
             <h2 class="section-title">Основная информация</h2>
             <div class="fields-grid">
                 <!--<div class="field">
@@ -75,7 +91,7 @@
         </div>
         {% endif %}
 
-        <div class="section">
+        <div class="section" id="section-participants">
             <h2 class="section-title">Участники перевозки</h2>
             <div class="parties-grid">
                 <div class="parties-col">
@@ -145,115 +161,35 @@
             </div>
         </div>
 
-        <div class="section">
-            <h2 class="section-title">Погрузка и выгрузка</h2>
-            <div class="logistics-grid">
-                <div class="logistics-col">
-                    <h3 class="logistics-title">Погрузка</h3>
-                    {% if load_form.non_field_errors %}
-                        <div class="form-errors" role="alert">
-                            {% for error in load_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-                        </div>
-                    {% endif %}
-                    <div class="field">
-                        {{ load_form.address.label_tag }}
-                        {{ load_form.address }}
-                        {{ load_form.address.errors }}
-                    </div>
-                    <div class="field">
-                        {{ form.consignor.label_tag }}
-                        <div class="field-add-row">
-                            {{ form.consignor }}
-                            <button type="button" class="qc-add-btn"
-                                    data-qc-type="organization"
-                                    data-qc-target="{{ form.consignor.id_for_label }}"
-                                    title="Добавить организацию">+</button>
-                        </div>
-                        {{ form.consignor.errors }}
-                    </div>
-                    <div class="field">
-                        {{ load_form.loading_type.label_tag }}
-                        {{ load_form.loading_type }}
-                        {{ load_form.loading_type.errors }}
-                    </div>
-                    <div class="field">
-                        {{ load_form.planned_date.label_tag }}
-                        {{ load_form.planned_date }}
-                        {{ load_form.planned_date.errors }}
-                    </div>
-                    <!--<div class="field">
-                        {{ load_form.actual_date.label_tag }}
-                        {{ load_form.actual_date }}
-                        {{ load_form.actual_date.errors }}
-                    </div>-->
-                    <div class="field">
-                        {{ load_form.contact_name.label_tag }}
-                        {{ load_form.contact_name }}
-                        {{ load_form.contact_name.errors }}
-                    </div>
-                    <div class="field">
-                        {{ load_form.contact_phone.label_tag }}
-                        {{ load_form.contact_phone }}
-                        {{ load_form.contact_phone.errors }}
-                    </div>
-                </div>
+        <div class="section" id="section-route">
+            <h2 class="section-title">Маршрут</h2>
 
-                <div class="logistics-col">
-                    <h3 class="logistics-title">Выгрузка</h3>
-                    {% if unload_form.non_field_errors %}
-                        <div class="form-errors" role="alert">
-                            {% for error in unload_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-                        </div>
-                    {% endif %}
-                    <div class="field">
-                        {{ unload_form.address.label_tag }}
-                        {{ unload_form.address }}
-                        {{ unload_form.address.errors }}
-                    </div>
-                    <div class="field">
-                        {{ form.consignee.label_tag }}
-                        <div class="field-add-row">
-                            {{ form.consignee }}
-                            <button type="button" class="qc-add-btn"
-                                    data-qc-type="organization"
-                                    data-qc-target="{{ form.consignee.id_for_label }}"
-                                    title="Добавить организацию">+</button>
-                        </div>
-                        {{ form.consignee.errors }}
-                    </div>
-                    <div class="field">
-                        {{ unload_form.loading_type.label_tag }}
-                        {{ unload_form.loading_type }}
-                        {{ unload_form.loading_type.errors }}
-                    </div>
-                    <div class="field">
-                        {{ unload_form.planned_date.label_tag }}
-                        {{ unload_form.planned_date }}
-                        {{ unload_form.planned_date.errors }}
-                    </div>
-                    <!--<div class="field">
-                        {{ unload_form.actual_date.label_tag }}
-                        {{ unload_form.actual_date }}
-                        {{ unload_form.actual_date.errors }}
-                    </div>-->
-                    <div class="field">
-                        {{ unload_form.contact_name.label_tag }}
-                        {{ unload_form.contact_name }}
-                        {{ unload_form.contact_name.errors }}
-                    </div>
-                    <div class="field">
-                        {{ unload_form.contact_phone.label_tag }}
-                        {{ unload_form.contact_phone }}
-                        {{ unload_form.contact_phone.errors }}
-                    </div>
-                </div>
+            {# ── Конфиг для route builder JS ── #}
+            <div id="route-config" hidden
+                 data-points="{{ points_json }}"
+                 data-org-search-url="{% url 'organizations:search' %}"
+                 data-address-suggest-url="{% url 'trips:address_suggest' %}">
             </div>
+
+            {# ── Ошибки маршрута (от бэкенда) ── #}
+            <div id="route-errors" class="route-errors"
+                 {% if not points_errors %}hidden{% endif %}>
+                {% if points_errors %}
+                    {% for err in points_errors %}<p>{{ err }}</p>{% endfor %}
+                {% endif %}
+            </div>
+
+            {# ── Контейнер route builder (заполняется JS) ── #}
+            <div id="route-builder" class="route-builder"></div>
+
+            {# ── Hidden input с JSON точек для отправки формы ── #}
+            <input type="hidden" id="route-points-json" name="points_json" value="">
         </div>
 
-        <div class="section">
+        <div class="section" id="section-cargo">
             <h2 class="section-title">Груз</h2>
-            <div class="fields-grid">
-                <div class="field field--full">
+            <div class="cargo-grid">
+                <div class="field">
                     {{ form.cargo.label_tag }}
                     {{ form.cargo }}
                     {{ form.cargo.errors }}
@@ -268,16 +204,21 @@
                     {{ form.volume }}
                     {{ form.volume.errors }}
                 </div>
+                <div class="field">
+                    <label>Кол-во мест</label>
+                    <input type="number" id="id_places_count" min="0" step="1"
+                           placeholder="—" disabled name="">
+                </div>
             </div>
         </div>
 
-        <div class="section">
+        <div class="section" id="section-finance">
             <h2 class="section-title">Финансы и оплата</h2>
             <div class="finance-grid">
 
                 {# ---- Заказчик ---- #}
-                <div class="finance-col">
-                    <h3 class="finance-col-title">Ставка заказчику</h3>
+                <div class="finance-col" id="finance-client-col" data-finance-side="client">
+                    <h3 class="finance-col-title" id="finance-client-title">Ставка заказчику</h3>
 
                     <div class="field">
                         <label for="{{ form.client_cost.id_for_label }}">Ставка</label>
@@ -285,6 +226,7 @@
                             {{ form.client_cost }}
                             {{ form.client_cost_unit }}
                         </div>
+                        <div class="finance-hint" id="finance-client-hint" hidden></div>
                         {{ form.client_cost.errors }}
                         {{ form.client_cost_unit.errors }}
                     </div>
@@ -342,8 +284,8 @@
                 </div>
 
                 {# ---- Перевозчик ---- #}
-                <div class="finance-col">
-                    <h3 class="finance-col-title">Ставка перевозчику</h3>
+                <div class="finance-col" id="finance-carrier-col" data-finance-side="carrier">
+                    <h3 class="finance-col-title" id="finance-carrier-title">Ставка перевозчику</h3>
 
                     <div class="field">
                         <label for="{{ form.carrier_cost.id_for_label }}">Ставка</label>
@@ -351,6 +293,7 @@
                             {{ form.carrier_cost }}
                             {{ form.carrier_cost_unit }}
                         </div>
+                        <div class="finance-hint" id="finance-carrier-hint" hidden></div>
                         {{ form.carrier_cost.errors }}
                         {{ form.carrier_cost_unit.errors }}
                     </div>
@@ -409,6 +352,15 @@
 
             </div>
 
+            {# ── Блок маржи (только для экспедитора) ── #}
+            <div class="margin-block" id="margin-block" hidden>
+                <div class="margin-block-inner">
+                    <span class="margin-block-label">Маржа</span>
+                    <span class="margin-block-value" id="margin-value">— ₽</span>
+                    <span class="margin-block-percent" id="margin-percent"></span>
+                </div>
+            </div>
+
             <div class="field field--spaced">
                 {{ form.comments.label_tag }}
                 {{ form.comments }}
@@ -416,10 +368,7 @@
             </div>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
-            <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary">Отмена</a>
-        </div>
+        {# Кнопки перенесены в sticky-навигацию #}
     </form>
 </section>
 
@@ -568,16 +517,18 @@
 
 <script src="{% static 'js/autocomplete.js' %}"></script>
 <script src="{% static 'js/quick_create.js' %}"></script>
-<script src="{% static 'trips/js/address_suggest.js' %}"></script>
 <script src="{% static 'trips/js/trip_form_finance.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    ['id_client', 'id_consignor', 'id_consignee', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {
+    ['id_client', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {
         initAutocomplete(id);
     });
 });
 </script>
+<script src="{% static 'trips/js/trip_form_route.js' %}"></script>
+<script src="{% static 'trips/js/trip_form_nav.js' %}"></script>
 <script src="{% static 'trips/js/trip_form_role.js' %}"></script>
+<script src="{% static 'trips/js/trip_form_finance_role.js' %}"></script>
 <script src="{% static 'trips/js/trip_form_carrier_filter.js' %}"></script>
 {% endblock %}
 

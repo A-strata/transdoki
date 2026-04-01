@@ -8,20 +8,74 @@ from .models import Trip, TripPoint
 
 
 class TripPointForm(ErrorHighlightMixin, forms.ModelForm):
+    """Форма одной точки маршрута. Используется для валидации данных из JSON."""
+
     class Meta:
         model = TripPoint
         fields = [
-            "address", "planned_date", "actual_date",
+            "point_type", "organization",
+            "address", "planned_date",
             "contact_name", "contact_phone", "loading_type",
         ]
         widgets = {
             "planned_date": forms.DateTimeInput(attrs={"type": "datetime-local"}),
-            "actual_date": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "contact_phone": forms.TextInput(attrs={
                 "type": "tel",
                 "data-phone-mask": "",
             }),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        kwargs.setdefault("label_suffix", "")
+        super().__init__(*args, **kwargs)
+
+        # organization не обязательна
+        orig = self.fields["organization"]
+        self.fields["organization"] = AjaxModelChoiceField(
+            queryset=orig.queryset.none(),
+            required=False,
+            widget=orig.widget,
+            label=orig.label,
+            initial=orig.initial,
+            help_text=orig.help_text,
+            empty_label=orig.empty_label,
+            to_field_name=orig.to_field_name,
+        )
+
+        if user and user.is_authenticated:
+            self._setup_organization_validation(user)
+
+    def _setup_organization_validation(self, user):
+        from organizations.models import Organization
+
+        account_id = getattr(getattr(user, "profile", None), "account_id", None)
+        if not account_id:
+            return
+
+        full_org = Organization.objects.filter(account_id=account_id)
+        field = self.fields["organization"]
+        field._validation_qs = full_org
+
+        pk = self.data.get("organization") if self.is_bound else None
+        if pk:
+            field.queryset = full_org.filter(pk=pk)
+
+    def clean_organization(self):
+        """
+        Явная проверка, что организация принадлежит аккаунту пользователя.
+
+        AjaxModelChoiceField._validation_qs должна фильтровать по account,
+        но из-за особенностей Django ModelChoiceField валидация может
+        обходиться. clean_<field> — надёжный Django-механизм, который
+        вызывается ПОСЛЕ to_python и гарантированно проверяет значение.
+        """
+        org = self.cleaned_data.get("organization")
+        if org is None:
+            return None
+        vqs = getattr(self.fields["organization"], "_validation_qs", None)
+        if vqs is not None and not vqs.filter(pk=org.pk).exists():
+            raise ValidationError("Выберите организацию из списка.")
+        return org
 
     def clean(self):
         cleaned_data = super().clean()
@@ -80,6 +134,7 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
         model = Trip
         exclude = [
             "created_by", "created_at", "updated_at", "account",
+            "consignor", "consignee",
             "loading_address", "unloading_address",
             "planned_loading_date", "planned_unloading_date",
             "actual_loading_date", "actual_unloading_date",
@@ -90,15 +145,22 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
             "client_financial_status", "client_total_fixed",
             "carrier_financial_status", "carrier_total_fixed",
         ]
+        labels = {
+            "cargo": "Наименование груза",
+            "weight": "Вес",
+            "volume": "Объём",
+            "comments": "Комментарии",
+        }
         widgets = {
             "date_of_trip": forms.DateInput(attrs={"type": "date"}),
         }
 
     # FK-поля, переводимые в AjaxModelChoiceField
-    _AJAX_FIELDS = ["client", "consignor", "consignee", "carrier", "driver", "truck", "trailer"]
+    _AJAX_FIELDS = ["client", "carrier", "driver", "truck", "trailer"]
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
+        kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
 
         # Показываем номер рейса только при редактировании
@@ -147,7 +209,7 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
         person_search_url = reverse("persons:search")
         vehicle_search_url = reverse("vehicles:search")
 
-        for fname in ["client", "consignor", "consignee", "carrier"]:
+        for fname in ["client", "carrier"]:
             self._setup_ajax_field(fname, full_org, org_search_url)
 
         self._setup_ajax_field("driver", full_person, person_search_url)
@@ -219,8 +281,6 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
             )
             validate_our_company_participation(
                 client=cleaned_data.get("client"),
-                consignor=cleaned_data.get("consignor"),
-                consignee=cleaned_data.get("consignee"),
                 carrier=cleaned_data.get("carrier"),
             )
             validate_trailer_for_truck(

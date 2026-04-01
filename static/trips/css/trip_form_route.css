@@ -1,0 +1,289 @@
+/* ── Route Builder: мультиточечный маршрут ── */
+
+.route-builder {
+    position: relative;
+    padding-left: 28px;
+}
+
+/* Отрезок пунктирной линии между соседними точками */
+.rp--has-next::after {
+    content: '';
+    position: absolute;
+    left: -19px;
+    top: 23px;
+    bottom: -21px;
+    width: 2px;
+    background: repeating-linear-gradient(
+        to bottom,
+        var(--border) 0, var(--border) 4px,
+        transparent 4px, transparent 8px
+    );
+    z-index: 1;
+}
+
+/* ── Точка маршрута ── */
+.rp {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+/* Кружок на таймлайне */
+.rp-dot {
+    position: absolute;
+    left: -24px;
+    top: 13px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2.5px solid;
+    background: var(--surface);
+    z-index: 2;
+}
+.rp--load .rp-dot { border-color: var(--success-text); }
+.rp--unload .rp-dot { border-color: var(--error-text); }
+
+/* Карточка */
+.rp-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.rp-card:hover { border-color: var(--neutral-border); }
+
+/* Раскрытая карточка — цветной фон */
+.rp--load .rp-card.is-expanded {
+    border-color: var(--success-border);
+    background: var(--success-bg);
+}
+.rp--unload .rp-card.is-expanded {
+    border-color: var(--error-border);
+    background: var(--error-bg);
+}
+
+/* ── Свёрнутая строка ── */
+.rp-row {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+    user-select: none;
+    gap: 0;
+}
+
+/* Тег типа */
+.rp-tag {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin: 0 10px;
+    flex-shrink: 0;
+    width: 72px;
+    text-align: center;
+}
+.rp--load .rp-tag {
+    background: var(--success-bg);
+    color: var(--success-text);
+}
+.rp--unload .rp-tag {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+
+/* Адрес */
+.rp-addr {
+    flex: 1;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text);
+    padding: 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.rp-addr.is-empty {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+/* Мета-чипы */
+.rp-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-right: 6px;
+    flex-shrink: 0;
+}
+.rp-chip {
+    font-size: var(--text-xs);
+    color: var(--neutral-text);
+    background: var(--neutral-bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* Кнопки действий */
+.rp-actions {
+    display: flex;
+    gap: 2px;
+    margin-right: 4px;
+}
+.rp-actions button {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--muted);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+.rp-actions button:hover {
+    background: var(--neutral-bg);
+    color: var(--text);
+}
+.rp-actions button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.rp-act-del:hover {
+    background: var(--error-bg) !important;
+    color: var(--error-text) !important;
+}
+
+/* Шеврон */
+.rp-chev {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+.rp-chev.is-open {
+    transform: rotate(180deg);
+}
+
+/* ── Развёрнутое содержимое ── */
+.rp-detail {
+    padding: 0 14px 14px;
+    border-top: 1px solid var(--border);
+}
+.rp-detail--animate {
+    animation: rp-slide-down 0.2s ease;
+}
+@keyframes rp-slide-down {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.rp-grid-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 8px 12px;
+    margin-top: 10px;
+}
+.rp-grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px 12px;
+    margin-top: 8px;
+}
+
+/* Поля внутри развёрнутой точки */
+.rp-field label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+}
+.rp-field label .rp-req {
+    color: var(--error-text);
+    margin-left: 2px;
+}
+
+.rp-field input,
+.rp-field select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: var(--text-sm);
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.rp-field input:hover,
+.rp-field select:hover { border-color: var(--neutral-border); }
+.rp-field input:focus,
+.rp-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+}
+.rp-field input::placeholder { color: var(--muted); }
+
+.rp-field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239494a8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+}
+
+/* Ошибки на полях */
+.rp-field-error {
+    font-size: var(--text-xs);
+    color: var(--error-text);
+    margin-top: 2px;
+}
+.rp-field.has-error input,
+.rp-field.has-error select {
+    border-color: var(--error-text);
+}
+
+/* ── Кнопки добавления ── */
+.route-add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* Цветовые акценты для кнопок добавления точек */
+.rp-add-load {
+    color: var(--success-text);
+}
+.rp-add-load:hover {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+}
+
+.rp-add-unload {
+    color: var(--error-text);
+}
+.rp-add-unload:hover {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+}
+
+/* ── Глобальные ошибки маршрута ── */
+.route-errors {
+    margin-bottom: 12px;
+}
+.route-errors p {
+    font-size: var(--text-sm);
+    color: var(--error-text);
+}
