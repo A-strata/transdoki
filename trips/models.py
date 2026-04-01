@@ -382,6 +382,16 @@ class TripPoint(models.Model):
         help_text="Хронологический порядок точек внутри рейса",
     )
 
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="trip_points",
+        verbose_name="Организация",
+        null=True,
+        blank=True,
+        help_text="Грузоотправитель (для погрузки) или грузополучатель (для выгрузки)",
+    )
+
     # Коммерческие данные (перенесены из плоских полей Trip)
     address = models.CharField(
         max_length=ADDRESS_LENGTH,
