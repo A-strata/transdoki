@@ -25,6 +25,12 @@
     color: var(--text);
 }
 
+/* Звёздочка у обязательных полей */
+.field:has(:required) > label::after {
+    content: " *";
+    color: var(--error-text);
+}
+
 /* Элементы ввода */
 .field input,
 .field select,
