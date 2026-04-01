@@ -51,14 +51,9 @@
 }
 .rp-card:hover { border-color: var(--neutral-border); }
 
-/* Раскрытая карточка — цветной фон */
-.rp--load .rp-card.is-expanded {
-    border-color: var(--success-border);
-    background: var(--success-bg);
-}
-.rp--unload .rp-card.is-expanded {
-    border-color: var(--error-border);
-    background: var(--error-bg);
+/* Раскрытая карточка — нейтральный фон, акцент только на кружке и теге */
+.rp-card.is-expanded {
+    background: var(--hover);
 }
 
 /* ── Свёрнутая строка ── */
@@ -155,9 +150,9 @@
     opacity: 0.55;
     cursor: not-allowed;
 }
-.rp-act-del:hover {
-    background: var(--error-bg) !important;
-    color: var(--error-text) !important;
+.rp-actions .rp-act-del:hover {
+    background: var(--error-bg);
+    color: var(--danger);
 }
 
 /* Шеврон */
