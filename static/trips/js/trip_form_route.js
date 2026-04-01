@@ -30,10 +30,11 @@
     } catch (e) {
         points = [];
     }
-    // Присваиваем _uid для трекинга и сворачиваем по умолчанию
+    // Присваиваем _uid для трекинга; точки с ошибками — развёрнуты
     points.forEach(function (pt) {
         pt._uid = nextId++;
-        if (pt.expanded === undefined) pt.expanded = false;
+        if (pt.errors) pt.expanded = true;
+        else if (pt.expanded === undefined) pt.expanded = false;
     });
 
     // ── Утилиты ──
