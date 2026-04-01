@@ -14,6 +14,7 @@
     var hiddenInput = document.getElementById('route-points-json');
     var orgSearchUrl = config.dataset.orgSearchUrl || '';
     var addressSuggestUrl = config.dataset.addressSuggestUrl || '';
+    var isEditMode = config.dataset.mode === 'edit';
 
     var LOAD_LABELS = { rear: 'Задняя', top: 'Верхняя', side: 'Боковая' };
     var TYPE_CFG = {
@@ -30,11 +31,12 @@
     } catch (e) {
         points = [];
     }
-    // Присваиваем _uid для трекинга; точки с ошибками — развёрнуты
+    // Присваиваем _uid для трекинга
+    // Создание: все точки развёрнуты; Редактирование: свёрнуты (кроме точек с ошибками)
     points.forEach(function (pt) {
         pt._uid = nextId++;
         if (pt.errors) pt.expanded = true;
-        else if (pt.expanded === undefined) pt.expanded = false;
+        else if (pt.expanded === undefined) pt.expanded = !isEditMode;
     });
 
     // ── Утилиты ──
@@ -66,6 +68,8 @@
     }
 
     // ── SVG иконки (Lucide, 16×16, viewBox 0 0 24 24, stroke-width 1.2) ──
+    var SVG_CLOCK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+    var SVG_X     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
     var SVG_UP   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>';
     var SVG_DOWN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
     var SVG_DEL  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6"/><path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/></svg>';
@@ -227,7 +231,7 @@
         row1.className = 'rp-grid-top';
         row1.appendChild(makeField('address', 'Адрес', 'text', pt.address, idx, true, errors.address, 'Город, улица, дом'));
         row1.appendChild(makeField('planned_date', 'Дата', 'date', pt.planned_date, idx, true, errors.planned_date));
-        row1.appendChild(makeField('planned_time', 'Время', 'time', pt.planned_time, idx, false, errors.planned_time));
+        row1.appendChild(makeTimeField(pt, idx, errors.planned_time));
         row1.appendChild(makeSelectField('loading_type', 'Тип погрузки', pt.loading_type, idx, [
             { value: '', label: '—' },
             { value: 'rear', label: 'Задняя' },
@@ -252,6 +256,77 @@
         });
 
         return detail;
+    }
+
+    function makeTimeField(pt, idx, fieldErrors) {
+        var fg = document.createElement('div');
+        fg.className = 'rp-field rp-time-field' + (fieldErrors ? ' has-error' : '');
+
+        var hasValue = !!pt.planned_time;
+
+        if (hasValue) {
+            var lbl = document.createElement('label');
+            lbl.textContent = 'Время';
+            fg.appendChild(lbl);
+            // Показываем инпут + крестик
+            var wrap = document.createElement('div');
+            wrap.className = 'rp-time-wrap';
+
+            var input = document.createElement('input');
+            input.type = 'time';
+            input.id = 'rp-planned_time-' + idx;
+            input.value = pt.planned_time || '';
+            input.addEventListener('input', function () {
+                points[idx].planned_time = input.value;
+                syncHidden();
+                updateRowMeta(idx);
+            });
+
+            var clearBtn = document.createElement('button');
+            clearBtn.type = 'button';
+            clearBtn.className = 'rp-time-clear';
+            clearBtn.innerHTML = SVG_X;
+            clearBtn.title = 'Убрать время';
+            clearBtn.addEventListener('click', function () {
+                points[idx].planned_time = '';
+                syncHidden();
+                updateRowMeta(idx);
+                render();
+            });
+
+            wrap.appendChild(input);
+            wrap.appendChild(clearBtn);
+            fg.appendChild(wrap);
+        } else {
+            // Показываем кнопку "+ время"
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'rp-time-add';
+            btn.innerHTML = SVG_CLOCK + ' время';
+            btn.addEventListener('click', function () {
+                points[idx].planned_time = '08:00';
+                syncHidden();
+                updateRowMeta(idx);
+                render();
+                // Фокус на появившийся инпут
+                requestAnimationFrame(function () {
+                    var el = document.getElementById('rp-planned_time-' + idx);
+                    if (el) el.focus();
+                });
+            });
+            fg.appendChild(btn);
+        }
+
+        if (fieldErrors) {
+            fieldErrors.forEach(function (err) {
+                var errEl = document.createElement('div');
+                errEl.className = 'rp-field-error';
+                errEl.textContent = err;
+                fg.appendChild(errEl);
+            });
+        }
+
+        return fg;
     }
 
     function makeField(name, label, type, value, idx, required, fieldErrors, placeholder) {

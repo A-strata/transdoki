@@ -160,6 +160,7 @@
             {# ── Конфиг для route builder JS ── #}
             <div id="route-config" hidden
                  data-points="{{ points_json }}"
+                 data-mode="{% if object %}edit{% else %}create{% endif %}"
                  data-org-search-url="{% url 'organizations:search' %}"
                  data-address-suggest-url="{% url 'trips:address_suggest' %}">
             </div>
