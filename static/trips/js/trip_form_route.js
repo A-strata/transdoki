@@ -12,7 +12,6 @@
 
     var container = document.getElementById('route-builder');
     var hiddenInput = document.getElementById('route-points-json');
-    var errorsDiv = document.getElementById('route-errors');
     var orgSearchUrl = config.dataset.orgSearchUrl || '';
     var addressSuggestUrl = config.dataset.addressSuggestUrl || '';
 
@@ -531,41 +530,11 @@
     }
 
 
-    // ── Валидация на фронте при сабмите ──
-    function validateBeforeSubmit() {
-        var errors = [];
-        var hasLoad = false;
-        var hasUnload = false;
-
-        points.forEach(function (pt, idx) {
-            if (pt.point_type === 'LOAD') hasLoad = true;
-            if (pt.point_type === 'UNLOAD') hasUnload = true;
-            if (!pt.address) errors.push('Точка #' + (idx + 1) + ': укажите адрес.');
-            if (!pt.planned_date) errors.push('Точка #' + (idx + 1) + ': укажите дату и время.');
-        });
-
-        if (!hasLoad) errors.push('Маршрут должен содержать минимум одну точку погрузки.');
-        if (!hasUnload) errors.push('Маршрут должен содержать минимум одну точку выгрузки.');
-
-        if (errors.length && errorsDiv) {
-            errorsDiv.innerHTML = errors.map(function (e) { return '<p>' + e + '</p>'; }).join('');
-            errorsDiv.hidden = false;
-            errorsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            return false;
-        }
-
-        if (errorsDiv) errorsDiv.hidden = true;
-        return true;
-    }
-
     // ── Перехватываем сабмит формы ──
     var form = container.closest('form');
     if (form) {
-        form.addEventListener('submit', function (e) {
+        form.addEventListener('submit', function () {
             syncHidden();
-            if (!validateBeforeSubmit()) {
-                e.preventDefault();
-            }
         });
     }
 

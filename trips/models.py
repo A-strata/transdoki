@@ -62,7 +62,7 @@ class Trip(UserOwnedModel):
     num_of_trip = models.PositiveSmallIntegerField(
         verbose_name="Номер заявки", editable=False
     )
-    date_of_trip = models.DateField(verbose_name="Дата заявки", default=date(2000, 1, 1))
+    date_of_trip = models.DateField(verbose_name="Дата заявки")
     client = models.ForeignKey(
         Organization,
         on_delete=models.PROTECT,
