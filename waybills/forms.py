@@ -278,7 +278,7 @@ class WaybillForm(BaseStyledModelForm):
         model = Waybill
         fields = ["date", "organization", "driver", "truck", "trailer"]
         widgets = {
-            "date": forms.DateInput(attrs={"type": "date"}),
+            "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
 
     def __init__(self, *args, account=None, **kwargs):

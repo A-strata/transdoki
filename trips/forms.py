@@ -18,7 +18,7 @@ class TripPointForm(ErrorHighlightMixin, forms.ModelForm):
             "contact_name", "contact_phone", "loading_type",
         ]
         widgets = {
-            "planned_date": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "planned_date": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
             "contact_phone": forms.TextInput(attrs={
                 "type": "tel",
                 "data-phone-mask": "",
@@ -152,7 +152,7 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
             "comments": "Комментарии",
         }
         widgets = {
-            "date_of_trip": forms.DateInput(attrs={"type": "date"}),
+            "date_of_trip": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
 
     # FK-поля, переводимые в AjaxModelChoiceField
