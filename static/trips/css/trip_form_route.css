@@ -49,7 +49,7 @@
     overflow: hidden;
     transition: border-color 0.15s ease, background 0.15s ease;
 }
-.rp-card:hover { border-color: var(--neutral-border); }
+.rp-card:hover { border-color: var(--border-input); }
 
 /* Раскрытая карточка — нейтральный фон, акцент только на кружке и теге */
 .rp-card.is-expanded {
@@ -212,7 +212,7 @@
 .rp-field input,
 .rp-field select {
     width: 100%;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-input);
     border-radius: var(--radius-sm);
     padding: 10px 12px;
     font-size: var(--text-sm);
@@ -223,7 +223,7 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .rp-field input:hover,
-.rp-field select:hover { border-color: var(--neutral-border); }
+.rp-field select:hover { border-color: var(--border-input-hover); }
 .rp-field input:focus,
 .rp-field select:focus {
     border-color: var(--primary);

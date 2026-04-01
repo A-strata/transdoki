@@ -11,6 +11,8 @@
     --text: #111827;
     --muted: #6b7280;
     --border: #e5e7eb;
+    --border-input:       #b0b7c3;  /* границы полей ввода в покое */
+    --border-input-hover: #8b94a6;  /* границы полей ввода при hover */
     --hover: #f8fafc;
     --hover-active: #eef6ff;
 
