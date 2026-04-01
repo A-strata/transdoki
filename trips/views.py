@@ -47,10 +47,12 @@ class RoutePointsMixin:
     """Миксин для работы с мультиточечным маршрутом в формах создания/редактирования рейса."""
 
     DEFAULT_POINTS = [
-        {"point_type": "LOAD", "address": "", "planned_date": "", "organization": "",
-         "organization_name": "", "loading_type": "", "contact_name": "", "contact_phone": ""},
-        {"point_type": "UNLOAD", "address": "", "planned_date": "", "organization": "",
-         "organization_name": "", "loading_type": "", "contact_name": "", "contact_phone": ""},
+        {"point_type": "LOAD", "address": "", "planned_date": "", "planned_time": "",
+         "organization": "", "organization_name": "", "loading_type": "",
+         "contact_name": "", "contact_phone": ""},
+        {"point_type": "UNLOAD", "address": "", "planned_date": "", "planned_time": "",
+         "organization": "", "organization_name": "", "loading_type": "",
+         "contact_name": "", "contact_phone": ""},
     ]
 
     def _points_from_db(self, trip):
@@ -61,7 +63,8 @@ class RoutePointsMixin:
                 "id": p.pk,
                 "point_type": p.point_type,
                 "address": p.address,
-                "planned_date": p.planned_date.strftime("%Y-%m-%dT%H:%M") if p.planned_date else "",
+                "planned_date": p.planned_date.strftime("%Y-%m-%d") if p.planned_date else "",
+                "planned_time": p.planned_time.strftime("%H:%M") if p.planned_time else "",
                 "organization": p.organization_id or "",
                 "organization_name": str(p.organization) if p.organization else "",
                 "loading_type": p.loading_type,
@@ -398,9 +401,9 @@ class TripListView(UserOwnedListView):
         sequence = 1 if date_mode != "unloading" else 2
         filter_kwargs = {"points__sequence": sequence}
         if date_from:
-            filter_kwargs["points__planned_date__date__gte"] = date_from
+            filter_kwargs["points__planned_date__gte"] = date_from
         if date_to:
-            filter_kwargs["points__planned_date__date__lte"] = date_to
+            filter_kwargs["points__planned_date__lte"] = date_to
 
         return qs.filter(**filter_kwargs).distinct()
 

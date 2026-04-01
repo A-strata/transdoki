@@ -14,11 +14,12 @@ class TripPointForm(ErrorHighlightMixin, forms.ModelForm):
         model = TripPoint
         fields = [
             "point_type", "organization",
-            "address", "planned_date",
+            "address", "planned_date", "planned_time",
             "contact_name", "contact_phone", "loading_type",
         ]
         widgets = {
-            "planned_date": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
+            "planned_date": forms.DateInput(attrs={"type": "date"}),
+            "planned_time": forms.TimeInput(attrs={"type": "time"}),
             "contact_phone": forms.TextInput(attrs={
                 "type": "tel",
                 "data-phone-mask": "",

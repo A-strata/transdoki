@@ -397,11 +397,21 @@ class TripPoint(models.Model):
         max_length=ADDRESS_LENGTH,
         verbose_name="Адрес",
     )
-    planned_date = models.DateTimeField(
-        verbose_name="Заявленные дата и время",
+    planned_date = models.DateField(
+        verbose_name="Заявленная дата",
     )
-    actual_date = models.DateTimeField(
-        verbose_name="Фактические дата и время",
+    planned_time = models.TimeField(
+        verbose_name="Заявленное время",
+        null=True,
+        blank=True,
+    )
+    actual_date = models.DateField(
+        verbose_name="Фактическая дата",
+        null=True,
+        blank=True,
+    )
+    actual_time = models.TimeField(
+        verbose_name="Фактическое время",
         null=True,
         blank=True,
     )

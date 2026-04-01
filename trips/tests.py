@@ -108,7 +108,8 @@ class RouteBuilderTestBase(TestCase):
         return data
 
     def _make_point(self, point_type="LOAD", address="Москва, ул. Тестовая 1",
-                    planned_date="2026-05-01T08:00", organization="", **kwargs):
+                    planned_date="2026-05-01", planned_time="08:00",
+                    organization="", **kwargs):
         """
         Создаёт dict одной точки маршрута для JSON.
         Поведение по умолчанию — валидная точка с обязательными полями.
@@ -117,6 +118,7 @@ class RouteBuilderTestBase(TestCase):
             "point_type": point_type,
             "address": address,
             "planned_date": planned_date,
+            "planned_time": planned_time,
             "organization": str(organization) if organization else "",
             "loading_type": "",
             "contact_name": "",
@@ -286,7 +288,7 @@ class RouteBuilderCreateTests(RouteBuilderTestBase):
         """
         points = [
             self._make_point("LOAD", "Склад-1"),
-            self._make_point("LOAD", "Склад-2", planned_date="2026-05-01T10:00"),
+            self._make_point("LOAD", "Склад-2", planned_date="2026-05-01", planned_time="10:00"),
             self._make_point("UNLOAD", "Выгрузка"),
         ]
         resp = self._post_with_points(points)
@@ -310,7 +312,7 @@ class RouteBuilderCreateTests(RouteBuilderTestBase):
         points = [
             self._make_point(
                 "LOAD", "Москва, ул. Складская 12",
-                planned_date="2026-05-02T09:30",
+                planned_date="2026-05-02", planned_time="09:30",
                 organization=self.our_org.pk,
                 loading_type="rear",
                 contact_name="Иванов И.И.",
@@ -390,7 +392,7 @@ class RouteBuilderUpdateTests(RouteBuilderTestBase):
         # Обновляем на 3 точки с новыми адресами
         new_points = [
             self._make_point("LOAD", "Новый-адрес-1"),
-            self._make_point("LOAD", "Новый-адрес-2", planned_date="2026-05-01T10:00"),
+            self._make_point("LOAD", "Новый-адрес-2", planned_date="2026-05-01", planned_time="10:00"),
             self._make_point("UNLOAD", "Новый-адрес-3"),
         ]
         resp = self._post_with_points(
@@ -466,7 +468,7 @@ class ConsignorConsigneeSyncTests(RouteBuilderTestBase):
         points = [
             self._make_point("LOAD", "Адрес-1", organization=self.our_org.pk),
             self._make_point("LOAD", "Адрес-2", organization=self.third_org.pk,
-                             planned_date="2026-05-01T10:00"),
+                             planned_date="2026-05-01", planned_time="10:00"),
             self._make_point("UNLOAD", "Адрес-3"),
         ]
         resp = self._post_with_points(points)
@@ -484,7 +486,7 @@ class ConsignorConsigneeSyncTests(RouteBuilderTestBase):
             self._make_point("LOAD", "Адрес-1"),
             self._make_point("UNLOAD", "Адрес-2", organization=self.third_org.pk),
             self._make_point("UNLOAD", "Адрес-3", organization=self.our_org.pk,
-                             planned_date="2026-05-01T18:00"),
+                             planned_date="2026-05-01", planned_time="18:00"),
         ]
         resp = self._post_with_points(points)
         self.assertEqual(resp.status_code, 302)
@@ -581,7 +583,7 @@ class RouteBuilderValidationTests(RouteBuilderTestBase):
         """
         points = [
             self._make_point("LOAD", "Склад-1"),
-            self._make_point("LOAD", "Склад-2", planned_date="2026-05-01T10:00"),
+            self._make_point("LOAD", "Склад-2", planned_date="2026-05-01", planned_time="10:00"),
         ]
         resp = self._post_with_points(points)
         self.assertEqual(resp.status_code, 200, "Маршрут без UNLOAD не должен сохраняться")
@@ -594,7 +596,7 @@ class RouteBuilderValidationTests(RouteBuilderTestBase):
         """
         points = [
             self._make_point("UNLOAD", "Склад-1"),
-            self._make_point("UNLOAD", "Склад-2", planned_date="2026-05-01T10:00"),
+            self._make_point("UNLOAD", "Склад-2", planned_date="2026-05-01", planned_time="10:00"),
         ]
         resp = self._post_with_points(points)
         self.assertEqual(resp.status_code, 200)

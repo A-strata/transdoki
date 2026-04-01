@@ -44,6 +44,7 @@
             point_type: type,
             address: '',
             planned_date: '',
+            planned_time: '',
             organization: '',
             organization_name: '',
             loading_type: '',
@@ -55,11 +56,13 @@
         };
     }
 
-    function formatDateChip(isoStr) {
-        if (!isoStr) return '';
-        var d = new Date(isoStr);
+    function formatDateChip(dateStr, timeStr) {
+        if (!dateStr) return '';
+        var d = new Date(dateStr + 'T00:00');
         if (isNaN(d.getTime())) return '';
-        return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        var chip = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        if (timeStr) chip += ' ' + timeStr;
+        return chip;
     }
 
     // ── SVG иконки (Lucide, 16×16, viewBox 0 0 24 24, stroke-width 1.2) ──
@@ -142,7 +145,7 @@
 
         // Мета-чипы
         var metaHtml = '<div class="rp-meta">';
-        var dateChip = formatDateChip(pt.planned_date);
+        var dateChip = formatDateChip(pt.planned_date, pt.planned_time);
         if (dateChip) metaHtml += '<span class="rp-chip">' + dateChip + '</span>';
         var loadLabel = LOAD_LABELS[pt.loading_type];
         if (loadLabel) metaHtml += '<span class="rp-chip">' + loadLabel + '</span>';
@@ -219,11 +222,12 @@
 
         var errors = pt.errors || {};
 
-        // Ряд 1: Адрес (2fr) | Дата (1fr) | Тип погрузки (1fr)
+        // Ряд 1: Адрес (2fr) | Дата (1fr) | Время (auto) | Тип погрузки (1fr)
         var row1 = document.createElement('div');
         row1.className = 'rp-grid-top';
         row1.appendChild(makeField('address', 'Адрес', 'text', pt.address, idx, true, errors.address, 'Город, улица, дом'));
-        row1.appendChild(makeField('planned_date', 'Дата и время', 'datetime-local', pt.planned_date, idx, true, errors.planned_date));
+        row1.appendChild(makeField('planned_date', 'Дата', 'date', pt.planned_date, idx, true, errors.planned_date));
+        row1.appendChild(makeField('planned_time', 'Время', 'time', pt.planned_time, idx, false, errors.planned_time));
         row1.appendChild(makeSelectField('loading_type', 'Тип погрузки', pt.loading_type, idx, [
             { value: '', label: '—' },
             { value: 'rear', label: 'Задняя' },
@@ -405,7 +409,7 @@
         var metaEl = rpEl.querySelector('.rp-meta');
         if (metaEl) {
             var html = '';
-            var dateChip = formatDateChip(pt.planned_date);
+            var dateChip = formatDateChip(pt.planned_date, pt.planned_time);
             if (dateChip) html += '<span class="rp-chip">' + dateChip + '</span>';
             var loadLabel = LOAD_LABELS[pt.loading_type];
             if (loadLabel) html += '<span class="rp-chip">' + loadLabel + '</span>';
@@ -453,6 +457,7 @@
                 point_type: pt.point_type,
                 address: pt.address || '',
                 planned_date: pt.planned_date || '',
+                planned_time: pt.planned_time || '',
                 organization: pt.organization || '',
                 loading_type: pt.loading_type || '',
                 contact_name: pt.contact_name || '',

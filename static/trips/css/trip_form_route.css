@@ -185,7 +185,7 @@
 
 .rp-grid-top {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr auto 1fr;
     gap: 8px 12px;
     margin-top: 10px;
 }
@@ -230,6 +230,10 @@
     box-shadow: 0 0 0 3px var(--primary-ring);
 }
 .rp-field input::placeholder { color: var(--muted); }
+
+.rp-field input[type="time"] {
+    width: 110px;
+}
 
 .rp-field select {
     appearance: none;

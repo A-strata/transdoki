@@ -125,10 +125,10 @@
                             <p class="tl-address">{{ p.address|default:"—" }}</p>
                             <div class="tl-meta">
                                 {% if p.planned_date %}
-                                    <span class="tl-date" title="Заявленные дата и время">{{ p.planned_date|date:"d.m.Y H:i" }}</span>
+                                    <span class="tl-date" title="Заявленная дата{% if p.planned_time %} и время{% endif %}">{{ p.planned_date|date:"d.m.Y" }}{% if p.planned_time %} {{ p.planned_time|time:"H:i" }}{% endif %}</span>
                                 {% endif %}
                                 {% if p.actual_date %}
-                                    <span class="tl-date tl-date--actual" title="Фактические дата и время">факт {{ p.actual_date|date:"d.m.Y H:i" }}</span>
+                                    <span class="tl-date tl-date--actual" title="Фактическая дата{% if p.actual_time %} и время{% endif %}">факт {{ p.actual_date|date:"d.m.Y" }}{% if p.actual_time %} {{ p.actual_time|time:"H:i" }}{% endif %}</span>
                                 {% endif %}
                                 {% if p.contact_name or p.contact_phone %}
                                     <span class="tl-contact">{{ p.contact_name|default:"" }}{% if p.contact_name and p.contact_phone %}, {% endif %}{{ p.contact_phone|default:"" }}</span>

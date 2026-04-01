@@ -87,6 +87,15 @@ class TNGenerator(BaseDocxGenerator):
         def fmt_date(date_val, format_str):
             return date_val.strftime(format_str) if date_val else "—"
 
+        def fmt_datetime(date_val, time_val):
+            """Форматирует дату и время раздельно: '15.04.2026 08:30' или '15.04.2026'."""
+            if not date_val:
+                return "—"
+            s = date_val.strftime("%d.%m.%Y")
+            if time_val:
+                s += " " + time_val.strftime("%H:%M")
+            return s
+
         load_p = trip.load_point
         unload_p = trip.unload_point
 
@@ -110,17 +119,21 @@ class TNGenerator(BaseDocxGenerator):
             "loading_contact_phone": (load_p.contact_phone if load_p else "") or "—",
             "unloading_contact_name": (unload_p.contact_name if unload_p else "") or "—",
             "unloading_contact_phone": (unload_p.contact_phone if unload_p else "") or "—",
-            "planned_loading_date": fmt_date(
-                load_p.planned_date if load_p else None, "%d.%m.%Y %H:%M"
+            "planned_loading_date": fmt_datetime(
+                load_p.planned_date if load_p else None,
+                load_p.planned_time if load_p else None,
             ),
-            "planned_unloading_date": fmt_date(
-                unload_p.planned_date if unload_p else None, "%d.%m.%Y %H:%M"
+            "planned_unloading_date": fmt_datetime(
+                unload_p.planned_date if unload_p else None,
+                unload_p.planned_time if unload_p else None,
             ),
-            "actual_loading_date": fmt_date(
-                load_p.actual_date if load_p else None, "%d.%m.%Y %H:%M"
+            "actual_loading_date": fmt_datetime(
+                load_p.actual_date if load_p else None,
+                load_p.actual_time if load_p else None,
             ),
-            "actual_unloading_date": fmt_date(
-                unload_p.actual_date if unload_p else None, "%d.%m.%Y %H:%M"
+            "actual_unloading_date": fmt_datetime(
+                unload_p.actual_date if unload_p else None,
+                unload_p.actual_time if unload_p else None,
             ),
             "loading_type": (
                 load_p.get_loading_type_display()
