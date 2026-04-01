@@ -13,13 +13,6 @@
         {# ── Sticky-навигация по секциям ── #}
         <div class="sticky-nav" id="sticky-nav">
             <h1 class="sticky-nav-title">{% if object %}Редактировать рейс{% else %}Создать рейс{% endif %}</h1>
-            <div class="sticky-nav-links">
-                <button type="button" class="sticky-nav-link is-active" data-nav-target="section-role">Роль</button>
-                <button type="button" class="sticky-nav-link" data-nav-target="section-participants">Участники</button>
-                <button type="button" class="sticky-nav-link" data-nav-target="section-route">Маршрут</button>
-                <button type="button" class="sticky-nav-link" data-nav-target="section-cargo">Груз</button>
-                <button type="button" class="sticky-nav-link" data-nav-target="section-finance">Финансы</button>
-            </div>
             <div class="sticky-nav-actions">
                 {% if object %}
                 <a href="{% url 'trips:detail' object.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Отмена</a>
@@ -526,7 +519,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <script src="{% static 'trips/js/trip_form_route.js' %}"></script>
-<script src="{% static 'trips/js/trip_form_nav.js' %}"></script>
 <script src="{% static 'trips/js/trip_form_role.js' %}"></script>
 <script src="{% static 'trips/js/trip_form_finance_role.js' %}"></script>
 <script src="{% static 'trips/js/trip_form_carrier_filter.js' %}"></script>
