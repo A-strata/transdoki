@@ -12,8 +12,8 @@
     --muted: #6b7280;
     --border: #e5e7eb;
     --border-interactive: #b0b7c3;  /* интерактивные контейнеры: кнопки, карточки маршрута, дропдауны */
-    --border-input:       #8b94a6;  /* поля ввода в покое */
-    --border-input-hover: #6b7a8a;  /* поля ввода при hover */
+    --border-input:       #a0a8b4;  /* поля ввода в покое */
+    --border-input-hover: #8b94a6;  /* поля ввода при hover */
     --hover: #f8fafc;
     --hover-active: #eef6ff;
 
