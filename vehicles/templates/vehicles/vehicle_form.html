@@ -23,11 +23,10 @@
             </div>
         {% endif %}
 
-        {% if form.owner %}
-        <div class="field">
-            {{ form.owner.label_tag }}
-            {{ form.owner }}
-            {{ form.owner.errors }}
+        {% if current_org %}
+        <div class="employer-info">
+            <span class="employer-info-label">Собственник:</span>
+            <span class="employer-info-value">{{ current_org.short_name }}</span>
         </div>
         {% endif %}
 

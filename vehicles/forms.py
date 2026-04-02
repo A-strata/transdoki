@@ -12,7 +12,6 @@ class VehicleForm(ErrorHighlightMixin, forms.ModelForm):
     class Meta:
         model = Vehicle
         fields = ['grn', 'brand', 'model', 'vehicle_type', 'property_type']
-        exclude = ['created_by', 'created_at', 'updated_at', 'owner']
         widgets = {
             'grn': forms.TextInput(attrs={"data-grn-mask": ""}),
         }

@@ -104,16 +104,16 @@ class VehicleDetailView(LoginRequiredMixin, DetailView):
 
 
 class VehicleCreateStandaloneView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
-    """Создание ТС со страницы списка (с выбором собственника в форме)."""
+    """Создание ТС со страницы «Мой парк» (owner = текущая организация)."""
 
     model = Vehicle
-    form_class = VehicleFormWithOwner
+    form_class = VehicleForm
     template_name = "vehicles/vehicle_form.html"
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['account'] = get_request_account(self.request)
-        return kwargs
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["current_org"] = getattr(self.request, "current_org", None)
+        return context
 
     def get_success_url(self):
         if self.request.POST.get("add_another"):
@@ -123,6 +123,7 @@ class VehicleCreateStandaloneView(BillingProtectedMixin, LoginRequiredMixin, Cre
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.account = get_request_account(self.request)
+        form.instance.owner = getattr(self.request, "current_org", None)
         try:
             response = super().form_valid(form)
         except IntegrityError:

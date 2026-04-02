@@ -113,3 +113,27 @@
 .form-errors p + p {
     margin-top: 6px;
 }
+
+/* Read-only информационная строка (компания-владелец в формах создания) */
+.employer-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--hover-active);
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.employer-info-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.employer-info-value {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--primary);
+}
