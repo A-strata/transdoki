@@ -298,6 +298,10 @@
             wrap.appendChild(clearBtn);
             fg.appendChild(wrap);
         } else {
+            // Пустой label для выравнивания с соседними полями
+            var spacer = document.createElement('label');
+            spacer.innerHTML = '&nbsp;';
+            fg.appendChild(spacer);
             // Показываем кнопку "+ время"
             var btn = document.createElement('button');
             btn.type = 'button';

@@ -234,7 +234,6 @@
 /* ── Поле времени (toggle: кнопка / инпут + крестик) ── */
 .rp-time-field {
     min-width: 110px;
-    align-self: end;
 }
 
 .rp-time-add {
