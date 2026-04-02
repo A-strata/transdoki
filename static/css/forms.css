@@ -120,20 +120,19 @@
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    background: var(--hover-active);
-    border: 1px solid var(--primary);
-    border-radius: 8px;
+    background: var(--neutral-bg);
+    border: 1px solid var(--neutral-border);
+    border-radius: var(--radius-sm);
     margin-bottom: 12px;
 }
 
 .employer-info-label {
     font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--text);
+    color: var(--muted);
 }
 
 .employer-info-value {
     font-size: var(--text-sm);
-    font-weight: 700;
-    color: var(--primary);
+    font-weight: 600;
+    color: var(--text);
 }
