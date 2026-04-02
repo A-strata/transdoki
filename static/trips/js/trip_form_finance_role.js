@@ -45,10 +45,13 @@
         }
     }
 
+    var financeGrid = clientCol.parentElement;
+
     function applyRole(role) {
         // Сброс к дефолту
         clientCol.style.display = '';
         carrierCol.style.display = '';
+        financeGrid.classList.remove('finance-grid--single');
         clientCol.classList.remove('finance-col--income', 'finance-col--expense');
         carrierCol.classList.remove('finance-col--income', 'finance-col--expense');
         clientTitle.textContent = 'Ставка заказчику';
@@ -60,6 +63,7 @@
         if (role === 'client') {
             // Заказчик: скрыть левый, оставить правый
             clientCol.style.display = 'none';
+            financeGrid.classList.add('finance-grid--single');
             carrierTitle.textContent = 'Стоимость перевозки';
             if (carrierHint) {
                 carrierHint.textContent = 'Сумма, которую вы заплатите за перевозку';
@@ -68,6 +72,7 @@
         } else if (role === 'carrier') {
             // Перевозчик: скрыть правый, оставить левый
             carrierCol.style.display = 'none';
+            financeGrid.classList.add('finance-grid--single');
             clientTitle.textContent = 'Стоимость перевозки';
             if (clientHint) {
                 clientHint.textContent = 'Сумма, которую вы получите за перевозку';
