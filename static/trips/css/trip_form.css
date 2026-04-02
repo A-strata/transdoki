@@ -233,12 +233,19 @@
     gap: 1px;
     background: var(--border);
     border-radius: var(--radius-sm);
-    overflow: hidden;
 }
 
 .parties-col {
     padding: 12px;
     background: var(--surface);
+}
+
+.parties-col:first-child {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.parties-col:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .parties-col-title {
@@ -263,7 +270,6 @@
     gap: 1px;
     background: var(--border);
     border-radius: var(--radius-sm);
-    overflow: hidden;
 }
 
 .finance-grid.finance-grid--single {
@@ -274,7 +280,14 @@
     padding: 12px;
     background: var(--surface);
     min-width: 0;
-    overflow: hidden;
+}
+
+.finance-col:first-child {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.finance-col:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .finance-col-title {
