@@ -14,7 +14,7 @@
     width: 140px;
     min-height: 32px;
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-input);
     padding: 4px 8px;
     background: var(--hover);
 }
@@ -213,7 +213,7 @@
 
 .name-edit {
     width: 100%;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-input);
     border-radius: 6px;
     padding: 3px 6px;
     font-size: var(--text-sm);
@@ -342,7 +342,7 @@
 .cred-value {
     flex: 1;
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-input);
     border-radius: 6px;
     padding: 5px 8px;
     font-size: var(--text-sm);
@@ -362,7 +362,7 @@
 /* Поля модалки добавления пользователя */
 .au-field { margin-bottom: 10px; }
 .au-label { display: block; margin-bottom: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--text); }
-.au-input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: var(--text-sm); box-sizing: border-box; background: var(--surface); }
+.au-input { width: 100%; border: 1px solid var(--border-input); border-radius: 8px; padding: 8px 10px; font-size: var(--text-sm); box-sizing: border-box; background: var(--surface); }
 .au-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 .au-err { display: none; font-size: var(--text-xs); color: var(--danger); margin-top: 3px; }
 

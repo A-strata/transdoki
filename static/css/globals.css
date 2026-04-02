@@ -226,7 +226,7 @@ textarea.is-invalid:focus {
 .modal-field input[type="number"],
 .modal-field select {
     width: 100%;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-input);
     border-radius: var(--radius-sm);
     background: var(--surface);
     color: var(--text);
@@ -234,6 +234,11 @@ textarea.is-invalid:focus {
     font-size: var(--text-sm);
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
     box-sizing: border-box;
+}
+
+.modal-field input:hover,
+.modal-field select:hover {
+    border-color: var(--border-input-hover);
 }
 
 .modal-field input:focus,
