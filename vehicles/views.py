@@ -38,6 +38,11 @@ class VehicleCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
         return context
 
     def get_success_url(self):
+        if self.request.POST.get("add_another"):
+            return reverse(
+                "vehicles:create_for_org",
+                kwargs={"organization_pk": self.kwargs["organization_pk"]},
+            )
         return reverse(
             "organizations:detail", kwargs={"pk": self.kwargs["organization_pk"]}
         )
@@ -57,10 +62,12 @@ class VehicleCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
         form.instance.owner = owner
 
         try:
-            return super().form_valid(form)
+            response = super().form_valid(form)
         except IntegrityError:
             form.add_error("grn", "ТС с таким номером уже существует.")
             return self.form_invalid(form)
+        messages.success(self.request, f"ТС «{self.object}» добавлено.")
+        return response
 
 
 class VehicleUpdateView(LoginRequiredMixin, UpdateView):
