@@ -62,6 +62,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     var formatted = formatGrn(grn, type);
                     nameEl.textContent = formatted + (brand ? ", " + brand : "");
                 }
+                if (opener.dataset.deleteName) {
+                    var bodySpan = modal.querySelector(".modal-body span");
+                    if (bodySpan) bodySpan.textContent = opener.dataset.deleteName;
+                }
                 var form = modal.querySelector("form");
                 if (form && opener.dataset.deleteUrl) {
                     form.action = opener.dataset.deleteUrl;

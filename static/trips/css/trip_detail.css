@@ -533,7 +533,7 @@
 .attachment-icon svg {
     width: 18px;
     height: 18px;
-    fill: var(--surface);
+    color: var(--surface);
 }
 
 .attachment-text { min-width: 0; }
@@ -548,21 +548,181 @@
 .attachment-actions {
     display: flex;
     gap: 8px;
+    align-items: center;
     flex-shrink: 0;
+}
+
+.attachment-delete {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    line-height: 0;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s ease;
+}
+
+.attachment-delete:hover {
+    color: var(--danger);
+    background: var(--error-bg);
+}
+
+/* Разделитель */
+.attachments-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0 0;
 }
 
 /* Загрузка файлов */
 .file-upload-form {
     display: flex;
+    flex-direction: column;
     gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
     margin-top: 12px;
+}
+
+.upload-trigger-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 20px;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-sm);
+    text-align: center;
 }
 
 .upload-hint {
     font-size: var(--text-xs);
     color: var(--muted);
+}
+
+.upload-actions {
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.upload-actions:not([hidden]) {
+    display: flex;
+}
+
+/* Превью выбранных файлов */
+.file-list-preview {
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-list-preview:not([hidden]) {
+    display: flex;
+}
+
+.file-list-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--hover);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+}
+
+.file-list-name {
+    color: var(--text);
+    word-break: break-word;
+    min-width: 0;
+}
+
+.file-list-size {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+}
+
+.file-list-remove {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    line-height: 0;
+    border-radius: 4px;
+    transition: 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-list-remove:hover {
+    color: var(--danger);
+    background: var(--error-bg);
+}
+
+/* Inline-уведомления загрузки */
+.upload-notice {
+    align-items: flex-start;
+    gap: 8px;
+    font-size: var(--text-sm);
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+}
+
+.upload-notice:not([hidden]) {
+    display: flex;
+}
+
+.upload-notice-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.upload-notice-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.upload-notice-body p {
+    margin: 0;
+}
+
+.upload-notice.is-warning {
+    color: var(--warning-text);
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+}
+
+.upload-notice.is-error {
+    color: var(--error-text);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+}
+
+/* Счётчик файлов */
+.upload-counter {
+    font-size: var(--text-xs);
+    color: var(--muted);
+}
+
+/* Подсказка лимита */
+.upload-limit-hint {
+    font-size: var(--text-xs);
+    color: var(--warning-text);
+}
+
+/* Состояние загрузки pending-файлов */
+.file-list-preview.is-loading {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
 }
 
 /* Пустые состояния */

@@ -636,7 +636,14 @@ class TripAttachmentUploadView(LoginRequiredMixin, View):
         trip = get_object_or_404(Trip, pk=pk, account=get_request_account(request))
         form = TripAttachmentUploadForm(request.POST, request.FILES)
 
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
         if not form.is_valid():
+            if is_ajax:
+                return JsonResponse(
+                    {"ok": False, "error": "Не удалось загрузить файлы. Проверьте выбранные файлы."},
+                    status=400,
+                )
             messages.error(
                 request, "Не удалось загрузить файлы. Проверьте выбранные файлы."
             )
@@ -647,16 +654,17 @@ class TripAttachmentUploadView(LoginRequiredMixin, View):
         free_slots = MAX_FILES_PER_TRIP - existing_count
 
         if len(files) > free_slots:
-            messages.error(
-                request,
-                f"Можно загрузить ещё только {free_slots} файл(ов). Максимум: {MAX_FILES_PER_TRIP}.",
-            )
+            error_msg = f"Можно загрузить ещё только {free_slots} файл(ов). Максимум: {MAX_FILES_PER_TRIP}."
+            if is_ajax:
+                return JsonResponse({"ok": False, "error": error_msg}, status=400)
+            messages.error(request, error_msg)
             return redirect("trips:detail", pk=trip.pk)
 
         try:
+            created = []
             with transaction.atomic():
                 for uploaded_file in files:
-                    TripAttachment.objects.create(
+                    att = TripAttachment.objects.create(
                         trip=trip,
                         created_by=request.user,
                         account=trip.account,
@@ -664,10 +672,33 @@ class TripAttachmentUploadView(LoginRequiredMixin, View):
                         original_name=uploaded_file.name,
                         file_size=uploaded_file.size,
                     )
+                    created.append(att)
         except ValidationError as exc:
+            if is_ajax:
+                return JsonResponse({"ok": False, "error": str(exc)}, status=400)
             messages.error(request, f"Ошибка валидации файла: {exc}")
             return redirect("trips:detail", pk=trip.pk)
 
+        if is_ajax:
+            return JsonResponse({
+                "ok": True,
+                "attachments": [
+                    {
+                        "pk": att.pk,
+                        "original_name": att.original_name,
+                        "created_at": att.created_at.strftime("%d.%m.%Y %H:%M"),
+                        "download_url": reverse(
+                            "trips:attachment_download",
+                            args=[pk, att.pk],
+                        ),
+                        "delete_url": reverse(
+                            "trips:attachment_delete",
+                            args=[pk, att.pk],
+                        ),
+                    }
+                    for att in created
+                ],
+            })
         messages.success(request, "Файлы успешно загружены.")
         return redirect("trips:detail", pk=trip.pk)
 
@@ -744,5 +775,7 @@ class TripAttachmentDeleteView(LoginRequiredMixin, View):
             trip__account=get_request_account(request),
         )
         attachment.delete()
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": True})
         messages.success(request, "Файл удалён.")
         return redirect("trips:detail", pk=pk)

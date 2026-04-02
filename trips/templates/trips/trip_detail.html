@@ -352,8 +352,11 @@
                 <div class="attachment-item">
                     <div class="attachment-main">
                         <span class="attachment-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24">
-                                <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7l-5-5zm1 7V3.5L18.5 9H15zM8 13h8v1.5H8V13zm0 3h8v1.5H8V16z"/>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                <path d="M10 13h4"/>
+                                <path d="M10 17h4"/>
                             </svg>
                         </span>
 
@@ -367,20 +370,17 @@
                         <a href="{% url 'trips:attachment_download' object.pk attachment.pk %}"
                            class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
 
-                        <div class="confirm-inline" data-confirm>
-                            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
-                                    data-confirm-trigger>Удалить</button>
-                            <div class="confirm-inline-prompt" hidden>
-                                <span>Удалить?</span>
-                                <form method="post"
-                                      action="{% url 'trips:attachment_delete' object.pk attachment.pk %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm">Да</button>
-                                </form>
-                                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
-                                        data-confirm-cancel>Нет</button>
-                            </div>
-                        </div>
+                        <button type="button" class="attachment-delete"
+                                data-modal-open="delete-attachment-modal"
+                                data-delete-url="{% url 'trips:attachment_delete' object.pk attachment.pk %}"
+                                data-delete-name="{{ attachment.original_name }}"
+                                title="Удалить" aria-label="Удалить {{ attachment.original_name }}">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M2 4h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M13 4v9.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 {% empty %}
@@ -388,14 +388,24 @@
                 {% endfor %}
             </div>
 
+            <hr class="attachments-divider">
+
             <form method="post" action="{% url 'trips:attachment_upload' trip.pk %}" enctype="multipart/form-data"
-                  class="file-upload-form">
+                  class="file-upload-form" data-max-files="{{ max_files_per_trip }}">
                 {% csrf_token %}
-                <input type="file" name="files" multiple class="file-input" id="file-input" hidden>
-                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm upload-trigger"
-                        onclick="document.getElementById('file-input').click()">+ Загрузить файлы</button>
-                <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm upload-submit" hidden>Отправить</button>
-                <span class="upload-hint">pdf, jpg, png, doc, docx, xls, xlsx / до {{ max_files_per_trip }} файлов, 20 МБ каждый</span>
+                <input type="file" name="files" multiple class="file-input" id="file-input" hidden aria-hidden="true">
+                <div class="upload-trigger-wrap">
+                    <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm upload-trigger">+ Загрузить файлы</button>
+                    <span class="upload-hint">pdf, jpg, png, doc, docx, xls, xlsx / до {{ max_files_per_trip }} файлов, 20 МБ каждый</span>
+                    <span class="upload-limit-hint" hidden></span>
+                </div>
+                <div class="upload-notice" hidden aria-live="assertive"></div>
+                <div class="file-list-preview" hidden aria-live="polite"></div>
+                <div class="upload-counter" hidden></div>
+                <div class="upload-actions" hidden>
+                    <button type="button" class="tms-btn tms-btn-light tms-btn-sm upload-cancel">Отмена</button>
+                    <button type="submit" class="tms-btn tms-btn-primary tms-btn-sm upload-submit">Отправить</button>
+                </div>
             </form>
         </div>
 
@@ -407,19 +417,23 @@
 
 </section>
 {% endwith %}
+
+{# ── Модал удаления вложения ── #}
+<div class="modal-overlay" id="delete-attachment-modal" hidden>
+    <div class="modal-dialog">
+        <h3 class="modal-title">Удалить вложение?</h3>
+        <p class="modal-body"><span id="delete-attachment-name"></span></p>
+        <form method="post" id="delete-attachment-form">
+            {% csrf_token %}
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var fileInput = document.getElementById('file-input');
-    var submitBtn = document.querySelector('.upload-submit');
-    if (fileInput && submitBtn) {
-        fileInput.addEventListener('change', function() {
-            if (fileInput.files.length) submitBtn.hidden = false;
-            else submitBtn.hidden = true;
-        });
-    }
-});
-</script>
+<script src="{% static 'trips/js/trip_detail.js' %}"></script>
 {% endblock %}
