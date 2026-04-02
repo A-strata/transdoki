@@ -1,5 +1,4 @@
 import uuid
-from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -68,22 +67,6 @@ class Trip(UserOwnedModel):
         on_delete=models.PROTECT,
         related_name="trips_as_client",
         verbose_name="Заказчик перевозки",
-    )
-    consignor = models.ForeignKey(
-        Organization,
-        on_delete=models.PROTECT,
-        related_name="trips_as_consignor",
-        verbose_name="Отправитель",
-        null=True,
-        blank=True,
-    )
-    consignee = models.ForeignKey(
-        Organization,
-        on_delete=models.PROTECT,
-        related_name="trips_as_consignee",
-        verbose_name="Получатель",
-        null=True,
-        blank=True,
     )
     carrier = models.ForeignKey(
         Organization,
@@ -464,9 +447,7 @@ class TripPoint(models.Model):
         ]
 
     def __str__(self):
-        return (
-            f"{self.get_point_type_display()} #{self.sequence} / {self.trip}"
-        )
+        return f"{self.get_point_type_display()} #{self.sequence} / {self.trip}"
 
 
 ALLOWED_TRIP_FILE_EXTENSIONS = [

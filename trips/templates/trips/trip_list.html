@@ -133,8 +133,6 @@
                         <th data-col="date_of_trip">Дата</th>
                         <th data-col="client">Заказчик</th>
                         <th data-col="carrier">Перевозчик</th>
-                        <th data-col="consignor">Отправитель</th>
-                        <th data-col="consignee">Получатель</th>
                         <th data-col="driver">Водитель</th>
                         <th data-col="truck">Автомобиль</th>
                         <th data-col="trailer">Прицеп</th>
@@ -160,8 +158,6 @@
                         <td data-col="date_of_trip">{{ trip.date_of_trip|date:"d.m.Y" }}</td>
                         <td data-col="client">{{ trip.client.short_name }}</td>
                         <td data-col="carrier">{{ trip.carrier.short_name }}</td>
-                        <td data-col="consignor">{% if trip.load_point and trip.load_point.organization %}{{ trip.load_point.organization.short_name }}{% else %}—{% endif %}</td>
-                        <td data-col="consignee">{% if trip.unload_point and trip.unload_point.organization %}{{ trip.unload_point.organization.short_name }}{% else %}—{% endif %}</td>
                         <td data-col="driver">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
                         <td data-col="truck">{{ trip.truck.grn }}</td>
                         <td data-col="trailer">{{ trip.trailer.grn|default:"—" }}</td>

@@ -135,7 +135,6 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
         model = Trip
         exclude = [
             "created_by", "created_at", "updated_at", "account",
-            "consignor", "consignee",
             "loading_address", "unloading_address",
             "planned_loading_date", "planned_unloading_date",
             "actual_loading_date", "actual_unloading_date",

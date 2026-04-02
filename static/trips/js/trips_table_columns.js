@@ -22,7 +22,7 @@
 
         // Колонки, скрытые по умолчанию при первом визите
         const DEFAULT_HIDDEN = [
-            'consignor', 'consignee', 'trailer',
+            'trailer',
             'planned_loading_date', 'planned_unloading_date',
             'cargo', 'weight',
             'client_cost', 'carrier_cost',

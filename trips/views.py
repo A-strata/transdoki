@@ -122,30 +122,15 @@ class RoutePointsMixin:
 
     @transaction.atomic
     def _save_points(self, trip, point_forms, points_data):
-        """Сохраняет точки маршрута и синхронизирует Trip.consignor/consignee."""
+        """Сохраняет точки маршрута."""
         # Удаляем старые точки
         trip.points.all().delete()
 
-        saved_points = []
         for seq, (form, pt_data) in enumerate(zip(point_forms, points_data), start=1):
             point = form.save(commit=False)
             point.trip = trip
             point.sequence = seq
             point.save()
-            saved_points.append(point)
-
-        # Обратная совместимость: заполняем Trip.consignor / Trip.consignee
-        consignor = None
-        consignee = None
-        for p in saved_points:
-            if p.point_type == TripPoint.Type.LOAD and consignor is None:
-                consignor = p.organization
-            elif p.point_type == TripPoint.Type.UNLOAD and consignee is None:
-                consignee = p.organization
-
-        trip.consignor = consignor
-        trip.consignee = consignee
-        trip.save(update_fields=["consignor", "consignee"])
 
 
 class TripCreateView(RoutePointsMixin, LoginRequiredMixin, CreateView):
