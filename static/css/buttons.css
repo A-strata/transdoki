@@ -40,23 +40,23 @@
 .tms-btn-secondary {
     background: var(--surface);
     color: var(--text);
-    border-color: var(--border);
+    border-color: var(--border-interactive);
 }
 
 .tms-btn-secondary:hover {
     background: var(--hover);
-    border-color: var(--border);
+    border-color: var(--border-input);
 }
 
 .tms-btn-light {
     background: var(--hover);
     color: var(--text);
-    border-color: var(--border);
+    border-color: var(--border-interactive);
 }
 
 .tms-btn-light:hover {
     background: var(--neutral-bg);
-    border-color: var(--border);
+    border-color: var(--border-input);
 }
 
 .tms-btn-danger {

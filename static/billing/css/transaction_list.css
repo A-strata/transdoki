@@ -144,7 +144,7 @@
     align-items: center;
     padding: 6px 12px;
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-interactive);
     background: var(--surface);
     color: var(--text);
     font-size: var(--text-sm);
@@ -152,6 +152,6 @@
     transition: background .15s ease, border-color .15s ease;
 }
 
-.page-btn:hover { background: var(--neutral-bg); border-color: var(--border); }
+.page-btn:hover { background: var(--neutral-bg); border-color: var(--border-input); }
 .page-btn.current { background: var(--hover-active); color: var(--primary); border-color: var(--primary); font-weight: 600; }
 .page-btn.disabled { color: var(--muted); pointer-events: none; }

@@ -53,7 +53,7 @@
 
 .nav-link:hover {
     background: var(--neutral-bg);
-    border-color: var(--border);
+    border-color: var(--border-interactive);
 }
 
 .nav-link.active {

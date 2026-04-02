@@ -236,7 +236,7 @@
 .quick-date-chip {
     height: 30px;
     padding: 0 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-interactive);
     border-radius: 999px;
     background: var(--surface);
     color: var(--text);
@@ -249,7 +249,7 @@
 
 .quick-date-chip:hover {
     background: var(--hover);
-    border-color: var(--border);
+    border-color: var(--border-input);
 }
 
 .quick-date-chip:focus {

@@ -82,7 +82,7 @@
 /* Кнопка-призрак (отмена) */
 .tms-btn-ghost {
     background: var(--surface);
-    border-color: var(--border);
+    border-color: var(--border-interactive);
     color: var(--text);
     display: inline-flex;
     align-items: center;

@@ -72,7 +72,7 @@
 
 .quick-btn {
     padding: 6px 14px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-interactive);
     border-radius: 20px;
     background: var(--hover);
     color: var(--text);

@@ -490,7 +490,7 @@
     width: 36px;
     height: 40px;
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-interactive);
     background: var(--hover);
     font-size: var(--text-lg);
     line-height: 1;
