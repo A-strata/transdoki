@@ -44,7 +44,7 @@
 
 /* Карточка */
 .rp-card {
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-interactive);
     border-radius: var(--radius-sm);
     overflow: hidden;
     transition: border-color 0.15s ease, background 0.15s ease;
@@ -243,7 +243,7 @@
     gap: 4px;
     height: 40px;
     padding: 0 12px;
-    border: 1px dashed var(--border);
+    border: 1px dashed var(--border-interactive);
     border-radius: var(--radius-sm);
     background: none;
     font-size: var(--text-sm);
