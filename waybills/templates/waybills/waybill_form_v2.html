@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'waybills/css/waybill_form_v2.css' %}">
+{% endblock %}
+{% block content %}
+
+<section class="wb-form-page">
+
+    <div class="wb-topbar" id="wb-topbar">
+        <div class="wb-topbar-info">
+            <h1 class="wb-topbar-title" id="topbar-title">ПЛ № —</h1>
+            <p class="wb-topbar-subtitle" id="topbar-subtitle"></p>
+        </div>
+        <div class="wb-topbar-actions">
+            <a href="{% url 'waybills:waybill-list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">Отмена</a>
+            <button type="submit" form="wb-form" class="tms-btn tms-btn-primary tms-btn-sm">Сохранить</button>
+        </div>
+    </div>
+
+    <form method="post" id="wb-form" class="wb-form-card" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="fuel_entries_json" id="fuel-entries-json" value="[]">
+
+        <div class="wb-section" id="section-main">
+            <div class="wb-section-header">
+                <span class="wb-section-icon wb-section-icon--purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M16 13H8"/>
+                        <path d="M16 17H8"/>
+                        <path d="M10 9H8"/>
+                    </svg>
+                </span>
+                <h2 class="wb-section-title">Основное</h2>
+            </div>
+
+            <div class="wb-fields-4">
+                <div class="wb-field">
+                    <label for="wb-series">Серия</label>
+                    <input type="text" id="wb-series" name="series" placeholder="001">
+                </div>
+                <div class="wb-field">
+                    <label for="wb-number">Номер</label>
+                    <input type="text" id="wb-number" name="number" placeholder="0001">
+                </div>
+                <div class="wb-field">
+                    <label for="wb-issue-date">Дата выдачи</label>
+                    <input type="date" id="wb-issue-date" name="issue_date">
+                </div>
+                <div class="wb-field">
+                    <label for="wb-driver">Водитель</label>
+                    <input type="text" id="wb-driver" name="driver_name" placeholder="Начните вводить ФИО...">
+                </div>
+            </div>
+            <div class="wb-fields-4" style="margin-top: 12px;">
+                <div class="wb-field" style="grid-column: span 2;">
+                    <label for="wb-vehicle">Автомобиль</label>
+                    <input type="text" id="wb-vehicle" name="vehicle_name" placeholder="Марка, модель, гос. номер...">
+                </div>
+            </div>
+        </div>
+
+        <div class="wb-section" id="section-events">
+            <div class="wb-section-header">
+                <span class="wb-section-icon wb-section-icon--green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </span>
+                <h2 class="wb-section-title">События</h2>
+            </div>
+
+            <div class="wb-events-grid">
+                <div class="wb-event-card wb-event-card--start">
+                    <h3 class="wb-event-title">
+                        <span class="wb-event-dot"></span>
+                        Выезд с базы / приём ТС
+                    </h3>
+                    <div class="wb-event-fields">
+                        <div class="wb-field">
+                            <label for="start-dt">Дата и время</label>
+                            <input type="datetime-local" id="start-dt" name="start_dt">
+                        </div>
+                        <div class="wb-field">
+                            <label for="start-odometer">Одометр, км</label>
+                            <input type="number" id="start-odometer" name="start_odometer" min="0" placeholder="0">
+                        </div>
+                        <div class="wb-field">
+                            <label for="start-fuel">Уровень топлива, л</label>
+                            <input type="number" id="start-fuel" name="start_fuel" min="0" step="0.1" placeholder="0.0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wb-event-card wb-event-card--end">
+                    <h3 class="wb-event-title">
+                        <span class="wb-event-dot"></span>
+                        Заезд на базу / передача ТС
+                    </h3>
+                    <div class="wb-event-fields">
+                        <div class="wb-field">
+                            <label for="end-dt">Дата и время</label>
+                            <input type="datetime-local" id="end-dt" name="end_dt">
+                        </div>
+                        <div class="wb-field">
+                            <label for="end-odometer">Одометр, км</label>
+                            <input type="number" id="end-odometer" name="end_odometer" min="0" placeholder="0">
+                        </div>
+                        <div class="wb-field">
+                            <label for="end-fuel">Уровень топлива, л</label>
+                            <input type="number" id="end-fuel" name="end_fuel" min="0" step="0.1" placeholder="0.0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wb-metrics" id="derived-metrics">
+                <div class="wb-metric">
+                    <span class="wb-metric-label">Пробег</span>
+                    <span class="wb-metric-value wb-metric-value--placeholder" id="metric-mileage">—</span>
+                </div>
+                <div class="wb-metric">
+                    <span class="wb-metric-label">Время в рейсе</span>
+                    <span class="wb-metric-value wb-metric-value--placeholder" id="metric-duration">—</span>
+                </div>
+                <div class="wb-metric">
+                    <span class="wb-metric-label">Средняя скорость</span>
+                    <span class="wb-metric-value wb-metric-value--placeholder" id="metric-speed">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="wb-section" id="section-fuel">
+            <div class="wb-section-header">
+                <span class="wb-section-icon wb-section-icon--fuel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/>
+                        <path d="M3 22h12"/>
+                        <path d="M15 10h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 4"/>
+                        <path d="M7 10h4"/>
+                    </svg>
+                </span>
+                <h2 class="wb-section-title">Заправки</h2>
+                <span class="wb-section-badge" id="fuel-count-badge">0 заправок</span>
+            </div>
+
+            <div class="wb-fuel-norm">
+                <div class="wb-field">
+                    <label for="fuel-norm">Норма расхода</label>
+                    <div class="wb-input-suffix">
+                        <input type="number" id="fuel-norm" name="fuel_norm" min="0" step="0.1" placeholder="0.0">
+                        <span class="wb-input-suffix-text">л / 100 км</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wb-fuel-table-wrap">
+                <table class="wb-fuel-table">
+                    <thead>
+                        <tr>
+                            <th class="col-date">Дата</th>
+                            <th class="col-station">Место заправки</th>
+                            <th class="col-liters">Литры</th>
+                            <th class="col-price">&#8381; / литр</th>
+                            <th class="col-total">Сумма &#8381;</th>
+                            <th class="col-doc">Документ</th>
+                            <th class="col-del"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="fuel-body">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="wb-fuel-totals">
+                <span class="wb-fuel-totals-label">Итого заправлено:</span>
+                <span class="wb-fuel-totals-value" id="fuel-total-liters">0 л</span>
+                <span class="wb-fuel-totals-value" id="fuel-total-rub">0 &#8381;</span>
+            </div>
+
+            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm wb-add-fuel" id="add-fuel-btn">+ Добавить заправку</button>
+
+            <div class="wb-analytics" id="analytics-block" hidden>
+                <h3 class="wb-analytics-title">Аналитика расхода</h3>
+
+                <div class="wb-analytics-grid">
+                    <div class="wb-analytics-cell">
+                        <span class="wb-analytics-cell-label">Израсходовано</span>
+                        <span class="wb-analytics-cell-value" id="an-consumed">—</span>
+                        <span class="wb-analytics-cell-hint" id="an-consumed-hint">нач. + заправки &minus; ост.</span>
+                    </div>
+                    <div class="wb-analytics-cell">
+                        <span class="wb-analytics-cell-label">Норматив</span>
+                        <span class="wb-analytics-cell-value" id="an-norm">—</span>
+                        <span class="wb-analytics-cell-hint" id="an-norm-hint"></span>
+                    </div>
+                    <div class="wb-analytics-cell">
+                        <span class="wb-analytics-cell-label">Отклонение</span>
+                        <span class="wb-analytics-cell-value" id="an-deviation">—</span>
+                        <span class="wb-analytics-cell-hint" id="an-deviation-hint"></span>
+                    </div>
+                    <div class="wb-analytics-cell">
+                        <span class="wb-analytics-cell-label">Факт. расход</span>
+                        <span class="wb-analytics-cell-value" id="an-actual-rate">—</span>
+                        <span class="wb-analytics-cell-hint">л / 100 км</span>
+                    </div>
+                </div>
+
+                <div class="wb-progress-wrap" id="progress-wrap" hidden>
+                    <div class="wb-progress-bar">
+                        <div class="wb-progress-fill" id="progress-fill"></div>
+                        <div class="wb-progress-norm-line" id="progress-norm-line"></div>
+                    </div>
+                    <div class="wb-progress-labels">
+                        <span>Факт <strong id="progress-fact-label">0 л</strong></span>
+                        <span>Норматив <strong id="progress-norm-label">0 л</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wb-section" id="section-costs">
+            <div class="wb-section-header">
+                <span class="wb-section-icon wb-section-icon--gray">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </span>
+                <h2 class="wb-section-title">Прочие расходы</h2>
+            </div>
+
+            <div class="wb-costs-list">
+                <div class="wb-cost-row">
+                    <span class="wb-cost-label">Автодор (платные дороги)</span>
+                    <div class="wb-cost-input-wrap">
+                        <input type="number" id="cost-toll" name="cost_toll_road" class="cost-field" min="0" step="0.01" placeholder="0" value="0">
+                        <span class="wb-cost-suffix">&#8381;</span>
+                    </div>
+                </div>
+                <div class="wb-cost-row">
+                    <span class="wb-cost-label">Платон</span>
+                    <div class="wb-cost-input-wrap">
+                        <input type="number" id="cost-platon" name="cost_platon" class="cost-field" min="0" step="0.01" placeholder="0" value="0">
+                        <span class="wb-cost-suffix">&#8381;</span>
+                    </div>
+                </div>
+                <div class="wb-cost-row">
+                    <span class="wb-cost-label">Парковка / стоянка</span>
+                    <div class="wb-cost-input-wrap">
+                        <input type="number" id="cost-parking" name="cost_parking" class="cost-field" min="0" step="0.01" placeholder="0" value="0">
+                        <span class="wb-cost-suffix">&#8381;</span>
+                    </div>
+                </div>
+                <div class="wb-cost-row">
+                    <span class="wb-cost-label">Прочее</span>
+                    <div class="wb-cost-input-wrap">
+                        <input type="number" id="cost-other" name="cost_other" class="cost-field" min="0" step="0.01" placeholder="0" value="0">
+                        <span class="wb-cost-suffix">&#8381;</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+    <div class="wb-summary" id="summary-bar">
+        <div class="wb-summary-cell">
+            <span class="wb-summary-label">Пробег</span>
+            <span class="wb-summary-value wb-summary-value--placeholder" id="sum-mileage">—</span>
+        </div>
+        <div class="wb-summary-cell">
+            <span class="wb-summary-label">Топливо</span>
+            <span class="wb-summary-value wb-summary-value--placeholder" id="sum-fuel">—</span>
+        </div>
+        <div class="wb-summary-cell">
+            <span class="wb-summary-label">Прочие расходы</span>
+            <span class="wb-summary-value wb-summary-value--placeholder" id="sum-other">—</span>
+        </div>
+        <div class="wb-summary-cell wb-summary-cell--total">
+            <span class="wb-summary-label">Итого</span>
+            <span class="wb-summary-value wb-summary-value--placeholder" id="sum-total">—</span>
+        </div>
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'waybills/js/waybill_form.js' %}"></script>
+{% endblock %}
