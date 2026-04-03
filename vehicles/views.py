@@ -15,16 +15,10 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 from billing.mixins import BillingProtectedMixin
 from organizations.models import Organization
 from transdoki.tenancy import get_request_account
+from transdoki.views import UserOwnedListView
 
 from .forms import VehicleForm, VehicleFormWithOwner
 from .models import Vehicle, VehicleType
-
-
-class UserOwnedListView(LoginRequiredMixin, ListView):
-    """Базовый View показывающий только записи текущего account (tenant)."""
-
-    def get_queryset(self):
-        return self.model.objects.filter(account=get_request_account(self.request))
 
 
 class VehicleCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
@@ -76,7 +70,7 @@ class VehicleUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "vehicles/vehicle_form.html"
 
     def get_queryset(self):
-        return Vehicle.objects.filter(account=get_request_account(self.request))
+        return Vehicle.objects.for_account(get_request_account(self.request))
 
     def get_success_url(self):
         next_url = self.request.GET.get("next", "")
@@ -100,7 +94,7 @@ class VehicleDetailView(LoginRequiredMixin, DetailView):
     template_name = "vehicles/vehicle_detail.html"
 
     def get_queryset(self):
-        return Vehicle.objects.filter(account=get_request_account(self.request))
+        return Vehicle.objects.for_account(get_request_account(self.request))
 
 
 class VehicleCreateStandaloneView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
@@ -138,7 +132,7 @@ class VehicleDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "vehicles/vehicle_confirm_delete.html"
 
     def get_queryset(self):
-        return Vehicle.objects.filter(account=get_request_account(self.request))
+        return Vehicle.objects.for_account(get_request_account(self.request))
 
     def get_success_url(self):
         next_url = self.request.POST.get("next") or self.request.GET.get("next")
@@ -257,7 +251,7 @@ def vehicle_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
     vtype = request.GET.get("type", "")
-    qs = Vehicle.objects.filter(account=account)
+    qs = Vehicle.objects.for_account(account)
     if request.GET.get("own") == "1":
         qs = qs.filter(owner__is_own_company=True)
     carrier_id = request.GET.get("carrier_id", "").strip()
@@ -305,7 +299,7 @@ def vehicle_quick_create(request):
     if errors:
         return JsonResponse({"errors": errors}, status=400)
 
-    owner = Organization.objects.filter(pk=owner_id, account=account).first()
+    owner = Organization.objects.for_account(account).filter(pk=owner_id).first()
     if owner is None:
         return JsonResponse(
             {"errors": {"owner_id": "Организация не найдена"}}, status=400

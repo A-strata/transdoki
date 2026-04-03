@@ -1,7 +1,7 @@
 from django.db import models
 from django_cryptography.fields import encrypt
 
-from organizations.models import UserOwnedModel
+from transdoki.models import UserOwnedModel
 
 from .validators import validate_phone_number
 

@@ -20,52 +20,11 @@ from django.views.generic import (
 
 from billing.mixins import BillingProtectedMixin
 from transdoki.tenancy import get_request_account
+from transdoki.views import UserOwnedListView
 
 from .forms import OrganizationForm
 from .models import Bank, Organization, OrganizationBank, OrganizationContact
 from .validators import validate_inn
-
-
-class UserOwnedListView(LoginRequiredMixin, ListView):
-    """Базовый View показывающий только записи текущего account (tenant)."""
-
-    paginate_by = 25
-    page_size_options = [25, 50, 100]
-
-    def get_paginate_by(self, queryset):
-        raw = (self.request.GET.get("page_size") or "").strip()
-        if raw.isdigit():
-            value = int(raw)
-            if value in self.page_size_options:
-                return value
-        return self.paginate_by
-
-    def get_queryset(self):
-        return self.model.objects.filter(account=get_request_account(self.request))
-
-    def _build_pagination_items(self, page_obj):
-        current = page_obj.number
-        total = page_obj.paginator.num_pages
-
-        if total <= 7:
-            return [
-                {"type": "page", "number": n, "current": n == current}
-                for n in range(1, total + 1)
-            ]
-
-        pages = {1, total, current - 2, current - 1, current, current + 1, current + 2}
-        pages = sorted(n for n in pages if 1 <= n <= total)
-
-        items = []
-        prev = None
-
-        for n in pages:
-            if prev is not None and n - prev > 1:
-                items.append({"type": "ellipsis"})
-            items.append({"type": "page", "number": n, "current": n == current})
-            prev = n
-
-        return items
 
 
 class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
@@ -113,7 +72,7 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "organizations/organization_form.html"
 
     def get_queryset(self):
-        return Organization.objects.filter(account=get_request_account(self.request))
+        return Organization.objects.for_account(get_request_account(self.request))
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -187,8 +146,9 @@ class OrganizationListMixin:
         q = self.request.GET.get("q", "").strip()
         if q:
             context["total_count"] = (
-                self.model.objects.filter(
-                    account=get_request_account(self.request),
+                self.model.objects.for_account(
+                    get_request_account(self.request),
+                ).filter(
                     is_own_company=context.get("is_own", False),
                 ).count()
             )
@@ -251,7 +211,7 @@ class OrganizationDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "organizations/organization_confirm_delete.html"
 
     def get_queryset(self):
-        return Organization.objects.filter(account=get_request_account(self.request))
+        return Organization.objects.for_account(get_request_account(self.request))
 
     def get_success_url(self):
         if self.object.is_own_company:
@@ -277,7 +237,7 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
     template_name = "organizations/organization_detail.html"
 
     def get_queryset(self):
-        return Organization.objects.filter(account=get_request_account(self.request))
+        return Organization.objects.for_account(get_request_account(self.request))
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -297,7 +257,7 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
         from trips.models import Trip
         from vehicles.models import PropertyType, VehicleType
 
-        trips_qs = Trip.objects.filter(account=org.account).prefetch_related("points")
+        trips_qs = Trip.objects.for_account(org.account).prefetch_related("points")
         if org.is_own_company:
             ctx["recent_trips"] = (
                 trips_qs.filter(carrier=org).order_by("-date_of_trip")[:5]
@@ -317,13 +277,13 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
 def organization_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
-    qs = Organization.objects.filter(account=account)
+    qs = Organization.objects.for_account(account)
     if request.GET.get("own") == "1":
         qs = qs.filter(is_own_company=True)
     if q:
-        qs = qs.filter(short_name__icontains=q) | Organization.objects.filter(
-            account=account, inn__icontains=q
-        )
+        qs = qs.filter(short_name__icontains=q) | Organization.objects.for_account(
+            account
+        ).filter(inn__icontains=q)
     results = [
         {"id": o.pk, "text": o.short_name}
         for o in qs.order_by("short_name")[:25]
@@ -420,7 +380,7 @@ def bank_account_quick_create(request):
 
     org = None
     if owner_id:
-        org = Organization.objects.filter(pk=owner_id, account=account).first()
+        org = Organization.objects.for_account(account).filter(pk=owner_id).first()
     if not org:
         errors["owner_id"] = "Организация не найдена"
 
@@ -470,7 +430,7 @@ def bank_account_update(request):
     bank_name = request.POST.get("bank_name", "").strip()
     corr_account = request.POST.get("corr_account", "").strip()
 
-    ob = OrganizationBank.objects.filter(pk=ba_id, account=account).select_related("account_bank").first()
+    ob = OrganizationBank.objects.for_account(account).filter(pk=ba_id).select_related("account_bank").first()
     if not ob:
         return JsonResponse({"errors": {"ba_id": "Счёт не найден"}}, status=404)
 
@@ -527,7 +487,7 @@ def bank_account_delete(request):
     account = get_request_account(request)
     ba_id = request.POST.get("ba_id", "").strip()
 
-    ob = OrganizationBank.objects.filter(pk=ba_id, account=account).first()
+    ob = OrganizationBank.objects.for_account(account).filter(pk=ba_id).first()
     if not ob:
         return JsonResponse({"error": "Счёт не найден"}, status=404)
 
@@ -564,7 +524,7 @@ def contact_quick_create(request):
 
     org = None
     if org_id:
-        org = Organization.objects.filter(pk=org_id, account=account).first()
+        org = Organization.objects.for_account(account).filter(pk=org_id).first()
     if not org:
         errors["org_id"] = "Организация не найдена"
 

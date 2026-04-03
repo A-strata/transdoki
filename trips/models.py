@@ -5,7 +5,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError, models, transaction
 
-from organizations.models import Organization, UserOwnedModel
+from organizations.models import Organization
+from transdoki.models import UserOwnedModel
 from persons.models import Person
 from persons.validators import validate_phone_number
 from vehicles.models import Vehicle

@@ -20,6 +20,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from dotenv import load_dotenv
 
 from transdoki.tenancy import get_request_account
+from transdoki.views import UserOwnedListView
 
 from vehicles.models import PropertyType, VehicleType
 
@@ -33,14 +34,6 @@ DADATA_SECRET = os.getenv("DADATA_SECRET")
 DADATA_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
 
 logger = logging.getLogger("security")
-
-
-
-class UserOwnedListView(LoginRequiredMixin, ListView):
-    """Базовый View показывающий только записи пользователя"""
-
-    def get_queryset(self):
-        return self.model.objects.filter(account=get_request_account(self.request))
 
 
 class RoutePointsMixin:
@@ -230,8 +223,8 @@ class TripUpdateView(RoutePointsMixin, LoginRequiredMixin, UpdateView):
     template_name = "trips/trip_form.html"
 
     def get_queryset(self):
-        return Trip.objects.filter(
-            account=get_request_account(self.request)
+        return Trip.objects.for_account(
+            get_request_account(self.request)
         ).prefetch_related("points", "points__organization")
 
     def get_context_data(self, **kwargs):
@@ -289,8 +282,8 @@ class TripDetailView(LoginRequiredMixin, DetailView):
     template_name = "trips/trip_detail.html"
 
     def get_queryset(self):
-        return Trip.objects.filter(
-            account=get_request_account(self.request)
+        return Trip.objects.for_account(
+            get_request_account(self.request)
         ).prefetch_related("attachments", "points", "points__organization")
 
     def get_context_data(self, **kwargs):
@@ -575,7 +568,7 @@ class TripAgreementDownloadView(LoginRequiredMixin, View):
 def trip_search(request):
     account = get_request_account(request)
     q = (request.GET.get("q") or "").strip()
-    qs = Trip.objects.filter(account=account).order_by("-date_of_trip", "-num_of_trip")
+    qs = Trip.objects.for_account(account).order_by("-date_of_trip", "-num_of_trip")
     if q:
         qs = qs.filter(num_of_trip__icontains=q)
     results = [

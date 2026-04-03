@@ -18,7 +18,7 @@ from django.urls import URLPattern, URLResolver, get_resolver
 from django.views import View
 from django.views.generic.edit import CreateView
 
-from organizations.models import UserOwnedModel
+from transdoki.models import UserOwnedModel
 
 TENANT_MARKERS = ("account", "current_org")
 

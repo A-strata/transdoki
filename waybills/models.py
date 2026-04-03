@@ -3,7 +3,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.timezone import localdate
 
-from organizations.models import Organization, UserOwnedModel
+from organizations.models import Organization
+from transdoki.models import UserOwnedModel
 from persons.models import Person
 from vehicles.models import Vehicle
 

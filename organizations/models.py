@@ -1,9 +1,10 @@
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, UniqueConstraint
 from django.urls import reverse
 from django_cryptography.fields import encrypt
+
+from transdoki.models import UserOwnedModel  # noqa: F401
 
 from .validators import validate_inn
 
@@ -14,27 +15,6 @@ OGRN_LENGTH = 15
 ORG_ADDRESS_LENGTH = 200
 BIC_LENGTH = 9
 ACCOUNT_LENGTH = 20
-
-
-class UserOwnedModel(models.Model):
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
-    account = models.ForeignKey(
-        "accounts.Account",
-        on_delete=models.PROTECT,
-        db_index=True,
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
 
 
 class Organization(UserOwnedModel):

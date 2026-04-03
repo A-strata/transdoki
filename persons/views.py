@@ -17,17 +17,11 @@ from django.views.generic import (
 )
 
 from transdoki.tenancy import get_request_account
+from transdoki.views import UserOwnedListView
 
 from .forms import PersonForm
 from .models import Person
 from .validators import validate_phone_number
-
-
-class UserOwnedListView(LoginRequiredMixin, ListView):
-    """Базовый View показывающий только записи текущего account (tenant)."""
-
-    def get_queryset(self):
-        return self.model.objects.filter(account=get_request_account(self.request))
 
 
 class PersonCreateView(LoginRequiredMixin, CreateView):
@@ -60,7 +54,7 @@ class PersonUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "persons/person_form.html"
 
     def get_queryset(self):
-        return Person.objects.filter(account=get_request_account(self.request))
+        return Person.objects.for_account(get_request_account(self.request))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -83,7 +77,7 @@ class PersonDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "persons/person_confirm_delete.html"
 
     def get_queryset(self):
-        return Person.objects.filter(account=get_request_account(self.request))
+        return Person.objects.for_account(get_request_account(self.request))
 
     def get_success_url(self):
         return reverse("persons:list")
@@ -107,7 +101,7 @@ class PersonDetailView(LoginRequiredMixin, DetailView):
     template_name = "persons/person_detail.html"
 
     def get_queryset(self):
-        return Person.objects.filter(account=get_request_account(self.request))
+        return Person.objects.for_account(get_request_account(self.request))
 
 
 class PersonListView(LoginRequiredMixin, ListView):
@@ -129,7 +123,7 @@ class PersonListView(LoginRequiredMixin, ListView):
 def person_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
-    qs = Person.objects.filter(account=account)
+    qs = Person.objects.for_account(account)
     carrier_id = request.GET.get("carrier_id", "").strip()
     if carrier_id.isdigit():
         qs = qs.filter(employer_id=int(carrier_id))

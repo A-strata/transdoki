@@ -1,7 +1,8 @@
 from django.db import models
 from django.urls import reverse
 
-from organizations.models import Organization, UserOwnedModel
+from organizations.models import Organization
+from transdoki.models import UserOwnedModel
 
 VEHICLE_TYPE_LENTH = 100
 GRN_LENTH = 20

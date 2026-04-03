@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Max
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from transdoki.tenancy import get_request_account
 
@@ -62,7 +62,7 @@ class WaybillListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = (
-            Waybill.objects.filter(account=get_request_account(self.request))
+            Waybill.objects.for_account(get_request_account(self.request))
             .select_related("organization", "driver", "truck", "trailer")
             .order_by("-date", "-id")
         )
@@ -111,8 +111,8 @@ class WaybillUpdateView(LoginRequiredMixin, UpdateView):
         return kwargs
 
     def get_queryset(self):
-        return Waybill.objects.filter(
-            account=get_request_account(self.request)
+        return Waybill.objects.for_account(
+            get_request_account(self.request)
         ).select_related("driver", "truck", "trailer")
 
     def form_valid(self, form):
@@ -131,7 +131,7 @@ class WaybillDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return (
-            Waybill.objects.filter(account=get_request_account(self.request))
+            Waybill.objects.for_account(get_request_account(self.request))
             .select_related("driver", "truck", "trailer")
             .prefetch_related("events", "route_points__trip")
         )
@@ -206,3 +206,9 @@ class WaybillDetailView(LoginRequiredMixin, DetailView):
             "max_seq"
         ]
         return (max_sequence or 0) + 1
+
+
+class WaybillFormV2View(LoginRequiredMixin, TemplateView):
+    """Экспериментальный шаблон формы путевого листа (только UI)."""
+
+    template_name = "waybills/waybill_form_v2.html"
