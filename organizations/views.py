@@ -87,6 +87,7 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         self._back_url = self.request.POST.get("back_url", "")
+        form.instance.updated_by = self.request.user
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -460,6 +461,7 @@ def bank_account_update(request):
 
     ob.account_num = account_num
     ob.account_bank = bank
+    ob.updated_by = request.user
     try:
         ob.full_clean()
         ob.save()
@@ -576,6 +578,7 @@ def contact_update(request):
     contact.name = name
     contact.phone = phone
     contact.position = position
+    contact.updated_by = request.user
     contact.save()
 
     return JsonResponse({"ok": True})

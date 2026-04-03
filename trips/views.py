@@ -260,6 +260,7 @@ class TripUpdateView(RoutePointsMixin, LoginRequiredMixin, UpdateView):
         point_forms, points_valid, points_errors = self._validate_points(points_data, request.user)
 
         if form.is_valid() and points_valid:
+            form.instance.updated_by = request.user
             self.object = form.save()
             self._save_points(self.object, point_forms, points_data)
             return redirect(self.get_success_url())
@@ -737,6 +738,8 @@ class TripFixFinancialView(LoginRequiredMixin, View):
             update_fields = ["carrier_total_fixed", "carrier_financial_status"]
             label = "перевозчика"
 
+        trip.updated_by = request.user
+        update_fields.append("updated_by")
         trip.save(update_fields=update_fields)
         messages.success(
             request, f"Сумма {label} зафиксирована: {total:,.2f} ₽".replace(",", "\u00a0")

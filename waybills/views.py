@@ -116,6 +116,7 @@ class WaybillUpdateView(LoginRequiredMixin, UpdateView):
         ).select_related("driver", "truck", "trailer")
 
     def form_valid(self, form):
+        form.instance.updated_by = self.request.user
         response = super().form_valid(form)
         messages.success(self.request, "Шапка путевого листа обновлена.")
         return response

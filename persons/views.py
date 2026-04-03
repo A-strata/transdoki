@@ -62,6 +62,7 @@ class PersonUpdateView(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        form.instance.updated_by = self.request.user
         try:
             return super().form_valid(form)
         except IntegrityError:
