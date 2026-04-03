@@ -21,9 +21,12 @@ def on_user_logged_in(sender, request, user, **kwargs):
     if not session_key:
         return
 
+    from django.utils import timezone
+
     UserSession.objects.get_or_create(
         user=user,
         session_key=session_key,
+        defaults={"last_activity": timezone.now()},
     )
 
     active_count = UserSession.objects.filter(user=user, is_active=True).count()

@@ -136,7 +136,7 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class AccountUserCreateView(BillingProtectedMixin, LoginRequiredMixin, FormView):
+class AccountUserCreateView(LoginRequiredMixin, BillingProtectedMixin, FormView):
     template_name = "accounts/user_create.html"
     form_class = AccountUserCreateForm
     success_url = reverse_lazy("accounts:cabinet")

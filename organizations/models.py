@@ -17,7 +17,12 @@ ACCOUNT_LENGTH = 20
 
 
 class UserOwnedModel(models.Model):
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     account = models.ForeignKey(
         "accounts.Account",
         on_delete=models.PROTECT,

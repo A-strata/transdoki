@@ -207,7 +207,7 @@ class UserSession(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     last_activity = models.DateTimeField(
-        auto_now=True, verbose_name="Последняя активность"
+        default=timezone.now, verbose_name="Последняя активность"
     )
     is_active = models.BooleanField(default=True, verbose_name="Активна")
 
@@ -231,8 +231,3 @@ def create_user_profile(sender, instance, created, **kwargs):
         UserProfile.objects.create(user=instance)
 
 
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    """Сохраняет профиль, если он уже существует."""
-    if hasattr(instance, "profile"):
-        instance.profile.save()
