@@ -46,6 +46,14 @@ Production URL: transdoki.ru
   migrations/     # миграции (не редактировать вручную)
 ```
 
+### Инфраструктурный слой (transdoki/)
+```
+transdoki/
+  models.py       # UserOwnedModel, TenantManager — базовые классы мультитенантности
+  views.py        # UserOwnedListView — единый базовый ListView с tenant-фильтрацией
+  tenancy.py      # get_request_account() — извлечение account из request
+```
+
 ## Commands
 ```bash
 # Dev server
@@ -88,10 +96,13 @@ python manage.py charge_daily --dry-run   # только расчёт, без з
 - Новые поля с чувствительными данными шифровать через `django-cryptography-5`
 - Не использовать `raw()` и `extra()` без крайней необходимости (SQL injection)
 - Списковые страницы с поиском/сортировкой — через Partial HTML over Fetch (partial-шаблон + `X-Requested-With` в view + fetch в JS). Подробности в `docs/ui-guide.md` раздел 14.
+- При изменении объекта — проставлять `updated_by = request.user` (в `form_valid`, `post`, FBV). В `save(update_fields=[...])` добавлять `"updated_by"` в список полей.
+- Системные изменения (management commands, signals, Celery tasks) — `updated_by=None` осознанно.
 
 ## Safety rules (важно!)
 - **Миграции**: перед `makemigrations` убедиться что изменения в models.py корректны.
   Деструктивные миграции (удаление полей/таблиц) — только с явного подтверждения.
+- **Tenant-изоляция**: любой новый view с `UserOwnedModel`-моделью обязан фильтровать по account (см. раздел «Мультитенантность»). Автотест `tests/test_tenant_isolation.py` ловит пропуски в CBV.
 - **DEBUG**: управляется через `DJANGO_DEBUG` в `.env`. В продакшене должно быть `False`.
 - **Секреты**: не выводить значения env-переменных в логи и ответы.
 - **Права**: в views проверять `request.user.is_authenticated` и права доступа.
@@ -111,6 +122,36 @@ python manage.py charge_daily --dry-run   # только расчёт, без з
 - `BillingProtectedMixin` — подключать ко всем Create-views чтобы блокировать создание при долге
 - Контекст-процессор `billing_account` доступен во всех шаблонах как `{{ billing_account }}`
 - Cron: `charge_daily` запускать ежедневно (инструкция в `docs/cron.md` или отдельно)
+
+## Мультитенантность
+
+Все доменные модели (Organization, Person, Vehicle, Trip, Waybill и др.) наследуют `UserOwnedModel` из `transdoki/models.py`.
+
+### UserOwnedModel — поля
+| Поле | Назначение |
+|------|-----------|
+| `account` | FK → Account (tenant). `on_delete=PROTECT` |
+| `created_by` | FK → User. Кто создал. `on_delete=SET_NULL` |
+| `updated_by` | FK → User. Кто последним изменил. `on_delete=SET_NULL, related_name="+"` |
+| `created_at` | Автодата создания |
+| `updated_at` | Автодата изменения |
+
+### TenantManager
+Все модели-наследники получают `objects = TenantManager()` с методом `for_account(account)`:
+```python
+# Правильно:
+Organization.objects.for_account(account).filter(is_own_company=True)
+
+# Неправильно (обходит менеджер):
+Organization.objects.filter(account=account, is_own_company=True)
+```
+
+### Правила для новых views
+- **ListView**: наследовать `UserOwnedListView` из `transdoki/views.py` (tenant-фильтрация + пагинация встроены)
+- **DetailView / UpdateView / DeleteView**: переопределить `get_queryset` с `.for_account()`
+- **CreateView**: в `form_valid` / `post` проставить `form.instance.created_by` и `form.instance.account`
+- **FBV**: использовать `Model.objects.for_account(get_request_account(request))`
+- **Автотест**: `tests/test_tenant_isolation.py` проверяет все CBV автоматически — забытый фильтр не пройдёт
 
 ## accounts: сессии и роли
 - `SessionActivityMiddleware` — обновляет `last_activity` не чаще 1 раза в 5 минут
