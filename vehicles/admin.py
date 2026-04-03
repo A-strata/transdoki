@@ -49,9 +49,13 @@ class VehicleAdmin(admin.ModelAdmin):
             kwargs["queryset"] = Organization.objects.filter(account=account)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    readonly_fields = ("created_by", "updated_by", "created_at", "updated_at")
+
     def save_model(self, request, obj, form, change):
         if not obj.created_by_id:
             obj.created_by = request.user
+        if change:
+            obj.updated_by = request.user
         if not obj.account_id:
             account = _get_request_account(request)
             if account:

@@ -41,12 +41,12 @@ class TripAdmin(admin.ModelAdmin):
         "driver__surname",
         "truck__grn",
     )
-    readonly_fields = ("num_of_trip",)
+    readonly_fields = ("num_of_trip", "created_by", "updated_by", "created_at", "updated_at")
 
     fieldsets = (
         (
             "Основная информация",
-            {"fields": ("num_of_trip", "date_of_trip", "account", "created_by")},
+            {"fields": ("num_of_trip", "date_of_trip", "account", "created_by", "updated_by")},
         ),
         (
             "Участники",
@@ -104,6 +104,8 @@ class TripAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not obj.created_by_id:
             obj.created_by = request.user
+        if change:
+            obj.updated_by = request.user
         if not obj.account_id:
             account = _get_request_account(request)
             if account:
@@ -124,6 +126,7 @@ class TripAttachmentAdmin(admin.ModelAdmin):
     )
     search_fields = ("original_name", "trip__num_of_trip")
     list_filter = ("created_at", "account")
+    readonly_fields = ("created_by", "updated_by", "created_at", "updated_at")
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -143,6 +146,8 @@ class TripAttachmentAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not obj.created_by_id:
             obj.created_by = request.user
+        if change:
+            obj.updated_by = request.user
         if not obj.account_id:
             account = _get_request_account(request)
             if account:

@@ -61,9 +61,13 @@ class PersonAdmin(admin.ModelAdmin):
             return qs.none()
         return qs.filter(account=account)
 
+    readonly_fields = ("created_by", "updated_by", "created_at", "updated_at")
+
     def save_model(self, request, obj, form, change):
         if not obj.created_by_id:
             obj.created_by = request.user
+        if change:
+            obj.updated_by = request.user
         if not obj.account_id:
             account = _get_request_account(request)
             if account:

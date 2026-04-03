@@ -36,7 +36,7 @@ class OrganizationAdmin(admin.ModelAdmin):
     list_filter = ("is_own_company", "petrolplus_integration_enabled", "account")
     search_fields = ("short_name", "full_name", "inn")
     inlines = [OrganizationBankInline]
-    readonly_fields = ("petrolplus_credentials_updated_at",)
+    readonly_fields = ("petrolplus_credentials_updated_at", "created_by", "updated_by", "created_at", "updated_at")
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -50,6 +50,8 @@ class OrganizationAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not obj.created_by_id:
             obj.created_by = request.user
+        if change:
+            obj.updated_by = request.user
         if not obj.account_id:
             account = _get_request_account(request)
             if account:
@@ -74,6 +76,7 @@ class OrganizationBankAdmin(admin.ModelAdmin):
     )
     search_fields = ("account_num", "account_owner__short_name")
     list_filter = ("account",)
+    readonly_fields = ("created_by", "updated_by", "created_at", "updated_at")
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -97,6 +100,8 @@ class OrganizationBankAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not obj.created_by_id:
             obj.created_by = request.user
+        if change:
+            obj.updated_by = request.user
         if not obj.account_id:
             account = _get_request_account(request)
             if account:
