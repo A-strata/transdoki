@@ -108,7 +108,7 @@
             {% if points %}
                 <div class="route-timeline">
                 {% for p in points %}
-                    <div class="tl-point tl-point--{{ p.point_type|lower }}">
+                    <div class="tl-point tl-point--{{ p.point_type|lower }}{% if not forloop.last %} tl-point--has-next{% endif %}">
                         <div class="tl-marker"></div>
                         <div class="tl-content">
                             <div class="tl-header">

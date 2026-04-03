@@ -208,17 +208,6 @@
     padding-left: 28px;
 }
 
-.route-timeline::before {
-    content: '';
-    position: absolute;
-    left: 9px;
-    top: 8px;
-    bottom: 8px;
-    width: 2px;
-    background: var(--border);
-    border-radius: 1px;
-}
-
 .tl-point {
     position: relative;
     padding-bottom: 16px;
@@ -228,26 +217,40 @@
     padding-bottom: 0;
 }
 
+/* Пунктирная линия между соседними точками */
+.tl-point--has-next::after {
+    content: '';
+    position: absolute;
+    left: -19px;
+    top: 15px;
+    bottom: -11px;
+    width: 2px;
+    background: repeating-linear-gradient(
+        to bottom,
+        var(--border) 0, var(--border) 4px,
+        transparent 4px, transparent 8px
+    );
+    z-index: 1;
+}
+
 .tl-marker {
     position: absolute;
-    left: -28px;
-    top: 4px;
-    width: 18px;
-    height: 18px;
+    left: -24px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    border: 2px solid var(--border);
+    border: 2.5px solid var(--border);
     background: var(--surface);
-    z-index: 1;
+    z-index: 2;
 }
 
 .tl-point--load .tl-marker {
     border-color: var(--success-text);
-    background: var(--success-bg);
 }
 
 .tl-point--unload .tl-marker {
     border-color: var(--error-text);
-    background: var(--error-bg);
 }
 
 .tl-content {
