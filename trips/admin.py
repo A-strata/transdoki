@@ -33,6 +33,7 @@ class TripAdmin(admin.ModelAdmin):
         "carrier_cost",
         "account",
         "created_by",
+        "updated_by",
     )
     list_filter = ("date_of_trip", "client_payment_method", "payment_condition", "carrier_payment_condition", "account")
     search_fields = (
