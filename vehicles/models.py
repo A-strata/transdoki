@@ -71,3 +71,119 @@ class Vehicle(UserOwnedModel):
                 fields=["account", "grn"], name="unique_grn_per_account"
             ),
         ]
+
+
+class VehicleFueling(UserOwnedModel):
+    """Факт заправки транспортного средства."""
+
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Ручной ввод"
+        FUEL_CARD = "fuel_card", "Топливная карта"
+
+    class FuelType(models.TextChoices):
+        DIESEL = "diesel", "ДТ"
+        AI_92 = "ai_92", "АИ-92"
+        AI_95 = "ai_95", "АИ-95"
+        AI_98 = "ai_98", "АИ-98"
+        CNG = "cng", "Метан (CNG)"
+        LPG = "lpg", "Пропан (LPG)"
+        ADBLUE = "adblue", "AdBlue"
+
+    # ── Привязка ──
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.PROTECT,
+        related_name="fuelings",
+        verbose_name="Транспортное средство",
+    )
+    waybill = models.ForeignKey(
+        "waybills.Waybill",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fuelings",
+        verbose_name="Путевой лист",
+    )
+
+    # ── Источник ──
+    source = models.CharField(
+        max_length=20,
+        choices=Source.choices,
+        default=Source.MANUAL,
+        verbose_name="Источник данных",
+    )
+
+    # ── Что и сколько ──
+    fuel_type = models.CharField(
+        max_length=10,
+        choices=FuelType.choices,
+        verbose_name="Тип топлива",
+    )
+    litres = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        verbose_name="Объём (л)",
+    )
+
+    # ── Стоимость ──
+    price_per_litre = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Цена за литр",
+    )
+    total_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Стоимость",
+    )
+
+    # ── Когда и где ──
+    timestamp = models.DateTimeField(
+        verbose_name="Дата и время заправки",
+    )
+    station_name = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        verbose_name="АЗС",
+    )
+
+    # ── Интеграция ──
+    external_id = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Внешний ID транзакции",
+    )
+    raw_data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Сырые данные API",
+    )
+
+    class Meta:
+        verbose_name = "Заправка"
+        verbose_name_plural = "Заправки"
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["vehicle", "timestamp"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["vehicle", "source", "external_id"],
+                condition=models.Q(external_id__gt=""),
+                name="unique_fueling_external_id",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.get_fuel_type_display()} {self.litres}л"
+            f" / {self.vehicle}"
+            f" / {self.timestamp:%d.%m.%Y}"
+        )

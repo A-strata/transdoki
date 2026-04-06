@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "vehicles",
     "trips",
     "waybills",
+    "integrations",
 ]
 
 MIDDLEWARE = [
