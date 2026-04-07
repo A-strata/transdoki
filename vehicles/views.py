@@ -252,23 +252,63 @@ def vehicle_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
     vtype = request.GET.get("type", "")
-    qs = Vehicle.objects.for_account(account)
-    if request.GET.get("own") == "1":
-        qs = qs.filter(owner__is_own_company=True)
     carrier_id = request.GET.get("carrier_id", "").strip()
-    if carrier_id.isdigit():
-        qs = qs.filter(owner_id=int(carrier_id))
+
+    base_qs = Vehicle.objects.for_account(account)
+    if request.GET.get("own") == "1":
+        base_qs = base_qs.filter(owner__is_own_company=True)
     if vtype == "truck":
-        qs = qs.filter(vehicle_type__in=["truck", "single"])
+        base_qs = base_qs.filter(vehicle_type__in=["truck", "single"])
     elif vtype == "trailer":
-        qs = qs.filter(vehicle_type="trailer")
-    if q:
-        qs = qs.filter(Q(grn__icontains=q) | Q(brand__icontains=q))
-    results = [
-        {"id": v.pk, "text": str(v)}
-        for v in qs.order_by("grn")[:25]
-    ]
-    return JsonResponse({"results": results})
+        base_qs = base_qs.filter(vehicle_type="trailer")
+
+    def apply_q(qs):
+        if q:
+            return qs.filter(Q(grn__icontains=q) | Q(brand__icontains=q))
+        return qs
+
+    def serialize(qs):
+        return [
+            {"id": v.pk, "text": str(v)}
+            for v in qs.order_by("grn")[:25]
+        ]
+
+    if not carrier_id.isdigit():
+        return JsonResponse({
+            "carrier": [],
+            "others": serialize(apply_q(base_qs)),
+            "hint": None,
+        })
+
+    org = (
+        Organization.objects.for_account(account)
+        .filter(pk=int(carrier_id))
+        .first()
+    )
+
+    if not org or not org.is_own_company:
+        return JsonResponse({
+            "carrier": [],
+            "others": serialize(apply_q(base_qs)),
+            "hint": "no_employer_data",
+        })
+
+    carrier_qs = base_qs.filter(owner_id=org.pk)
+    carrier_results = serialize(apply_q(carrier_qs))
+
+    if not carrier_results and not q:
+        return JsonResponse({
+            "carrier": [],
+            "others": serialize(base_qs),
+            "hint": "no_employer_data",
+        })
+
+    others_qs = apply_q(base_qs.exclude(owner_id=org.pk)) if q else None
+    return JsonResponse({
+        "carrier": carrier_results,
+        "others": serialize(others_qs) if others_qs is not None else [],
+        "hint": None,
+    })
 
 
 @login_required
