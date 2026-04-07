@@ -36,6 +36,13 @@
                        class="nav-link {% if request.path == organizations_url %}active{% endif %}">
                         Контрагенты
                     </a>
+                    {% if has_contracts_module %}
+                        {% url 'contracts:list' as contracts_url %}
+                        <a href="{{ contracts_url }}"
+                           class="nav-link {% if '/contracts/' in request.path %}active{% endif %}">
+                            Договоры
+                        </a>
+                    {% endif %}
                 {% endif %}
             </div>
 

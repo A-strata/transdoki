@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Договор №{{ object.number }} — TMS{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'contracts/css/contract_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+{% with contract=object %}
+<section class="contract-detail-page">
+
+    <div class="sticky-nav">
+        <h1 class="sticky-nav-title">Договор №{{ contract.number }}</h1>
+        <div class="sticky-nav-actions">
+            <a href="{% url 'contracts:download' contract.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Скачать DOCX</a>
+            <a href="{% url 'contracts:edit' contract.pk %}" class="tms-btn tms-btn-primary tms-btn-sm">Редактировать</a>
+        </div>
+    </div>
+
+    <div class="meta-strip">
+        <span class="meta-chip">{{ contract.get_contract_type_display }}</span>
+        <span class="meta-chip">{{ contract.date_signed|date:"d.m.Y" }}</span>
+        <span class="status-badge status-badge--{% if contract.status == 'active' %}success{% elif contract.status == 'draft' %}neutral{% elif contract.status == 'expired' %}warning{% else %}error{% endif %}">
+            {{ contract.get_status_display }}
+        </span>
+    </div>
+
+    <div class="card">
+
+        <div class="section" id="section-parties">
+            <h2 class="section-title">Стороны договора</h2>
+            <div class="two-cols">
+                <div class="sub-card">
+                    <h3 class="sub-title">Наша компания</h3>
+                    <div class="kv">
+                        <p class="kv-label">Организация</p>
+                        <p class="kv-value">
+                            <a class="entity-link" href="{% url 'organizations:detail' contract.own_company.pk %}?next={% url 'contracts:detail' contract.pk %}">
+                                {{ contract.own_company.short_name }}
+                            </a>
+                        </p>
+                    </div>
+                    {% if contract.own_company.inn %}
+                    <div class="kv">
+                        <p class="kv-label">ИНН</p>
+                        <p class="kv-value">{{ contract.own_company.inn }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="sub-card">
+                    <h3 class="sub-title">Контрагент</h3>
+                    <div class="kv">
+                        <p class="kv-label">Организация</p>
+                        <p class="kv-value">
+                            <a class="entity-link" href="{% url 'organizations:detail' contract.contractor.pk %}?next={% url 'contracts:detail' contract.pk %}">
+                                {{ contract.contractor.short_name }}
+                            </a>
+                        </p>
+                    </div>
+                    {% if contract.contractor.inn %}
+                    <div class="kv">
+                        <p class="kv-label">ИНН</p>
+                        <p class="kv-value">{{ contract.contractor.inn }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="section-details">
+            <h2 class="section-title">Условия</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Сумма</p>
+                    <p class="kv-value">{% if contract.amount %}{{ contract.amount|floatformat:2 }} ₽{% else %}—{% endif %}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Действует до</p>
+                    <p class="kv-value">{% if contract.valid_until %}{{ contract.valid_until|date:"d.m.Y" }}{% else %}Бессрочный{% endif %}</p>
+                </div>
+                <div class="kv kv--full">
+                    <p class="kv-label">Предмет договора</p>
+                    <p class="kv-value">{{ contract.subject }}</p>
+                </div>
+                {% if contract.notes %}
+                <div class="kv kv--full">
+                    <p class="kv-label">Примечания</p>
+                    <p class="kv-value">{{ contract.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section" id="section-attachments">
+            <h2 class="section-title">Приложения к договору</h2>
+
+            {% for att in contract.attachments.all %}
+            <div class="attachment-item">
+                <div class="attachment-main">
+                    <div class="attachment-text">
+                        <p class="attachment-name">{{ att.get_attachment_type_display }} №{{ att.number }}</p>
+                        <p class="kv-label">{{ att.date_signed|date:"d.m.Y" }}{% if att.amount %} — {{ att.amount|floatformat:2 }} ₽{% endif %}</p>
+                        {% if att.subject %}<p class="kv-label">{{ att.subject }}</p>{% endif %}
+                    </div>
+                </div>
+                <div class="attachment-actions">
+                    <a href="{% url 'contracts:attachment_download' att.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
+                    <form method="post" action="{% url 'contracts:attachment_delete' att.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="tms-btn tms-btn-danger tms-btn-sm" onclick="return confirm('Удалить приложение?')">Удалить</button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+                <p class="empty-hint">Приложений пока нет.</p>
+            {% endfor %}
+
+            <div class="attachment-add">
+                <a href="{% url 'contracts:attachment_create' contract.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm tms-btn-add">+ Добавить приложение</a>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="page-footer">
+        <a href="{% url 'contracts:list' %}" class="tms-btn tms-btn-secondary">К списку договоров</a>
+        <form method="post" action="{% url 'contracts:delete' contract.pk %}" class="inline-form">
+            {% csrf_token %}
+            <button type="submit" class="tms-btn tms-btn-danger" onclick="return confirm('Удалить договор №{{ contract.number }}?')">Удалить</button>
+        </form>
+    </div>
+
+</section>
+{% endwith %}
+{% endblock %}

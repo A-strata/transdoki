@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import BillingTransaction, PaymentOrder
+from billing.constants import AVAILABLE_MODULES
+
+from .models import AccountModule, BillingTransaction, PaymentOrder
 
 
 @admin.register(PaymentOrder)
@@ -42,3 +44,34 @@ class BillingTransactionAdmin(admin.ModelAdmin):
     search_fields = ("account__name", "description")
     readonly_fields = ("account", "kind", "amount", "balance_after", "description", "metadata", "created_at")
     ordering = ("-created_at",)
+
+
+@admin.register(AccountModule)
+class AccountModuleAdmin(admin.ModelAdmin):
+    list_display = ("account", "module_display", "enabled_by", "enabled_at", "expires_at")
+    list_filter = ("module",)
+    search_fields = ("account__name",)
+    readonly_fields = ("enabled_at",)
+    autocomplete_fields = ("account",)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        choices = [("", "---------")] + [
+            (code, label) for code, label in AVAILABLE_MODULES.items()
+        ]
+        form.base_fields["module"].widget = admin.widgets.AdminTextInputWidget()
+        from django import forms as dj_forms
+
+        form.base_fields["module"] = dj_forms.ChoiceField(
+            choices=choices, label="Модуль"
+        )
+        return form
+
+    def save_model(self, request, obj, form, change):
+        if not obj.enabled_by_id:
+            obj.enabled_by = request.user
+        super().save_model(request, obj, form, change)
+
+    @admin.display(description="Модуль")
+    def module_display(self, obj):
+        return AVAILABLE_MODULES.get(obj.module, obj.module)

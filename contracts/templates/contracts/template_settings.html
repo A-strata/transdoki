@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Шаблоны документов — TMS{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'contracts/css/template_settings.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="templates-page">
+    <div class="list-toolbar">
+        <div class="list-toolbar-left">
+            <h1>Шаблоны документов</h1>
+            <p class="list-subtitle">Загрузите свои шаблоны .docx или используйте дефолтные</p>
+        </div>
+        <div class="list-toolbar-right">
+            <a href="{% url 'contracts:list' %}" class="tms-btn tms-btn-secondary">К списку договоров</a>
+        </div>
+    </div>
+
+    <div class="templates-grid">
+        {% for info in template_info %}
+        <div class="template-card card">
+            <div class="template-card-header">
+                <h2>{{ info.label }}</h2>
+                {% if info.uploaded %}
+                    <span class="status-badge status-badge--success">Свой шаблон</span>
+                {% else %}
+                    <span class="status-badge status-badge--neutral">Дефолтный</span>
+                {% endif %}
+            </div>
+
+            {% if info.uploaded %}
+                <p class="template-meta">Загружен {{ info.uploaded.uploaded_at|date:"d.m.Y H:i" }}{% if info.uploaded.uploaded_by %} — {{ info.uploaded.uploaded_by.get_full_name|default:info.uploaded.uploaded_by.username }}{% endif %}</p>
+            {% endif %}
+
+            <div class="template-actions">
+                <form method="post"
+                      action="{% url 'contracts:template_upload' info.code %}"
+                      enctype="multipart/form-data"
+                      class="template-upload-form">
+                    {% csrf_token %}
+                    <input type="file" name="file" accept=".docx" hidden>
+                    <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm upload-trigger">
+                        {% if info.uploaded %}Заменить{% else %}Загрузить{% endif %}
+                    </button>
+                </form>
+
+                {% if info.uploaded %}
+                <form method="post" action="{% url 'contracts:template_delete' info.code %}">
+                    {% csrf_token %}
+                    <button type="submit" class="tms-btn tms-btn-danger tms-btn-sm">Удалить свой</button>
+                </form>
+                {% endif %}
+
+                <a href="{% url 'contracts:template_download_default' info.code %}"
+                   class="tms-btn tms-btn-light tms-btn-sm">Скачать дефолтный</a>
+            </div>
+
+            <details class="placeholders-section">
+                <summary class="placeholders-toggle">Доступные плейсхолдеры</summary>
+                <div class="placeholders-grid" data-placeholders>
+                    {% for code, label in info.placeholders %}
+                    <button type="button"
+                            class="placeholder-chip"
+                            data-copy-text="{{ code }}"
+                            title="Скопировать {{ code }}">
+                        <span class="placeholder-name">{{ code }}</span>
+                        <span class="placeholder-label">{{ label }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </details>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'contracts/js/template_settings.js' %}"></script>
+{% endblock %}

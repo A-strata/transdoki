@@ -79,6 +79,47 @@ def withdraw(account, amount: Decimal, description: str, metadata: dict = None) 
     return tx
 
 
+def account_has_module(account, module_code: str, request=None) -> bool:
+    """
+    Проверяет, подключён ли модуль к аккаунту.
+
+    is_billing_exempt → доступ ко всем модулям.
+    Результат кешируется на request, чтобы не делать запрос на каждый view.
+    """
+    if account.is_billing_exempt:
+        return True
+
+    # Кеш на уровне request — один SELECT за запрос
+    if request is not None:
+        cache_attr = "_module_codes_cache"
+        if not hasattr(request, cache_attr):
+            from django.utils import timezone
+
+            from billing.models import AccountModule
+
+            qs = AccountModule.objects.filter(account=account).values_list(
+                "module", "expires_at"
+            )
+            now = timezone.now()
+            request._module_codes_cache = {
+                code for code, expires in qs if expires is None or expires > now
+            }
+        return module_code in request._module_codes_cache
+
+    # Без request — прямой запрос (management commands, signals)
+    from django.db.models import Q
+    from django.utils import timezone
+
+    from billing.models import AccountModule
+
+    return AccountModule.objects.filter(
+        account=account,
+        module=module_code,
+    ).filter(
+        Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())
+    ).exists()
+
+
 def can_create_entity(account) -> bool:
     """
     Проверяет, может ли аккаунт создавать новые сущности.

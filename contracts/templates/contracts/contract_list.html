@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Договоры — TMS{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'contracts/css/contract_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="contracts-page">
+    <div class="list-toolbar">
+        <div class="list-toolbar-left">
+            <h1>Договоры</h1>
+        </div>
+        <div class="list-toolbar-right">
+            <a href="{% url 'contracts:template_settings' %}" class="tms-btn tms-btn-secondary tms-btn-sm">Шаблоны документов</a>
+            <a href="{% url 'contracts:create' %}" class="tms-btn tms-btn-primary tms-btn-add">+ Новый договор</a>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap">
+            <table class="tms-table">
+                <thead>
+                    <tr>
+                        <th>Номер</th>
+                        <th>Тип</th>
+                        <th>Контрагент</th>
+                        <th>Наша компания</th>
+                        <th>Дата</th>
+                        <th>До</th>
+                        <th>Статус</th>
+                        <th>Сумма</th>
+                        <th class="row-actions-cell"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contract in contracts %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'contracts:detail' contract.pk %}" class="entity-link">
+                                №{{ contract.number }}
+                            </a>
+                        </td>
+                        <td>{{ contract.get_contract_type_display }}</td>
+                        <td>{{ contract.contractor.short_name }}</td>
+                        <td>{{ contract.own_company.short_name }}</td>
+                        <td>{{ contract.date_signed|date:"d.m.Y" }}</td>
+                        <td>{% if contract.valid_until %}{{ contract.valid_until|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                        <td>
+                            <span class="status-badge status-badge--{% if contract.status == 'active' %}success{% elif contract.status == 'draft' %}neutral{% elif contract.status == 'expired' %}warning{% else %}error{% endif %}">
+                                {{ contract.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{% if contract.amount %}{{ contract.amount|floatformat:2 }} ₽{% else %}—{% endif %}</td>
+                        <td class="row-actions-cell">
+                            <div class="row-actions">
+                                <a href="{% url 'contracts:detail' contract.pk %}" class="row-action row-action--view" title="Просмотр">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <p>Договоров пока нет. <a href="{% url 'contracts:create' %}">Создать первый</a>.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination">
+        {% for item in pagination_items %}
+            {% if item.type == "ellipsis" %}
+                <span class="pagination-ellipsis">…</span>
+            {% elif item.current %}
+                <span class="pagination-current">{{ item.number }}</span>
+            {% else %}
+                <a href="?page={{ item.number }}" class="pagination-link">{{ item.number }}</a>
+            {% endif %}
+        {% endfor %}
+    </nav>
+    {% endif %}
+
+</section>
+{% endblock %}

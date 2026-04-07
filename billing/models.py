@@ -145,3 +145,47 @@ class BillingTransaction(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()} {self.amount}₽ — {self.account}"
+
+
+class AccountModule(models.Model):
+    """Платный модуль, подключённый к аккаунту."""
+
+    account = models.ForeignKey(
+        "accounts.Account",
+        on_delete=models.CASCADE,
+        related_name="modules",
+        verbose_name="Аккаунт",
+    )
+    module = models.CharField(
+        max_length=40,
+        verbose_name="Код модуля",
+        help_text="Код из AVAILABLE_MODULES в billing/constants.py",
+    )
+    enabled_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Кто подключил",
+    )
+    enabled_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата подключения",
+    )
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Действует до",
+        help_text="NULL = бессрочно",
+    )
+
+    class Meta:
+        unique_together = [("account", "module")]
+        verbose_name = "Модуль аккаунта"
+        verbose_name_plural = "Модули аккаунтов"
+
+    def __str__(self):
+        from billing.constants import AVAILABLE_MODULES
+
+        label = AVAILABLE_MODULES.get(self.module, self.module)
+        return f"{label} — {self.account}"

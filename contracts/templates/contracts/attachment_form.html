@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Новое приложение к договору №{{ contract.number }} — TMS{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'contracts/css/contract_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="contract-form-page">
+    <div class="contract-form">
+        <header class="page-header">
+            <h1 class="page-title">Приложение к договору №{{ contract.number }}</h1>
+            <p class="page-subtitle">{{ contract.contractor.short_name }}</p>
+        </header>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-card">
+                {% if form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <section class="form-section">
+                    <h2>Данные приложения</h2>
+                    <div class="fields-grid">
+                        <div class="field">
+                            {{ form.attachment_type.label_tag }}
+                            {{ form.attachment_type }}
+                            {{ form.attachment_type.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.number.label_tag }}
+                            {{ form.number }}
+                            {{ form.number.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.date_signed.label_tag }}
+                            {{ form.date_signed }}
+                            {{ form.date_signed.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.amount.label_tag }}
+                            {{ form.amount }}
+                            {{ form.amount.errors }}
+                        </div>
+                        <div class="field field--full">
+                            {{ form.subject.label_tag }}
+                            {{ form.subject }}
+                            {{ form.subject.errors }}
+                        </div>
+                        <div class="field field--full">
+                            {{ form.notes.label_tag }}
+                            {{ form.notes }}
+                            {{ form.notes.errors }}
+                        </div>
+                    </div>
+                </section>
+
+                <div class="form-actions">
+                    <button type="submit" class="tms-btn tms-btn-primary" data-loading-text="Сохранение...">Создать</button>
+                    <a href="{% url 'contracts:detail' contract.pk %}" class="tms-btn tms-btn-secondary">Отмена</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

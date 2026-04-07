@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Редактирование договора{% else %}Новый договор{% endif %} — TMS{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'contracts/css/contract_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="contract-form-page">
+    <div class="contract-form">
+        <header class="page-header">
+            <h1 class="page-title">
+                {% if form.instance.pk %}
+                    Редактирование договора №{{ form.instance.number }}
+                {% else %}
+                    Новый договор
+                {% endif %}
+            </h1>
+        </header>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-card">
+                {% if form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <section class="form-section">
+                    <h2>Основные данные</h2>
+                    <div class="fields-grid">
+                        <div class="field">
+                            {{ form.number.label_tag }}
+                            {{ form.number }}
+                            {{ form.number.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.contract_type.label_tag }}
+                            {{ form.contract_type }}
+                            {{ form.contract_type.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.status.label_tag }}
+                            {{ form.status }}
+                            {{ form.status.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.date_signed.label_tag }}
+                            {{ form.date_signed }}
+                            {{ form.date_signed.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.valid_until.label_tag }}
+                            {{ form.valid_until }}
+                            {{ form.valid_until.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.amount.label_tag }}
+                            {{ form.amount }}
+                            {{ form.amount.errors }}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Стороны договора</h2>
+                    <div class="fields-grid">
+                        <div class="field">
+                            {{ form.own_company.label_tag }}
+                            {{ form.own_company }}
+                            {{ form.own_company.errors }}
+                        </div>
+                        <div class="field">
+                            {{ form.contractor.label_tag }}
+                            {{ form.contractor }}
+                            {{ form.contractor.errors }}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Содержание</h2>
+                    <div class="fields-grid">
+                        <div class="field field--full">
+                            {{ form.subject.label_tag }}
+                            {{ form.subject }}
+                            {{ form.subject.errors }}
+                        </div>
+                        <div class="field field--full">
+                            {{ form.notes.label_tag }}
+                            {{ form.notes }}
+                            {{ form.notes.errors }}
+                        </div>
+                    </div>
+                </section>
+
+                <div class="form-actions">
+                    <button type="submit" class="tms-btn tms-btn-primary" data-loading-text="Сохранение...">
+                        {% if form.instance.pk %}Сохранить{% else %}Создать{% endif %}
+                    </button>
+                    <a href="{% if form.instance.pk %}{% url 'contracts:detail' form.instance.pk %}{% else %}{% url 'contracts:list' %}{% endif %}" class="tms-btn tms-btn-secondary">Отмена</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

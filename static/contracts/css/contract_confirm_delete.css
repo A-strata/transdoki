@@ -1,0 +1,40 @@
+.delete-page {
+    max-width: 480px;
+    margin: 80px auto;
+    padding: 0 16px;
+}
+
+.delete-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+}
+
+.delete-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    margin: 0 0 12px;
+}
+
+.delete-text {
+    margin: 0 0 8px;
+    color: var(--text);
+}
+
+.delete-target {
+    font-weight: 600;
+}
+
+.delete-warning {
+    color: var(--error-text);
+    font-size: var(--text-sm);
+    margin-bottom: 24px;
+}
+
+.delete-card .actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}

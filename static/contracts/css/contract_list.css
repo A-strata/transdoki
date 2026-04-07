@@ -1,0 +1,29 @@
+.contracts-page {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.contracts-page .list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 16px;
+}
+
+.contracts-page .list-toolbar h1 {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    margin: 0;
+}
+
+.contracts-page .entity-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.contracts-page .entity-link:hover {
+    text-decoration: underline;
+}

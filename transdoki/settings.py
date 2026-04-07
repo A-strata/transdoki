@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "trips",
     "waybills",
     "integrations",
+    "contracts",
 ]
 
 MIDDLEWARE = [
