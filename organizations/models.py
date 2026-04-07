@@ -115,6 +115,7 @@ class Organization(UserOwnedModel):
             models.UniqueConstraint(
                 fields=["account", "inn"],
                 name="unique_inn_per_account",
+                violation_error_message="Организация с таким ИНН уже существует.",
             ),
             # Бизнес-правило: "собственная компания" (is_own_company=True)
             # с таким ИНН может быть только одна на всю БД
@@ -122,6 +123,7 @@ class Organization(UserOwnedModel):
                 fields=["inn"],
                 condition=Q(is_own_company=True),
                 name="unique_own_company_inn_global",
+                violation_error_message="Компания с таким ИНН уже зарегистрирована в системе.",
             ),
         ]
 

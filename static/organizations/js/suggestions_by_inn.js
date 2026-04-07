@@ -52,7 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     'id_short_name': data.short_name,
                     'id_address': data.address,
                     'id_ogrn': data.ogrn,
-                    'id_kpp': data.kpp
+                    'id_kpp': data.kpp,
+                    'id_director_title': data.post,
+                    'id_director_name': data.director
                 };
 
                 for (var id in fields) {

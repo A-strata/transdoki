@@ -82,6 +82,15 @@
     margin-bottom: 0;
 }
 
+.form-row--wide .form-group {
+    width: 280px;
+}
+
+.form-group--name {
+    flex: 1;
+    min-width: 280px;
+}
+
 .form-group label {
     display: inline-block;
     margin-bottom: 6px;

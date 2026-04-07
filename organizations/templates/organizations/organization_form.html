@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block content %}
+{% block head %}
 <link rel="stylesheet" href="{% static 'organizations/css/organization_form.css' %}">
+{% endblock %}
+
+{% block content %}
 <div class="organization-page">
     <div class="organization-form">
         <header class="page-header">
@@ -73,6 +76,48 @@
                         {{ form.address.label_tag }}
                         {{ form.address }}
                         {{ form.address.errors }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form.postal_address.label_tag }}
+                        {{ form.postal_address }}
+                        {{ form.postal_address.errors }}
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Контактные данные</h2>
+
+                    <div class="form-row form-row--wide">
+                        <div class="form-group">
+                            {{ form.phone.label_tag }}
+                            {{ form.phone }}
+                            {{ form.phone.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.email.label_tag }}
+                            {{ form.email }}
+                            {{ form.email.errors }}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Руководитель</h2>
+
+                    <div class="form-row form-row--wide">
+                        <div class="form-group">
+                            {{ form.director_title.label_tag }}
+                            {{ form.director_title }}
+                            {{ form.director_title.errors }}
+                        </div>
+
+                        <div class="form-group form-group--name">
+                            {{ form.director_name.label_tag }}
+                            {{ form.director_name }}
+                            {{ form.director_name.errors }}
+                        </div>
                     </div>
                 </section>
 
