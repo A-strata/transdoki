@@ -1,4 +1,6 @@
 (function () {
+    var STORAGE_KEY = 'tms_trips_page_size';
+
     function init() {
         const form = document.querySelector('[data-trip-filters]');
         if (!form) return;
@@ -11,6 +13,19 @@
         const dateFromInput = form.querySelector('[data-filter="date_from"]');
         const dateToInput = form.querySelector('[data-filter="date_to"]');
         const quickDateButtons = form.querySelectorAll('[data-quick-date]');
+
+        if (pageSizeSelect) {
+            var params = new URLSearchParams(window.location.search);
+            if (!params.has('page_size')) {
+                var saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && saved !== pageSizeSelect.value) {
+                    params.set('page_size', saved);
+                    params.set('page', '1');
+                    window.location.search = params.toString();
+                    return;
+                }
+            }
+        }
 
         function resetPageToFirst() {
             if (currentPageInput) {
@@ -117,6 +132,7 @@
 
         if (pageSizeSelect) {
             pageSizeSelect.addEventListener('change', function () {
+                localStorage.setItem(STORAGE_KEY, pageSizeSelect.value);
                 if (currentPageSizeInput) {
                     currentPageSizeInput.value = currentPageSizeInput.value || pageSizeSelect.value;
                 }
