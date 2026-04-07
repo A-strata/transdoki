@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.db.models import ProtectedError, Q
+from django.db.models import Count, ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
@@ -188,6 +188,7 @@ class OrganizationListMixin:
 class OrganizationListView(OrganizationListMixin, UserOwnedListView):
     def get_queryset(self):
         qs = super().get_queryset().filter(is_own_company=False)
+        qs = qs.annotate(vehicles_count=Count("vehicle"))
         return self._apply_search_and_sort(qs)
 
     def get_context_data(self, **kwargs):
@@ -247,13 +248,16 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
         vehicles = org.vehicle_set.all()
         bank_accounts = org.bank_accounts.select_related("account_bank").all()
         contacts = org.contacts.all()
+        employees = org.employees.all()
 
         ctx["vehicles"] = vehicles
         ctx["bank_accounts"] = bank_accounts
         ctx["contacts"] = contacts
+        ctx["employees"] = employees
         ctx["vehicles_count"] = vehicles.count()
         ctx["bank_accounts_count"] = bank_accounts.count()
         ctx["contacts_count"] = contacts.count()
+        ctx["employees_count"] = employees.count()
 
         from trips.models import Trip
         from vehicles.models import PropertyType, VehicleType

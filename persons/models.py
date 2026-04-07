@@ -15,7 +15,7 @@ class Person(UserOwnedModel):
 
     name = models.CharField(max_length=NAME_LENGTH, verbose_name="Имя")
     surname = models.CharField(max_length=NAME_LENGTH, verbose_name="Фамилия")
-    patronymic = models.CharField(max_length=NAME_LENGTH, verbose_name="Отчество")
+    patronymic = models.CharField(max_length=NAME_LENGTH, blank=True, verbose_name="Отчество")
     phone = models.CharField(
         max_length=25, verbose_name="Номер телефона", validators=[validate_phone_number]
     )
@@ -30,7 +30,9 @@ class Person(UserOwnedModel):
     )
 
     # Персональные данные (шифруются at-rest, ФЗ-152)
-    birth_date = encrypt(models.DateField(null=True, blank=True, verbose_name="Дата рождения"))
+    birth_date = encrypt(
+        models.DateField(null=True, blank=True, verbose_name="Дата рождения")
+    )
 
     # Паспорт
     passport_series = encrypt(
@@ -60,8 +62,10 @@ class Person(UserOwnedModel):
         models.DateField(null=True, blank=True, verbose_name="ВУ действует до")
     )
     license_categories = models.CharField(
-        max_length=20, blank=True, verbose_name="Категории ВУ",
-        help_text="Например: B, C, CE"
+        max_length=20,
+        blank=True,
+        verbose_name="Категории ВУ",
+        help_text="Например: B, C, CE",
     )
 
     @property

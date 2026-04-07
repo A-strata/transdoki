@@ -134,6 +134,11 @@
     color: var(--text);
 }
 
+.form-group:has(:required) > label::after {
+    content: " *";
+    color: var(--error-text);
+}
+
 .form-group input[type="text"],
 .form-group input[type="tel"],
 .form-group input[type="date"],

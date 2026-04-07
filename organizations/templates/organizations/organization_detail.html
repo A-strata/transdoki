@@ -323,6 +323,78 @@
         </div>
     </div>
 
+    {# ── Водители ── #}
+    <div class="card collapsible-section {% if employees_count %}is-open{% endif %}"
+         data-collapsible>
+        <div class="collapsible-header" data-collapsible-toggle>
+            <div class="collapsible-title-wrap">
+                <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="section-title">Водители</h2>
+                {% if employees_count %}
+                    <span class="collapsible-badge">{{ employees_count }}</span>
+                {% else %}
+                    <span class="collapsible-hint">пусто</span>
+                {% endif %}
+            </div>
+            <button type="button"
+                    class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-collapsible-action
+                    data-modal-open="create-person-modal">+ Добавить</button>
+        </div>
+        <div class="collapsible-body">
+            {% if employees %}
+            <table class="vehicle-table">
+                <thead>
+                    <tr>
+                        <th>ФИО</th>
+                        <th>Телефон</th>
+                        <th>Категории ВУ</th>
+                        <th class="th-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in employees %}
+                    <tr>
+                        <td data-label="ФИО">{{ person.surname }} {{ person.name }} {{ person.patronymic }}</td>
+                        <td data-label="Телефон">{{ person.phone|phone_format }}</td>
+                        <td data-label="Категории ВУ">{{ person.license_categories|default:"—" }}</td>
+                        <td data-label="Действия">
+                            <div class="row-actions">
+                                <a href="{% url 'persons:edit' person.pk %}?next={% url 'organizations:detail' organization.pk %}"
+                                   class="mini-action mini-action--edit"
+                                   title="Редактировать">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M11.2 1.6a1.4 1.4 0 0 1 2 0l1.2 1.2a1.4 1.4 0 0 1 0 2L5.6 13.6l-3.6.8.8-3.6L11.2 1.6z"
+                                              stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M9.5 3.5l3 3"
+                                              stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                    </svg>
+                                </a>
+                                <button type="button"
+                                        class="mini-action mini-action--danger"
+                                        title="Удалить"
+                                        data-modal-open="delete-person-modal"
+                                        data-delete-url="{% url 'persons:delete' person.pk %}"
+                                        data-delete-name="{{ person.surname }} {{ person.name }} {{ person.patronymic }}">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <path d="M4.5 3V2.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1V3M2.5 3h11M5.5 6v5.5M8 6v5.5M10.5 6v5.5M3.5 3h9l-.6 9.4a1 1 0 0 1-1 .9H5.1a1 1 0 0 1-1-.9L3.5 3z"
+                                              stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="collapsible-empty">Нет добавленных водителей</p>
+            {% endif %}
+        </div>
+    </div>
+
     {% else %}
 
     {% if contacts %}
@@ -427,6 +499,67 @@
         <h3 class="modal-title">Удалить транспортное средство?</h3>
         <p class="modal-body"><span id="delete-vehicle-name"></span></p>
         <form method="post" id="delete-vehicle-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'organizations:detail' organization.pk %}">
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{# ── Модал создания водителя ── #}
+<div class="modal-overlay" id="create-person-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Добавить водителя</h3>
+        <p class="modal-body">{{ organization.short_name }}</p>
+
+        <form id="create-person-form"
+              data-url="{% url 'persons:quick_create' %}"
+              data-employer-id="{{ organization.pk }}"
+              novalidate>
+            {% csrf_token %}
+
+            <div class="modal-fields">
+                <div class="modal-field">
+                    <label for="cp-surname">Фамилия</label>
+                    <input type="text" id="cp-surname" name="surname" required>
+                </div>
+
+                <div class="modal-field">
+                    <label for="cp-name">Имя</label>
+                    <input type="text" id="cp-name" name="name" required>
+                </div>
+
+                <div class="modal-field">
+                    <label for="cp-patronymic">Отчество</label>
+                    <input type="text" id="cp-patronymic" name="patronymic">
+                </div>
+
+                <div class="modal-field">
+                    <label for="cp-phone">Телефон</label>
+                    <input type="text" id="cp-phone" name="phone" data-phone-mask>
+                </div>
+            </div>
+
+            <div class="modal-form-errors" id="cp-errors" hidden></div>
+
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary">Добавить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if employees %}
+<div class="modal-overlay" id="delete-person-modal" hidden>
+    <div class="modal-dialog">
+        <h3 class="modal-title">Удалить водителя?</h3>
+        <p class="modal-body"><span id="delete-person-name"></span></p>
+        <form method="post" id="delete-person-form">
             {% csrf_token %}
             <input type="hidden" name="next" value="{% url 'organizations:detail' organization.pk %}">
             <div class="modal-actions">
@@ -720,6 +853,7 @@
 </div>
 
 <script src="{% static 'organizations/js/vehicle_create_modal.js' %}"></script>
+<script src="{% static 'organizations/js/person_create_modal.js' %}"></script>
 <script src="{% static 'organizations/js/bank_account_create_modal.js' %}"></script>
 <script src="{% static 'organizations/js/bank_account_edit_modal.js' %}"></script>
 <script src="{% static 'organizations/js/contact_create_modal.js' %}"></script>

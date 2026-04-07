@@ -61,6 +61,9 @@ class PersonUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["current_org"] = self.object.employer
+        next_url = self.request.GET.get("next", "")
+        if next_url:
+            context["next_url"] = next_url
         return context
 
     def form_valid(self, form):
