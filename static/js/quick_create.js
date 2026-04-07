@@ -223,6 +223,24 @@
         } else if (type === 'person' && personModal && personForm) {
             personForm.reset();
             clearErrors(personForm);
+            // Предзаполнить компанию-владельца из перевозчика основной формы
+            var employerSelect = document.getElementById('qc-person-employer');
+            var carrierSelect = document.getElementById('id_carrier');
+            if (employerSelect && carrierSelect && carrierSelect.value) {
+                var opt = carrierSelect.options[carrierSelect.selectedIndex];
+                var carrierText = (opt && opt.value) ? opt.text : '';
+                if (carrierText) {
+                    var opt = new Option(carrierText, carrierSelect.value, true, true);
+                    employerSelect.innerHTML = '';
+                    employerSelect.add(opt);
+                    var empInput = employerSelect.parentNode.querySelector('.autocomplete-input');
+                    if (empInput) empInput.value = carrierText;
+                }
+            } else if (employerSelect) {
+                employerSelect.value = '';
+                var empInput = employerSelect.parentNode.querySelector('.autocomplete-input');
+                if (empInput) empInput.value = '';
+            }
             personModal.hidden = false;
             var surnameInput = personForm.querySelector('[name="surname"]');
             if (surnameInput) surnameInput.focus();
@@ -264,8 +282,9 @@
         });
     }
 
-    // ── Init autocomplete for vehicle owner ─────────────────────────────────
+    // ── Init autocomplete for selects inside modals ───────────────────────
     if (typeof initAutocomplete === 'function') {
+        initAutocomplete('qc-person-employer');
         initAutocomplete('qc-vehicle-owner');
     }
 })();

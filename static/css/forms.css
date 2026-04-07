@@ -26,7 +26,8 @@
 }
 
 /* Звёздочка у обязательных полей */
-.field:has(:required) > label::after {
+.field:has(:required) > label::after,
+.modal-field:has(:required) > label::after {
     content: " *";
     color: var(--error-text);
 }

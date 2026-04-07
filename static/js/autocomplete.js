@@ -67,7 +67,10 @@ function initAutocomplete(selectId) {
     clearBtn.addEventListener('mouseleave', function () { clearBtn.style.color = '#9ca3af'; });
 
     // ── Синхронизация начального значения ─────────────────────────────────
+    var _inputInvalidating = false;
+
     function syncInputToSelect() {
+        if (_inputInvalidating) return;
         if (select.value) {
             const opt = select.options[select.selectedIndex];
             input.value = opt ? opt.text : '';
@@ -143,10 +146,18 @@ function initAutocomplete(selectId) {
 
         input.addEventListener('input', function () {
             const q = input.value.trim();
+            // Инвалидировать выбор если текст изменился
+            if (select.value) {
+                var selectedOpt = select.options[select.selectedIndex];
+                if (!selectedOpt || selectedOpt.text !== q) {
+                    _inputInvalidating = true;
+                    select.value = '';
+                    updateClearBtn();
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    _inputInvalidating = false;
+                }
+            }
             if (!q) {
-                select.value = '';
-                updateClearBtn();
-                select.dispatchEvent(new Event('change', { bubbles: true }));
                 if (select.dataset.openOnFocus === '1') {
                     fetchResults('');
                 } else {

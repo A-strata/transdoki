@@ -421,14 +421,22 @@
         <form id="qc-person-form" novalidate>
             {% csrf_token %}
             <div class="modal-fields">
+                <div class="modal-field modal-field--full">
+                    <label for="qc-person-employer">Компания</label>
+                    <select id="qc-person-employer" name="employer_id"
+                            data-search-url="{% url 'organizations:search' %}" required>
+                        <option value="">— начните вводить —</option>
+                    </select>
+                    <p class="modal-field-error" data-err="employer_id"></p>
+                </div>
                 <div class="modal-field">
                     <label for="qc-person-surname">Фамилия</label>
-                    <input type="text" id="qc-person-surname" name="surname">
+                    <input type="text" id="qc-person-surname" name="surname" required>
                     <p class="modal-field-error" data-err="surname"></p>
                 </div>
                 <div class="modal-field">
                     <label for="qc-person-name">Имя</label>
-                    <input type="text" id="qc-person-name" name="name">
+                    <input type="text" id="qc-person-name" name="name" required>
                     <p class="modal-field-error" data-err="name"></p>
                 </div>
                 <div class="modal-field">

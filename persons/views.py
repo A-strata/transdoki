@@ -19,6 +19,8 @@ from django.views.generic import (
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
 
+from organizations.models import Organization
+
 from .forms import PersonForm
 from .models import Person
 from .validators import validate_phone_number
@@ -151,11 +153,17 @@ def person_quick_create(request):
     patronymic = request.POST.get("patronymic", "").strip()
     phone = request.POST.get("phone", "").strip()
 
+    employer_id = request.POST.get("employer_id", "").strip()
+
     errors = {}
     if not surname:
         errors["surname"] = "Обязательное поле"
     if not name:
         errors["name"] = "Обязательное поле"
+    if not employer_id:
+        errors["employer_id"] = "Обязательное поле"
+    elif not employer_id.isdigit():
+        errors["employer_id"] = "Некорректное значение"
     if phone:
         try:
             validate_phone_number(phone)
@@ -165,6 +173,12 @@ def person_quick_create(request):
     if errors:
         return JsonResponse({"errors": errors}, status=400)
 
+    employer = Organization.objects.for_account(account).filter(pk=int(employer_id)).first()
+    if not employer:
+        return JsonResponse(
+            {"errors": {"employer_id": "Организация не найдена"}}, status=400
+        )
+
     try:
         person = Person(
             surname=surname,
@@ -173,7 +187,7 @@ def person_quick_create(request):
             phone=phone,
             created_by=request.user,
             account=account,
-            employer=getattr(request, "current_org", None),
+            employer=employer,
         )
         person.save()
     except IntegrityError:
