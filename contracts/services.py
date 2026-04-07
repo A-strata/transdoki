@@ -164,35 +164,56 @@ def amount_to_words(amount):
 # ---------------------------------------------------------------------------
 
 
+_ORG_KEYS = (
+    "full_name", "short_name", "inn", "kpp", "ogrn", "address",
+    "director_title", "director_name",
+    "director_title_genitive", "director_name_genitive",
+    "bank_name", "bic", "corr_account", "account_num",
+)
+
+
+def _to_genitive(phrase):
+    """Склоняет фразу в родительный падеж через pymorphy3."""
+    import pymorphy3
+
+    morph = pymorphy3.MorphAnalyzer()
+    words = phrase.split()
+    result = []
+    for word in words:
+        parsed = morph.parse(word)
+        best = parsed[0]
+        inflected = best.inflect({"gent"})
+        result.append(inflected.word if inflected else word)
+    # Восстановить регистр по оригиналу
+    out = []
+    for orig, gen in zip(words, result, strict=True):
+        if orig[0].isupper():
+            gen = gen[0].upper() + gen[1:]
+        out.append(gen)
+    return " ".join(out)
+
+
 def _org_context(org, prefix):
     """Реквизиты организации → словарь с указанным префиксом."""
     if not org:
-        return {
-            f"{prefix}_{k}": "—"
-            for k in (
-                "name",
-                "inn",
-                "kpp",
-                "ogrn",
-                "address",
-                "director_title",
-                "director_name",
-                "bank_name",
-                "bic",
-                "corr_account",
-                "account_num",
-            )
-        }
+        return {f"{prefix}_{k}": "—" for k in _ORG_KEYS}
 
     bank = org.bank_accounts.select_related("account_bank").first()
     return {
-        f"{prefix}_name": org.full_name or org.short_name or "—",
+        f"{prefix}_full_name": org.full_name or "—",
+        f"{prefix}_short_name": org.short_name or "—",
         f"{prefix}_inn": org.inn or "—",
         f"{prefix}_kpp": org.kpp or "—",
         f"{prefix}_ogrn": org.ogrn or "—",
         f"{prefix}_address": org.address or "—",
         f"{prefix}_director_title": org.director_title or "—",
         f"{prefix}_director_name": org.director_name or "—",
+        f"{prefix}_director_title_genitive": (
+            _to_genitive(org.director_title) if org.director_title else "—"
+        ),
+        f"{prefix}_director_name_genitive": (
+            _to_genitive(org.director_name) if org.director_name else "—"
+        ),
         f"{prefix}_bank_name": bank.account_bank.bank_name if bank else "—",
         f"{prefix}_bic": bank.account_bank.bic if bank else "—",
         f"{prefix}_corr_account": bank.account_bank.corr_account if bank else "—",
@@ -289,10 +310,13 @@ def generate_document(template_path, context):
 
 def generate_contract_response(contract):
     """Генерирует FileResponse для скачивания договора."""
-    template_path = get_template_for_account(contract.account, "contract")
+    template_path = get_template_for_account(
+        contract.account, contract.contract_type,
+    )
     context = build_contract_context(contract)
     buf = generate_document(template_path, context)
-    filename = f"Договор №{contract.number} от {_fmt_date(contract.date_signed)}.docx"
+    type_display = contract.get_contract_type_display()
+    filename = f"{type_display} №{contract.number} от {_fmt_date(contract.date_signed)}.docx"
     return FileResponse(
         buf,
         as_attachment=True,
@@ -365,44 +389,44 @@ def delete_template(account, template_type):
 # Реестр плейсхолдеров (для отображения на странице настройки шаблонов)
 # ---------------------------------------------------------------------------
 
-PLACEHOLDERS = {
-    "contract": [
-        ("contract_number", "Номер договора"),
-        ("contract_date", "Дата подписания"),
-        ("contract_type", "Тип договора"),
-        ("amount", "Сумма"),
-        ("amount_words", "Сумма прописью"),
-        ("valid_until", "Действует до"),
-        ("subject", "Предмет договора"),
-        ("own_company_name", "Наша компания — наименование"),
-        ("own_company_inn", "Наша компания — ИНН"),
-        ("own_company_kpp", "Наша компания — КПП"),
-        ("own_company_ogrn", "Наша компания — ОГРН"),
-        ("own_company_address", "Наша компания — адрес"),
-        ("own_company_director_title", "Наша компания — должность руководителя"),
-        ("own_company_director_name", "Наша компания — ФИО руководителя"),
-        ("own_company_bank_name", "Наша компания — банк"),
-        ("own_company_bic", "Наша компания — БИК"),
-        ("own_company_corr_account", "Наша компания — корр. счёт"),
-        ("own_company_account_num", "Наша компания — расчётный счёт"),
-        ("contractor_name", "Контрагент — наименование"),
-        ("contractor_inn", "Контрагент — ИНН"),
-        ("contractor_kpp", "Контрагент — КПП"),
-        ("contractor_ogrn", "Контрагент — ОГРН"),
-        ("contractor_address", "Контрагент — адрес"),
-        ("contractor_director_title", "Контрагент — должность руководителя"),
-        ("contractor_director_name", "Контрагент — ФИО руководителя"),
-        ("contractor_bank_name", "Контрагент — банк"),
-        ("contractor_bic", "Контрагент — БИК"),
-        ("contractor_corr_account", "Контрагент — корр. счёт"),
-        ("contractor_account_num", "Контрагент — расчётный счёт"),
-    ],
-    "specification": None,  # наследует contract + дополнительные
-    "addendum": None,
-    "order_request": None,
-}
+_CONTRACT_PLACEHOLDERS = [
+    ("contract_number", "Номер договора"),
+    ("contract_date", "Дата подписания"),
+    ("contract_type", "Тип договора"),
+    ("amount", "Сумма"),
+    ("amount_words", "Сумма прописью"),
+    ("valid_until", "Действует до"),
+    ("subject", "Предмет договора"),
+    ("own_company_full_name", "Наша компания — полное наименование"),
+    ("own_company_short_name", "Наша компания — краткое наименование"),
+    ("own_company_inn", "Наша компания — ИНН"),
+    ("own_company_kpp", "Наша компания — КПП"),
+    ("own_company_ogrn", "Наша компания — ОГРН"),
+    ("own_company_address", "Наша компания — адрес"),
+    ("own_company_director_title", "Наша компания — должность руководителя"),
+    ("own_company_director_name", "Наша компания — ФИО руководителя"),
+    ("own_company_director_title_genitive", "Наша компания — должность (род. падеж)"),
+    ("own_company_director_name_genitive", "Наша компания — ФИО (род. падеж)"),
+    ("own_company_bank_name", "Наша компания — банк"),
+    ("own_company_bic", "Наша компания — БИК"),
+    ("own_company_corr_account", "Наша компания — корр. счёт"),
+    ("own_company_account_num", "Наша компания — расчётный счёт"),
+    ("contractor_full_name", "Контрагент — полное наименование"),
+    ("contractor_short_name", "Контрагент — краткое наименование"),
+    ("contractor_inn", "Контрагент — ИНН"),
+    ("contractor_kpp", "Контрагент — КПП"),
+    ("contractor_ogrn", "Контрагент — ОГРН"),
+    ("contractor_address", "Контрагент — адрес"),
+    ("contractor_director_title", "Контрагент — должность руководителя"),
+    ("contractor_director_name", "Контрагент — ФИО руководителя"),
+    ("contractor_director_title_genitive", "Контрагент — должность (род. падеж)"),
+    ("contractor_director_name_genitive", "Контрагент — ФИО (род. падеж)"),
+    ("contractor_bank_name", "Контрагент — банк"),
+    ("contractor_bic", "Контрагент — БИК"),
+    ("contractor_corr_account", "Контрагент — корр. счёт"),
+    ("contractor_account_num", "Контрагент — расчётный счёт"),
+]
 
-# Дополнительные плейсхолдеры для дочерних документов
 _ATTACHMENT_EXTRA = [
     ("attachment_number", "Номер приложения"),
     ("attachment_date", "Дата приложения"),
@@ -412,5 +436,11 @@ _ATTACHMENT_EXTRA = [
     ("attachment_subject", "Предмет приложения"),
 ]
 
-for _t in ("specification", "addendum", "order_request"):
-    PLACEHOLDERS[_t] = PLACEHOLDERS["contract"] + _ATTACHMENT_EXTRA
+PLACEHOLDERS = {
+    "transport_contract": _CONTRACT_PLACEHOLDERS,
+    "single_transport": _CONTRACT_PLACEHOLDERS,
+    "order_request": _CONTRACT_PLACEHOLDERS,
+    "supply_contract": _CONTRACT_PLACEHOLDERS,
+    "transport_request": _CONTRACT_PLACEHOLDERS + _ATTACHMENT_EXTRA,
+    "supply_spec": _CONTRACT_PLACEHOLDERS + _ATTACHMENT_EXTRA,
+}

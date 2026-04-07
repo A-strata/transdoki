@@ -83,6 +83,6 @@ class TemplateUploadForm(forms.Form):
         f = self.cleaned_data["file"]
         if not f.name.lower().endswith(".docx"):
             raise forms.ValidationError("Допускаются только файлы формата .docx")
-        if f.size > 10 * 1024 * 1024:
-            raise forms.ValidationError("Максимальный размер файла — 10 МБ")
+        if f.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("Максимальный размер файла — 5 МБ")
         return f

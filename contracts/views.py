@@ -247,6 +247,45 @@ class AttachmentDeleteView(
 # ---------------------------------------------------------------------------
 
 
+TEMPLATE_META = {
+    "transport_contract": {
+        "badge": "Рамочный",
+        "section": "transport",
+        "parent": None,
+    },
+    "transport_request": {
+        "badge": "Дочерний",
+        "section": "transport",
+        "parent": "transport_contract",
+    },
+    "single_transport": {
+        "badge": "Самостоятельный",
+        "section": "transport",
+        "parent": None,
+    },
+    "order_request": {
+        "badge": "Самостоятельный",
+        "section": "transport",
+        "parent": None,
+    },
+    "supply_contract": {
+        "badge": "Рамочный",
+        "section": "supply",
+        "parent": None,
+    },
+    "supply_spec": {
+        "badge": "Дочерний",
+        "section": "supply",
+        "parent": "supply_contract",
+    },
+}
+
+SECTIONS = [
+    ("transport", "Перевозки"),
+    ("supply", "Поставки"),
+]
+
+
 class TemplateSettingsView(
     ContractsModuleMixin,
     EditPermissionMixin,
@@ -255,33 +294,31 @@ class TemplateSettingsView(
 ):
     def get(self, request):
         account = get_request_account(request)
-        templates = {
+        uploaded = {
             ct.template_type: ct
             for ct in ContractTemplate.objects.filter(account=account)
         }
-        type_choices = ContractTemplate.TEMPLATE_TYPE_CHOICES
-        template_info = []
-        for code, label in type_choices:
-            ct = templates.get(code)
-            template_info.append(
-                {
-                    "code": code,
-                    "label": label,
-                    "uploaded": ct,
-                    "form": TemplateUploadForm(),
-                    "placeholders": services.PLACEHOLDERS.get(code, []),
-                }
-            )
+
+        items = []
+        for code, label in ContractTemplate.TEMPLATE_TYPE_CHOICES:
+            ct = uploaded.get(code)
+            meta = TEMPLATE_META.get(code, {})
+            items.append({
+                "code": code,
+                "label": label,
+                "uploaded": ct,
+                "badge": meta.get("badge", ""),
+                "section": meta.get("section", ""),
+                "is_child": meta.get("parent") is not None,
+                "placeholders": services.PLACEHOLDERS.get(code, []),
+            })
 
         from django.shortcuts import render
 
-        return render(
-            request,
-            "contracts/template_settings.html",
-            {
-                "template_info": template_info,
-            },
-        )
+        return render(request, "contracts/template_settings.html", {
+            "items": items,
+            "sections": SECTIONS,
+        })
 
 
 class TemplateUploadView(

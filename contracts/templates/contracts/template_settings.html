@@ -8,74 +8,158 @@
 {% endblock %}
 
 {% block content %}
-<section class="templates-page">
-    <div class="list-toolbar">
-        <div class="list-toolbar-left">
-            <h1>Шаблоны документов</h1>
-            <p class="list-subtitle">Загрузите свои шаблоны .docx или используйте дефолтные</p>
+<section class="tpl-page">
+
+    <div class="tpl-sidebar">
+        <div class="tpl-sidebar-header">
+            <h1>Шаблоны</h1>
+            <a href="{% url 'contracts:list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">К договорам</a>
         </div>
-        <div class="list-toolbar-right">
-            <a href="{% url 'contracts:list' %}" class="tms-btn tms-btn-secondary">К списку договоров</a>
-        </div>
-    </div>
 
-    <div class="templates-grid">
-        {% for info in template_info %}
-        <div class="template-card card">
-            <div class="template-card-header">
-                <h2>{{ info.label }}</h2>
-                {% if info.uploaded %}
-                    <span class="status-badge status-badge--success">Свой шаблон</span>
-                {% else %}
-                    <span class="status-badge status-badge--neutral">Дефолтный</span>
+        {% for section_code, section_label in sections %}
+        <div class="tpl-nav-section">
+            <p class="section-title">{{ section_label }}</p>
+            {% for item in items %}
+                {% if item.section == section_code %}
+                <button type="button"
+                        class="tpl-nav-item{% if item.is_child %} tpl-nav-item--child{% endif %}"
+                        data-target="{{ item.code }}"
+                        {% if forloop.parentloop.first and forloop.first %}data-active{% endif %}>
+                    {% if item.is_child %}<span class="tpl-nav-prefix">↳</span>{% endif %}
+                    <span class="tpl-nav-label">{{ item.label }}</span>
+                    <span class="tpl-nav-dot {% if item.uploaded %}tpl-nav-dot--uploaded{% endif %}"></span>
+                </button>
                 {% endif %}
-            </div>
-
-            {% if info.uploaded %}
-                <p class="template-meta">Загружен {{ info.uploaded.uploaded_at|date:"d.m.Y H:i" }}{% if info.uploaded.uploaded_by %} — {{ info.uploaded.uploaded_by.get_full_name|default:info.uploaded.uploaded_by.username }}{% endif %}</p>
-            {% endif %}
-
-            <div class="template-actions">
-                <form method="post"
-                      action="{% url 'contracts:template_upload' info.code %}"
-                      enctype="multipart/form-data"
-                      class="template-upload-form">
-                    {% csrf_token %}
-                    <input type="file" name="file" accept=".docx" hidden>
-                    <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm upload-trigger">
-                        {% if info.uploaded %}Заменить{% else %}Загрузить{% endif %}
-                    </button>
-                </form>
-
-                {% if info.uploaded %}
-                <form method="post" action="{% url 'contracts:template_delete' info.code %}">
-                    {% csrf_token %}
-                    <button type="submit" class="tms-btn tms-btn-danger tms-btn-sm">Удалить свой</button>
-                </form>
-                {% endif %}
-
-                <a href="{% url 'contracts:template_download_default' info.code %}"
-                   class="tms-btn tms-btn-light tms-btn-sm">Скачать дефолтный</a>
-            </div>
-
-            <details class="placeholders-section">
-                <summary class="placeholders-toggle">Доступные плейсхолдеры</summary>
-                <div class="placeholders-grid" data-placeholders>
-                    {% for code, label in info.placeholders %}
-                    <button type="button"
-                            class="placeholder-chip"
-                            data-copy-text="{{ code }}"
-                            title="Скопировать {{ code }}">
-                        <span class="placeholder-name">{{ code }}</span>
-                        <span class="placeholder-label">{{ label }}</span>
-                    </button>
-                    {% endfor %}
-                </div>
-            </details>
+            {% endfor %}
         </div>
         {% endfor %}
     </div>
+
+    <div class="tpl-main">
+        {% for item in items %}
+        <div class="tpl-panel" data-panel="{{ item.code }}"
+             {% if not forloop.first %}hidden{% endif %}>
+
+            <div class="tpl-panel-header">
+                <div class="tpl-panel-title-row">
+                    <h2>{{ item.label }}</h2>
+                    <span class="status-badge status-badge--neutral">{{ item.badge }}</span>
+                </div>
+                <a href="{% url 'contracts:template_download_default' item.code %}"
+                   class="tms-btn {% if item.uploaded %}tms-btn-secondary{% else %}tms-btn-primary{% endif %} tms-btn-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Скачать пример
+                </a>
+            </div>
+
+            {% if item.uploaded %}
+            <div class="card tpl-file-card">
+                <div class="tpl-file-top">
+                    <div class="tpl-file-info">
+                        <svg class="tpl-file-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                        <div>
+                            <p class="tpl-file-name">{{ item.uploaded.file.name|cut:"contract_templates/" }}</p>
+                            <p class="tpl-file-meta">Загружен {{ item.uploaded.uploaded_at|date:"d.m.Y H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="tpl-file-actions">
+                        <form method="post"
+                              action="{% url 'contracts:template_upload' item.code %}"
+                              enctype="multipart/form-data"
+                              class="tpl-replace-form">
+                            {% csrf_token %}
+                            <input type="file" name="file" accept=".docx" hidden>
+                            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                    data-replace-trigger>Заменить</button>
+                        </form>
+
+                        <span class="tpl-file-divider"></span>
+
+                        <div class="confirm-inline" data-confirm>
+                            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                    data-confirm-trigger>Вернуть дефолтный</button>
+                            <div class="confirm-inline-prompt" hidden>
+                                <span>Вернуть дефолтный шаблон?</span>
+                                <form method="post" action="{% url 'contracts:template_delete' item.code %}" class="inline-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="tms-btn tms-btn-danger tms-btn-sm">Да</button>
+                                </form>
+                                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                        data-confirm-cancel>Нет</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tpl-file-bottom">
+                    <span class="tpl-file-dot tpl-file-dot--active"></span>
+                    Используется ваш шаблон — система подставит данные в плейсхолдеры при генерации
+                </div>
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-info">
+                Скачайте пример, добавьте фирменный стиль и реквизиты в Word, затем загрузите обратно
+            </div>
+
+            <form method="post"
+                  action="{% url 'contracts:template_upload' item.code %}"
+                  enctype="multipart/form-data"
+                  class="tpl-upload-zone"
+                  data-upload-zone>
+                {% csrf_token %}
+                <input type="file" name="file" accept=".docx" hidden>
+
+                <div class="tpl-upload-idle" data-upload-state="idle">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <p class="tpl-upload-text">Нажмите для загрузки</p>
+                    <p class="tpl-upload-hint">DOCX &middot; до 5 МБ</p>
+                </div>
+
+                <div class="tpl-upload-loading" data-upload-state="loading" hidden>
+                    <div class="tpl-spinner"></div>
+                    <p class="tpl-upload-text" data-upload-filename></p>
+                    <div class="tpl-progress"><div class="tpl-progress-bar"></div></div>
+                </div>
+
+                <div class="tpl-upload-error" data-upload-state="error" hidden>
+                    <p class="tpl-upload-text" data-upload-error-text></p>
+                    <p class="tpl-upload-hint">Нажмите, чтобы попробовать снова</p>
+                </div>
+            </form>
+            {% endif %}
+
+            <div class="tpl-vars">
+                <p class="section-title">Переменные</p>
+
+                <div class="tpl-var-group">
+                    <p class="tpl-var-group-title">Договор</p>
+                    <table class="tpl-var-table">
+                        {% for code, label in item.placeholders %}
+                            {% if code == "own_company_full_name" %}
+                                </table></div><div class="tpl-var-group"><p class="tpl-var-group-title">Наша компания</p><table class="tpl-var-table">
+                            {% elif code == "contractor_full_name" %}
+                                </table></div><div class="tpl-var-group"><p class="tpl-var-group-title">Контрагент</p><table class="tpl-var-table">
+                            {% elif code == "attachment_number" %}
+                                </table></div><div class="tpl-var-group"><p class="tpl-var-group-title">Приложение</p><table class="tpl-var-table">
+                            {% endif %}
+                            <tr>
+                                <td class="tpl-var-code-cell">
+                                    <button type="button" class="tpl-ph-chip" data-copy-text="{{ code }}">{{ code }}</button>
+                                </td>
+                                <td class="tpl-var-desc">{{ label }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
 </section>
+
+<div class="tpl-toast" id="tpl-toast" hidden></div>
 {% endblock %}
 
 {% block extra_js %}

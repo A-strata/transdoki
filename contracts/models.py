@@ -12,10 +12,12 @@ class ContractTemplate(models.Model):
     """Пользовательский DOCX-шаблон документа. Один шаблон на тип на аккаунт."""
 
     TEMPLATE_TYPE_CHOICES = [
-        ("contract", "Договор"),
-        ("specification", "Спецификация"),
-        ("addendum", "Дополнительное соглашение"),
-        ("order_request", "Договор-заявка"),
+        ("transport_contract", "Договор об организации перевозки грузов"),
+        ("transport_request", "Заявка на перевозку груза"),
+        ("single_transport", "Договор на перевозку (разовый)"),
+        ("order_request", "Договор-заявка (разовый)"),
+        ("supply_contract", "Договор поставки"),
+        ("supply_spec", "Спецификация"),
     ]
 
     account = models.ForeignKey(
@@ -24,7 +26,7 @@ class ContractTemplate(models.Model):
         verbose_name="Аккаунт",
     )
     template_type = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=TEMPLATE_TYPE_CHOICES,
         verbose_name="Тип шаблона",
     )
@@ -54,11 +56,10 @@ class Contract(UserOwnedModel):
     """Договор с контрагентом."""
 
     CONTRACT_TYPE_CHOICES = [
-        ("transport", "Перевозка"),
-        ("supply", "Поставка"),
-        ("services", "Услуги"),
-        ("agency", "Агентский"),
-        ("other", "Иной"),
+        ("transport_contract", "Перевозка (долгосрочный)"),
+        ("single_transport", "Перевозка (разовый)"),
+        ("order_request", "Договор-заявка (разовый)"),
+        ("supply_contract", "Поставка"),
     ]
 
     STATUS_CHOICES = [
@@ -70,9 +71,9 @@ class Contract(UserOwnedModel):
 
     number = models.CharField(max_length=50, verbose_name="Номер договора")
     contract_type = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=CONTRACT_TYPE_CHOICES,
-        default="transport",
+        default="transport_contract",
         verbose_name="Тип договора",
     )
     status = models.CharField(
@@ -126,9 +127,8 @@ class ContractAttachment(UserOwnedModel):
     """Дочерний документ договора (спецификация, допсоглашение, заявка)."""
 
     ATTACHMENT_TYPE_CHOICES = [
-        ("specification", "Спецификация"),
-        ("addendum", "Дополнительное соглашение"),
-        ("order_request", "Договор-заявка"),
+        ("transport_request", "Заявка на перевозку груза"),
+        ("supply_spec", "Спецификация"),
     ]
 
     contract = models.ForeignKey(
@@ -138,9 +138,9 @@ class ContractAttachment(UserOwnedModel):
         verbose_name="Договор",
     )
     attachment_type = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=ATTACHMENT_TYPE_CHOICES,
-        default="specification",
+        default="transport_request",
         verbose_name="Тип документа",
     )
     number = models.CharField(max_length=50, verbose_name="Номер")
