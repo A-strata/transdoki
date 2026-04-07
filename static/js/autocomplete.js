@@ -83,6 +83,34 @@ function initAutocomplete(selectId) {
     syncInputToSelect();
 
     // ── Рендер выпадающего списка ──────────────────────────────────────────
+    function createItemEl(item, muted) {
+        var el = document.createElement('div');
+        el.textContent = item.text;
+        el.style.cssText = 'padding:9px 12px; cursor:pointer; border-bottom:1px solid #f3f4f6; font-size:.92rem;';
+        if (muted) el.style.color = 'var(--muted)';
+        el.addEventListener('mouseenter', function () { this.style.background = '#f9fafb'; });
+        el.addEventListener('mouseleave', function () { this.style.background = '#fff'; });
+        el.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            selectItem(item);
+        });
+        return el;
+    }
+
+    function createGroupHeader(text) {
+        var el = document.createElement('div');
+        el.textContent = text;
+        el.style.cssText = 'padding:6px 12px; font-size:var(--text-xs); font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.03em;';
+        return el;
+    }
+
+    function createHintEl(text) {
+        var el = document.createElement('div');
+        el.textContent = text;
+        el.style.cssText = 'padding:8px 12px; font-size:var(--text-sm); color:var(--warning-text); background:var(--warning-bg); border-bottom:1px solid var(--warning-border);';
+        return el;
+    }
+
     function renderItems(items) {
         dropdown.innerHTML = '';
         if (!items.length) {
@@ -90,17 +118,39 @@ function initAutocomplete(selectId) {
             return;
         }
         items.forEach(function (item) {
-            const el = document.createElement('div');
-            el.textContent = item.text;
-            el.style.cssText = 'padding:9px 12px; cursor:pointer; border-bottom:1px solid #f3f4f6; font-size:.92rem;';
-            el.addEventListener('mouseenter', function () { this.style.background = '#f9fafb'; });
-            el.addEventListener('mouseleave', function () { this.style.background = '#fff'; });
-            el.addEventListener('mousedown', function (e) {
-                e.preventDefault();
-                selectItem(item);
-            });
-            dropdown.appendChild(el);
+            dropdown.appendChild(createItemEl(item, false));
         });
+        dropdown.style.display = 'block';
+    }
+
+    function renderGrouped(data, q) {
+        dropdown.innerHTML = '';
+        var carrier = data.carrier || [];
+        var others = data.others || [];
+        var hint = data.hint || null;
+
+        if (!carrier.length && !others.length) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        if (hint === 'no_employer_data') {
+            dropdown.appendChild(createHintEl('Водители не привязаны к перевозчику \u2014 показаны все'));
+        }
+
+        carrier.forEach(function (item) {
+            dropdown.appendChild(createItemEl(item, false));
+        });
+
+        if (others.length && q) {
+            if (carrier.length) {
+                dropdown.appendChild(createGroupHeader('Другие'));
+            }
+            others.forEach(function (item) {
+                dropdown.appendChild(createItemEl(item, carrier.length > 0));
+            });
+        }
+
         dropdown.style.display = 'block';
     }
 
@@ -136,7 +186,13 @@ function initAutocomplete(selectId) {
 
             fetch(url.toString(), { signal: controller.signal })
                 .then(function (r) { return r.json(); })
-                .then(function (data) { renderItems(data.results || []); })
+                .then(function (data) {
+                    if (data.results) {
+                        renderItems(data.results);
+                    } else {
+                        renderGrouped(data, q);
+                    }
+                })
                 .catch(function () {});
         }
 

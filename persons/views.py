@@ -126,22 +126,64 @@ class PersonListView(LoginRequiredMixin, ListView):
 def person_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
-    qs = Person.objects.for_account(account)
     carrier_id = request.GET.get("carrier_id", "").strip()
-    if carrier_id.isdigit():
-        qs = qs.filter(employer_id=int(carrier_id))
-    if q:
+
+    base_qs = Person.objects.for_account(account)
+
+    def apply_q(qs):
+        filtered = qs
         for part in q.split():
-            qs = qs.filter(
+            filtered = filtered.filter(
                 Q(surname__icontains=part)
                 | Q(name__icontains=part)
                 | Q(patronymic__icontains=part)
             )
-    results = [
-        {"id": p.pk, "text": str(p)}
-        for p in qs.order_by("surname", "name")[:25]
-    ]
-    return JsonResponse({"results": results})
+        return filtered
+
+    def serialize(qs):
+        return [
+            {"id": p.pk, "text": str(p)}
+            for p in qs.order_by("surname", "name")[:25]
+        ]
+
+    if not carrier_id.isdigit():
+        return JsonResponse({
+            "carrier": [],
+            "others": serialize(apply_q(base_qs) if q else base_qs),
+            "hint": None,
+        })
+
+    org = (
+        Organization.objects.for_account(account)
+        .filter(pk=int(carrier_id))
+        .first()
+    )
+
+    if not org or not org.is_own_company:
+        others_qs = apply_q(base_qs) if q else base_qs
+        return JsonResponse({
+            "carrier": [],
+            "others": serialize(others_qs),
+            "hint": "no_employer_data",
+        })
+
+    carrier_qs = base_qs.filter(employer_id=org.pk)
+    carrier_results = serialize(apply_q(carrier_qs) if q else carrier_qs)
+
+    if not carrier_results and not q:
+        others_qs = base_qs
+        return JsonResponse({
+            "carrier": [],
+            "others": serialize(others_qs),
+            "hint": "no_employer_data",
+        })
+
+    others_qs = apply_q(base_qs.exclude(employer_id=org.pk)) if q else None
+    return JsonResponse({
+        "carrier": carrier_results,
+        "others": serialize(others_qs) if others_qs is not None else [],
+        "hint": None,
+    })
 
 
 @login_required
