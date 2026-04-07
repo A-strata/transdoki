@@ -251,6 +251,24 @@
             clearErrors(vehicleForm);
             // Re-apply filter after reset (reset may restore default selection)
             filterVehicleTypes(types);
+            // Предзаполнить владельца из перевозчика основной формы
+            var ownerSelect = document.getElementById('qc-vehicle-owner');
+            var carrierSelect = document.getElementById('id_carrier');
+            if (ownerSelect && carrierSelect && carrierSelect.value) {
+                var opt = carrierSelect.options[carrierSelect.selectedIndex];
+                var carrierText = (opt && opt.value) ? opt.text : '';
+                if (carrierText) {
+                    var newOpt = new Option(carrierText, carrierSelect.value, true, true);
+                    ownerSelect.innerHTML = '';
+                    ownerSelect.add(newOpt);
+                    var ownerInput = ownerSelect.parentNode.querySelector('.autocomplete-input');
+                    if (ownerInput) ownerInput.value = carrierText;
+                }
+            } else if (ownerSelect) {
+                ownerSelect.value = '';
+                var ownerInput = ownerSelect.parentNode.querySelector('.autocomplete-input');
+                if (ownerInput) ownerInput.value = '';
+            }
             vehicleModal.hidden = false;
             var grnInput = vehicleForm.querySelector('[name="grn"]');
             if (grnInput) {

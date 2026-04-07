@@ -213,6 +213,13 @@ textarea.is-invalid:focus {
     grid-column: 1 / -1;
 }
 
+.modal-field-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
 .modal-field label {
     display: block;
     margin-bottom: 5px;
@@ -462,6 +469,10 @@ textarea.is-invalid:focus {
     }
 
     .modal-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-field-row {
         grid-template-columns: 1fr;
     }
 }

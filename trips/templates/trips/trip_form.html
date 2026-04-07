@@ -466,29 +466,13 @@
         <form id="qc-vehicle-form" novalidate>
             {% csrf_token %}
             <div class="modal-fields">
-                <div class="modal-field modal-field--full">
-                    <label for="qc-vehicle-type">Тип ТС</label>
-                    <select id="qc-vehicle-type" name="vehicle_type">
-                        {% for value, label in vehicle_types %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
+                <div class="modal-field">
+                    <label for="qc-vehicle-owner">Владелец</label>
+                    <select id="qc-vehicle-owner" name="owner_id"
+                            data-search-url="{% url 'organizations:search' %}" required>
+                        <option value="">— начните вводить —</option>
                     </select>
-                    <p class="modal-field-error" data-err="vehicle_type"></p>
-                </div>
-                <div class="modal-field">
-                    <label for="qc-vehicle-grn">Рег. номер</label>
-                    <input type="text" id="qc-vehicle-grn" name="grn" data-grn-mask>
-                    <p class="modal-field-error" data-err="grn"></p>
-                </div>
-                <div class="modal-field">
-                    <label for="qc-vehicle-brand">Марка</label>
-                    <input type="text" id="qc-vehicle-brand" name="brand">
-                    <p class="modal-field-error" data-err="brand"></p>
-                </div>
-                <div class="modal-field">
-                    <label for="qc-vehicle-model">Модель</label>
-                    <input type="text" id="qc-vehicle-model" name="model">
-                    <p class="modal-field-error" data-err="model"></p>
+                    <p class="modal-field-error" data-err="owner_id"></p>
                 </div>
                 <div class="modal-field">
                     <label for="qc-vehicle-property">Тип владения</label>
@@ -500,12 +484,30 @@
                     <p class="modal-field-error" data-err="property_type"></p>
                 </div>
                 <div class="modal-field modal-field--full">
-                    <label for="qc-vehicle-owner">Владелец</label>
-                    <select id="qc-vehicle-owner" name="owner_id"
-                            data-search-url="{% url 'organizations:search' %}">
-                        <option value="">— начните вводить —</option>
+                    <label for="qc-vehicle-type">Тип ТС</label>
+                    <select id="qc-vehicle-type" name="vehicle_type">
+                        {% for value, label in vehicle_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
                     </select>
-                    <p class="modal-field-error" data-err="owner_id"></p>
+                    <p class="modal-field-error" data-err="vehicle_type"></p>
+                </div>
+                <div class="modal-field-row">
+                    <div class="modal-field">
+                        <label for="qc-vehicle-grn">Рег. номер</label>
+                        <input type="text" id="qc-vehicle-grn" name="grn" data-grn-mask required>
+                        <p class="modal-field-error" data-err="grn"></p>
+                    </div>
+                    <div class="modal-field">
+                        <label for="qc-vehicle-brand">Марка</label>
+                        <input type="text" id="qc-vehicle-brand" name="brand" required>
+                        <p class="modal-field-error" data-err="brand"></p>
+                    </div>
+                    <div class="modal-field">
+                        <label for="qc-vehicle-model">Модель</label>
+                        <input type="text" id="qc-vehicle-model" name="model">
+                        <p class="modal-field-error" data-err="model"></p>
+                    </div>
                 </div>
             </div>
             <div class="modal-form-errors" hidden></div>
