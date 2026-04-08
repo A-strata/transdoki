@@ -7,72 +7,155 @@
 
 {% block extra_js %}
 <script src="{% static 'invoicing/js/invoice_lines.js' %}"></script>
+{% if not is_create %}
+<script src="{% static 'invoicing/js/invoice_detail.js' %}"></script>
+{% endif %}
 {% endblock %}
 
 {% block content %}
 <section class="invoice-detail-page">
 
     <div class="sticky-nav" id="sticky-nav">
+        {% if invoice %}
+        <div class="sticky-nav-left">
+            <div class="sticky-nav-breadcrumb">
+                <a href="{% url 'invoicing:invoice_list' %}">Счета</a>
+                <span class="breadcrumb-sep">/</span>
+                <span>{{ invoice.number }}</span>
+            </div>
+            {% if invoice.status == 'draft' %}
+                <span class="status-badge status-badge--neutral">Черновик</span>
+            {% elif invoice.status == 'sent' %}
+                <span class="status-badge status-badge--info">Выставлен</span>
+            {% elif invoice.status == 'paid' %}
+                <span class="status-badge status-badge--success">Оплачен</span>
+            {% elif invoice.status == 'cancelled' %}
+                <span class="status-badge status-badge--error">Аннулирован</span>
+            {% endif %}
+        </div>
+        {% else %}
         <h1 class="sticky-nav-title">Новый счёт</h1>
+        {% endif %}
+
         <div class="sticky-nav-actions">
-            <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">Отмена</a>
-            <button type="submit" form="invoice-create-form"
-                    class="tms-btn tms-btn-primary tms-btn-sm"
-                    data-loading-text="Создание...">Создать счёт</button>
+            {% if invoice %}
+                <a href="{% url 'invoicing:invoice_list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">К списку</a>
+                {% if invoice.status != 'cancelled' and invoice.status != 'paid' %}
+                    <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                            data-modal-open="cancel-invoice-modal">Аннулировать</button>
+                {% endif %}
+                {% if editable %}
+                    <button type="submit" form="invoice-form"
+                            class="tms-btn tms-btn-primary tms-btn-sm"
+                            data-loading-text="Сохранение...">Сохранить</button>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'trips:list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">Отмена</a>
+                <button type="submit" form="invoice-form"
+                        class="tms-btn tms-btn-primary tms-btn-sm"
+                        data-loading-text="Создание...">Создать счёт</button>
+            {% endif %}
         </div>
     </div>
 
     <div class="card">
-
         <div class="section">
-            <h2 class="section-title">Заказчик</h2>
-            <div class="kv-grid">
-                <div class="kv">
-                    <p class="kv-label">Организация</p>
-                    <p class="kv-value">{{ customer }}</p>
+            <h2 class="section-title">Реквизиты</h2>
+            <div class="fields-grid">
+                <div class="field field--date">
+                    <label for="invoice_number">Номер</label>
+                    {% if is_create %}
+                        <input type="text" name="invoice_number" id="invoice_number"
+                               form="invoice-form"
+                               value="">
+                    {% else %}
+                        <input type="text" value="{{ invoice.number }}" disabled>
+                    {% endif %}
                 </div>
-                {% if customer.inn %}
-                <div class="kv">
-                    <p class="kv-label">ИНН</p>
-                    <p class="kv-value">{{ customer.inn }}</p>
+                <div class="field field--date">
+                    <label for="invoice_date">Дата счёта</label>
+                    {% if is_create %}
+                        <input type="date" name="invoice_date" id="invoice_date"
+                               form="invoice-form"
+                               value="{{ invoice_date|date:'Y-m-d' }}">
+                    {% else %}
+                        <input type="text" value="{{ invoice.date|date:'d.m.Y' }}" disabled>
+                    {% endif %}
+                </div>
+                <div class="field field--date">
+                    <label for="payment_due">Оплатить до</label>
+                    {% if editable %}
+                        <input type="date" name="payment_due" id="payment_due"
+                               form="invoice-form"
+                               value="{% if invoice and invoice.payment_due %}{{ invoice.payment_due|date:'Y-m-d' }}{% elif payment_due %}{{ payment_due|date:'Y-m-d' }}{% endif %}">
+                    {% else %}
+                        <p class="kv-value">{{ invoice.payment_due|date:"d.m.Y"|default:"—" }}</p>
+                    {% endif %}
+                </div>
+                <div class="field field--org">
+                    <label>Заказчик</label>
+                    {% if editable %}
+                        <input type="text" value="{{ customer }}" disabled>
+                    {% else %}
+                        <p class="kv-value">
+                            <a class="entity-link" href="{% url 'organizations:detail' customer.pk %}">
+                                {{ customer }}
+                            </a>
+                        </p>
+                    {% endif %}
+                    {% if customer.inn %}
+                        <small class="field-hint">ИНН {{ customer.inn }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section" id="section-lines">
+            <div class="section-header">
+                <h2 class="section-title">Строки счёта</h2>
+                {% if editable and not is_create %}
+                <div class="section-header-actions">
+                    <select id="discount-toggle" class="discount-toggle">
+                        <option value="off" {% if not has_discount %}selected{% endif %}>Скидка: не применяется</option>
+                        <option value="on" {% if has_discount %}selected{% endif %}>Скидка: на отдельные позиции</option>
+                    </select>
                 </div>
                 {% endif %}
             </div>
-        </div>
 
-        <div class="section">
-            <h2 class="section-title">Строки счёта</h2>
-
-            <form method="post" action="{% url 'invoicing:invoice_create' %}" id="invoice-create-form" novalidate>
+            <form method="post" id="invoice-form" novalidate
+                  action="{% if invoice %}{% url 'invoicing:invoice_edit' invoice.pk %}{% else %}{% url 'invoicing:invoice_create' %}{% endif %}">
                 {% csrf_token %}
-                <input type="hidden" name="trip_ids" value="{{ trip_ids }}">
 
-                <div class="invoice-meta-fields">
-                    <div class="field field--inline">
-                        <label for="invoice_date">Дата счёта</label>
-                        <input type="date" name="invoice_date" id="invoice_date"
-                               value="{{ invoice_date|date:'Y-m-d' }}">
-                    </div>
-                    <div class="field field--inline">
-                        <label for="payment_due">Оплатить до</label>
-                        <input type="date" name="payment_due" id="payment_due"
-                               value="{{ payment_due|date:'Y-m-d' }}">
-                    </div>
-                </div>
+                {% if is_create %}
+                    <input type="hidden" name="trip_ids" value="{{ trip_ids }}">
+                {% elif editable %}
+                    <input type="hidden" name="status" value="{{ invoice.status }}">
+                {% endif %}
 
                 <div class="lines-table-wrap">
-                    <table class="tms-table lines-table">
+                    <table class="tms-table lines-table" id="lines-table">
                         <thead>
                             <tr>
                                 <th>Рейс</th>
                                 <th>Наименование</th>
                                 <th>Цена без НДС</th>
+                                {% if is_create %}
                                 <th>Скидка %</th>
                                 <th>Скидка ₽</th>
+                                {% else %}
+                                <th class="col-discount" data-col-discount>Скидка %</th>
+                                <th class="col-discount" data-col-discount>Скидка ₽</th>
+                                {% endif %}
                                 <th>Ставка НДС</th>
-                                <th>Сумма без НДС</th>
+                                {% if is_create %}<th>Сумма без НДС</th>{% endif %}
                                 <th>Сумма НДС</th>
                                 <th>Итого</th>
+                                {% if editable and not is_create %}
+                                <th class="row-actions-header"></th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -87,39 +170,66 @@
                                         —
                                     {% endif %}
                                 </td>
+                                {% if editable %}
                                 <td>
-                                    <input type="text" name="line_{{ forloop.counter0 }}_description"
+                                    <input type="text" name="line_{% if is_create %}{{ forloop.counter0 }}{% else %}{{ line.pk }}{% endif %}_description"
                                            value="{{ line.description }}" class="line-input line-input--desc">
                                 </td>
                                 <td>
-                                    <input type="text" name="line_{{ forloop.counter0 }}_unit_price"
+                                    <input type="text" name="line_{% if is_create %}{{ forloop.counter0 }}{% else %}{{ line.pk }}{% endif %}_unit_price"
                                            value="{{ line.unit_price }}" class="line-input line-input--num"
                                            data-line-price>
                                 </td>
-                                <td>
-                                    <input type="text" name="line_{{ forloop.counter0 }}_discount_pct"
+                                <td {% if not is_create %}class="col-discount" data-col-discount{% endif %}>
+                                    <input type="text" name="line_{% if is_create %}{{ forloop.counter0 }}{% else %}{{ line.pk }}{% endif %}_discount_pct"
                                            value="{{ line.discount_pct }}" class="line-input line-input--sm"
                                            data-line-disc-pct>
                                 </td>
-                                <td>
-                                    <input type="text" name="line_{{ forloop.counter0 }}_discount_amount"
+                                <td {% if not is_create %}class="col-discount" data-col-discount{% endif %}>
+                                    <input type="text" name="line_{% if is_create %}{{ forloop.counter0 }}{% else %}{{ line.pk }}{% endif %}_discount_amount"
                                            value="{{ line.discount_amount }}" class="line-input line-input--sm"
                                            data-line-disc-amt>
                                 </td>
                                 <td>
-                                    <select name="line_{{ forloop.counter0 }}_vat_rate" class="line-select"
+                                    <select name="line_{% if is_create %}{{ forloop.counter0 }}{% else %}{{ line.pk }}{% endif %}_vat_rate" class="line-select"
                                             data-line-vat-select>
                                         {% for val, label in vat_rate_choices %}
                                             <option value="{{ val }}" {% if line.vat_rate == val %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
+                                {% else %}
+                                <td>{{ line.description }}</td>
+                                <td class="cell-money">{{ line.unit_price }}</td>
+                                {% if has_discount %}
+                                <td class="cell-money col-discount" data-col-discount>{{ line.discount_pct }}%</td>
+                                <td class="cell-money col-discount" data-col-discount>{{ line.discount_amount }}</td>
+                                {% endif %}
+                                <td>{{ line.get_vat_rate_display }}</td>
+                                {% endif %}
+                                {% if is_create %}
                                 <td class="cell-money" data-line-net>{{ line.amount_net }}</td>
-                                <td class="cell-money" data-line-vat>{{ line.vat_amount }}</td>
+                                {% endif %}
+                                <td class="cell-money" data-line-vat>{% if not is_create and line.vat_rate == 0 %}—{% else %}{{ line.vat_amount }}{% endif %}</td>
                                 <td class="cell-money cell-money--bold" data-line-total>{{ line.amount_total }}</td>
+                                {% if editable and not is_create %}
+                                <td class="row-actions-cell">
+                                    <div class="row-actions">
+                                        <button type="button" class="row-action row-action--delete"
+                                                title="Удалить строку" data-remove-line>
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                                <path d="M2 4h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M13 4v9.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
+                        {% if is_create %}
                         <tfoot>
                             <tr class="totals-row">
                                 <td colspan="6">Итого</td>
@@ -128,13 +238,102 @@
                                 <td class="cell-money cell-money--bold" data-foot-total></td>
                             </tr>
                         </tfoot>
+                        {% endif %}
                     </table>
                 </div>
             </form>
-        </div>
 
+            {% if not is_create %}
+            <div class="invoice-totals">
+                <div class="invoice-totals-row" data-totals-gross>
+                    <span class="invoice-totals-label">Итого без НДС и скидок</span>
+                    <span class="invoice-totals-value" data-foot-gross></span>
+                </div>
+                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-discount>
+                    <span class="invoice-totals-label">Скидка</span>
+                    <span class="invoice-totals-value" data-foot-discount></span>
+                </div>
+                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-net-after>
+                    <span class="invoice-totals-label">Итого без НДС</span>
+                    <span class="invoice-totals-value" data-foot-net></span>
+                </div>
+                <div class="invoice-totals-row">
+                    <span class="invoice-totals-label">НДС</span>
+                    <span class="invoice-totals-value" data-foot-vat></span>
+                </div>
+                <div class="invoice-totals-row invoice-totals-row--grand">
+                    <span class="invoice-totals-label">Итого с НДС</span>
+                    <span class="invoice-totals-value" data-foot-total></span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
+    {% if invoice %}
+        {% if has_act %}
+        <div class="card">
+            <div class="section">
+                <h2 class="section-title">Связанные документы</h2>
+                <div class="kv-grid">
+                    <div class="kv">
+                        <p class="kv-label">Акт</p>
+                        <p class="kv-value">
+                            <a href="{% url 'invoicing:act_detail' invoice.act.pk %}">{{ invoice.act.number }}</a>
+                        </p>
+                    </div>
+                    <div class="kv">
+                        <p class="kv-label">Дата</p>
+                        <p class="kv-value">{{ invoice.act.date|date:"d.m.Y" }}</p>
+                    </div>
+                    <div class="kv">
+                        <p class="kv-label">Статус</p>
+                        <p class="kv-value">
+                            {% if invoice.act.status == 'draft' %}
+                                <span class="status-badge status-badge--neutral">Черновик</span>
+                            {% elif invoice.act.status == 'signed' %}
+                                <span class="status-badge status-badge--success">Подписан</span>
+                            {% elif invoice.act.status == 'cancelled' %}
+                                <span class="status-badge status-badge--error">Аннулирован</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif invoice.status != 'cancelled' %}
+        <div class="card">
+            <div class="section">
+                <h2 class="section-title">Связанные документы</h2>
+                <p class="sidebar-empty">Акт ещё не создан</p>
+                <form method="post" action="{% url 'invoicing:act_create' invoice.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm"
+                            data-loading-text="Создание...">Создать акт</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if invoice.status != 'cancelled' and invoice.status != 'paid' %}
+        <div class="modal-overlay" id="cancel-invoice-modal" hidden>
+            <div class="modal-dialog">
+                <h3 class="modal-title">Аннулировать счёт?</h3>
+                <p class="modal-body">
+                    Счёт {{ invoice.number }} будет аннулирован. Действие нельзя отменить.
+                </p>
+                <div class="modal-actions">
+                    <form method="post" action="{% url 'invoicing:invoice_cancel' invoice.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="tms-btn tms-btn-danger"
+                                data-loading-text="Аннулирование...">Аннулировать</button>
+                    </form>
+                    <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
 
 </section>
 {% endblock %}

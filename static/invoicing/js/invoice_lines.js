@@ -68,7 +68,7 @@
         var total = round2(net + vat);
 
         if (netCell)   netCell.textContent   = fmtMoney(net);
-        if (vatCell)   vatCell.textContent   = fmtMoney(vat);
+        if (vatCell)   vatCell.textContent   = vatRate === 0 ? '—' : fmtMoney(vat);
         if (totalCell) totalCell.textContent = fmtMoney(total);
 
         updateTotals();
@@ -78,21 +78,35 @@
         var table = document.querySelector('.lines-table');
         if (!table) return;
 
-        var sumNet = 0, sumVat = 0, sumTotal = 0;
+        var sumGross = 0, sumDiscount = 0, sumNet = 0, sumVat = 0, sumTotal = 0;
         table.querySelectorAll('tr[data-line-row]').forEach(function (row) {
-            sumNet   += parseNum(row.querySelector('[data-line-net]') && row.querySelector('[data-line-net]').textContent);
-            sumVat   += parseNum(row.querySelector('[data-line-vat]') && row.querySelector('[data-line-vat]').textContent);
-            sumTotal += parseNum(row.querySelector('[data-line-total]') && row.querySelector('[data-line-total]').textContent);
+            var priceEl = row.querySelector('[data-line-price]');
+            var amtEl   = row.querySelector('[data-line-disc-amt]');
+            var price    = priceEl ? parseNum(priceEl.value) : 0;
+            var discount = amtEl ? parseNum(amtEl.value) : 0;
+            var net      = round2(price - discount);
+
+            sumGross    += price;
+            sumDiscount += discount;
+            sumNet      += net;
+            sumVat      += parseNum(row.querySelector('[data-line-vat]') && row.querySelector('[data-line-vat]').textContent);
+            sumTotal    += parseNum(row.querySelector('[data-line-total]') && row.querySelector('[data-line-total]').textContent);
         });
 
-        var footNet   = table.querySelector('[data-foot-net]');
-        var footVat   = table.querySelector('[data-foot-vat]');
-        var footTotal = table.querySelector('[data-foot-total]');
-        if (footNet)   footNet.textContent   = fmtMoney(sumNet);
-        if (footVat)   footVat.textContent   = fmtMoney(sumVat);
-        if (footTotal) footTotal.textContent = fmtMoney(sumTotal);
+        var set = function (sel, val) {
+            var el = document.querySelector(sel);
+            if (el) el.textContent = fmtMoney(val);
+        };
 
+        set('[data-foot-gross]', sumGross);
+        set('[data-foot-discount]', sumDiscount);
+        set('[data-foot-net]', sumNet);
+        set('[data-foot-vat]', sumVat);
+        set('[data-foot-total]', sumTotal);
     }
+
+    window._invoiceLinesRecalcRow = recalcRow;
+    window._invoiceLinesUpdateTotals = updateTotals;
 
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('tr[data-line-row]').forEach(function (row) {
@@ -103,7 +117,9 @@
 
             ['[data-line-net]', '[data-line-vat]', '[data-line-total]'].forEach(function (sel) {
                 var cell = row.querySelector(sel);
-                if (cell) cell.textContent = fmtMoney(parseNum(cell.textContent));
+                if (cell && cell.textContent.trim() !== '—') {
+                    cell.textContent = fmtMoney(parseNum(cell.textContent));
+                }
             });
 
             if (priceEl) priceEl.addEventListener('input', function () { sanitizeDecimal(priceEl); recalcRow(row, 'pct'); });

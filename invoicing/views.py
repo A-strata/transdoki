@@ -92,6 +92,8 @@ def invoice_create(request):
             "invoice_date": data["date"],
             "trip_ids": ",".join(str(t.pk) for t in data["trips"]),
             "vat_rate_choices": InvoiceLine.VatRate.choices,
+            "is_create": True,
+            "editable": True,
         })
 
     raw_ids = request.POST.get("trip_ids", "")
@@ -140,11 +142,14 @@ def invoice_create(request):
     except ValueError:
         payment_due = None
 
+    invoice_number = request.POST.get("invoice_number", "").strip() or None
+
     try:
         invoice = create_invoice_from_trips(
             account, trip_ids, request.user,
             invoice_date=invoice_date,
             lines_data=lines_data,
+            invoice_number=invoice_number,
         )
         if payment_due:
             invoice.payment_due = payment_due
@@ -186,12 +191,14 @@ def invoice_create(request):
             "payment_due": payment_due,
             "trip_ids": ",".join(str(t.pk) for t in trips),
             "vat_rate_choices": InvoiceLine.VatRate.choices,
+            "is_create": True,
+            "editable": True,
         })
 
 
 class InvoiceDetailView(LoginRequiredMixin, DetailView):
     model = Invoice
-    template_name = "invoicing/invoice_detail.html"
+    template_name = "invoicing/invoice_form.html"
     context_object_name = "invoice"
 
     def get_queryset(self):
@@ -202,9 +209,15 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         invoice = self.object
-        ctx["lines"] = invoice.lines.select_related("trip").all()
+        lines = invoice.lines.select_related("trip").all()
+        ctx["lines"] = lines
+        ctx["customer"] = invoice.customer
         ctx["has_act"] = hasattr(invoice, "act")
         ctx["vat_rate_choices"] = InvoiceLine.VatRate.choices
+        ctx["editable"] = invoice.status == Invoice.Status.DRAFT
+        ctx["has_discount"] = any(
+            l.discount_amount > 0 for l in lines
+        )
         return ctx
 
 

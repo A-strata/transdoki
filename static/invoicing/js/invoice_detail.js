@@ -1,0 +1,54 @@
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var toggle = document.getElementById('discount-toggle');
+        var table  = document.getElementById('lines-table');
+        if (!toggle || !table) return;
+
+        function applyDiscount(showDiscount) {
+            if (showDiscount) {
+                table.classList.remove('discount-off');
+            } else {
+                table.classList.add('discount-off');
+                table.querySelectorAll('tr[data-line-row]').forEach(function (row) {
+                    var pctEl = row.querySelector('[data-line-disc-pct]');
+                    var amtEl = row.querySelector('[data-line-disc-amt]');
+                    if (pctEl) pctEl.value = '0.00';
+                    if (amtEl) amtEl.value = '0.00';
+                    if (window._invoiceLinesRecalcRow) {
+                        window._invoiceLinesRecalcRow(row, 'pct');
+                    }
+                });
+            }
+
+            var discountRows = document.querySelectorAll(
+                '[data-totals-discount], [data-totals-net-after]'
+            );
+            discountRows.forEach(function (el) {
+                el.hidden = !showDiscount;
+            });
+        }
+
+        applyDiscount(toggle.value === 'on');
+
+        toggle.addEventListener('change', function () {
+            applyDiscount(toggle.value === 'on');
+        });
+
+        table.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-remove-line]');
+            if (!btn) return;
+            var row = btn.closest('tr[data-line-row]');
+            if (!row) return;
+
+            var rows = table.querySelectorAll('tr[data-line-row]');
+            if (rows.length <= 1) return;
+
+            row.remove();
+            if (window._invoiceLinesUpdateTotals) {
+                window._invoiceLinesUpdateTotals();
+            }
+        });
+    });
+})();

@@ -117,10 +117,11 @@ def prepare_invoice_data(account, trip_ids):
 
 @transaction.atomic
 def create_invoice_from_trips(account, trip_ids, user, invoice_date=None,
-                              lines_data=None):
+                              lines_data=None, invoice_number=None):
     """
     Создаёт Invoice + InvoiceLine из рейсов.
 
+    invoice_number — пользовательский номер; если None — генерируется автоматически.
     lines_data — опциональный список dict с пользовательскими правками строк:
         [{"trip_id": int, "description": str, "unit_price": Decimal,
           "discount_amount": Decimal, "vat_rate": int}, ...]
@@ -131,7 +132,7 @@ def create_invoice_from_trips(account, trip_ids, user, invoice_date=None,
     invoice = Invoice.objects.create(
         account=account,
         created_by=user,
-        number=next_invoice_number(account),
+        number=invoice_number or next_invoice_number(account),
         date=invoice_date or data["date"],
         customer=data["customer"],
         status=Invoice.Status.DRAFT,
