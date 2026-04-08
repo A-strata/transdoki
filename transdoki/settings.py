@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "waybills",
     "integrations",
     "contracts",
+    "invoicing",
 ]
 
 MIDDLEWARE = [

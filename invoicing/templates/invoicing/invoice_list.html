@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'invoicing/css/invoice_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="invoices-page">
+
+    <div class="list-toolbar">
+        <div class="list-toolbar-left">
+            <h1 class="toolbar-title">Счета</h1>
+            <span class="toolbar-count">Найдено: {{ page_obj.paginator.count }}</span>
+        </div>
+        <div class="list-toolbar-right">
+            <div class="filter-inline">
+                <label class="filter-field">
+                    <span class="filter-label">Статус</span>
+                    <select name="status" class="filter-select" data-filter-status>
+                        <option value="">Все</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="filter-field filter-field-checkbox">
+                    <input type="checkbox" name="overdue" value="1"
+                           {% if current_overdue == "1" %}checked{% endif %}
+                           data-filter-overdue>
+                    <span>Просроченные</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap">
+            <table class="tms-table">
+                <thead>
+                    <tr>
+                        <th>Номер</th>
+                        <th>Дата</th>
+                        <th>Заказчик</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Оплатить до</th>
+                        <th class="row-actions-cell"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td>{{ invoice.number }}</td>
+                        <td>{{ invoice.date|date:"d.m.Y" }}</td>
+                        <td>{{ invoice.customer.short_name|default:invoice.customer }}</td>
+                        <td class="cell-money">{{ invoice.total }} ₽</td>
+                        <td>
+                            {% if invoice.status == 'draft' %}
+                                <span class="status-badge status-badge--neutral">Черновик</span>
+                            {% elif invoice.status == 'sent' %}
+                                {% if invoice.is_overdue %}
+                                    <span class="status-badge status-badge--error">Просрочен</span>
+                                {% else %}
+                                    <span class="status-badge status-badge--info">Выставлен</span>
+                                {% endif %}
+                            {% elif invoice.status == 'paid' %}
+                                <span class="status-badge status-badge--success">Оплачен</span>
+                            {% elif invoice.status == 'cancelled' %}
+                                <span class="status-badge status-badge--error">Аннулирован</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ invoice.payment_due|date:"d.m.Y"|default:"—" }}</td>
+                        <td class="row-actions-cell">
+                            <div class="row-actions">
+                                <a href="{% url 'invoicing:invoice_detail' invoice.pk %}"
+                                   class="row-action row-action--view" title="Просмотр">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <p>Счетов пока нет.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_overdue %}&overdue=1{% endif %}"
+               class="pagination-btn">&laquo;</a>
+        {% endif %}
+        {% for item in pagination_items %}
+            {% if item.type == "ellipsis" %}
+                <span class="pagination-ellipsis">&hellip;</span>
+            {% elif item.current %}
+                <span class="pagination-btn is-current">{{ item.number }}</span>
+            {% else %}
+                <a href="?page={{ item.number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_overdue %}&overdue=1{% endif %}"
+                   class="pagination-btn">{{ item.number }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_overdue %}&overdue=1{% endif %}"
+               class="pagination-btn">&raquo;</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'invoicing/js/invoice_list.js' %}"></script>
+{% endblock %}

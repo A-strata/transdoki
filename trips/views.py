@@ -9,7 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q, Subquery
 from django.forms.models import model_to_dict
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -468,6 +468,17 @@ class TripListView(UserOwnedListView):
         current_org = getattr(self.request, "current_org", None)
         if current_org:
             qs = qs.filter(Q(client=current_org) | Q(carrier=current_org))
+
+        from invoicing.models import Invoice, InvoiceLine
+
+        active_lines = InvoiceLine.objects.filter(
+            trip=OuterRef("pk"),
+            invoice__status__in=[Invoice.Status.DRAFT, Invoice.Status.SENT, Invoice.Status.PAID],
+        )
+        qs = qs.annotate(
+            invoice_pk=Subquery(active_lines.values("invoice_id")[:1]),
+            invoice_number=Subquery(active_lines.values("invoice__number")[:1]),
+        )
 
         qs = self._apply_date_filters(qs)
         qs = self._apply_contractor_filter(qs)

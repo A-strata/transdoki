@@ -1,0 +1,83 @@
+.invoices-page {
+    max-width: var(--container);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.list-toolbar-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.toolbar-title {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text);
+}
+
+.toolbar-count {
+    font-size: var(--text-sm);
+    color: var(--muted);
+}
+
+.list-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filter-inline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filter-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-label {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.filter-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.filter-select:hover {
+    border-color: var(--border-input-hover);
+}
+
+.filter-field-checkbox {
+    font-size: var(--text-sm);
+    color: var(--text);
+    cursor: pointer;
+    gap: 4px;
+}
+
+.cell-money {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}

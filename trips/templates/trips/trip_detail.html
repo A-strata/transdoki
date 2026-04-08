@@ -341,6 +341,22 @@
                 <p class="kv-value">{{ trip.comments }}</p>
             </div>
             {% endif %}
+
+            <div class="invoice-link-block">
+                {% if trip.invoice_lines.exists %}
+                    {% with inv_line=trip.invoice_lines.first %}
+                    <p class="kv-label">Счёт</p>
+                    <p class="kv-value">
+                        <a href="{% url 'invoicing:invoice_detail' inv_line.invoice.pk %}">
+                            {{ inv_line.invoice.number }}
+                        </a>
+                    </p>
+                    {% endwith %}
+                {% else %}
+                    <a href="{% url 'invoicing:invoice_create' %}?trip_id={{ trip.pk }}"
+                       class="tms-btn tms-btn-secondary tms-btn-sm">Выставить счёт</a>
+                {% endif %}
+            </div>
         </div>
 
         {# ── Вложения ── #}

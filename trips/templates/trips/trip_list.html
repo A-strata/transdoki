@@ -148,6 +148,7 @@
                         <th data-col="payment_condition">Срок (заказчик)</th>
                         <th data-col="carrier_payment_method">Оплата (перевозчик)</th>
                         <th data-col="comments">Комментарии</th>
+                        <th data-col="invoice">Счёт</th>
                         <th class="row-actions-cell"></th>
                     </tr>
                 </thead>
@@ -173,6 +174,13 @@
                         <td data-col="payment_condition">{% if trip.payment_condition == 'unloading' %}На выгрузке{% elif trip.payment_term %}{{ trip.payment_term }} дн.{% else %}—{% endif %}</td>
                         <td data-col="carrier_payment_method">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %} {{ trip.carrier_vat_rate }}%{% endif %}</td>
                         <td data-col="comments">{{ trip.comments|default:"—" }}</td>
+                        <td data-col="invoice">
+                            {% if trip.invoice_pk %}
+                                <a href="{% url 'invoicing:invoice_detail' trip.invoice_pk %}">{{ trip.invoice_number }}</a>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
                         <td class="row-actions-cell" data-row-actions>
                             <div class="row-actions">
                                 <a href="{% url 'trips:detail' trip.pk %}" class="row-action row-action--view" title="Просмотр">
@@ -205,7 +213,7 @@
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="23">
+                        <td colspan="24">
                             <div class="empty-state">
                                 <p>Рейсов пока нет</p>
                                 <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary">+ Создать первый рейс</a>

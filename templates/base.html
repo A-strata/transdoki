@@ -43,6 +43,11 @@
                             Договоры
                         </a>
                     {% endif %}
+                    {% url 'invoicing:invoice_list' as invoices_url %}
+                    <a href="{{ invoices_url }}"
+                       class="nav-link {% if '/invoices/' in request.path %}active{% endif %}">
+                        Счета
+                    </a>
                 {% endif %}
             </div>
 
