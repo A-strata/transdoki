@@ -40,6 +40,9 @@
         <div class="sticky-nav-actions">
             {% if invoice %}
                 <a href="{% url 'invoicing:invoice_list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">К списку</a>
+                {% if invoice.status != 'cancelled' %}
+                    <a href="{% url 'invoicing:invoice_download' invoice.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
+                {% endif %}
                 {% if invoice.status != 'cancelled' and invoice.status != 'paid' %}
                     <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
                             data-modal-open="cancel-invoice-modal">Аннулировать</button>

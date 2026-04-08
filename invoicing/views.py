@@ -20,6 +20,7 @@ from trips.models import Trip
 
 from .models import Act, Invoice, InvoiceLine
 from .services import (
+    InvoiceGenerator,
     cancel_invoice,
     create_act_from_invoice,
     create_invoice_from_trips,
@@ -349,6 +350,16 @@ class ActCreateView(LoginRequiredMixin, View):
         except ValueError as e:
             messages.error(request, str(e))
             return redirect("invoicing:invoice_detail", pk=pk)
+
+
+class InvoiceDownloadView(LoginRequiredMixin, View):
+
+    def get(self, request, pk):
+        account = get_request_account(request)
+        invoice = get_object_or_404(
+            Invoice.objects.for_account(account).select_related("customer"), pk=pk
+        )
+        return InvoiceGenerator.generate_response(invoice)
 
 
 class ActDetailView(LoginRequiredMixin, DetailView):

@@ -1,9 +1,14 @@
 from datetime import date
+from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import Max
+from django.http import FileResponse
 
+from contracts.services import _org_context, amount_to_words
+from organizations.models import Organization
 from trips.models import Trip
+from trips.services import BaseDocxGenerator
 
 from .models import Act, Invoice, InvoiceLine
 
@@ -62,10 +67,9 @@ def _pluralize_trips(n):
 def next_invoice_number(account):
     year = date.today().year
     prefix = f"СЧ-{year}-"
-    last = (
-        Invoice.objects.filter(account=account, number__startswith=prefix)
-        .aggregate(m=Max("number"))["m"]
-    )
+    last = Invoice.objects.filter(account=account, number__startswith=prefix).aggregate(
+        m=Max("number")
+    )["m"]
     seq = (int(last.split("-")[-1]) + 1) if last else 1
     return f"{prefix}{seq:04d}"
 
@@ -73,10 +77,9 @@ def next_invoice_number(account):
 def next_act_number(account):
     year = date.today().year
     prefix = f"АКТ-{year}-"
-    last = (
-        Act.objects.filter(account=account, number__startswith=prefix)
-        .aggregate(m=Max("number"))["m"]
-    )
+    last = Act.objects.filter(account=account, number__startswith=prefix).aggregate(
+        m=Max("number")
+    )["m"]
     seq = (int(last.split("-")[-1]) + 1) if last else 1
     return f"{prefix}{seq:04d}"
 
@@ -111,7 +114,11 @@ def prepare_invoice_data(account, trip_ids):
     for t in trips:
         if InvoiceLine.objects.filter(
             trip=t,
-            invoice__status__in=[Invoice.Status.DRAFT, Invoice.Status.SENT, Invoice.Status.PAID],
+            invoice__status__in=[
+                Invoice.Status.DRAFT,
+                Invoice.Status.SENT,
+                Invoice.Status.PAID,
+            ],
         ).exists():
             already_invoiced.append(t)
     if already_invoiced:
@@ -143,8 +150,9 @@ def prepare_invoice_data(account, trip_ids):
 
 
 @transaction.atomic
-def create_invoice_from_trips(account, trip_ids, user, invoice_date=None,
-                              lines_data=None, invoice_number=None):
+def create_invoice_from_trips(
+    account, trip_ids, user, invoice_date=None, lines_data=None, invoice_number=None
+):
     """
     Создаёт Invoice + InvoiceLine из рейсов.
 
@@ -217,6 +225,95 @@ def cancel_invoice(invoice, user):
     invoice.save(update_fields=["status", "updated_by", "updated_at"])
 
 
+def _fmt_money(value):
+    """Форматирует Decimal как '1 234,56' для DOCX-шаблона."""
+    if value is None:
+        return "—"
+    value = Decimal(str(value))
+    int_part = int(abs(value))
+    kopecks = int(round((abs(value) - int_part) * 100))
+    formatted = f"{int_part:,}".replace(",", "\u00a0")
+    result = f"{formatted},{kopecks:02d}"
+    if value < 0:
+        result = "-" + result
+    return result
+
+
+class InvoiceGenerator(BaseDocxGenerator):
+    """Генератор печатной формы счёта на оплату (DOCX)."""
+
+    template_candidates = ("templates/docs/invoice_template.docx",)
+
+    @classmethod
+    def build_context(cls, invoice) -> dict:
+        own_company = Organization.objects.filter(
+            account=invoice.account,
+            is_own_company=True,
+        ).first()
+        customer = invoice.customer
+        lines = list(invoice.lines.select_related("trip").all())
+
+        ctx = {}
+        ctx.update(_org_context(own_company, "own_company"))
+        ctx.update(_org_context(customer, "contractor"))
+
+        ctx["invoice_number"] = invoice.number
+        ctx["invoice_date"] = invoice.date.strftime("%d.%m.%Y") if invoice.date else "—"
+
+        fmt_lines = []
+        for line in lines:
+            fmt_lines.append(
+                {
+                    "description": line.description,
+                    "price": _fmt_money(line.unit_price),
+                    "amount": _fmt_money(line.amount_total),
+                }
+            )
+        ctx["lines"] = fmt_lines
+
+        total_net = invoice.total_net
+        total_vat = invoice.total_vat
+        total = invoice.total
+
+        ctx["total_net"] = _fmt_money(total_net)
+        ctx["total"] = _fmt_money(total)
+        ctx["items_count"] = len(fmt_lines)
+        ctx["amount_words"] = amount_to_words(total)
+
+        if total_vat > 0:
+            vat_rates = {ln.vat_rate for ln in lines if ln.vat_rate > 0}
+            if len(vat_rates) == 1:
+                ctx["vat_text"] = f"В том числе НДС {vat_rates.pop()}%"
+            else:
+                ctx["vat_text"] = "В том числе НДС"
+            ctx["total_vat"] = _fmt_money(total_vat)
+        else:
+            ctx["vat_text"] = "Без НДС"
+            ctx["total_vat"] = "—"
+
+        return ctx
+
+    @classmethod
+    def build_download_name(cls, invoice) -> str:
+        date_str = invoice.date.strftime("%d.%m.%Y") if invoice.date else ""
+        return f"Счёт {invoice.number} от {date_str}.docx"
+
+    @classmethod
+    def generate_response(cls, invoice) -> FileResponse:
+        context = cls.build_context(invoice)
+        buffer = cls._render_to_buffer(context)
+        filename = cls.build_download_name(invoice)
+        return FileResponse(
+            buffer,
+            as_attachment=True,
+            filename=filename,
+            content_type=(
+                "application/vnd.openxmlformats-"
+                "officedocument.wordprocessingml.document"
+            ),
+        )
+
+
 @transaction.atomic
 def create_act_from_invoice(invoice, user):
     if Act.objects.filter(invoice=invoice).exists():
@@ -232,8 +329,7 @@ def create_act_from_invoice(invoice, user):
         if trip:
             route = _build_route(trip)
             description = (
-                f"Услуги по перевозке грузов ({route}, "
-                f"{trip.date_of_trip:%d.%m.%Y})"
+                f"Услуги по перевозке грузов ({route}, {trip.date_of_trip:%d.%m.%Y})"
             )
         else:
             description = line.description
