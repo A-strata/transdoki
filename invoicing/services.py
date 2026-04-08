@@ -123,7 +123,7 @@ def create_invoice_from_trips(account, trip_ids, user, invoice_date=None,
 
     lines_data — опциональный список dict с пользовательскими правками строк:
         [{"trip_id": int, "description": str, "unit_price": Decimal,
-          "discount_pct": Decimal, "vat_rate": int}, ...]
+          "discount_amount": Decimal, "vat_rate": int}, ...]
     Если не передан — строки формируются автоматически.
     """
     data = prepare_invoice_data(account, trip_ids)
@@ -147,7 +147,7 @@ def create_invoice_from_trips(account, trip_ids, user, invoice_date=None,
                 kind=InvoiceLine.Kind.SERVICE,
                 description=ld["description"],
                 unit_price=ld["unit_price"],
-                discount_pct=ld.get("discount_pct", 0),
+                discount_amount=ld.get("discount_amount", 0),
                 vat_rate=ld.get("vat_rate", InvoiceLine.VatRate.ZERO),
             )
             line.compute()

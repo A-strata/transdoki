@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import BooleanField, Case, Value, When
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
@@ -15,6 +15,8 @@ from django.views.generic import DetailView
 from billing.mixins import BillingProtectedMixin
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
+
+from trips.models import Trip
 
 from .models import Act, Invoice, InvoiceLine
 from .services import (
@@ -83,7 +85,6 @@ def invoice_create(request):
             messages.error(request, str(e))
             return redirect("trips:list")
 
-        from django.shortcuts import render
         return render(request, "invoicing/invoice_form.html", {
             "customer": data["customer"],
             "lines": data["lines"],
@@ -105,16 +106,16 @@ def invoice_create(request):
         prefix = f"line_{i}_"
         desc = request.POST.get(f"{prefix}description", "")
         price = request.POST.get(f"{prefix}unit_price", "0")
-        disc = request.POST.get(f"{prefix}discount_pct", "0")
+        disc_amt = request.POST.get(f"{prefix}discount_amount", "0")
         vat = request.POST.get(f"{prefix}vat_rate", "0")
         try:
             unit_price = Decimal(price.replace(",", ".").replace(" ", ""))
         except (InvalidOperation, ValueError):
             unit_price = Decimal("0")
         try:
-            discount_pct = Decimal(disc.replace(",", ".").replace(" ", ""))
+            discount_amount = Decimal(disc_amt.replace(",", ".").replace(" ", ""))
         except (InvalidOperation, ValueError):
-            discount_pct = Decimal("0")
+            discount_amount = Decimal("0")
         try:
             vat_rate = int(vat)
         except (ValueError, TypeError):
@@ -123,7 +124,7 @@ def invoice_create(request):
             "trip_id": tid,
             "description": desc,
             "unit_price": unit_price,
-            "discount_pct": discount_pct,
+            "discount_amount": discount_amount,
             "vat_rate": vat_rate,
         })
 
@@ -133,17 +134,59 @@ def invoice_create(request):
     except ValueError:
         invoice_date = None
 
+    payment_due_raw = request.POST.get("payment_due", "")
+    try:
+        payment_due = date.fromisoformat(payment_due_raw) if payment_due_raw else None
+    except ValueError:
+        payment_due = None
+
     try:
         invoice = create_invoice_from_trips(
             account, trip_ids, request.user,
             invoice_date=invoice_date,
             lines_data=lines_data,
         )
+        if payment_due:
+            invoice.payment_due = payment_due
+            invoice.save(update_fields=["payment_due"])
         messages.success(request, f"Создан счёт {invoice.number}.")
         return redirect("invoicing:invoice_detail", pk=invoice.pk)
     except ValueError as e:
         messages.error(request, str(e))
-        return redirect("trips:list")
+        trips = list(
+            Trip.objects.for_account(account)
+            .filter(pk__in=trip_ids)
+            .prefetch_related("points")
+            .select_related("client")
+        )
+        if not trips:
+            return redirect("trips:list")
+        trip_map = {t.pk: t for t in trips}
+        lines = []
+        for ld in lines_data:
+            trip = trip_map.get(ld["trip_id"])
+            line = InvoiceLine(
+                trip=trip,
+                kind=InvoiceLine.Kind.SERVICE,
+                description=ld["description"],
+                unit_price=ld["unit_price"],
+                discount_amount=ld["discount_amount"],
+                vat_rate=ld["vat_rate"],
+            )
+            try:
+                line.compute()
+            except ValueError:
+                pass
+            lines.append(line)
+        return render(request, "invoicing/invoice_form.html", {
+            "customer": trips[0].client,
+            "lines": lines,
+            "trips": trips,
+            "invoice_date": invoice_date or date.today(),
+            "payment_due": payment_due,
+            "trip_ids": ",".join(str(t.pk) for t in trips),
+            "vat_rate_choices": InvoiceLine.VatRate.choices,
+        })
 
 
 class InvoiceDetailView(LoginRequiredMixin, DetailView):
@@ -184,7 +227,7 @@ class InvoiceEditView(LoginRequiredMixin, View):
             desc = request.POST.get(f"{prefix}description")
             price = request.POST.get(f"{prefix}unit_price")
             vat = request.POST.get(f"{prefix}vat_rate")
-            disc_pct = request.POST.get(f"{prefix}discount_pct")
+            disc_amt = request.POST.get(f"{prefix}discount_amount")
 
             if desc is not None:
                 line.description = desc
@@ -198,13 +241,17 @@ class InvoiceEditView(LoginRequiredMixin, View):
                     line.vat_rate = int(vat)
                 except (ValueError, TypeError):
                     pass
-            if disc_pct is not None:
+            if disc_amt is not None:
                 try:
-                    line.discount_pct = Decimal(disc_pct.replace(",", ".").replace(" ", ""))
+                    line.discount_amount = Decimal(disc_amt.replace(",", ".").replace(" ", ""))
                 except (InvalidOperation, ValueError):
-                    line.discount_pct = Decimal("0")
+                    line.discount_amount = Decimal("0")
 
-            line.compute(last_edited="pct")
+            try:
+                line.compute()
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect("invoicing:invoice_detail", pk=pk)
             updated.append(line)
 
         if updated:

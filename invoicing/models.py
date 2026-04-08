@@ -97,7 +97,14 @@ class InvoiceLine(models.Model):
     def __str__(self):
         return f"{self.description} — {self.amount_total} ₽"
 
-    def compute(self, *, last_edited: str = "pct") -> None:
+    def compute(self, *, last_edited: str = "amt") -> None:
+        """
+        Пересчёт сумм строки.
+
+        last_edited="amt" (default) — discount_amount фиксирован, pct пересчитывается.
+        last_edited="pct" — discount_pct фиксирован, amount пересчитывается.
+            Используется только в apply_discount_to_invoice (массовая скидка).
+        """
         two = Decimal("0.01")
 
         if not self.unit_price:
@@ -109,10 +116,21 @@ class InvoiceLine(models.Model):
             return
 
         if last_edited == "pct":
+            if self.discount_pct > Decimal("99.99"):
+                raise ValueError(
+                    f"Скидка не может превышать 99.99% "
+                    f"(указано {self.discount_pct}%)"
+                )
             self.discount_amount = (
                 self.unit_price * self.discount_pct / 100
             ).quantize(two, ROUND_HALF_UP)
         else:
+            max_amt = self.unit_price - two
+            if self.discount_amount > max_amt:
+                raise ValueError(
+                    f"Скидка ({self.discount_amount} ₽) не может быть "
+                    f"больше {max_amt} ₽"
+                )
             self.discount_pct = (
                 self.discount_amount / self.unit_price * 100
             ).quantize(two, ROUND_HALF_UP)

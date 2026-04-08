@@ -133,7 +133,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.querySelectorAll("form").forEach(function (form) {
         form.addEventListener("submit", function () {
-            const btn = form.querySelector("[data-loading-text]");
+            var btn = form.querySelector("[data-loading-text]");
+            if (!btn) {
+                btn = document.querySelector(
+                    '[form="' + form.id + '"][data-loading-text]'
+                );
+            }
             if (!btn) return;
             btn.disabled = true;
             btn.classList.add("is-loading");

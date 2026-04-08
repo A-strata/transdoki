@@ -9,7 +9,7 @@
 .sticky-nav {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: var(--z-sticky-header);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -140,7 +140,10 @@
     border-color: var(--border-input-hover);
 }
 
-.line-input:focus {
+.line-input:focus,
+.line-select:focus,
+.field--inline input:focus,
+.field--inline select:focus {
     outline: 3px solid var(--primary-ring);
     border-color: var(--primary);
 }
