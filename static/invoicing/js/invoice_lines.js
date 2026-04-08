@@ -33,7 +33,7 @@
         var fixed = round2(n).toFixed(2);
         var parts = fixed.split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
-        return parts.join('.');
+        return parts.join(',');
     }
 
     function recalcRow(row, source) {
