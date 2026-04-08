@@ -8,16 +8,44 @@ from trips.models import Trip
 from .models import Act, Invoice, InvoiceLine
 
 
-def _build_route(trip):
-    points = list(trip.points.all())
-    if not points:
-        return "—"
-    cities = []
-    for p in points:
-        city = (p.address or "").split(",")[0].strip()
-        if city and (not cities or cities[-1] != city):
-            cities.append(city)
-    return " → ".join(cities) if cities else "—"
+def _build_description(trip):
+    from trips.models import TripPoint
+
+    points = list(trip.points.order_by("sequence").all())
+
+    loads = [p for p in points if p.point_type == TripPoint.Type.LOAD]
+    unloads = [p for p in points if p.point_type == TripPoint.Type.UNLOAD]
+
+    first_load_addr = loads[0].address if loads else "—"
+    last_unload_addr = unloads[-1].address if unloads else "—"
+
+    first_load_date = loads[0].planned_date if loads else None
+    last_unload_date = unloads[-1].planned_date if unloads else None
+
+    parts = [
+        f"Перевозка груза по маршруту: {first_load_addr} — {last_unload_addr}",
+    ]
+
+    date_parts = []
+    if first_load_date:
+        date_parts.append(f"дата погрузки {first_load_date:%d.%m.%Y}")
+    if last_unload_date:
+        date_parts.append(f"дата выгрузки {last_unload_date:%d.%m.%Y}")
+    if date_parts:
+        parts.append("; ".join(date_parts))
+
+    vehicle_parts = []
+    if trip.truck:
+        vehicle_parts.append(f"а/м {trip.truck.grn}")
+    if trip.trailer:
+        vehicle_parts.append(f"прицеп {trip.trailer.grn}")
+    if vehicle_parts:
+        parts.append(", ".join(vehicle_parts))
+
+    if trip.driver:
+        parts.append(f"водитель {trip.driver}")
+
+    return ", ".join(parts) + "."
 
 
 def _pluralize_trips(n):
@@ -69,7 +97,7 @@ def prepare_invoice_data(account, trip_ids):
         Trip.objects.for_account(account)
         .filter(pk__in=trip_ids)
         .prefetch_related("points")
-        .select_related("client")
+        .select_related("client", "truck", "trailer", "driver")
     )
 
     if not trips:
@@ -92,14 +120,13 @@ def prepare_invoice_data(account, trip_ids):
 
     lines = []
     for trip in trips:
-        route = _build_route(trip)
         unit_price = trip.client_total or trip.client_cost
         if not unit_price:
             raise ValueError(f"У рейса №{trip.num_of_trip} не указана стоимость.")
         line = InvoiceLine(
             trip=trip,
             kind=InvoiceLine.Kind.SERVICE,
-            description=f"Перевозка {route}, {trip.date_of_trip:%d.%m.%Y}",
+            description=_build_description(trip),
             unit_price=unit_price,
             discount_pct=0,
             vat_rate=InvoiceLine.VatRate.ZERO,
