@@ -219,6 +219,14 @@
 
 .section-header-actions {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.discount-label {
+    font-size: var(--text-sm);
+    color: var(--muted);
 }
 
 .discount-toggle {
@@ -230,7 +238,13 @@
     color: var(--text);
 }
 
-.discount-toggle:hover {
+.discount-toggle:disabled {
+    background: var(--neutral-bg);
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+.discount-toggle:hover:not(:disabled) {
     border-color: var(--border-input-hover);
 }
 
@@ -243,6 +257,7 @@
 
 .lines-table-wrap {
     overflow-x: auto;
+    padding-bottom: 4px;
 }
 
 .lines-table {
@@ -291,6 +306,9 @@
 
 .line-input--desc {
     min-width: 200px;
+    resize: vertical;
+    min-height: 38px;
+    max-height: 120px;
 }
 
 .line-input--num {

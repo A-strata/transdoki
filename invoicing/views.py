@@ -214,7 +214,9 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         ctx["customer"] = invoice.customer
         ctx["has_act"] = hasattr(invoice, "act")
         ctx["vat_rate_choices"] = InvoiceLine.VatRate.choices
-        ctx["editable"] = invoice.status == Invoice.Status.DRAFT
+        can_edit = invoice.status == Invoice.Status.DRAFT
+        ctx["can_edit"] = can_edit
+        ctx["editable"] = can_edit and self.request.GET.get("edit") == "1"
         ctx["has_discount"] = any(
             l.discount_amount > 0 for l in lines
         )
@@ -276,6 +278,17 @@ class InvoiceEditView(LoginRequiredMixin, View):
                 ],
             )
 
+        invoice_number = request.POST.get("invoice_number")
+        if invoice_number is not None:
+            invoice.number = invoice_number.strip()
+
+        invoice_date = request.POST.get("invoice_date")
+        if invoice_date is not None:
+            try:
+                invoice.date = date.fromisoformat(invoice_date) if invoice_date else invoice.date
+            except ValueError:
+                pass
+
         payment_due = request.POST.get("payment_due")
         if payment_due is not None:
             try:
@@ -294,9 +307,8 @@ class InvoiceEditView(LoginRequiredMixin, View):
                 invoice.status = status
 
         invoice.updated_by = request.user
-        invoice.save(update_fields=["payment_due", "status", "updated_by", "updated_at"])
+        invoice.save(update_fields=["number", "date", "payment_due", "status", "updated_by", "updated_at"])
 
-        messages.success(request, "Счёт обновлён.")
         return redirect("invoicing:invoice_detail", pk=pk)
 
 
