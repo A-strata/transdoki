@@ -286,9 +286,9 @@ class InvoiceEditView(LoginRequiredMixin, View):
                 ],
             )
 
-        invoice_number = request.POST.get("invoice_number")
-        if invoice_number is not None:
-            invoice.number = invoice_number.strip()
+        invoice_number = request.POST.get("invoice_number", "").strip()
+        if invoice_number:
+            invoice.number = invoice_number
 
         invoice_date = request.POST.get("invoice_date")
         if invoice_date is not None:
