@@ -262,7 +262,16 @@
 
 .lines-table {
     width: 100%;
+    table-layout: fixed;
 }
+
+.col-trip       { width: 70px; }
+.col-price      { width: 120px; }
+.col-discount   { width: 85px; }
+.col-vat-rate   { width: 110px; }
+.col-vat-amount { width: 100px; }
+.col-total      { width: 110px; }
+.col-actions    { width: 48px; }
 
 .lines-table th {
     font-size: var(--text-xs);
@@ -340,9 +349,13 @@
     font-weight: 700;
 }
 
-/* ── Discount columns toggle ── */
+/* ── Discount / VAT columns toggle ── */
 
 .lines-table.discount-off [data-col-discount] {
+    display: none;
+}
+
+.lines-table.vat-off [data-col-vat] {
     display: none;
 }
 

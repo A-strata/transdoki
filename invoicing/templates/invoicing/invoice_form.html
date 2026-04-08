@@ -6,8 +6,10 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if editable or is_create %}
 <script src="{% static 'invoicing/js/invoice_lines.js' %}"></script>
 <script src="{% static 'invoicing/js/invoice_detail.js' %}"></script>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -127,19 +129,19 @@
                 {% endif %}
 
                 <div class="lines-table-wrap">
-                    <table class="tms-table lines-table{% if not editable and not has_discount %} discount-off{% endif %}" id="lines-table">
+                    <table class="tms-table lines-table{% if not editable and not has_discount %} discount-off{% endif %}{% if not has_vat %} vat-off{% endif %}" id="lines-table">
                         <thead>
                             <tr>
-                                <th>Рейс</th>
+                                <th class="col-trip">Рейс</th>
                                 <th>Наименование</th>
-                                <th>Цена без НДС</th>
+                                <th class="col-price">Цена без НДС</th>
                                 <th class="col-discount" data-col-discount>Скидка %</th>
                                 <th class="col-discount" data-col-discount>Скидка ₽</th>
-                                <th>Ставка НДС</th>
-                                <th>Сумма НДС</th>
-                                <th>Итого</th>
-                                {% if editable %}
-                                <th class="row-actions-header"></th>
+                                <th class="col-vat-rate">Ставка НДС</th>
+                                <th class="col-vat-amount" data-col-vat>Сумма НДС</th>
+                                <th class="col-total">Итого</th>
+                                {% if can_edit or is_create %}
+                                <th class="col-actions"></th>
                                 {% endif %}
                             </tr>
                         </thead>
@@ -191,10 +193,11 @@
                                 <td class="cell-money col-discount" data-col-discount>{% if has_discount %}{{ line.discount_amount }}{% endif %}</td>
                                 <td>{{ line.get_vat_rate_display }}</td>
                                 {% endif %}
-                                <td class="cell-money" data-line-vat>{{ line.vat_amount }}</td>
+                                <td class="cell-money" data-line-vat data-col-vat>{{ line.vat_amount }}</td>
                                 <td class="cell-money cell-money--bold" data-line-total>{{ line.amount_total }}</td>
-                                {% if editable %}
+                                {% if can_edit or is_create %}
                                 <td class="row-actions-cell">
+                                    {% if editable %}
                                     <div class="row-actions">
                                         <button type="button" class="row-action row-action--delete"
                                                 title="Удалить строку" data-remove-line>
@@ -205,6 +208,7 @@
                                             </svg>
                                         </button>
                                     </div>
+                                    {% endif %}
                                 </td>
                                 {% endif %}
                             </tr>
@@ -217,23 +221,23 @@
             <div class="invoice-totals">
                 <div class="invoice-totals-row" data-totals-gross>
                     <span class="invoice-totals-label">Итого без НДС и скидок</span>
-                    <span class="invoice-totals-value" data-foot-gross></span>
+                    <span class="invoice-totals-value" data-foot-gross>{% if totals %}{{ totals.gross }}{% endif %}</span>
                 </div>
-                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-discount>
+                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-discount{% if not has_discount %} hidden{% endif %}>
                     <span class="invoice-totals-label">Скидка</span>
-                    <span class="invoice-totals-value" data-foot-discount></span>
+                    <span class="invoice-totals-value" data-foot-discount>{% if totals %}{{ totals.discount }}{% endif %}</span>
                 </div>
-                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-net-after>
+                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-net-after{% if not has_discount %} hidden{% endif %}>
                     <span class="invoice-totals-label">Итого без НДС</span>
-                    <span class="invoice-totals-value" data-foot-net></span>
+                    <span class="invoice-totals-value" data-foot-net>{% if totals %}{{ totals.net }}{% endif %}</span>
                 </div>
                 <div class="invoice-totals-row">
                     <span class="invoice-totals-label">НДС</span>
-                    <span class="invoice-totals-value" data-foot-vat></span>
+                    <span class="invoice-totals-value" data-foot-vat>{% if totals %}{{ totals.vat }}{% endif %}</span>
                 </div>
                 <div class="invoice-totals-row invoice-totals-row--grand">
                     <span class="invoice-totals-label">Итого с НДС</span>
-                    <span class="invoice-totals-value" data-foot-total></span>
+                    <span class="invoice-totals-value" data-foot-total>{% if totals %}{{ totals.total }}{% endif %}</span>
                 </div>
             </div>
         </div>

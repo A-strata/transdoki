@@ -4,7 +4,27 @@
     document.addEventListener('DOMContentLoaded', function () {
         var toggle = document.getElementById('discount-toggle');
         var table  = document.getElementById('lines-table');
-        if (!toggle || !table) return;
+        if (!table) return;
+
+        function updateVatColumn() {
+            var hasVat = false;
+            table.querySelectorAll('[data-line-vat-select]').forEach(function (sel) {
+                if (parseInt(sel.value) !== 0) hasVat = true;
+            });
+            if (hasVat) {
+                table.classList.remove('vat-off');
+            } else {
+                table.classList.add('vat-off');
+            }
+        }
+
+        table.addEventListener('change', function (e) {
+            if (e.target.matches('[data-line-vat-select]')) {
+                updateVatColumn();
+            }
+        });
+
+        if (!toggle) return;
 
         function applyDiscount(showDiscount) {
             if (showDiscount) {

@@ -220,6 +220,14 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         ctx["has_discount"] = any(
             l.discount_amount > 0 for l in lines
         )
+        ctx["has_vat"] = any(l.vat_rate != 0 for l in lines)
+        ctx["totals"] = {
+            "gross": sum(l.unit_price for l in lines),
+            "discount": sum(l.discount_amount for l in lines),
+            "net": sum(l.amount_net for l in lines),
+            "vat": sum(l.vat_amount for l in lines),
+            "total": sum(l.amount_total for l in lines),
+        }
         return ctx
 
 
