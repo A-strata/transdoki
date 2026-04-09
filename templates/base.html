@@ -31,6 +31,11 @@
                        class="nav-link {% if request.path == trips_url %}active{% endif %}">
                         Рейсы
                     </a>
+                    {% url 'invoicing:invoice_list' as invoices_url %}
+                    <a href="{{ invoices_url }}"
+                       class="nav-link {% if '/invoices/' in request.path %}active{% endif %}">
+                        Счета
+                    </a>
                     {% url 'organizations:list' as organizations_url %}
                     <a href="{{ organizations_url }}"
                        class="nav-link {% if request.path == organizations_url %}active{% endif %}">
@@ -43,11 +48,6 @@
                             Договоры
                         </a>
                     {% endif %}
-                    {% url 'invoicing:invoice_list' as invoices_url %}
-                    <a href="{{ invoices_url }}"
-                       class="nav-link {% if '/invoices/' in request.path %}active{% endif %}">
-                        Счета
-                    </a>
                 {% endif %}
             </div>
 
