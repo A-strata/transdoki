@@ -6,14 +6,13 @@
 
 <section class="trips-page">
 
-    <form method="get" class="page-toolbar" data-trip-filters>
+    <form method="get" class="list-toolbar" data-trip-filters>
 
-        <div class="toolbar-brand">
-            <span class="toolbar-title">Рейсы</span>
-            <span class="filter-meta toolbar-count">Найдено: {{ page_obj.paginator.count }}</span>
+        <div class="list-toolbar-left">
+            <h1>Рейсы</h1>
         </div>
 
-        <div class="toolbar-controls">
+        <div class="list-toolbar-right">
 
             <div class="filter-dropdown-wrap" data-filter-dropdown-wrap>
                 <button type="button" class="tms-btn tms-btn-secondary" data-filters-panel-toggle aria-expanded="false">
@@ -103,21 +102,9 @@
                 </div>
             </div>
 
-            <label class="page-size-control">
-                <span class="page-size-label">Строк</span>
-                <select name="page_size" class="filter-select page-size-select" data-filter="page_size">
-                    {% for size in page_size_options %}
-                        <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>
-                            {{ size }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
-
+            <input type="hidden" name="page_size" value="{{ filters.page_size }}">
             <input type="hidden" name="current_page_size" value="{{ page_obj.paginator.per_page }}">
             <input type="hidden" name="page" value="{{ page_obj.number }}">
-
-            <span class="toolbar-divider"></span>
 
             <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">+ Создать рейс</a>
         </div>
@@ -226,42 +213,55 @@
         </div>
     </div>
 
-    {% if page_obj %}
-        <nav class="pagination" aria-label="Пагинация рейсов">
-            {% if page_obj.has_previous %}
-                <a class="pagination-link pagination-nav" href="?page=1{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">«</a>
-            {% else %}
-                <span class="pagination-link pagination-nav is-disabled">«</span>
-            {% endif %}
-
-            {% if page_obj.has_previous %}
-                <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">‹</a>
-            {% else %}
-                <span class="pagination-link pagination-nav is-disabled">‹</span>
-            {% endif %}
-
-            {% for item in pagination_items %}
-                {% if item.type == 'ellipsis' %}
-                    <span class="pagination-ellipsis">…</span>
-                {% elif item.current %}
-                    <span class="pagination-link is-current">{{ item.number }}</span>
+    {% if page_obj and page_obj.paginator.count > 0 %}
+    <div class="pagination-footer">
+        <div class="pagination-footer-left">
+            <span class="pagination-meta">
+                Показано {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} из {{ page_obj.paginator.count }}
+            </span>
+        </div>
+        <div class="pagination-footer-center">
+            {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="pagination" aria-label="Пагинация">
+                {% if page_obj.has_previous %}
+                    <a class="pagination-link pagination-nav" href="?page=1{{ query_string }}">&laquo;</a>
+                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{{ query_string }}">&lsaquo;</a>
                 {% else %}
-                    <a class="pagination-link" href="?page={{ item.number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">{{ item.number }}</a>
+                    <span class="pagination-link pagination-nav is-disabled">&laquo;</span>
+                    <span class="pagination-link pagination-nav is-disabled">&lsaquo;</span>
                 {% endif %}
-            {% endfor %}
 
-            {% if page_obj.has_next %}
-                <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">›</a>
-            {% else %}
-                <span class="pagination-link pagination-nav is-disabled">›</span>
-            {% endif %}
+                {% for item in pagination_items %}
+                    {% if item.type == 'ellipsis' %}
+                        <span class="pagination-ellipsis">&hellip;</span>
+                    {% elif item.current %}
+                        <span class="pagination-link is-current">{{ item.number }}</span>
+                    {% else %}
+                        <a class="pagination-link" href="?page={{ item.number }}{{ query_string }}">{{ item.number }}</a>
+                    {% endif %}
+                {% endfor %}
 
-            {% if page_obj.has_next %}
-                <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{% if filters.date_mode %}&date_mode={{ filters.date_mode|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}{% if filters.contractor_role %}&contractor_role={{ filters.contractor_role|urlencode }}{% endif %}{% if filters.contractor_query %}&contractor_query={{ filters.contractor_query|urlencode }}{% endif %}{% if filters.page_size %}&page_size={{ filters.page_size|urlencode }}{% endif %}">»</a>
-            {% else %}
-                <span class="pagination-link pagination-nav is-disabled">»</span>
+                {% if page_obj.has_next %}
+                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{{ query_string }}">&rsaquo;</a>
+                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}">&raquo;</a>
+                {% else %}
+                    <span class="pagination-link pagination-nav is-disabled">&rsaquo;</span>
+                    <span class="pagination-link pagination-nav is-disabled">&raquo;</span>
+                {% endif %}
+            </nav>
             {% endif %}
-        </nav>
+        </div>
+        <div class="pagination-footer-right">
+            <label class="page-size-control">
+                <span class="page-size-label">Показывать:</span>
+                <select class="page-size-select" data-page-size-select>
+                    {% for size in page_size_options %}
+                        <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+    </div>
     {% endif %}
 
 </section>

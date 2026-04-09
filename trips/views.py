@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from urllib.parse import urlencode
 
 import requests
 from django.contrib import messages
@@ -559,6 +560,21 @@ class TripListView(UserOwnedListView):
         context["pagination_items"] = (
             self._build_pagination_items(page_obj) if page_obj else []
         )
+
+        base_params = {}
+        if context["filters"]["date_mode"] != "loading":
+            base_params["date_mode"] = context["filters"]["date_mode"]
+        if context["filters"]["date_from"]:
+            base_params["date_from"] = context["filters"]["date_from"]
+        if context["filters"]["date_to"]:
+            base_params["date_to"] = context["filters"]["date_to"]
+        if context["filters"]["contractor_role"]:
+            base_params["contractor_role"] = context["filters"]["contractor_role"]
+        if context["filters"]["contractor_query"]:
+            base_params["contractor_query"] = context["filters"]["contractor_query"]
+        if str(current_page_size) != str(self.paginate_by):
+            base_params["page_size"] = current_page_size
+        context["query_string"] = ("&" + urlencode(base_params)) if base_params else ""
 
         return context
 

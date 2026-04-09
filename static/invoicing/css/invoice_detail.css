@@ -140,8 +140,17 @@
     width: 180px;
 }
 
-.field--date input {
+.field--date input,
+.field--date select {
     width: 180px;
+}
+
+.field--bank {
+    width: 100%;
+}
+
+.field--bank select {
+    width: 420px;
 }
 
 

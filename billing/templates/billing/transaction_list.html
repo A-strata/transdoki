@@ -25,8 +25,8 @@
                         <strong class="balance-negative">{{ account.balance|floatformat:2 }} &#8381;</strong>
                     {% endif %}
                 </div>
-                <a href="{% url 'billing:deposit' %}" class="tms-btn tms-btn-primary tms-btn-sm">
-                    + Пополнить
+                <a href="{% url 'billing:deposit' %}" class="tms-btn tms-btn-primary tms-btn-add">
+                    + Пополнить баланс
                 </a>
             </div>
         {% else %}

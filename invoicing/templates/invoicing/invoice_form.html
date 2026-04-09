@@ -88,8 +88,22 @@
                     {% endif %}
                 </div>
                 <div class="field field--date">
-                    <label for="payment_due">Оплатить до</label>
+                    <label for="invoice_status">Статус</label>
                     {% if editable %}
+                        <select name="status" id="invoice_status" form="invoice-form">
+                            {% for val, label in status_choices %}
+                                <option value="{{ val }}" {% if invoice.status == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    {% elif is_create %}
+                        <input type="text" value="Черновик" disabled>
+                    {% else %}
+                        <input type="text" value="{{ invoice.get_status_display }}" disabled>
+                    {% endif %}
+                </div>
+                <div class="field field--date">
+                    <label for="payment_due">Оплатить до</label>
+                    {% if editable or is_create %}
                         <input type="date" name="payment_due" id="payment_due"
                                form="invoice-form"
                                value="{% if invoice and invoice.payment_due %}{{ invoice.payment_due|date:'Y-m-d' }}{% elif payment_due %}{{ payment_due|date:'Y-m-d' }}{% endif %}">
@@ -102,6 +116,27 @@
                     <input type="text" value="{{ customer }}" disabled>
                     {% if customer.inn %}
                         <small class="field-hint">ИНН {{ customer.inn }}</small>
+                    {% endif %}
+                </div>
+                <div class="field field--bank">
+                    <label for="bank_account">Счёт</label>
+                    {% if editable or is_create %}
+                        <select name="bank_account" id="bank_account" form="invoice-form">
+                            <option value="">—</option>
+                            {% for ba in bank_accounts %}
+                                <option value="{{ ba.pk }}" {% if ba.pk == selected_bank_id %}selected{% endif %}>
+                                    {{ ba.account_bank.bank_name }} — р/с {{ ba.account_num }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    {% else %}
+                        <p class="kv-value">
+                            {% if invoice.bank_account %}
+                                {{ invoice.bank_account.account_bank.bank_name }} — р/с {{ invoice.bank_account.account_num }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </p>
                     {% endif %}
                 </div>
             </div>
@@ -127,8 +162,6 @@
 
                 {% if is_create %}
                     <input type="hidden" name="trip_ids" value="{{ trip_ids }}">
-                {% elif editable %}
-                    <input type="hidden" name="status" value="{{ invoice.status }}">
                 {% endif %}
 
                 <div class="lines-table-wrap">

@@ -18,6 +18,7 @@ from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
 from trips.models import Trip
 
+from organizations.models import Organization, OrganizationBank
 from .models import Act, Invoice, InvoiceLine
 from .services import (
     InvoiceGenerator,
@@ -26,6 +27,16 @@ from .services import (
     create_invoice_from_trips,
     prepare_invoice_data,
 )
+
+
+def _get_own_bank_accounts(account):
+    """Банковские счета «своей компании» для выбора в счёте."""
+    own = Organization.objects.filter(account=account, is_own_company=True).first()
+    if not own:
+        return OrganizationBank.objects.none()
+    return OrganizationBank.objects.filter(
+        account_owner=own,
+    ).select_related("account_bank")
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +176,9 @@ def invoice_create(request):
             messages.error(request, str(e))
             return redirect("trips:list")
 
+        bank_accounts = list(_get_own_bank_accounts(account))
+        selected_bank_id = bank_accounts[0].pk if bank_accounts else None
+
         return render(request, "invoicing/invoice_form.html", {
             "customer": data["customer"],
             "lines": data["lines"],
@@ -172,6 +186,9 @@ def invoice_create(request):
             "invoice_date": data["date"],
             "trip_ids": ",".join(str(t.pk) for t in data["trips"]),
             "vat_rate_choices": InvoiceLine.VatRate.choices,
+            "status_choices": Invoice.Status.choices,
+            "bank_accounts": bank_accounts,
+            "selected_bank_id": selected_bank_id,
             "is_create": True,
             "editable": True,
         })
@@ -231,9 +248,21 @@ def invoice_create(request):
             lines_data=lines_data,
             invoice_number=invoice_number,
         )
+        update_fields = []
         if payment_due:
             invoice.payment_due = payment_due
-            invoice.save(update_fields=["payment_due"])
+            update_fields.append("payment_due")
+
+        bank_account_id = request.POST.get("bank_account")
+        if bank_account_id:
+            try:
+                invoice.bank_account_id = int(bank_account_id)
+                update_fields.append("bank_account")
+            except (ValueError, TypeError):
+                pass
+
+        if update_fields:
+            invoice.save(update_fields=update_fields)
         messages.success(request, f"Создан счёт {invoice.number}.")
         return redirect("invoicing:invoice_detail", pk=invoice.pk)
     except ValueError as e:
@@ -263,6 +292,15 @@ def invoice_create(request):
             except ValueError:
                 pass
             lines.append(line)
+        bank_accounts = list(_get_own_bank_accounts(account))
+        selected_bank_id_raw = request.POST.get("bank_account")
+        try:
+            selected_bank_id = int(selected_bank_id_raw) if selected_bank_id_raw else (
+                bank_accounts[0].pk if bank_accounts else None
+            )
+        except (ValueError, TypeError):
+            selected_bank_id = bank_accounts[0].pk if bank_accounts else None
+
         return render(request, "invoicing/invoice_form.html", {
             "customer": trips[0].client,
             "lines": lines,
@@ -271,6 +309,9 @@ def invoice_create(request):
             "payment_due": payment_due,
             "trip_ids": ",".join(str(t.pk) for t in trips),
             "vat_rate_choices": InvoiceLine.VatRate.choices,
+            "status_choices": Invoice.Status.choices,
+            "bank_accounts": bank_accounts,
+            "selected_bank_id": selected_bank_id,
             "is_create": True,
             "editable": True,
         })
@@ -284,19 +325,28 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Invoice.objects.for_account(
             get_request_account(self.request)
-        ).select_related("customer")
+        ).select_related("customer", "bank_account__account_bank")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         invoice = self.object
+        account = get_request_account(self.request)
         lines = invoice.lines.select_related("trip").all()
         ctx["lines"] = lines
         ctx["customer"] = invoice.customer
         ctx["has_act"] = hasattr(invoice, "act")
         ctx["vat_rate_choices"] = InvoiceLine.VatRate.choices
+        ctx["status_choices"] = Invoice.Status.choices
         can_edit = invoice.status == Invoice.Status.DRAFT
         ctx["can_edit"] = can_edit
         ctx["editable"] = can_edit and self.request.GET.get("edit") == "1"
+
+        bank_accounts = list(_get_own_bank_accounts(account))
+        ctx["bank_accounts"] = bank_accounts
+        ctx["selected_bank_id"] = invoice.bank_account_id or (
+            bank_accounts[0].pk if bank_accounts else None
+        )
+
         ctx["has_discount"] = any(
             l.discount_amount > 0 for l in lines
         )
@@ -384,6 +434,13 @@ class InvoiceEditView(LoginRequiredMixin, View):
             except ValueError:
                 pass
 
+        bank_account_raw = request.POST.get("bank_account")
+        if bank_account_raw is not None:
+            try:
+                invoice.bank_account_id = int(bank_account_raw) if bank_account_raw else None
+            except (ValueError, TypeError):
+                pass
+
         ALLOWED_TRANSITIONS = {
             Invoice.Status.DRAFT: [Invoice.Status.SENT],
             Invoice.Status.SENT:  [Invoice.Status.DRAFT],
@@ -395,7 +452,10 @@ class InvoiceEditView(LoginRequiredMixin, View):
                 invoice.status = status
 
         invoice.updated_by = request.user
-        invoice.save(update_fields=["number", "date", "payment_due", "status", "updated_by", "updated_at"])
+        invoice.save(update_fields=[
+            "number", "date", "payment_due", "bank_account",
+            "status", "updated_by", "updated_at",
+        ])
 
         return redirect("invoicing:invoice_detail", pk=pk)
 

@@ -20,7 +20,7 @@
         </div>
         {% if current_org %}
         <div class="list-toolbar-right">
-            <a href="{% url 'vehicles:create_for_org' current_org.pk %}" class="tms-btn tms-btn-primary">Добавить ТС</a>
+            <a href="{% url 'vehicles:create_for_org' current_org.pk %}" class="tms-btn tms-btn-primary tms-btn-add">+ Добавить ТС</a>
         </div>
         {% endif %}
     </div>

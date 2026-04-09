@@ -5,7 +5,8 @@
         const form = document.querySelector('[data-trip-filters]');
         if (!form) return;
 
-        const pageSizeSelect = form.querySelector('[data-filter="page_size"]');
+        const pageSizeSelect = document.querySelector('[data-page-size-select]');
+        const pageSizeHidden = form.querySelector('input[name="page_size"]');
         const resetBtn = form.querySelector('[data-filter="reset"]');
         const submitBtn = form.querySelector('[data-submit-filters]');
         const currentPageInput = form.querySelector('input[name="page"]');
@@ -133,6 +134,9 @@
         if (pageSizeSelect) {
             pageSizeSelect.addEventListener('change', function () {
                 localStorage.setItem(STORAGE_KEY, pageSizeSelect.value);
+                if (pageSizeHidden) {
+                    pageSizeHidden.value = pageSizeSelect.value;
+                }
                 if (currentPageSizeInput) {
                     currentPageSizeInput.value = currentPageSizeInput.value || pageSizeSelect.value;
                 }
