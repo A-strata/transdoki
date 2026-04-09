@@ -2,12 +2,14 @@
     var STORAGE_KEY = 'tms_trips_page_size';
     var DEFAULT_PAGE_SIZE = '25';
 
-    var CONTRACTOR_ROLES = ['driver', 'client', 'carrier'];
+    var CONTRACTOR_ROLES = ['driver', 'client', 'carrier', 'truck', 'trailer'];
 
     var ROLE_LABELS = {
         driver: 'Водитель',
         client: 'Заказчик',
-        carrier: 'Перевозчик'
+        carrier: 'Перевозчик',
+        truck: 'Машина',
+        trailer: 'Прицеп'
     };
 
 

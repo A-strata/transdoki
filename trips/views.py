@@ -389,7 +389,7 @@ class TripListView(UserOwnedListView):
 
 
 
-    CONTRACTOR_ROLES = ("client", "carrier", "driver")
+    CONTRACTOR_ROLES = ("client", "carrier", "driver", "truck", "trailer")
 
     def _get_contractor_filters(self):
         result = {}
@@ -416,6 +416,8 @@ class TripListView(UserOwnedListView):
                         | qs.filter(driver__patronymic__icontains=part)
                     )
                 qs = qs.distinct()
+            elif role in ("truck", "trailer"):
+                qs = qs.filter(**{f"{role}__grn__icontains": query})
 
         return qs
 

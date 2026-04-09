@@ -21,8 +21,20 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
     </td>
-    <td data-col="truck">{{ trip.truck.grn }}</td>
-    <td data-col="trailer">{{ trip.trailer.grn|default:"—" }}</td>
+    <td data-col="truck" data-filterable data-filter-role="truck" data-filter-value="{{ trip.truck.grn }}">
+        {{ trip.truck.grn }}
+        <button type="button" class="cell-filter-btn" aria-label="Фильтровать по машине" title="Фильтровать по машине">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+    </td>
+    <td data-col="trailer"{% if trip.trailer %} data-filterable data-filter-role="trailer" data-filter-value="{{ trip.trailer.grn }}"{% endif %}>
+        {{ trip.trailer.grn|default:"—" }}
+        {% if trip.trailer %}
+        <button type="button" class="cell-filter-btn" aria-label="Фильтровать по прицепу" title="Фильтровать по прицепу">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        {% endif %}
+    </td>
     <td data-col="planned_loading_date">{{ trip.load_point.planned_date|date:"d.m.Y"|default:"—" }}</td>
     <td data-col="planned_unloading_date">{{ trip.unload_point.planned_date|date:"d.m.Y"|default:"—" }}</td>
     <td data-col="loading_address">{{ trip.load_point.address|default:"—" }}</td>
