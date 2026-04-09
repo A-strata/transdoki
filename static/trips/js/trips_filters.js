@@ -28,15 +28,46 @@
         var fetchController = null;
         var debounceTimer = null;
 
-        // Объект: { driver: 'Иванов Иван', client: 'ООО Ромашка', carrier: '' }
-        // Пустая строка или отсутствие ключа = фильтр неактивен
-        var contractorFilters = {};
+        // Массив {role, value} — хранит порядок добавления фильтров.
+        // Максимум один элемент на каждый role.
+        var contractorFilterOrder = [];
+
+        function getContractorValue(role) {
+            for (var i = 0; i < contractorFilterOrder.length; i++) {
+                if (contractorFilterOrder[i].role === role) return contractorFilterOrder[i].value;
+            }
+            return '';
+        }
+
+        function setContractorFilter(role, value) {
+            var found = false;
+            for (var i = 0; i < contractorFilterOrder.length; i++) {
+                if (contractorFilterOrder[i].role === role) {
+                    if (value) {
+                        contractorFilterOrder[i].value = value;
+                    } else {
+                        contractorFilterOrder.splice(i, 1);
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && value) {
+                contractorFilterOrder.push({ role: role, value: value });
+            }
+        }
+
+        function removeContractorFilter(role) {
+            contractorFilterOrder = contractorFilterOrder.filter(function (f) {
+                return f.role !== role;
+            });
+        }
 
         // Восстановить contractor-фильтры из URL при загрузке
         var initParams = new URLSearchParams(window.location.search);
         CONTRACTOR_ROLES.forEach(function (role) {
             var val = initParams.get('contractor_' + role) || '';
-            if (val) contractorFilters[role] = val;
+            if (val) contractorFilterOrder.push({ role: role, value: val });
         });
 
         // Восстановить page_size из localStorage при первом визите
@@ -74,9 +105,8 @@
             if (dateTo) params.set('date_to', dateTo);
 
             // Contractor-фильтры — каждый тип отдельным параметром
-            CONTRACTOR_ROLES.forEach(function (role) {
-                var val = contractorFilters[role] || '';
-                if (val) params.set('contractor_' + role, val);
+            contractorFilterOrder.forEach(function (f) {
+                params.set('contractor_' + f.role, f.value);
             });
 
             var ps;
@@ -295,25 +325,19 @@
         }
 
         function hasAnyContractorFilter() {
-            for (var i = 0; i < CONTRACTOR_ROLES.length; i++) {
-                if (contractorFilters[CONTRACTOR_ROLES[i]]) return true;
-            }
-            return false;
+            return contractorFilterOrder.length > 0;
         }
 
         function rebuildChips() {
             if (!activeFiltersWrap) return;
             activeFiltersWrap.innerHTML = '';
 
-            // Чипы контрагентов — по одному на каждый активный тип
-            CONTRACTOR_ROLES.forEach(function (role) {
-                var query = contractorFilters[role];
-                if (!query) return;
-
-                var label = ROLE_LABELS[role] || role;
-                var chipText = label + ': ' + query;
-                var chip = createChip('contractor_' + role, chipText, 'active-filter-chip--info', function () {
-                    delete contractorFilters[role];
+            // Чипы контрагентов — в порядке добавления
+            contractorFilterOrder.forEach(function (f) {
+                var label = ROLE_LABELS[f.role] || f.role;
+                var chipText = label + ': ' + f.value;
+                var chip = createChip('contractor_' + f.role, chipText, 'active-filter-chip--info', function () {
+                    removeContractorFilter(f.role);
                     rebuildChips();
                     fetchList(buildParams({ page: '' }));
                 });
@@ -334,8 +358,8 @@
             var value = td.getAttribute('data-filter-value');
             if (!role || !value) return;
 
-            // Тот же тип — заменяет значение, другой тип — добавляется рядом
-            contractorFilters[role] = value;
+            // Тот же тип — заменяет значение (на том же месте), другой — добавляется в конец
+            setContractorFilter(role, value);
 
             rebuildChips();
             fetchList(buildParams({ page: '' }));
@@ -383,10 +407,10 @@
             if (dateFromInput) dateFromInput.value = params.get('date_from') || '';
             if (dateToInput) dateToInput.value = params.get('date_to') || '';
 
-            contractorFilters = {};
+            contractorFilterOrder = [];
             CONTRACTOR_ROLES.forEach(function (role) {
                 var val = params.get('contractor_' + role) || '';
-                if (val) contractorFilters[role] = val;
+                if (val) contractorFilterOrder.push({ role: role, value: val });
             });
 
             updateSearchState();
