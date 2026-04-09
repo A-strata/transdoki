@@ -1,6 +1,8 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -48,13 +50,104 @@ class EditPermissionMixin:
 # ---------------------------------------------------------------------------
 
 
+CONTRACT_SORT_FIELDS = ("date_signed", "number", "contractor__short_name")
+
+
 class ContractListView(ContractsModuleMixin, UserOwnedListView):
     model = Contract
     template_name = "contracts/contract_list.html"
+    partial_template_name = "contracts/contract_list_table.html"
     context_object_name = "contracts"
+    paginate_by = 25
+    page_size_options = [25, 50, 100]
+
+    def get_template_names(self):
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return [self.partial_template_name]
+        return [self.template_name]
+
+    def _parse_sort(self):
+        sort_field = self.request.GET.get("sort", "date_signed").strip()
+        sort_dir = self.request.GET.get("dir", "desc").strip()
+        if sort_field not in CONTRACT_SORT_FIELDS:
+            sort_field = "date_signed"
+        if sort_dir not in ("asc", "desc"):
+            sort_dir = "desc"
+        return sort_field, sort_dir
 
     def get_queryset(self):
-        return super().get_queryset().select_related("own_company", "contractor")
+        qs = super().get_queryset().select_related("own_company", "contractor")
+
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(number__icontains=q) | Q(contractor__short_name__icontains=q)
+            )
+
+        status = self.request.GET.get("status")
+        if status and status in dict(Contract.STATUS_CHOICES):
+            qs = qs.filter(status=status)
+
+        sort_field, sort_dir = self._parse_sort()
+        order = sort_field if sort_dir == "asc" else f"-{sort_field}"
+        return qs.order_by(order, "-pk")
+
+    def _build_sort_url(self, field, current_sort, current_dir, base_params):
+        params = dict(base_params)
+        params["sort"] = field
+        params["dir"] = (
+            "desc" if (field == current_sort and current_dir == "asc") else "asc"
+        )
+        return "?" + urlencode(params)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        page_obj = ctx.get("page_obj")
+        ctx["pagination_items"] = (
+            self._build_pagination_items(page_obj) if page_obj else []
+        )
+        ctx["page_size_options"] = self.page_size_options
+
+        q = self.request.GET.get("q", "").strip()
+        status = self.request.GET.get("status", "")
+        sort_field, sort_dir = self._parse_sort()
+        current_page_size = self.get_paginate_by(self.object_list)
+
+        if q:
+            base_qs = super().get_queryset()
+            if status and status in dict(Contract.STATUS_CHOICES):
+                base_qs = base_qs.filter(status=status)
+            ctx["total_count"] = base_qs.count()
+
+        ctx["status_choices"] = Contract.STATUS_CHOICES
+        ctx["filters"] = {
+            "q": q,
+            "status": status,
+            "sort": sort_field,
+            "dir": sort_dir,
+            "page_size": str(current_page_size),
+        }
+
+        base_params = {}
+        if q:
+            base_params["q"] = q
+        if status:
+            base_params["status"] = status
+        if sort_field != "date_signed":
+            base_params["sort"] = sort_field
+        if sort_dir != "desc":
+            base_params["dir"] = sort_dir
+        if str(current_page_size) != str(self.paginate_by):
+            base_params["page_size"] = current_page_size
+        ctx["query_string"] = ("&" + urlencode(base_params)) if base_params else ""
+
+        ctx["sort_urls"] = {
+            f: self._build_sort_url(f, sort_field, sort_dir, base_params)
+            for f in CONTRACT_SORT_FIELDS
+        }
+
+        return ctx
 
 
 class ContractDetailView(ContractsModuleMixin, LoginRequiredMixin, DetailView):

@@ -1,0 +1,137 @@
+<div class="table-card">
+    <div class="table-wrap">
+        <table class="tms-table">
+            <thead>
+                <tr>
+                    <th class="col-number">
+                        <a href="{{ sort_urls.number }}" class="sortable-header {% if filters.sort == 'number' %}is-active{% endif %}" data-sort="number">
+                            Номер
+                            {% if filters.sort == 'number' %}
+                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="col-type">Тип</th>
+                    <th class="col-contractor">
+                        <a href="{{ sort_urls.contractor__short_name }}" class="sortable-header {% if filters.sort == 'contractor__short_name' %}is-active{% endif %}" data-sort="contractor__short_name">
+                            Контрагент
+                            {% if filters.sort == 'contractor__short_name' %}
+                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="col-own">Наша компания</th>
+                    <th class="col-date">
+                        <a href="{{ sort_urls.date_signed }}" class="sortable-header {% if filters.sort == 'date_signed' %}is-active{% endif %}" data-sort="date_signed">
+                            Дата
+                            {% if filters.sort == 'date_signed' %}
+                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="col-until">До</th>
+                    <th class="col-status">Статус</th>
+                    <th class="col-amount">Сумма</th>
+                    <th class="col-spacer"></th>
+                    <th class="col-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contract in contracts %}
+                <tr>
+                    <td data-label="Номер">
+                        <a href="{% url 'contracts:detail' contract.pk %}" class="entity-link">
+                            №{{ contract.number }}
+                        </a>
+                    </td>
+                    <td data-label="Тип">{{ contract.get_contract_type_display }}</td>
+                    <td data-label="Контрагент" title="{{ contract.contractor.short_name }}">{{ contract.contractor.short_name }}</td>
+                    <td data-label="Наша компания" title="{{ contract.own_company.short_name }}">{{ contract.own_company.short_name }}</td>
+                    <td data-label="Дата">{{ contract.date_signed|date:"d.m.Y" }}</td>
+                    <td data-label="До">{{ contract.valid_until|date:"d.m.Y"|default:"—" }}</td>
+                    <td data-label="Статус">
+                        <span class="status-badge status-badge--{% if contract.status == 'active' %}success{% elif contract.status == 'draft' %}neutral{% elif contract.status == 'expired' %}warning{% else %}error{% endif %}">
+                            {{ contract.get_status_display }}
+                        </span>
+                    </td>
+                    <td data-label="Сумма" class="cell-money">{% if contract.amount %}{{ contract.amount|floatformat:2 }}&nbsp;&#8381;{% else %}—{% endif %}</td>
+                    <td class="col-spacer"></td>
+                    <td class="row-actions-cell">
+                        <div class="row-actions">
+                            <a href="{% url 'contracts:detail' contract.pk %}" class="row-action row-action--view" title="Просмотр">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state">
+                            {% if filters.q %}
+                                <p>Ничего не найдено</p>
+                            {% else %}
+                                <p>Договоров пока нет. <a href="{% url 'contracts:create' %}">Создать первый</a>.</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj and page_obj.paginator.count > 0 %}
+<div class="pagination-footer">
+    <div class="pagination-footer-left">
+        <span class="pagination-meta">
+            {% if total_count %}Найдено {{ page_obj.paginator.count }} из {{ total_count }}, показано{% else %}Показано{% endif %} {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }}{% if not total_count %} из {{ page_obj.paginator.count }}{% endif %}
+        </span>
+    </div>
+    <div class="pagination-footer-center">
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Пагинация">
+            {% if page_obj.has_previous %}
+                <a class="pagination-link pagination-nav" href="?page=1{{ query_string }}">&laquo;</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{{ query_string }}">&lsaquo;</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">&laquo;</span>
+                <span class="pagination-link pagination-nav is-disabled">&lsaquo;</span>
+            {% endif %}
+
+            {% for item in pagination_items %}
+                {% if item.type == 'ellipsis' %}
+                    <span class="pagination-ellipsis">&hellip;</span>
+                {% elif item.current %}
+                    <span class="pagination-link is-current">{{ item.number }}</span>
+                {% else %}
+                    <a class="pagination-link" href="?page={{ item.number }}{{ query_string }}">{{ item.number }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{{ query_string }}">&rsaquo;</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}">&raquo;</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">&rsaquo;</span>
+                <span class="pagination-link pagination-nav is-disabled">&raquo;</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </div>
+    <div class="pagination-footer-right">
+        <label class="page-size-control">
+            <span class="page-size-label">Показывать:</span>
+            <select class="page-size-select" data-page-size-select>
+                {% for size in page_size_options %}
+                    <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+</div>
+{% endif %}

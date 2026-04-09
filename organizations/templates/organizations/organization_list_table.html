@@ -65,14 +65,16 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="empty-state">
-                        {% if filters.q %}
-                            Ничего не найдено
-                        {% elif is_own %}
-                            Нет собственных компаний
-                        {% else %}
-                            Нет контрагентов
-                        {% endif %}
+                    <td colspan="4">
+                        <div class="empty-state">
+                            {% if filters.q %}
+                                <p>Ничего не найдено</p>
+                            {% elif is_own %}
+                                <p>Нет собственных компаний. <a href="{% url 'organizations:create' %}?own=1">Добавить первую</a>.</p>
+                            {% else %}
+                                <p>Нет контрагентов. <a href="{% url 'organizations:create' %}">Добавить первого</a>.</p>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

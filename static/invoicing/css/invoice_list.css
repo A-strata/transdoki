@@ -1,6 +1,4 @@
 .invoices-page {
-    max-width: var(--container);
-    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -14,28 +12,23 @@
     flex-wrap: wrap;
 }
 
+.list-toolbar h1 {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
 .list-toolbar-left {
     display: flex;
     align-items: baseline;
     gap: 12px;
 }
 
-.toolbar-title {
-    margin: 0;
-    font-size: var(--text-xl);
-    font-weight: 700;
-    color: var(--text);
-}
-
-.toolbar-count {
-    font-size: var(--text-sm);
-    color: var(--muted);
-}
-
 .list-toolbar-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .filter-inline {
@@ -76,8 +69,146 @@
     gap: 4px;
 }
 
+[data-list-content] {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* table-layout: fixed — ширины задаются на th */
+.invoices-page .tms-table {
+    table-layout: fixed;
+}
+
+.invoices-page .tms-table thead th,
+.invoices-page .tms-table tbody td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.col-number   { width: 100px; }
+.col-date     { width: 110px; }
+.col-customer { width: 250px; }
+.col-amount   { width: 120px; }
+.col-status   { width: 120px; }
+.col-due      { width: 120px; }
+.col-spacer   { padding: 0; }
+.col-actions  { width: 90px; }
+
+thead .col-spacer {
+    background: var(--hover);
+    border-bottom: 1px solid var(--border);
+}
+
+.col-spacer {
+    border-bottom: 1px solid var(--border);
+}
+
 .cell-money {
     text-align: right;
-    white-space: nowrap;
     font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+    .list-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .list-toolbar-right {
+        flex-direction: column;
+    }
+
+    .filter-inline {
+        flex-wrap: wrap;
+    }
+
+    .table-search {
+        width: 100%;
+    }
+
+    .table-wrap {
+        overflow: visible;
+    }
+
+    .tms-table {
+        min-width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .tms-table thead {
+        display: none;
+    }
+
+    .tms-table tbody tr {
+        display: block;
+        margin: 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        overflow: hidden;
+    }
+
+    .tms-table tbody td {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tms-table tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .tms-table tbody td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: var(--text-xs);
+        font-weight: 600;
+    }
+
+    .row-actions-cell {
+        width: auto;
+        padding: 10px 12px;
+    }
+
+    .row-actions-cell::before {
+        content: none;
+    }
+
+    .row-actions {
+        opacity: 1;
+    }
+
+    .cell-money {
+        text-align: left;
+    }
+
+    .entity-name {
+        max-width: none;
+        white-space: normal;
+    }
+
+    .empty-state {
+        display: block;
+        text-align: center;
+    }
+
+    .empty-state::before {
+        content: none;
+    }
+
+    .pagination-footer {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 8px;
+    }
+
+    .pagination-footer-left,
+    .pagination-footer-right {
+        justify-self: center;
+    }
 }

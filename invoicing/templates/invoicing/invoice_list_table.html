@@ -1,0 +1,130 @@
+<div class="table-card">
+    <div class="table-wrap">
+        <table class="tms-table">
+            <thead>
+                <tr>
+                    <th class="col-number">
+                        <a href="{{ sort_urls.number }}" class="sortable-header {% if filters.sort == 'number' %}is-active{% endif %}" data-sort="number">
+                            Номер
+                            {% if filters.sort == 'number' %}
+                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="col-date">
+                        <a href="{{ sort_urls.date }}" class="sortable-header {% if filters.sort == 'date' %}is-active{% endif %}" data-sort="date">
+                            Дата
+                            {% if filters.sort == 'date' %}
+                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="col-customer">
+                        <a href="{{ sort_urls.customer__short_name }}" class="sortable-header {% if filters.sort == 'customer__short_name' %}is-active{% endif %}" data-sort="customer__short_name">
+                            Заказчик
+                            {% if filters.sort == 'customer__short_name' %}
+                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="col-amount">Сумма</th>
+                    <th class="col-status">Статус</th>
+                    <th class="col-due">Оплатить до</th>
+                    <th class="col-spacer"></th>
+                    <th class="col-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr>
+                    <td data-label="Номер">{{ invoice.number }}</td>
+                    <td data-label="Дата">{{ invoice.date|date:"d.m.Y" }}</td>
+                    <td data-label="Заказчик" title="{{ invoice.customer.short_name }}">{{ invoice.customer.short_name }}</td>
+                    <td data-label="Сумма" class="cell-money">{{ invoice.total }}&nbsp;&#8381;</td>
+                    <td data-label="Статус">
+                        <span class="status-badge status-badge--{% if invoice.status == 'paid' %}success{% elif invoice.status == 'sent' %}{% if invoice.is_overdue %}error{% else %}info{% endif %}{% elif invoice.status == 'cancelled' %}error{% else %}neutral{% endif %}">
+                            {% if invoice.status == 'sent' and invoice.is_overdue %}Просрочен{% else %}{{ invoice.get_status_display }}{% endif %}
+                        </span>
+                    </td>
+                    <td data-label="Оплатить до">{{ invoice.payment_due|date:"d.m.Y"|default:"—" }}</td>
+                    <td class="col-spacer"></td>
+                    <td class="row-actions-cell">
+                        <div class="row-actions">
+                            <a href="{% url 'invoicing:invoice_detail' invoice.pk %}"
+                               class="row-action row-action--view" title="Просмотр">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            {% if filters.q %}
+                                <p>Ничего не найдено</p>
+                            {% else %}
+                                <p>Счетов пока нет. Создайте счёт из <a href="{% url 'trips:list' %}">рейсов</a>.</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj and page_obj.paginator.count > 0 %}
+<div class="pagination-footer">
+    <div class="pagination-footer-left">
+        <span class="pagination-meta">
+            {% if total_count %}Найдено {{ page_obj.paginator.count }} из {{ total_count }}, показано{% else %}Показано{% endif %} {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }}{% if not total_count %} из {{ page_obj.paginator.count }}{% endif %}
+        </span>
+    </div>
+    <div class="pagination-footer-center">
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Пагинация">
+            {% if page_obj.has_previous %}
+                <a class="pagination-link pagination-nav" href="?page=1{{ query_string }}">&laquo;</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{{ query_string }}">&lsaquo;</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">&laquo;</span>
+                <span class="pagination-link pagination-nav is-disabled">&lsaquo;</span>
+            {% endif %}
+
+            {% for item in pagination_items %}
+                {% if item.type == 'ellipsis' %}
+                    <span class="pagination-ellipsis">&hellip;</span>
+                {% elif item.current %}
+                    <span class="pagination-link is-current">{{ item.number }}</span>
+                {% else %}
+                    <a class="pagination-link" href="?page={{ item.number }}{{ query_string }}">{{ item.number }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{{ query_string }}">&rsaquo;</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}">&raquo;</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">&rsaquo;</span>
+                <span class="pagination-link pagination-nav is-disabled">&raquo;</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </div>
+    <div class="pagination-footer-right">
+        <label class="page-size-control">
+            <span class="page-size-label">Показывать:</span>
+            <select class="page-size-select" data-page-size-select>
+                {% for size in page_size_options %}
+                    <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+</div>
+{% endif %}

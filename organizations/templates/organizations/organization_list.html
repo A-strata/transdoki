@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block title %}{% if is_own %}Мои компании{% else %}Контрагенты{% endif %} — TMS{% endblock %}
+
 {% block head %}
 <link rel="stylesheet" href="{% static 'organizations/css/organization_list.css' %}">
 {% endblock %}

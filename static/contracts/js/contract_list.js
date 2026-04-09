@@ -4,7 +4,6 @@
     var searchInput = document.querySelector("[data-search-input]");
     var clearBtn = document.querySelector("[data-search-clear]");
     var statusSelect = document.querySelector("[data-filter-status]");
-    var overdueCheckbox = document.querySelector("[data-filter-overdue]");
     var contentContainer = document.querySelector("[data-list-content]");
 
     if (!contentContainer) return;
@@ -26,7 +25,6 @@
         return {
             q: params.get("q") || "",
             status: params.get("status") || "",
-            overdue: params.get("overdue") || "",
             sort: params.get("sort") || "",
             dir: params.get("dir") || "",
             page_size: params.get("page_size") || "",
@@ -111,13 +109,6 @@
         });
     }
 
-    if (overdueCheckbox) {
-        overdueCheckbox.addEventListener("change", function () {
-            var qs = buildSearch({ overdue: this.checked ? "1" : "", page: "" });
-            loadContent(qs, true);
-        });
-    }
-
     function bindContentEvents() {
         contentContainer.querySelectorAll(".sortable-header").forEach(function (link) {
             link.addEventListener("click", function (e) {
@@ -151,7 +142,6 @@
         var params = new URLSearchParams(qs);
         if (searchInput) searchInput.value = params.get("q") || "";
         if (statusSelect) statusSelect.value = params.get("status") || "";
-        if (overdueCheckbox) overdueCheckbox.checked = params.get("overdue") === "1";
         updateSearchState();
         loadContent(qs, false);
     });
