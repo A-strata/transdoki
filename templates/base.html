@@ -198,6 +198,13 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    {% if not user.is_authenticated %}
+    <footer class="site-footer">
+        <a href="{% url 'oferta' %}">Оферта</a>
+        <a href="{% url 'privacy' %}">Конфиденциальность</a>
+    </footer>
+    {% endif %}
 </div>
 
 <script src="{% static 'js/base.js' %}"></script>

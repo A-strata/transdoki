@@ -117,9 +117,7 @@
             if (e.detail.id !== 'docs-menu') closeAll();
         });
 
-        document.addEventListener('tms:drag-scroll-start', closeAll);
-
-        var tableWrap = document.querySelector('[data-drag-scroll]');
+        var tableWrap = document.querySelector('.table-wrap');
         if (tableWrap) {
             tableWrap.addEventListener('scroll', closeAll);
         }

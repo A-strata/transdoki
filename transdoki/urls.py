@@ -5,6 +5,7 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 from django.urls import include, path, reverse_lazy
 from django.views import View
+from django.views.generic import TemplateView
 
 
 class HomeView(View):
@@ -80,6 +81,16 @@ urlpatterns = [
     path("waybills/", include("waybills.urls")),
     path("contracts/", include("contracts.urls")),
     path("", include("invoicing.urls")),
+    path(
+        "oferta/",
+        TemplateView.as_view(template_name="legal/oferta.html"),
+        name="oferta",
+    ),
+    path(
+        "privacy/",
+        TemplateView.as_view(template_name="legal/privacy.html"),
+        name="privacy",
+    ),
 ]
 
 if settings.DEBUG:

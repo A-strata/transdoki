@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 310 60">
+  <!-- ТРАНСДОКИ — монохромная версия
+       Применение: печать, штамп, тиснение, факс
+       Размер: 310×60px -->
+  <defs>
+    <style>text { font-family: Inter, Manrope, Geometria, system-ui, -apple-system, sans-serif; }</style>
+  </defs>
+  <!-- Знак 50×50 -->
+  <rect x="0" y="5" width="50" height="50" rx="8" fill="#1A1A1A"/>
+  <rect x="10" y="15" width="30" height="10" rx="2" fill="white"/>
+  <rect x="20" y="25" width="10" height="21" rx="2" fill="white"/>
+  <!-- Вордмарк -->
+  <text x="62" y="29" font-size="22" font-weight="700" letter-spacing="0.5" fill="#1A1A1A">ТРАНС</text>
+  <text x="62" y="53" font-size="22" font-weight="700" letter-spacing="0.5" fill="#888780">ДОКИ</text>
+</svg>

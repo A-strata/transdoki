@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import BooleanField, Case, Q, Value, When
+from django.db.models import BooleanField, Case, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -40,9 +40,6 @@ def _get_own_bank_accounts(account):
 
 logger = logging.getLogger(__name__)
 
-INVOICE_SORT_FIELDS = ("date", "number", "customer__short_name")
-
-
 class InvoiceListView(UserOwnedListView):
     model = Invoice
     template_name = "invoicing/invoice_list.html"
@@ -56,14 +53,50 @@ class InvoiceListView(UserOwnedListView):
             return [self.partial_template_name]
         return [self.template_name]
 
-    def _parse_sort(self):
-        sort_field = self.request.GET.get("sort", "date").strip()
-        sort_dir = self.request.GET.get("dir", "desc").strip()
-        if sort_field not in INVOICE_SORT_FIELDS:
-            sort_field = "date"
-        if sort_dir not in ("asc", "desc"):
-            sort_dir = "desc"
-        return sort_field, sort_dir
+    def _normalize_date_value(self, value):
+        value = (value or "").strip()
+        return value or None
+
+    def _apply_search(self, qs):
+        q = self.request.GET.get("q", "").strip()
+        if not q:
+            return qs
+        lookups = (
+            Q(number__icontains=q)
+            | Q(customer__short_name__icontains=q)
+        )
+        # Поиск по сумме: если введено число, ищем по total строк
+        # Приводим total к строке через Cast и ищем вхождение
+        cleaned = q.replace(",", ".").replace(" ", "")
+        try:
+            Decimal(cleaned)
+            from django.db.models import CharField
+            from django.db.models.functions import Cast
+            matching_pks = (
+                Invoice.objects.annotate(
+                    _total=Sum("lines__amount_total"),
+                    _total_str=Cast("_total", CharField()),
+                )
+                .filter(_total_str__contains=cleaned)
+                .values("pk")
+            )
+            lookups = lookups | Q(pk__in=matching_pks)
+        except (InvalidOperation, ValueError):
+            pass
+        return qs.filter(lookups)
+
+    def _apply_date_filters(self, qs):
+        date_from = self._normalize_date_value(self.request.GET.get("date_from"))
+        date_to = self._normalize_date_value(self.request.GET.get("date_to"))
+
+        if not date_from and not date_to:
+            return qs
+
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+        return qs
 
     def get_queryset(self):
         qs = super().get_queryset().select_related("customer")
@@ -76,30 +109,10 @@ class InvoiceListView(UserOwnedListView):
             ),
         )
 
-        q = self.request.GET.get("q", "").strip()
-        if q:
-            qs = qs.filter(
-                Q(number__icontains=q) | Q(customer__short_name__icontains=q)
-            )
+        qs = self._apply_search(qs)
+        qs = self._apply_date_filters(qs)
 
-        status = self.request.GET.get("status")
-        if status and status in Invoice.Status.values:
-            qs = qs.filter(status=status)
-
-        if self.request.GET.get("overdue") == "1":
-            qs = qs.filter(payment_due__lt=today, status=Invoice.Status.SENT)
-
-        sort_field, sort_dir = self._parse_sort()
-        order = sort_field if sort_dir == "asc" else f"-{sort_field}"
-        return qs.order_by(order, "-pk")
-
-    def _build_sort_url(self, field, current_sort, current_dir, base_params):
-        params = dict(base_params)
-        params["sort"] = field
-        params["dir"] = (
-            "desc" if (field == current_sort and current_dir == "asc") else "asc"
-        )
-        return "?" + urlencode(params)
+        return qs.order_by("-date", "-pk")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -111,49 +124,25 @@ class InvoiceListView(UserOwnedListView):
         ctx["page_size_options"] = self.page_size_options
 
         q = self.request.GET.get("q", "").strip()
-        status = self.request.GET.get("status", "")
-        overdue = self.request.GET.get("overdue", "")
-        sort_field, sort_dir = self._parse_sort()
         current_page_size = self.get_paginate_by(self.object_list)
 
-        if q:
-            base_qs = super().get_queryset()
-            if status and status in Invoice.Status.values:
-                base_qs = base_qs.filter(status=status)
-            if overdue == "1":
-                today = timezone.localdate()
-                base_qs = base_qs.filter(payment_due__lt=today, status=Invoice.Status.SENT)
-            ctx["total_count"] = base_qs.count()
-
-        ctx["status_choices"] = Invoice.Status.choices
         ctx["filters"] = {
             "q": q,
-            "status": status,
-            "overdue": overdue,
-            "sort": sort_field,
-            "dir": sort_dir,
+            "date_from": (self.request.GET.get("date_from") or "").strip(),
+            "date_to": (self.request.GET.get("date_to") or "").strip(),
             "page_size": str(current_page_size),
         }
 
         base_params = {}
         if q:
             base_params["q"] = q
-        if status:
-            base_params["status"] = status
-        if overdue:
-            base_params["overdue"] = overdue
-        if sort_field != "date":
-            base_params["sort"] = sort_field
-        if sort_dir != "desc":
-            base_params["dir"] = sort_dir
+        if ctx["filters"]["date_from"]:
+            base_params["date_from"] = ctx["filters"]["date_from"]
+        if ctx["filters"]["date_to"]:
+            base_params["date_to"] = ctx["filters"]["date_to"]
         if str(current_page_size) != str(self.paginate_by):
             base_params["page_size"] = current_page_size
         ctx["query_string"] = ("&" + urlencode(base_params)) if base_params else ""
-
-        ctx["sort_urls"] = {
-            f: self._build_sort_url(f, sort_field, sort_dir, base_params)
-            for f in INVOICE_SORT_FIELDS
-        }
 
         return ctx
 

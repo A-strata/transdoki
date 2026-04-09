@@ -3,30 +3,9 @@
         <table class="tms-table">
             <thead>
                 <tr>
-                    <th class="col-number">
-                        <a href="{{ sort_urls.number }}" class="sortable-header {% if filters.sort == 'number' %}is-active{% endif %}" data-sort="number">
-                            Номер
-                            {% if filters.sort == 'number' %}
-                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th class="col-date">
-                        <a href="{{ sort_urls.date }}" class="sortable-header {% if filters.sort == 'date' %}is-active{% endif %}" data-sort="date">
-                            Дата
-                            {% if filters.sort == 'date' %}
-                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th class="col-customer">
-                        <a href="{{ sort_urls.customer__short_name }}" class="sortable-header {% if filters.sort == 'customer__short_name' %}is-active{% endif %}" data-sort="customer__short_name">
-                            Заказчик
-                            {% if filters.sort == 'customer__short_name' %}
-                                <span class="sort-indicator">{% if filters.dir == 'asc' %}&uarr;{% else %}&darr;{% endif %}</span>
-                            {% endif %}
-                        </a>
-                    </th>
+                    <th class="col-number">Номер</th>
+                    <th class="col-date">Дата</th>
+                    <th class="col-customer">Заказчик</th>
                     <th class="col-amount">Сумма</th>
                     <th class="col-status">Статус</th>
                     <th class="col-due">Оплатить до</th>
@@ -36,7 +15,7 @@
             </thead>
             <tbody>
                 {% for invoice in invoices %}
-                <tr>
+                <tr data-detail-url="{% url 'invoicing:invoice_detail' invoice.pk %}">
                     <td data-label="Номер">{{ invoice.number }}</td>
                     <td data-label="Дата">{{ invoice.date|date:"d.m.Y" }}</td>
                     <td data-label="Заказчик" title="{{ invoice.customer.short_name }}">{{ invoice.customer.short_name }}</td>

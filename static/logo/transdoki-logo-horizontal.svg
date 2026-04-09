@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 50">
+  <!-- ТРАНСДОКИ — горизонтальная версия (светлый фон)
+       Применение: узкий навбар, колонтитул, подпись
+       Размер: 300×50px -->
+  <defs>
+    <style>text { font-family: Inter, Manrope, Geometria, system-ui, -apple-system, sans-serif; }</style>
+  </defs>
+  <text x="0" y="40" font-size="40" font-weight="700" letter-spacing="1" fill="#1A1A1A">ТРАНС<tspan fill="#185FA5">ДОКИ</tspan></text>
+</svg>

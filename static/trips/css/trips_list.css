@@ -396,11 +396,6 @@ tr:hover .cell-filter-btn {
     color: var(--text);
     vertical-align: middle;
     background: var(--surface);
-    cursor: grab;
-}
-
-.tms-table tbody td:active {
-    cursor: grabbing;
 }
 
 .tms-table tbody tr:last-child td {
@@ -420,23 +415,9 @@ tr:hover .cell-filter-btn {
     background: var(--hover-active);
 }
 
-/* drag-scroll */
-.table-wrap.is-dragging,
-.table-wrap.is-dragging * {
-    user-select: none;
-}
-
-.table-wrap.is-dragging .tms-table tbody tr:hover td {
-    background: var(--surface);
-}
-
-.table-wrap.is-dragging .tms-table tbody tr.is-drag-source td,
-.table-wrap.is-dragging .tms-table tbody tr.is-drag-source:hover td {
-    background: var(--hover-active);
-}
-
-.table-wrap.is-dragging .tms-table tbody td {
-    cursor: grabbing;
+/* Клик по строке — переход в карточку */
+.tms-table tbody tr[data-detail-url] {
+    cursor: pointer;
 }
 
 /* интерактив внутри ячеек */
