@@ -1,0 +1,70 @@
+{% load trip_filters %}
+{% if page_obj and page_obj.paginator.count > 0 %}
+<div class="pagination-footer">
+    <div class="pagination-footer-left">
+        <span class="pagination-meta">
+            Показано {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} из {{ page_obj.paginator.count }}
+        </span>
+    </div>
+    <div class="pagination-footer-center">
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Пагинация">
+            {% if page_obj.has_previous %}
+                <a class="pagination-link pagination-nav" href="?page=1{{ query_string }}">&laquo;</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{{ query_string }}">&lsaquo;</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">&laquo;</span>
+                <span class="pagination-link pagination-nav is-disabled">&lsaquo;</span>
+            {% endif %}
+
+            {% for item in pagination_items %}
+                {% if item.type == 'ellipsis' %}
+                    <span class="pagination-ellipsis">&hellip;</span>
+                {% elif item.current %}
+                    <span class="pagination-link is-current">{{ item.number }}</span>
+                {% else %}
+                    <a class="pagination-link" href="?page={{ item.number }}{{ query_string }}">{{ item.number }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{{ query_string }}">&rsaquo;</a>
+                <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}">&raquo;</a>
+            {% else %}
+                <span class="pagination-link pagination-nav is-disabled">&rsaquo;</span>
+                <span class="pagination-link pagination-nav is-disabled">&raquo;</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </div>
+    <div class="pagination-footer-right">
+        <div class="columns-visibility" data-columns-visibility>
+            <button type="button" class="visibility-toggle" data-visibility-toggle aria-expanded="false" title="Настройка колонок">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <line x1="4" y1="18" x2="20" y2="18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <circle cx="8" cy="6" r="2" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+                    <circle cx="16" cy="12" r="2" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+                    <circle cx="10" cy="18" r="2" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+            </button>
+            <div class="visibility-panel is-hidden" data-visibility-panel>
+                <p class="visibility-title">Показать / скрыть колонки</p>
+                <ul class="visibility-list" data-visibility-list></ul>
+                <div class="visibility-footer">
+                    <button type="button" class="tms-btn tms-btn-secondary" data-visibility-reset>Сбросить</button>
+                </div>
+            </div>
+        </div>
+        <label class="page-size-control">
+            <span class="page-size-label">Показывать:</span>
+            <select class="page-size-select" data-page-size-select>
+                {% for size in page_size_options %}
+                    <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+</div>
+{% endif %}

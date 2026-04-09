@@ -14,6 +14,17 @@
 
         <div class="list-toolbar-right">
 
+            <div class="table-search-wrap">
+                <input type="text"
+                       class="table-search"
+                       name="q"
+                       placeholder="Номер рейса или контрагент…"
+                       value="{{ filters.q }}"
+                       data-search-input
+                       autocomplete="off">
+                <button type="button" class="table-search-clear" data-search-clear {% if not filters.q %}hidden{% endif %}>×</button>
+            </div>
+
             <div class="filter-dropdown-wrap" data-filter-dropdown-wrap>
                 <button type="button" class="tms-btn tms-btn-secondary" data-filters-panel-toggle aria-expanded="false">
                     Фильтры<span class="filters-count-badge" data-filters-active-badge hidden><span data-filters-active-count>0</span></span>
@@ -89,10 +100,6 @@
                 </div>
             </div>
 
-            <input type="hidden" name="page_size" value="{{ filters.page_size }}">
-            <input type="hidden" name="current_page_size" value="{{ page_obj.paginator.per_page }}">
-            <input type="hidden" name="page" value="{{ page_obj.number }}">
-
             <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">+ Создать рейс</a>
         </div>
 
@@ -126,149 +133,16 @@
                         <th class="row-actions-cell"></th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for trip in trips %}
-                    <tr data-trip-row>
-                        <td data-col="num_of_trip">{{ trip.num_of_trip }}</td>
-                        <td data-col="date_of_trip">{{ trip.date_of_trip|date:"d.m.Y" }}</td>
-                        <td data-col="client">{{ trip.client.short_name }}</td>
-                        <td data-col="carrier">{{ trip.carrier.short_name }}</td>
-                        <td data-col="driver">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
-                        <td data-col="truck">{{ trip.truck.grn }}</td>
-                        <td data-col="trailer">{{ trip.trailer.grn|default:"—" }}</td>
-                        <td data-col="planned_loading_date">{{ trip.load_point.planned_date|date:"d.m.Y"|default:"—" }}</td>
-                        <td data-col="planned_unloading_date">{{ trip.unload_point.planned_date|date:"d.m.Y"|default:"—" }}</td>
-                        <td data-col="loading_address">{{ trip.load_point.address|default:"—" }}</td>
-                        <td data-col="unloading_address">{{ trip.unload_point.address|default:"—" }}</td>
-                        <td data-col="cargo">{{ trip.cargo }}</td>
-                        <td data-col="weight">{{ trip.weight|default:"—" }}</td>
-                        <td data-col="client_cost">{{ trip.client_cost|money }}</td>
-                        <td data-col="carrier_cost">{{ trip.carrier_cost|money }}</td>
-                        <td data-col="client_payment_method">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless_vat' and trip.client_vat_rate %} {{ trip.client_vat_rate }}%{% endif %}</td>
-                        <td data-col="payment_condition">{% if trip.payment_condition == 'unloading' %}На выгрузке{% elif trip.payment_term %}{{ trip.payment_term }} дн.{% else %}—{% endif %}</td>
-                        <td data-col="carrier_payment_method">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %} {{ trip.carrier_vat_rate }}%{% endif %}</td>
-                        <td data-col="comments">{{ trip.comments|default:"—" }}</td>
-                        <td data-col="invoice">
-                            {% if trip.invoice_pk %}
-                                <a href="{% url 'invoicing:invoice_detail' trip.invoice_pk %}">{{ trip.invoice_number }}</a>
-                            {% else %}
-                                —
-                            {% endif %}
-                        </td>
-                        <td class="row-actions-cell" data-row-actions>
-                            <div class="row-actions">
-                                <a href="{% url 'trips:detail' trip.pk %}" class="row-action row-action--view" title="Просмотр">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                        <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
-                                    </svg>
-                                </a>
-                                <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}" class="row-action row-action--copy" title="Дублировать">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                        <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </a>
-                                <div class="row-action-docs" data-docs-dropdown>
-                                    <button type="button" class="row-action row-action--print" title="Документы" data-docs-toggle>
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                            <path d="M4 10.5H2.5A1.5 1.5 0 0 1 1 9V6a1.5 1.5 0 0 1 1.5-1.5h11A1.5 1.5 0 0 1 15 6v3a1.5 1.5 0 0 1-1.5 1.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <rect x="4" y="9" width="8" height="5" rx="1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M4 4.5V2h8v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </button>
-                                    <div class="docs-menu" data-docs-menu>
-                                        <a href="{% url 'trips:download_agreement' trip.pk %}">Скачать договор-заявку</a>
-                                        <a href="{% url 'trips:download_tn' trip.pk %}">Скачать ТН</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr class="empty-row">
-                        <td colspan="24">
-                            <div class="empty-state">
-                                <p>Рейсов пока нет</p>
-                                <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary">+ Создать первый рейс</a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                <tbody data-trips-tbody>
+                {% include "trips/_trip_rows.html" %}
                 </tbody>
             </table>
         </div>
     </div>
 
-    {% if page_obj and page_obj.paginator.count > 0 %}
-    <div class="pagination-footer">
-        <div class="pagination-footer-left">
-            <span class="pagination-meta">
-                Показано {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} из {{ page_obj.paginator.count }}
-            </span>
-        </div>
-        <div class="pagination-footer-center">
-            {% if page_obj.paginator.num_pages > 1 %}
-            <nav class="pagination" aria-label="Пагинация">
-                {% if page_obj.has_previous %}
-                    <a class="pagination-link pagination-nav" href="?page=1{{ query_string }}">&laquo;</a>
-                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.previous_page_number }}{{ query_string }}">&lsaquo;</a>
-                {% else %}
-                    <span class="pagination-link pagination-nav is-disabled">&laquo;</span>
-                    <span class="pagination-link pagination-nav is-disabled">&lsaquo;</span>
-                {% endif %}
-
-                {% for item in pagination_items %}
-                    {% if item.type == 'ellipsis' %}
-                        <span class="pagination-ellipsis">&hellip;</span>
-                    {% elif item.current %}
-                        <span class="pagination-link is-current">{{ item.number }}</span>
-                    {% else %}
-                        <a class="pagination-link" href="?page={{ item.number }}{{ query_string }}">{{ item.number }}</a>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.next_page_number }}{{ query_string }}">&rsaquo;</a>
-                    <a class="pagination-link pagination-nav" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}">&raquo;</a>
-                {% else %}
-                    <span class="pagination-link pagination-nav is-disabled">&rsaquo;</span>
-                    <span class="pagination-link pagination-nav is-disabled">&raquo;</span>
-                {% endif %}
-            </nav>
-            {% endif %}
-        </div>
-        <div class="pagination-footer-right">
-            <div class="columns-visibility" data-columns-visibility>
-                <button type="button" class="visibility-toggle" data-visibility-toggle aria-expanded="false" title="Настройка колонок">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                        <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                        <line x1="4" y1="18" x2="20" y2="18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                        <circle cx="8" cy="6" r="2" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
-                        <circle cx="16" cy="12" r="2" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
-                        <circle cx="10" cy="18" r="2" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
-                    </svg>
-                </button>
-                <div class="visibility-panel is-hidden" data-visibility-panel>
-                    <p class="visibility-title">Показать / скрыть колонки</p>
-                    <ul class="visibility-list" data-visibility-list></ul>
-                    <div class="visibility-footer">
-                        <button type="button" class="tms-btn tms-btn-secondary" data-visibility-reset>Сбросить</button>
-                    </div>
-                </div>
-            </div>
-            <label class="page-size-control">
-                <span class="page-size-label">Показывать:</span>
-                <select class="page-size-select" data-page-size-select>
-                    {% for size in page_size_options %}
-                        <option value="{{ size }}" {% if filters.page_size == size|stringformat:"s" %}selected{% endif %}>{{ size }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-        </div>
+    <div data-pagination-wrapper>
+        {% include "trips/_pagination_footer.html" %}
     </div>
-    {% endif %}
 
 </section>
 

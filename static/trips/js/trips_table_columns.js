@@ -491,6 +491,15 @@
         renderVisibilityMenu();
         applyAll();
         bindResizeHandles();
+
+        window.TmsTableColumns = window.TmsTableColumns || {};
+        window.TmsTableColumns.reinitRows = function () {
+            applyOrder();
+            applyVisibility();
+            applyWidths();
+            updateEmptyRowsColspan();
+            ensureSpacerCells();
+        };
     }
 
     if (document.readyState === 'loading') {

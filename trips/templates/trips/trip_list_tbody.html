@@ -1,0 +1,10 @@
+{% load trip_filters %}
+<table>
+<tbody data-trips-tbody>
+{% include "trips/_trip_rows.html" %}
+</tbody>
+</table>
+<div data-pagination-fragment hidden>
+{% include "trips/_pagination_footer.html" %}
+</div>
+<span data-total-count hidden>{{ page_obj.paginator.count }}</span>

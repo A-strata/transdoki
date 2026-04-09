@@ -333,9 +333,15 @@ class TripDetailView(LoginRequiredMixin, DetailView):
 class TripListView(UserOwnedListView):
     model = Trip
     template_name = "trips/trip_list.html"
+    partial_template_name = "trips/trip_list_tbody.html"
     context_object_name = "trips"
     paginate_by = 25
-    page_size_options = [2, 25, 50, 100]
+    page_size_options = [25, 50, 100]
+
+    def get_template_names(self):
+        if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return [self.partial_template_name]
+        return [self.template_name]
 
     date_mode_options = [
         ("loading", "Погрузка"),
@@ -359,12 +365,6 @@ class TripListView(UserOwnedListView):
                 return value
 
         return self.paginate_by
-
-    def get_page_number(self):
-        raw_page = (self.request.GET.get("page") or "").strip()
-        if raw_page.isdigit() and int(raw_page) > 0:
-            return int(raw_page)
-        return 1
 
     def _normalize_date_value(self, value):
         value = (value or "").strip()
@@ -481,10 +481,21 @@ class TripListView(UserOwnedListView):
             invoice_number=Subquery(active_lines.values("invoice__number")[:1]),
         )
 
+        qs = self._apply_search(qs)
         qs = self._apply_date_filters(qs)
         qs = self._apply_contractor_filter(qs)
 
         return qs.order_by("date_of_trip", "pk")
+
+    def _apply_search(self, qs):
+        q = (self.request.GET.get("q") or "").strip()
+        if not q:
+            return qs
+        return qs.filter(
+            Q(num_of_trip__icontains=q)
+            | Q(client__short_name__icontains=q)
+            | Q(carrier__short_name__icontains=q)
+        )
 
     def _build_pagination_items(self, page_obj):
         current = page_obj.number
@@ -510,29 +521,13 @@ class TripListView(UserOwnedListView):
 
         return items
 
-    def _get_adjusted_page_for_page_size(self):
-        old_page_size_raw = (self.request.GET.get("current_page_size") or "").strip()
-        new_page_size = self.get_paginate_by(None)
-        current_page = self.get_page_number()
-
-        if old_page_size_raw.isdigit():
-            old_page_size = int(old_page_size_raw)
-            if old_page_size > 0:
-                offset = (current_page - 1) * old_page_size
-                return (offset // new_page_size) + 1
-
-        return current_page
-
     def paginate_queryset(self, queryset, page_size):
-        adjusted_page = self._get_adjusted_page_for_page_size()
-
         if self._should_open_last_page_by_default():
             paginator = Paginator(queryset, page_size)
             adjusted_page = paginator.num_pages or 1
-
-        mutable_get = self.request.GET.copy()
-        mutable_get["page"] = str(adjusted_page)
-        self.request.GET = mutable_get
+            mutable_get = self.request.GET.copy()
+            mutable_get["page"] = str(adjusted_page)
+            self.request.GET = mutable_get
 
         return super().paginate_queryset(queryset, page_size)
 
@@ -546,6 +541,7 @@ class TripListView(UserOwnedListView):
         context["contractor_role_options"] = self.contractor_role_options
 
         context["filters"] = {
+            "q": (self.request.GET.get("q") or "").strip(),
             "date_mode": (self.request.GET.get("date_mode") or "loading").strip(),
             "date_from": (self.request.GET.get("date_from") or "").strip(),
             "date_to": (self.request.GET.get("date_to") or "").strip(),
@@ -562,6 +558,8 @@ class TripListView(UserOwnedListView):
         )
 
         base_params = {}
+        if context["filters"]["q"]:
+            base_params["q"] = context["filters"]["q"]
         if context["filters"]["date_mode"] != "loading":
             base_params["date_mode"] = context["filters"]["date_mode"]
         if context["filters"]["date_from"]:
