@@ -35,15 +35,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
-.toolbar-zone-chips {
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-    min-height: 34px;
+.toolbar-zone-filters > .active-filters {
+    flex-basis: 100%;
 }
 
 .toolbar-zone-action {
@@ -687,14 +683,6 @@ tbody .row-actions-cell {
 
     .list-toolbar {
         flex-wrap: wrap;
-    }
-
-    .toolbar-zone-filters {
-        flex-wrap: wrap;
-    }
-
-    .toolbar-zone-chips {
-        width: 100%;
     }
 
     .page-size-control {
