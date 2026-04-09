@@ -146,31 +146,39 @@
 }
 
 /* Hover-иконка фильтрации в ячейке таблицы */
-.cell-inner {
-    display: flex;
-    align-items: center;
-    gap: 5px;
+td[data-filterable] {
+    position: relative;
+}
+
+.tms-table tbody tr:hover td[data-filterable] {
+    padding-right: 28px;
 }
 
 .cell-filter-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 4px;
-    border: 1px solid var(--border-interactive);
+    border: 1px solid transparent;
     background: var(--surface);
     cursor: pointer;
     color: var(--muted);
     opacity: 0;
-    transition: opacity 0.15s ease, background 0.15s ease;
+    pointer-events: none;
+    transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
     padding: 0;
-    flex-shrink: 0;
 }
 
 tr:hover .cell-filter-btn {
     opacity: 1;
+    pointer-events: auto;
+    border-color: var(--border-interactive);
 }
 
 .cell-filter-btn:hover {
