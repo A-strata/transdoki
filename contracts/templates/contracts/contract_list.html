@@ -14,13 +14,20 @@
             <h1>Договоры</h1>
         </div>
         <div class="list-toolbar-right">
-            <div class="table-search-wrap">
+            <div class="search-field-wrap{% if filters.q %} is-filtered{% endif %}">
+                <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
                 <input type="text"
-                       class="table-search"
-                       placeholder="Поиск по номеру или контрагенту…"
+                       class="search-input"
+                       placeholder="Номер или контрагент…"
                        value="{{ filters.q }}"
-                       data-search-input>
-                <button type="button" class="table-search-clear" data-search-clear {% if not filters.q %}hidden{% endif %}>×</button>
+                       data-search-input
+                       autocomplete="off">
+                <button type="button" class="search-clear" data-search-clear aria-label="Очистить поиск">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
             </div>
             <div class="filter-inline">
                 <label class="filter-field">

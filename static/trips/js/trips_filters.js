@@ -22,6 +22,7 @@
         var dateToInput = form.querySelector('[name="date_to"]');
         var activeFiltersWrap = form.querySelector('[data-active-filters]');
         var searchWrap = searchInput ? searchInput.closest('.search-field-wrap') : null;
+        var searchClear = form.querySelector('[data-search-clear]');
         var pageSizeSelect = document.querySelector('[data-page-size-select]');
 
         var fetchController = null;
@@ -194,6 +195,15 @@
                     updateSearchState();
                     fetchList(buildParams({ page: '' }));
                 }
+            });
+        }
+
+        if (searchClear) {
+            searchClear.addEventListener('click', function () {
+                if (searchInput) searchInput.value = '';
+                updateSearchState();
+                fetchList(buildParams({ page: '' }));
+                if (searchInput) searchInput.focus();
             });
         }
 

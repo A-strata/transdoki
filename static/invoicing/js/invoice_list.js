@@ -1,6 +1,7 @@
 (function () {
     "use strict";
 
+    var searchWrap = document.querySelector(".search-field-wrap");
     var searchInput = document.querySelector("[data-search-input]");
     var clearBtn = document.querySelector("[data-search-clear]");
     var statusSelect = document.querySelector("[data-filter-status]");
@@ -13,10 +14,8 @@
     var currentController = null;
 
     function updateSearchState() {
-        if (!searchInput || !clearBtn) return;
-        var hasValue = !!searchInput.value;
-        clearBtn.hidden = !hasValue;
-        searchInput.classList.toggle("is-filtered", hasValue);
+        if (!searchInput || !searchWrap) return;
+        searchWrap.classList.toggle("is-filtered", !!searchInput.value);
     }
 
     updateSearchState();

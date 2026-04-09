@@ -51,31 +51,7 @@
     margin-left: auto;
 }
 
-/* 4) Поле поиска */
-.search-field-wrap {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-}
-
-.search-field-wrap svg {
-    position: absolute;
-    left: 8px;
-    color: var(--muted);
-    pointer-events: none;
-}
-
-.search-field-wrap .filter-input {
-    padding-left: 28px;
-    width: 180px;
-}
-
-.search-field-wrap.is-filtered .filter-input {
-    border-color: var(--primary);
-    background: var(--hover-active);
-}
-
-/* 5) Поля фильтров */
+/* 4) Поля фильтров (дата) */
 .filter-input {
     min-height: 34px;
     height: 34px;
@@ -86,10 +62,6 @@
     background: var(--surface);
     color: var(--text);
     box-sizing: border-box;
-}
-
-.filter-input::placeholder {
-    color: var(--muted);
 }
 
 .filter-input:focus {

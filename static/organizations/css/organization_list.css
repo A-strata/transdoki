@@ -167,7 +167,7 @@
         flex-direction: column;
     }
 
-    .table-search {
+    .search-field-wrap .search-input {
         width: 100%;
     }
 

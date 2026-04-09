@@ -129,7 +129,7 @@ thead .col-spacer {
         flex-wrap: wrap;
     }
 
-    .table-search {
+    .search-field-wrap .search-input {
         width: 100%;
     }
 

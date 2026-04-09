@@ -191,58 +191,77 @@
 }
 
 /* Поиск по таблице */
-.table-search-wrap {
+.search-field-wrap {
     position: relative;
     display: inline-flex;
     align-items: center;
 }
 
-.table-search {
+.search-field-wrap .search-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--muted);
+    pointer-events: none;
+}
+
+.search-field-wrap .search-input {
     min-height: 36px;
-    padding: 0 32px 0 12px;
+    height: 36px;
+    padding: 0 30px 0 30px;
     border: 1px solid var(--border-input);
     border-radius: 8px;
     font-size: var(--text-sm);
     background: var(--surface);
     color: var(--text);
-    width: 260px;
+    width: 240px;
     box-sizing: border-box;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.table-search::placeholder {
+.search-field-wrap .search-input::placeholder {
     color: var(--muted);
 }
 
-.table-search:focus {
+.search-field-wrap .search-input:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-.table-search.is-filtered {
+.search-field-wrap.is-filtered .search-input {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    background: var(--hover-active);
 }
 
-.table-search-clear {
+.search-field-wrap .search-clear {
     position: absolute;
-    right: 8px;
+    right: 7px;
     top: 50%;
     transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     border: none;
-    background: none;
+    border-radius: 50%;
+    background: var(--neutral-bg);
     cursor: pointer;
-    font-size: var(--text-lg);
     color: var(--muted);
-    line-height: 1;
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: color 0.15s ease;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
-.table-search-clear:hover {
+.search-field-wrap.is-filtered .search-clear {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.search-field-wrap .search-clear:hover {
     color: var(--text);
+    background: var(--neutral-border);
 }
 
 /* Pagination footer — сетка: page-size | пагинация | счётчик */
