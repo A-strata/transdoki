@@ -33,11 +33,15 @@
 }
 
 .brand {
-    font-size: var(--text-base);
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
     margin-right: 10px;
-    color: var(--text);
+    text-decoration: none;
+}
+
+.brand-logo {
+    height: 24px;
+    width: auto;
 }
 
 .nav-link {

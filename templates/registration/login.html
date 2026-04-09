@@ -9,8 +9,9 @@
 {% block content %}
 <section class="auth-page">
     <div class="auth-card">
+        <img src="{% static 'logo/transdoki-favicon.svg' %}" alt="" class="auth-logo" aria-hidden="true">
         <h1 class="auth-title">Вход</h1>
-        <p class="auth-subtitle">Войдите в аккаунт TMS</p>
+        <p class="auth-subtitle">Войдите в аккаунт Трансдоки</p>
 
         <form method="post" novalidate>
             {% csrf_token %}

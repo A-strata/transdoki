@@ -14,6 +14,13 @@
     padding: 18px;
 }
 
+.auth-logo {
+    display: block;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+}
+
 .auth-title {
     margin: 0 0 6px;
     font-size: clamp(1.25rem, 1.8vw, 1.5rem);
