@@ -265,6 +265,33 @@
     position: relative;
 }
 
+.visibility-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border-interactive);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.visibility-toggle:hover {
+    background: var(--hover);
+    color: var(--text);
+    border-color: var(--border-input-hover);
+}
+
+.visibility-toggle[aria-expanded="true"] {
+    background: var(--hover-active);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
 .visibility-panel {
     position: absolute;
     right: 0;
