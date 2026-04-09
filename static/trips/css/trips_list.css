@@ -268,14 +268,14 @@
 .visibility-panel {
     position: absolute;
     right: 0;
-    top: calc(100% + 6px);
+    bottom: calc(100% + 6px);
     z-index: var(--z-column-panel);
     width: 320px;
     max-width: min(320px, calc(100vw - 16px));
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.14);
     padding: 10px;
 }
 
@@ -681,7 +681,14 @@ tbody .row-actions-cell {
     background: var(--hover);
 }
 
-/* 15) Пагинация — специфичный layout для страницы рейсов */
+/* 15) Footer-right: кнопка «Вид» + page-size в одну строку */
+.trips-page .pagination-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 16) Пагинация — специфичный layout для страницы рейсов */
 .pagination {
     padding: 2px 0 0;
     flex-shrink: 0;
