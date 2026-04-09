@@ -149,40 +149,38 @@ td[data-filterable] {
 }
 
 .tms-table tbody tr:hover td[data-filterable] {
-    padding-right: 28px;
+    padding-right: 34px;
 }
 
 .cell-filter-btn {
     position: absolute;
-    right: 6px;
+    right: 4px;
     top: 50%;
     transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    border: 1px solid transparent;
-    background: var(--surface);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
     cursor: pointer;
     color: var(--muted);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
     padding: 0;
 }
 
 tr:hover .cell-filter-btn {
     opacity: 1;
     pointer-events: auto;
-    border-color: var(--border-interactive);
 }
 
 .cell-filter-btn:hover {
-    background: var(--info-bg);
-    border-color: var(--info-border);
-    color: var(--info-text);
+    background: var(--hover-active);
+    color: var(--primary);
 }
 
 /* Состояние загрузки tbody */

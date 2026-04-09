@@ -6,19 +6,19 @@
     <td data-col="client" data-filterable data-filter-role="client" data-filter-value="{{ trip.client.short_name }}">
         {{ trip.client.short_name }}
         <button type="button" class="cell-filter-btn" aria-label="Фильтровать по заказчику" title="Фильтровать по заказчику">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
     </td>
     <td data-col="carrier" data-filterable data-filter-role="carrier" data-filter-value="{{ trip.carrier.short_name }}">
         {{ trip.carrier.short_name }}
         <button type="button" class="cell-filter-btn" aria-label="Фильтровать по перевозчику" title="Фильтровать по перевозчику">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
     </td>
     <td data-col="driver" data-filterable data-filter-role="driver" data-filter-value="{{ trip.driver.surname }} {{ trip.driver.name }}">
         {{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}
         <button type="button" class="cell-filter-btn" aria-label="Фильтровать по водителю" title="Фильтровать по водителю">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
     </td>
     <td data-col="truck">{{ trip.truck.grn }}</td>
@@ -45,23 +45,23 @@
     <td class="row-actions-cell" data-row-actions>
         <div class="row-actions">
             <a href="{% url 'trips:detail' trip.pk %}" class="row-action row-action--view" title="Просмотр">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.2"/>
                 </svg>
             </a>
             <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}" class="row-action row-action--copy" title="Дублировать">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </a>
             <div class="row-action-docs" data-docs-dropdown>
                 <button type="button" class="row-action row-action--print" title="Документы" data-docs-toggle>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 10.5H2.5A1.5 1.5 0 0 1 1 9V6a1.5 1.5 0 0 1 1.5-1.5h11A1.5 1.5 0 0 1 15 6v3a1.5 1.5 0 0 1-1.5 1.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <rect x="4" y="9" width="8" height="5" rx="1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M4 4.5V2h8v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6 9V3h12v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="6" y="14" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
                 <div class="docs-menu" data-docs-menu>
