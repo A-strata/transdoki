@@ -3,9 +3,30 @@
 <tr data-trip-row>
     <td data-col="num_of_trip">{{ trip.num_of_trip }}</td>
     <td data-col="date_of_trip">{{ trip.date_of_trip|date:"d.m.Y" }}</td>
-    <td data-col="client">{{ trip.client.short_name }}</td>
-    <td data-col="carrier">{{ trip.carrier.short_name }}</td>
-    <td data-col="driver">{{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}</td>
+    <td data-col="client" data-filterable data-filter-role="client" data-filter-value="{{ trip.client.short_name }}">
+        <div class="cell-inner">
+            {{ trip.client.short_name }}
+            <button type="button" class="cell-filter-btn" aria-label="Фильтровать по заказчику" title="Фильтровать по заказчику">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+    </td>
+    <td data-col="carrier" data-filterable data-filter-role="carrier" data-filter-value="{{ trip.carrier.short_name }}">
+        <div class="cell-inner">
+            {{ trip.carrier.short_name }}
+            <button type="button" class="cell-filter-btn" aria-label="Фильтровать по перевозчику" title="Фильтровать по перевозчику">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+    </td>
+    <td data-col="driver" data-filterable data-filter-role="driver" data-filter-value="{{ trip.driver.surname }} {{ trip.driver.name }}">
+        <div class="cell-inner">
+            {{ trip.driver.surname }} {{ trip.driver.name }} {{ trip.driver.patronymic }}
+            <button type="button" class="cell-filter-btn" aria-label="Фильтровать по водителю" title="Фильтровать по водителю">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+    </td>
     <td data-col="truck">{{ trip.truck.grn }}</td>
     <td data-col="trailer">{{ trip.trailer.grn|default:"—" }}</td>
     <td data-col="planned_loading_date">{{ trip.load_point.planned_date|date:"d.m.Y"|default:"—" }}</td>

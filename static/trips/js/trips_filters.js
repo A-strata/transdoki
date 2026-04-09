@@ -1,33 +1,42 @@
 (function () {
     var STORAGE_KEY = 'tms_trips_page_size';
     var DEFAULT_PAGE_SIZE = '25';
-    var DEFAULT_DATE_MODE = 'loading';
+
+    var CONTRACTOR_ROLES = ['driver', 'client', 'carrier'];
+
+    var ROLE_LABELS = {
+        driver: 'Водитель',
+        client: 'Заказчик',
+        carrier: 'Перевозчик'
+    };
+
 
     function init() {
         var form = document.querySelector('[data-trip-filters]');
         if (!form) return;
 
+        var searchInput = form.querySelector('[name="q"]');
+        var calendarToggle = form.querySelector('[data-calendar-toggle]');
+        var calendarFields = form.querySelector('[data-calendar-fields]');
+        var dateFromInput = form.querySelector('[name="date_from"]');
+        var dateToInput = form.querySelector('[name="date_to"]');
+        var activeFiltersWrap = form.querySelector('[data-active-filters]');
+        var searchWrap = searchInput ? searchInput.closest('.search-field-wrap') : null;
         var pageSizeSelect = document.querySelector('[data-page-size-select]');
-        var searchInput = form.querySelector('[data-search-input]');
-        var searchClear = form.querySelector('[data-search-clear]');
-        var resetBtn = form.querySelector('[data-filter="reset"]');
-        var dateFromInput = form.querySelector('[data-filter="date_from"]');
-        var dateToInput = form.querySelector('[data-filter="date_to"]');
-        var quickDateButtons = form.querySelectorAll('[data-quick-date]');
 
         var fetchController = null;
         var debounceTimer = null;
 
-        // Карта полей формы: name → { element, default }
-        // Единый источник правды для buildParams / restoreFields
-        var fields = [
-            { name: 'q',                el: searchInput,                                    fallback: '' },
-            { name: 'date_mode',        el: form.querySelector('[name="date_mode"]'),        fallback: DEFAULT_DATE_MODE },
-            { name: 'date_from',        el: form.querySelector('[name="date_from"]'),        fallback: '' },
-            { name: 'date_to',          el: form.querySelector('[name="date_to"]'),          fallback: '' },
-            { name: 'contractor_role',  el: form.querySelector('[name="contractor_role"]'),  fallback: '' },
-            { name: 'contractor_query', el: form.querySelector('[name="contractor_query"]'), fallback: '' },
-        ];
+        // Объект: { driver: 'Иванов Иван', client: 'ООО Ромашка', carrier: '' }
+        // Пустая строка или отсутствие ключа = фильтр неактивен
+        var contractorFilters = {};
+
+        // Восстановить contractor-фильтры из URL при загрузке
+        var initParams = new URLSearchParams(window.location.search);
+        CONTRACTOR_ROLES.forEach(function (role) {
+            var val = initParams.get('contractor_' + role) || '';
+            if (val) contractorFilters[role] = val;
+        });
 
         // Восстановить page_size из localStorage при первом визите
         if (pageSizeSelect) {
@@ -43,26 +52,32 @@
             }
         }
 
-        // --- Параметры ---
+        // --- buildParams ---
 
         function buildParams(overrides) {
             var params = new URLSearchParams();
 
-            fields.forEach(function (f) {
-                var val;
-                if (overrides && f.name in overrides) {
-                    val = overrides[f.name];
-                } else if (f.el) {
-                    val = f.el.value.trim();
-                } else {
-                    val = '';
-                }
-                if (val && val !== f.fallback) {
-                    params.set(f.name, val);
-                }
+            var q = (overrides && 'q' in overrides)
+                ? overrides.q
+                : (searchInput ? searchInput.value.trim() : '');
+            if (q) params.set('q', q);
+
+            var dateFrom = (overrides && 'date_from' in overrides)
+                ? overrides.date_from
+                : (dateFromInput ? dateFromInput.value.trim() : '');
+            if (dateFrom) params.set('date_from', dateFrom);
+
+            var dateTo = (overrides && 'date_to' in overrides)
+                ? overrides.date_to
+                : (dateToInput ? dateToInput.value.trim() : '');
+            if (dateTo) params.set('date_to', dateTo);
+
+            // Contractor-фильтры — каждый тип отдельным параметром
+            CONTRACTOR_ROLES.forEach(function (role) {
+                var val = contractorFilters[role] || '';
+                if (val) params.set('contractor_' + role, val);
             });
 
-            // page_size — из footer-select, только если не дефолт
             var ps;
             if (overrides && 'page_size' in overrides) {
                 ps = overrides.page_size;
@@ -73,30 +88,16 @@
                 params.set('page_size', ps);
             }
 
-            // page
-            if (overrides && 'page' in overrides && overrides.page) {
+            if (overrides && overrides.page) {
                 params.set('page', overrides.page);
             }
 
             return params;
         }
 
-        function restoreFields(params) {
-            fields.forEach(function (f) {
-                if (f.el) {
-                    f.el.value = params.get(f.name) || f.fallback;
-                }
-            });
-            if (pageSizeSelect) {
-                pageSizeSelect.value = params.get('page_size') || DEFAULT_PAGE_SIZE;
-            }
-            updateSearchState();
-            updateQuickDateState();
-        }
+        // --- fetchList ---
 
-        // --- Fetch ---
-
-        function fetchList(params, pushHistory) {
+        function fetchList(params) {
             var qs = params.toString();
             var urlStr = window.location.pathname + (qs ? '?' + qs : '');
 
@@ -104,18 +105,18 @@
             fetchController = new AbortController();
 
             var tbody = document.querySelector('[data-trips-tbody]');
-            if (tbody) tbody.style.opacity = '0.5';
+            if (tbody) tbody.classList.add('is-loading');
 
             fetch(urlStr, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                signal: fetchController.signal,
+                signal: fetchController.signal
             })
             .then(function (r) {
                 if (r.status === 401 || r.status === 403) {
                     location.href = '/accounts/login/?next=' + encodeURIComponent(location.pathname);
                     return;
                 }
-                if (!r.ok) throw new Error('HTTP ' + r.status);
+                if (!r.ok) throw new Error('server_error');
                 return r.text();
             })
             .then(function (html) {
@@ -127,7 +128,7 @@
                 var currentTbody = document.querySelector('[data-trips-tbody]');
                 if (newTbody && currentTbody) {
                     currentTbody.innerHTML = newTbody.innerHTML;
-                    currentTbody.style.opacity = '';
+                    currentTbody.classList.remove('is-loading');
                 }
 
                 var paginationEl = doc.querySelector('[data-pagination-fragment]');
@@ -136,31 +137,46 @@
                     currentPagination.innerHTML = paginationEl ? paginationEl.innerHTML : '';
                 }
 
+                var newCount = doc.querySelector('[data-total-count]');
+                var currentCount = document.querySelector('[data-total-count]');
+                if (newCount && currentCount) {
+                    currentCount.textContent = newCount.textContent;
+                }
+
                 if (window.TmsTableColumns && window.TmsTableColumns.reinitRows) {
                     window.TmsTableColumns.reinitRows();
                 }
 
                 bindPageSizeSelect();
-
-                if (pushHistory !== false) {
-                    history.pushState(null, '', urlStr);
-                }
+                history.pushState(null, '', urlStr);
             })
             .catch(function (err) {
                 if (err.name === 'AbortError') return;
-                var currentTbody = document.querySelector('[data-trips-tbody]');
-                if (currentTbody) currentTbody.style.opacity = '';
-                console.error('trips fetch error:', err);
+
+                var container = document.querySelector('[data-trips-tbody]');
+                if (container) {
+                    container.classList.remove('is-loading');
+                    if (err.message === 'server_error') {
+                        container.innerHTML = '<tr><td colspan="24">' +
+                            '<div class="alert alert-error">Произошла ошибка на сервере. ' +
+                            '<button type="button" class="tms-btn tms-btn-secondary tms-btn-sm" ' +
+                            'onclick="location.reload()">Обновить</button></div></td></tr>';
+                    } else {
+                        container.innerHTML = '<tr><td colspan="24">' +
+                            '<div class="alert alert-error">Не удалось загрузить данные. ' +
+                            '<button type="button" class="tms-btn tms-btn-secondary tms-btn-sm" ' +
+                            'onclick="location.reload()">Обновить</button></div></td></tr>';
+                    }
+                }
             });
         }
 
         // --- Поиск ---
 
         function updateSearchState() {
-            if (!searchInput) return;
+            if (!searchInput || !searchWrap) return;
             var hasValue = !!searchInput.value.trim();
-            if (searchClear) searchClear.hidden = !hasValue;
-            searchInput.classList.toggle('is-filtered', hasValue);
+            searchWrap.classList.toggle('is-filtered', hasValue);
         }
 
         if (searchInput) {
@@ -181,86 +197,146 @@
             });
         }
 
-        if (searchClear) {
-            searchClear.addEventListener('click', function () {
-                if (searchInput) searchInput.value = '';
-                updateSearchState();
-                fetchList(buildParams({ page: '' }));
-                if (searchInput) searchInput.focus();
+        // --- Календарь ---
+
+        var calendarOpen = false;
+
+        function hasAnyDate() {
+            return !!(
+                (dateFromInput && dateFromInput.value) ||
+                (dateToInput && dateToInput.value)
+            );
+        }
+
+        function updateDateFieldStates() {
+            if (dateFromInput) dateFromInput.classList.toggle('is-filled', !!dateFromInput.value);
+            if (dateToInput) dateToInput.classList.toggle('is-filled', !!dateToInput.value);
+        }
+
+        function updateCalendarToggleState() {
+            if (!calendarToggle) return;
+            calendarToggle.setAttribute('aria-expanded', (hasAnyDate() || calendarOpen) ? 'true' : 'false');
+            updateDateFieldStates();
+        }
+
+        function openCalendarFields() {
+            if (!calendarFields) return;
+            calendarOpen = true;
+            calendarFields.classList.add('is-visible');
+            updateCalendarToggleState();
+        }
+
+
+
+        if (calendarToggle) {
+            calendarToggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (calendarOpen) {
+                    calendarOpen = false;
+                    calendarFields.classList.remove('is-visible');
+                    updateCalendarToggleState();
+                } else {
+                    openCalendarFields();
+                    if (dateFromInput && !dateFromInput.value) {
+                        dateFromInput.focus();
+                    } else if (dateToInput && !dateToInput.value) {
+                        dateToInput.focus();
+                    } else if (dateFromInput) {
+                        dateFromInput.focus();
+                    }
+                }
             });
         }
 
-        // --- Форма (фильтры + submit) ---
+        function onDateChange() {
+            syncCalendarVisibility();
+            fetchList(buildParams({ page: '' }));
+        }
+
+        if (dateFromInput) {
+            dateFromInput.addEventListener('change', onDateChange);
+            dateFromInput.addEventListener('input', onDateChange);
+        }
+        if (dateToInput) {
+            dateToInput.addEventListener('change', onDateChange);
+            dateToInput.addEventListener('input', onDateChange);
+        }
+
+        // --- Чипы ---
+
+        function createChip(type, text, modifier, onRemove) {
+            var chip = document.createElement('span');
+            chip.className = 'active-filter-chip ' + modifier;
+            chip.setAttribute('data-chip', type);
+
+            var textNode = document.createTextNode(text + ' ');
+            chip.appendChild(textNode);
+
+            var removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'chip-remove';
+            removeBtn.setAttribute('aria-label', 'Сбросить фильтр');
+            removeBtn.innerHTML = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+                '<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            removeBtn.addEventListener('click', onRemove);
+
+            chip.appendChild(removeBtn);
+            return chip;
+        }
+
+        function hasAnyContractorFilter() {
+            for (var i = 0; i < CONTRACTOR_ROLES.length; i++) {
+                if (contractorFilters[CONTRACTOR_ROLES[i]]) return true;
+            }
+            return false;
+        }
+
+        function rebuildChips() {
+            if (!activeFiltersWrap) return;
+            activeFiltersWrap.innerHTML = '';
+
+            // Чипы контрагентов — по одному на каждый активный тип
+            CONTRACTOR_ROLES.forEach(function (role) {
+                var query = contractorFilters[role];
+                if (!query) return;
+
+                var label = ROLE_LABELS[role] || role;
+                var chipText = label + ': ' + query;
+                var chip = createChip('contractor_' + role, chipText, 'active-filter-chip--info', function () {
+                    delete contractorFilters[role];
+                    rebuildChips();
+                    fetchList(buildParams({ page: '' }));
+                });
+                activeFiltersWrap.appendChild(chip);
+            });
+        }
+
+        // --- Hover-иконки в таблице ---
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.cell-filter-btn');
+            if (!btn) return;
+
+            var td = btn.closest('[data-filterable]');
+            if (!td) return;
+
+            var role = td.getAttribute('data-filter-role');
+            var value = td.getAttribute('data-filter-value');
+            if (!role || !value) return;
+
+            // Тот же тип — заменяет значение, другой тип — добавляется рядом
+            contractorFilters[role] = value;
+
+            rebuildChips();
+            fetchList(buildParams({ page: '' }));
+        });
+
+        // --- Форма submit ---
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             fetchList(buildParams({ page: '' }));
         });
-
-        // --- Быстрые даты ---
-
-        function formatDate(date) {
-            var year = date.getFullYear();
-            var month = String(date.getMonth() + 1).padStart(2, '0');
-            var day = String(date.getDate()).padStart(2, '0');
-            return year + '-' + month + '-' + day;
-        }
-
-        function getShiftedDate(days) {
-            var date = new Date();
-            date.setHours(12, 0, 0, 0);
-            date.setDate(date.getDate() + days);
-            return formatDate(date);
-        }
-
-        function updateQuickDateState() {
-            if (!dateFromInput || !dateToInput || !quickDateButtons.length) return;
-
-            var fromValue = dateFromInput.value;
-            var toValue = dateToInput.value;
-            var yesterday = getShiftedDate(-1);
-            var today = getShiftedDate(0);
-            var tomorrow = getShiftedDate(1);
-            var activeType = '';
-
-            if (fromValue && toValue && fromValue === toValue) {
-                if (fromValue === yesterday) activeType = 'yesterday';
-                else if (fromValue === today) activeType = 'today';
-                else if (fromValue === tomorrow) activeType = 'tomorrow';
-            }
-
-            quickDateButtons.forEach(function (button) {
-                button.classList.toggle(
-                    'is-active',
-                    button.getAttribute('data-quick-date') === activeType
-                );
-            });
-        }
-
-        quickDateButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                var type = button.getAttribute('data-quick-date');
-                var value = '';
-                if (type === 'yesterday') value = getShiftedDate(-1);
-                else if (type === 'today') value = getShiftedDate(0);
-                else if (type === 'tomorrow') value = getShiftedDate(1);
-
-                if (dateFromInput) dateFromInput.value = value;
-                if (dateToInput) dateToInput.value = value;
-
-                updateQuickDateState();
-                fetchList(buildParams({ page: '' }));
-            });
-        });
-
-        if (dateFromInput) {
-            dateFromInput.addEventListener('change', updateQuickDateState);
-            dateFromInput.addEventListener('input', updateQuickDateState);
-        }
-        if (dateToInput) {
-            dateToInput.addEventListener('change', updateQuickDateState);
-            dateToInput.addEventListener('input', updateQuickDateState);
-        }
 
         // --- Page size ---
 
@@ -275,21 +351,6 @@
         }
 
         bindPageSizeSelect();
-
-        // --- Сброс ---
-
-        if (resetBtn) {
-            resetBtn.addEventListener('click', function () {
-                // Очистить все поля формы
-                fields.forEach(function (f) {
-                    if (f.el) f.el.value = f.fallback;
-                });
-                if (searchInput) searchInput.value = '';
-                updateSearchState();
-                updateQuickDateState();
-                fetchList(new URLSearchParams());
-            });
-        }
 
         // --- Пагинация: перехват кликов ---
 
@@ -307,14 +368,49 @@
 
         // --- popstate ---
 
+        function restoreFormFromParams(params) {
+            if (searchInput) searchInput.value = params.get('q') || '';
+            if (dateFromInput) dateFromInput.value = params.get('date_from') || '';
+            if (dateToInput) dateToInput.value = params.get('date_to') || '';
+
+            contractorFilters = {};
+            CONTRACTOR_ROLES.forEach(function (role) {
+                var val = params.get('contractor_' + role) || '';
+                if (val) contractorFilters[role] = val;
+            });
+
+            updateSearchState();
+            syncCalendarVisibility();
+            rebuildChips();
+        }
+
+        // Синхронизация видимости полей дат с их содержимым
+        function syncCalendarVisibility() {
+            if (!calendarFields) return;
+            if (hasAnyDate()) {
+                calendarOpen = true;
+                calendarFields.classList.add('is-visible');
+            } else {
+                calendarOpen = false;
+                calendarFields.classList.remove('is-visible');
+            }
+            updateCalendarToggleState();
+        }
+
         window.addEventListener('popstate', function () {
             var params = new URLSearchParams(window.location.search);
-            restoreFields(params);
-            fetchList(params, false);
+            restoreFormFromParams(params);
+            fetchList(params);
         });
 
+        // --- Инициализация ---
+
         updateSearchState();
-        updateQuickDateState();
+        syncCalendarVisibility();
+
+        if (hasAnyContractorFilter()) {
+            rebuildChips();
+        }
     }
 
     if (document.readyState === 'loading') {

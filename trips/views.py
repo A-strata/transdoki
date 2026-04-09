@@ -389,55 +389,48 @@ class TripListView(UserOwnedListView):
 
 
 
+    CONTRACTOR_ROLES = ("client", "carrier", "driver")
+
+    def _get_contractor_filters(self):
+        result = {}
+        for role in self.CONTRACTOR_ROLES:
+            val = (self.request.GET.get(f"contractor_{role}") or "").strip()
+            if val:
+                result[role] = val
+        return result
+
     def _apply_contractor_filter(self, qs):
-        contractor_role = (self.request.GET.get("contractor_role") or "").strip()
-        contractor_query = (self.request.GET.get("contractor_query") or "").strip()
+        filters = self._get_contractor_filters()
 
-        if not contractor_role or not contractor_query:
-            return qs
-
-        if contractor_role in ["client", "carrier"]:
-            return qs.filter(
-                **{f"{contractor_role}__short_name__icontains": contractor_query}
-            )
-
-        if contractor_role == "consignor":
-            return qs.filter(
-                points__point_type="LOAD",
-                points__organization__short_name__icontains=contractor_query,
-            ).distinct()
-
-        if contractor_role == "consignee":
-            return qs.filter(
-                points__point_type="UNLOAD",
-                points__organization__short_name__icontains=contractor_query,
-            ).distinct()
-
-        if contractor_role == "driver":
-            parts = [part for part in contractor_query.split() if part]
-
-            for part in parts:
-                qs = (
-                    qs.filter(driver__surname__icontains=part)
-                    | qs.filter(driver__name__icontains=part)
-                    | qs.filter(driver__patronymic__icontains=part)
+        for role, query in filters.items():
+            if role in ("client", "carrier"):
+                qs = qs.filter(
+                    **{f"{role}__short_name__icontains": query}
                 )
-
-            return qs.distinct()
+            elif role == "driver":
+                parts = [part for part in query.split() if part]
+                for part in parts:
+                    qs = (
+                        qs.filter(driver__surname__icontains=part)
+                        | qs.filter(driver__name__icontains=part)
+                        | qs.filter(driver__patronymic__icontains=part)
+                    )
+                qs = qs.distinct()
 
         return qs
 
     def _has_active_filters(self):
         date_from = (self.request.GET.get("date_from") or "").strip()
         date_to = (self.request.GET.get("date_to") or "").strip()
-        contractor_role = (self.request.GET.get("contractor_role") or "").strip()
-        contractor_query = (self.request.GET.get("contractor_query") or "").strip()
         date_mode = (self.request.GET.get("date_mode") or "").strip()
 
-        if date_from or date_to or contractor_role or contractor_query:
+        if date_from or date_to:
             return True
 
         if date_mode and date_mode != "loading":
+            return True
+
+        if self._get_contractor_filters():
             return True
 
         return False
@@ -540,15 +533,14 @@ class TripListView(UserOwnedListView):
         context["date_mode_options"] = self.date_mode_options
         context["contractor_role_options"] = self.contractor_role_options
 
+        contractor_filters = self._get_contractor_filters()
+
         context["filters"] = {
             "q": (self.request.GET.get("q") or "").strip(),
             "date_mode": (self.request.GET.get("date_mode") or "loading").strip(),
             "date_from": (self.request.GET.get("date_from") or "").strip(),
             "date_to": (self.request.GET.get("date_to") or "").strip(),
-            "contractor_role": (self.request.GET.get("contractor_role") or "").strip(),
-            "contractor_query": (
-                self.request.GET.get("contractor_query") or ""
-            ).strip(),
+            "contractors": contractor_filters,
             "page_size": str(current_page_size),
         }
 
@@ -566,10 +558,8 @@ class TripListView(UserOwnedListView):
             base_params["date_from"] = context["filters"]["date_from"]
         if context["filters"]["date_to"]:
             base_params["date_to"] = context["filters"]["date_to"]
-        if context["filters"]["contractor_role"]:
-            base_params["contractor_role"] = context["filters"]["contractor_role"]
-        if context["filters"]["contractor_query"]:
-            base_params["contractor_query"] = context["filters"]["contractor_query"]
+        for role, query in contractor_filters.items():
+            base_params[f"contractor_{role}"] = query
         if str(current_page_size) != str(self.paginate_by):
             base_params["page_size"] = current_page_size
         context["query_string"] = ("&" + urlencode(base_params)) if base_params else ""

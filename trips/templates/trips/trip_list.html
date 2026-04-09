@@ -8,98 +8,56 @@
 
     <form method="get" class="list-toolbar" data-trip-filters>
 
-        <div class="list-toolbar-left">
+        <div class="toolbar-zone-title">
             <h1>Рейсы</h1>
         </div>
 
-        <div class="list-toolbar-right">
-
-            <div class="table-search-wrap">
+        <div class="toolbar-zone-filters">
+            <div class="search-field-wrap{% if filters.q %} is-filtered{% endif %}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
                 <input type="text"
-                       class="table-search"
                        name="q"
-                       placeholder="Номер рейса или контрагент…"
+                       class="filter-input"
                        value="{{ filters.q }}"
-                       data-search-input
+                       placeholder="Поиск по номеру"
+                       data-filter="q"
                        autocomplete="off">
-                <button type="button" class="table-search-clear" data-search-clear {% if not filters.q %}hidden{% endif %}>×</button>
             </div>
 
-            <div class="filter-dropdown-wrap" data-filter-dropdown-wrap>
-                <button type="button" class="tms-btn tms-btn-secondary" data-filters-panel-toggle aria-expanded="false">
-                    Фильтры<span class="filters-count-badge" data-filters-active-badge hidden><span data-filters-active-count>0</span></span>
-                </button>
+            <button type="button"
+                    class="tms-btn tms-btn-secondary visibility-toggle"
+                    data-calendar-toggle
+                    aria-expanded="false"
+                    title="Фильтр по дате">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
 
-                <div class="filter-dropdown-panel" data-filter-dropdown>
-
-                    <div class="filters-block">
-                        <div class="filters-block-title">Хронология</div>
-                        <div class="filters-bar filters-bar-chronology">
-                            <label class="filter-field filter-field-compact {% if filters.date_from or filters.date_to %}is-active{% endif %}">
-                                <span class="filter-label">Логика</span>
-                                <select class="filter-select" name="date_mode" data-filter="date_mode">
-                                    {% for value, label in date_mode_options %}
-                                        <option value="{{ value }}" {% if filters.date_mode == value %}selected{% endif %}>
-                                            {{ label }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </label>
-
-                            <label class="filter-field filter-field-date {% if filters.date_from %}is-active{% endif %}">
-                                <span class="filter-label">Дата с</span>
-                                <input type="date" name="date_from" class="filter-input" value="{{ filters.date_from }}" data-filter="date_from">
-                            </label>
-
-                            <label class="filter-field filter-field-date {% if filters.date_to %}is-active{% endif %}">
-                                <span class="filter-label">Дата по</span>
-                                <input type="date" name="date_to" class="filter-input" value="{{ filters.date_to }}" data-filter="date_to">
-                            </label>
-
-                            <div class="quick-date-actions">
-                                <span class="quick-date-label">Быстро:</span>
-                                <button type="button" class="quick-date-chip" data-quick-date="yesterday">Вчера</button>
-                                <button type="button" class="quick-date-chip" data-quick-date="today">Сегодня</button>
-                                <button type="button" class="quick-date-chip" data-quick-date="tomorrow">Завтра</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="filters-block">
-                        <div class="filters-block-title">Контрагенты</div>
-                        <div class="filters-bar filters-bar-contractors">
-                            <label class="filter-field filter-field-compact {% if filters.contractor_query %}is-active{% endif %}">
-                                <span class="filter-label">Роль</span>
-                                <select class="filter-select" name="contractor_role" data-filter="contractor_role">
-                                    {% for value, label in contractor_role_options %}
-                                        <option value="{{ value }}"
-                                            {% if filters.contractor_role %}
-                                                {% if filters.contractor_role == value %}selected{% endif %}
-                                            {% else %}
-                                                {% if forloop.first %}selected{% endif %}
-                                            {% endif %}
-                                        >
-                                            {{ label }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </label>
-
-                            <label class="filter-field filter-field-contractor-query {% if filters.contractor_query %}is-active{% endif %}">
-                                <span class="filter-label">Поиск</span>
-                                <input type="text" name="contractor_query" class="filter-input" value="{{ filters.contractor_query }}" placeholder="Введите название или ФИО" data-filter="contractor_query">
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="filter-dropdown-footer">
-                        <button type="button" class="tms-btn tms-btn-secondary" data-filter="reset">Сбросить</button>
-                        <button type="submit" class="tms-btn tms-btn-primary" data-submit-filters>Применить</button>
-                    </div>
-
-                </div>
+            <div class="date-range-expand" data-calendar-fields>
+                <input type="date"
+                       name="date_from"
+                       class="filter-input"
+                       value="{{ filters.date_from }}"
+                       data-filter="date_from">
+                <span class="date-range-sep">&mdash;</span>
+                <input type="date"
+                       name="date_to"
+                       class="filter-input"
+                       value="{{ filters.date_to }}"
+                       data-filter="date_to">
             </div>
+        </div>
 
+        <div class="toolbar-zone-chips">
+            <div class="active-filters" data-active-filters></div>
+        </div>
+
+        <div class="toolbar-zone-action">
             <a href="{% url 'trips:create' %}" class="tms-btn tms-btn-primary tms-btn-add">+ Создать рейс</a>
         </div>
 
@@ -150,5 +108,4 @@
 <script defer src="{% static 'trips/js/trips_drag_scroll.js' %}"></script>
 <script defer src="{% static 'trips/js/trips_table_columns.js' %}"></script>
 <script defer src="{% static 'trips/js/trips_filters.js' %}"></script>
-<script defer src="{% static 'trips/js/trips_filters_panel.js' %}"></script>
 {% endblock %}
