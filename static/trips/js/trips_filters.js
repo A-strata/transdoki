@@ -304,20 +304,24 @@
 
         // --- Чипы ---
 
-        function createChip(type, text, modifier, onRemove) {
+        function createChip(type, labelText, valueText, onRemove) {
             var chip = document.createElement('span');
-            chip.className = 'active-filter-chip ' + modifier;
+            chip.className = 'active-filter-chip';
             chip.setAttribute('data-chip', type);
 
-            var textNode = document.createTextNode(text + ' ');
-            chip.appendChild(textNode);
+            var label = document.createElement('span');
+            label.className = 'chip-label';
+            label.textContent = labelText;
+            chip.appendChild(label);
+
+            chip.appendChild(document.createTextNode(' ' + valueText));
 
             var removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.className = 'chip-remove';
             removeBtn.setAttribute('aria-label', 'Сбросить фильтр');
-            removeBtn.innerHTML = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-                '<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            removeBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+                '<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             removeBtn.addEventListener('click', onRemove);
 
             chip.appendChild(removeBtn);
@@ -332,11 +336,9 @@
             if (!activeFiltersWrap) return;
             activeFiltersWrap.innerHTML = '';
 
-            // Чипы контрагентов — в порядке добавления
             contractorFilterOrder.forEach(function (f) {
                 var label = ROLE_LABELS[f.role] || f.role;
-                var chipText = label + ': ' + f.value;
-                var chip = createChip('contractor_' + f.role, chipText, 'active-filter-chip--info', function () {
+                var chip = createChip('contractor_' + f.role, label, f.value, function () {
                     removeContractorFilter(f.role);
                     rebuildChips();
                     fetchList(buildParams({ page: '' }));
