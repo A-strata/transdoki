@@ -1,26 +1,22 @@
 /* ── Settlements page ── */
 
-.settlements-filters {
-    margin-bottom: 16px;
-}
-
-.settlements-filters-row {
-    display: flex;
+.invoices-page .toolbar-zone-filters .filter-inline {
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 6px;
 }
 
-.settlements-checkbox {
+.invoices-page .toolbar-zone-filters .filter-checkbox {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: var(--text-sm);
     color: var(--text);
     cursor: pointer;
+    white-space: nowrap;
 }
 
-.settlements-checkbox input[type="checkbox"] {
+.invoices-page .toolbar-zone-filters .filter-checkbox input[type="checkbox"] {
     width: 16px;
     height: 16px;
     accent-color: var(--primary);

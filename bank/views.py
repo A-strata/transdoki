@@ -2,7 +2,9 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views import View
 
@@ -42,7 +44,7 @@ class BankStatementView(LoginRequiredMixin, View):
 
         organizations = Organization.objects.for_account(account).order_by("short_name")
 
-        return render(request, "bank/statement.html", {
+        context = {
             "payments": payments,
             "filters": {
                 "date_from": date_from,
@@ -58,7 +60,12 @@ class BankStatementView(LoginRequiredMixin, View):
             "organizations": organizations,
             "direction_choices": PaymentDirection.choices,
             "method_choices": PaymentMethod.choices,
-        })
+        }
+
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return render(request, "bank/statement_table.html", context)
+
+        return render(request, "bank/statement.html", context)
 
 
 class PaymentCreateView(LoginRequiredMixin, View):

@@ -1,0 +1,73 @@
+{% load invoice_filters %}
+<div class="card">
+    <div class="section">
+        {% if payments %}
+        <table class="tms-table statement-table">
+            <thead>
+                <tr>
+                    <th class="col-date">Дата</th>
+                    <th>Контрагент</th>
+                    <th class="col-dir">Направление</th>
+                    <th class="col-amount cell-money">Сумма</th>
+                    <th class="col-method">Способ</th>
+                    <th>Комментарий</th>
+                    <th class="col-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                <tr>
+                    <td>{{ p.date|date:"d.m.Y" }}</td>
+                    <td>{{ p.organization.short_name }}</td>
+                    <td>
+                        {% if p.direction == 'incoming' %}
+                            <span class="dir-badge dir-badge--incoming">+ Поступление</span>
+                        {% else %}
+                            <span class="dir-badge dir-badge--outgoing">− Списание</span>
+                        {% endif %}
+                    </td>
+                    <td class="cell-money">{{ p.amount|money }} ₽</td>
+                    <td>{{ p.get_payment_method_display }}</td>
+                    <td>{{ p.description|default:"—" }}</td>
+                    <td class="row-actions-cell">
+                        <div class="confirm-inline" data-confirm>
+                            <button type="button" class="row-action row-action--delete"
+                                    title="Удалить" data-confirm-trigger>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M3 6h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <div class="confirm-inline-prompt" hidden>
+                                <span>Удалить?</span>
+                                <form method="post" action="{% url 'bank:payment_delete' p.pk %}" class="inline-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="tms-btn tms-btn-danger tms-btn-sm">Да</button>
+                                </form>
+                                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                        data-confirm-cancel>Нет</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="totals-row">
+                    <td colspan="3">Итого</td>
+                    <td class="cell-money" colspan="4">
+                        <span class="totals-incoming">+ {{ totals.incoming|money }}</span>
+                        <span class="totals-outgoing">− {{ totals.outgoing|money }}</span>
+                        <span class="totals-balance{% if totals.balance >= 0 %} totals-balance--positive{% else %} totals-balance--negative{% endif %}">= {{ totals.balance|money }} ₽</span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>Платежей пока нет</p>
+        </div>
+        {% endif %}
+    </div>
+</div>

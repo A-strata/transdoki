@@ -11,36 +11,32 @@
 {% block content %}
 <section class="invoices-page">
 
-    <div class="list-toolbar">
+    <form method="get" class="list-toolbar">
+
         <div class="toolbar-zone-title">
             <h1>Акты сверки расчётов</h1>
         </div>
-    </div>
 
+        <div class="toolbar-zone-filters">
+            <div class="filter-inline">
+                <input type="date" name="date_from" class="filter-input" value="{{ filters.date_from }}">
+                <span class="date-range-sep">&mdash;</span>
+                <input type="date" name="date_to" class="filter-input" value="{{ filters.date_to }}">
+            </div>
+
+            <label class="filter-checkbox">
+                <input type="checkbox" name="hide_zero" value="1"
+                       {% if filters.hide_zero %}checked{% endif %}>
+                <span>Только с долгом</span>
+            </label>
+
+            <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm">Применить</button>
+        </div>
+
+    </form>
 
     <div class="card">
         <div class="section">
-            <form method="get" class="settlements-filters">
-                <div class="settlements-filters-row">
-                    <div class="field--inline">
-                        <label for="date_from">Период с</label>
-                        <input type="date" name="date_from" id="date_from"
-                               value="{{ filters.date_from }}">
-                    </div>
-                    <div class="field--inline">
-                        <label for="date_to">по</label>
-                        <input type="date" name="date_to" id="date_to"
-                               value="{{ filters.date_to }}">
-                    </div>
-                    <label class="settlements-checkbox">
-                        <input type="checkbox" name="hide_zero" value="1"
-                               {% if filters.hide_zero %}checked{% endif %}>
-                        <span>Только с долгом</span>
-                    </label>
-                    <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm">Применить</button>
-                </div>
-            </form>
-
             {% if rows %}
             <table class="tms-table settlements-table">
                 <thead>
