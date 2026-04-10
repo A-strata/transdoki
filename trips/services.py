@@ -183,6 +183,33 @@ class AgreementRequestGenerator(TNGenerator):
     )
 
     @classmethod
+    def _format_passport(cls, driver) -> str:
+        if not driver:
+            return "—"
+        parts = []
+        series = str(getattr(driver, "passport_series", "") or "")
+        number = str(getattr(driver, "passport_number", "") or "")
+        if series or number:
+            formatted_series = f"{series[:2]} {series[2:]}" if len(series) == 4 else series
+            parts.append(f"Серия {formatted_series} № {number}".strip())
+        issued_by = str(getattr(driver, "passport_issued_by", "") or "")
+        if issued_by:
+            parts.append(f"выдан {issued_by}")
+        issued_date = getattr(driver, "passport_issued_date", None)
+        if issued_date:
+            parts.append(f"дата выдачи: {issued_date.strftime('%d.%m.%Y')}")
+        dept_code = str(getattr(driver, "passport_department_code", "") or "")
+        if dept_code:
+            parts.append(f"к.п. {dept_code}")
+        return ", ".join(parts) if parts else "—"
+
+    @classmethod
+    def build_context(cls, trip) -> dict:
+        context = super().build_context(trip)
+        context["passport_data"] = cls._format_passport(trip.driver)
+        return context
+
+    @classmethod
     def build_download_name(cls, trip) -> str:
         date_str = cls._fmt(trip.date_of_trip, "%d.%m.%Y")
         return f"Договор-заявка №{trip.num_of_trip} от {date_str}.docx"
