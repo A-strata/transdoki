@@ -98,23 +98,7 @@
             </div>
         </div>
 
-        {# ── Банковские реквизиты (для своих компаний — старый стиль внутри основной карточки) ── #}
-        {% if organization.is_own_company and bank_accounts %}
-        <div class="section">
-            <h2 class="section-title">Банковские реквизиты</h2>
-            <div class="mini-list">
-                {% for ba in bank_accounts %}
-                <div class="mini-item">
-                    <p class="mini-item-title">{{ ba.account_bank.bank_name }}</p>
-                    <p class="mini-item-sub">р/с {{ ba.account_num }} &middot; БИК {{ ba.account_bank.bic }}</p>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
     </div>
-
-    {% if not organization.is_own_company %}
 
     {# ── Банковские счета ── #}
     <div class="card collapsible-section {% if bank_accounts_count %}is-open{% endif %}"
@@ -244,6 +228,8 @@
             {% endif %}
         </div>
     </div>
+
+    {% if not organization.is_own_company %}
 
     {# ── Транспортные средства ── #}
     <div class="card collapsible-section {% if vehicles_count %}is-open{% endif %}"
@@ -394,22 +380,6 @@
             {% endif %}
         </div>
     </div>
-
-    {% else %}
-
-    {% if contacts %}
-    <div class="card">
-        <h2 class="section-title">Контактные лица</h2>
-        <div class="mini-list">
-            {% for contact in contacts %}
-            <div class="mini-item">
-                <p class="mini-item-title">{{ contact.name }}{% if contact.position %} <span class="mini-item-tag">{{ contact.position }}</span>{% endif %}</p>
-                <p class="mini-item-sub">{{ contact.phone|phone_format|default:"телефон не указан" }}</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     {% endif %}
 
@@ -569,6 +539,11 @@
         </form>
     </div>
 </div>
+
+{% endif %}
+
+<script src="{% static 'organizations/js/vehicle_create_modal.js' %}"></script>
+<script src="{% static 'organizations/js/person_create_modal.js' %}"></script>
 {% endif %}
 
 {# ── Модал создания банковского счёта ── #}
@@ -852,20 +827,16 @@
     </div>
 </div>
 
-<script src="{% static 'organizations/js/vehicle_create_modal.js' %}"></script>
-<script src="{% static 'organizations/js/person_create_modal.js' %}"></script>
 <script src="{% static 'organizations/js/bank_account_create_modal.js' %}"></script>
 <script src="{% static 'organizations/js/bank_account_edit_modal.js' %}"></script>
 <script src="{% static 'organizations/js/contact_create_modal.js' %}"></script>
-{% endif %}
-
 <script src="{% static 'organizations/js/collapsible_sections.js' %}"></script>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/phone_mask.js' %}"></script>
 {% if not organization.is_own_company %}
 <script src="https://unpkg.com/imask"></script>
 <script src="{% static 'vehicles/js/grn_mask.js' %}"></script>
-<script src="{% static 'js/phone_mask.js' %}"></script>
 {% endif %}
 {% endblock %}
