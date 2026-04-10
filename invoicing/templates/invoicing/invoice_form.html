@@ -74,7 +74,7 @@
                                form="invoice-form"
                                value="{% if invoice %}{{ invoice.number }}{% endif %}">
                     {% else %}
-                        <input type="text" value="{{ invoice.number }}" disabled>
+                        <p class="kv-value">{{ invoice.number }}</p>
                     {% endif %}
                 </div>
                 <div class="field field--date">
@@ -84,7 +84,7 @@
                                form="invoice-form"
                                value="{% if invoice %}{{ invoice.date|date:'Y-m-d' }}{% else %}{{ invoice_date|date:'Y-m-d' }}{% endif %}">
                     {% else %}
-                        <input type="text" value="{{ invoice.date|date:'d.m.Y' }}" disabled>
+                        <p class="kv-value">{{ invoice.date|date:"d.m.Y" }}</p>
                     {% endif %}
                 </div>
                 <div class="field field--date">
@@ -96,9 +96,9 @@
                             {% endfor %}
                         </select>
                     {% elif is_create %}
-                        <input type="text" value="Черновик" disabled>
+                        <p class="kv-value">Черновик</p>
                     {% else %}
-                        <input type="text" value="{{ invoice.get_status_display }}" disabled>
+                        <p class="kv-value">{{ invoice.get_status_display }}</p>
                     {% endif %}
                 </div>
                 <div class="field field--date">
@@ -113,13 +113,13 @@
                 </div>
                 <div class="field field--org">
                     <label>Заказчик</label>
-                    <input type="text" value="{{ customer }}" disabled>
+                    <p class="kv-value">{{ customer }}</p>
                     {% if customer.inn %}
                         <small class="field-hint">ИНН {{ customer.inn }}</small>
                     {% endif %}
                 </div>
                 <div class="field field--bank">
-                    <label for="bank_account">Счёт</label>
+                    <label for="bank_account">Расчётный счёт</label>
                     {% if editable or is_create %}
                         <select name="bank_account" id="bank_account" form="invoice-form">
                             <option value="">—</option>
@@ -217,6 +217,7 @@
                                 <td>
                                     <select name="line_{% if is_create %}{{ forloop.counter0 }}{% else %}{{ line.pk }}{% endif %}_vat_rate" class="line-select"
                                             data-line-vat-select>
+                                        <option value="" {% if line.vat_rate is None %}selected{% endif %}>Без НДС</option>
                                         {% for val, label in vat_rate_choices %}
                                             <option value="{{ val }}" {% if line.vat_rate == val %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
@@ -227,7 +228,7 @@
                                 <td class="cell-money">{{ line.unit_price|money }}</td>
                                 <td class="cell-money col-discount" data-col-discount>{% if has_discount %}{{ line.discount_pct }}%{% endif %}</td>
                                 <td class="cell-money col-discount" data-col-discount>{% if has_discount %}{{ line.discount_amount|money }}{% endif %}</td>
-                                <td>{{ line.get_vat_rate_display }}</td>
+                                <td>{% if line.vat_rate is not None %}{{ line.get_vat_rate_display }}{% else %}Без НДС{% endif %}</td>
                                 {% endif %}
                                 <td class="cell-money" data-line-vat data-col-vat>{{ line.vat_amount|money }}</td>
                                 <td class="cell-money cell-money--bold" data-line-total>{{ line.amount_total|money }}</td>
@@ -255,24 +256,16 @@
             </form>
 
             <div class="invoice-totals">
-                <div class="invoice-totals-row" data-totals-gross>
-                    <span class="invoice-totals-label">Итого без НДС и скидок</span>
-                    <span class="invoice-totals-value" data-foot-gross>{% if totals %}{{ totals.gross|money }}{% endif %}</span>
-                </div>
-                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-discount{% if not has_discount %} hidden{% endif %}>
-                    <span class="invoice-totals-label">Скидка</span>
-                    <span class="invoice-totals-value" data-foot-discount>{% if totals %}{{ totals.discount|money }}{% endif %}</span>
-                </div>
-                <div class="invoice-totals-row invoice-totals-row--discount" data-totals-net-after{% if not has_discount %} hidden{% endif %}>
+                <div class="invoice-totals-row">
                     <span class="invoice-totals-label">Итого без НДС</span>
                     <span class="invoice-totals-value" data-foot-net>{% if totals %}{{ totals.net|money }}{% endif %}</span>
                 </div>
                 <div class="invoice-totals-row">
-                    <span class="invoice-totals-label">НДС</span>
-                    <span class="invoice-totals-value" data-foot-vat>{% if totals %}{{ totals.vat|money }}{% endif %}</span>
+                    <span class="invoice-totals-label" data-foot-vat-label>{% if has_vat %}НДС {{ vat_rate_display }}{% else %}Не облагается НДС{% endif %}</span>
+                    <span class="invoice-totals-value" data-foot-vat>{% if has_vat and totals %}{{ totals.vat|money }}{% else %}—{% endif %}</span>
                 </div>
                 <div class="invoice-totals-row invoice-totals-row--grand">
-                    <span class="invoice-totals-label">Итого с НДС</span>
+                    <span class="invoice-totals-label">Всего к оплате</span>
                     <span class="invoice-totals-value" data-foot-total>{% if totals %}{{ totals.total|money }}{% endif %}</span>
                 </div>
             </div>

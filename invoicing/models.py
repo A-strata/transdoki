@@ -67,9 +67,11 @@ class InvoiceLine(models.Model):
         PENALTY = "penalty", "Штраф"
 
     class VatRate(models.IntegerChoices):
-        ZERO   = 0,  "Без НДС"
-        TEN    = 10, "10%"
-        TWENTY = 20, "20%"
+        ZERO       = 0,  "0%"
+        FIVE       = 5,  "5%"
+        SEVEN      = 7,  "7%"
+        TEN        = 10, "10%"
+        TWENTY_TWO = 22, "22%"
 
     invoice = models.ForeignKey(
         Invoice,
@@ -91,7 +93,7 @@ class InvoiceLine(models.Model):
     unit_price      = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена без НДС")
     discount_pct    = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("0"), verbose_name="Скидка %")
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0"), verbose_name="Скидка ₽")
-    vat_rate        = models.IntegerField(choices=VatRate.choices, default=VatRate.ZERO, verbose_name="Ставка НДС")
+    vat_rate        = models.IntegerField(choices=VatRate.choices, null=True, blank=True, verbose_name="Ставка НДС")
 
     amount_net   = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0"), verbose_name="Сумма без НДС")
     vat_amount   = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0"), verbose_name="Сумма НДС")
@@ -147,9 +149,12 @@ class InvoiceLine(models.Model):
             self.unit_price - self.discount_amount
         ).quantize(two, ROUND_HALF_UP)
 
-        self.vat_amount = (
-            self.amount_net * self.vat_rate / 100
-        ).quantize(two, ROUND_HALF_UP)
+        if self.vat_rate is not None:
+            self.vat_amount = (
+                self.amount_net * self.vat_rate / 100
+            ).quantize(two, ROUND_HALF_UP)
+        else:
+            self.vat_amount = Decimal("0")
 
         self.amount_total = (
             self.amount_net + self.vat_amount

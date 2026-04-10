@@ -197,9 +197,6 @@ def create_invoice_from_trips(
 
 
 def apply_discount_to_invoice(invoice, discount_pct, user):
-    if invoice.status != Invoice.Status.DRAFT:
-        raise ValueError("Скидку можно применить только к черновику.")
-
     lines = list(invoice.lines.filter(kind=InvoiceLine.Kind.SERVICE))
     for line in lines:
         line.discount_pct = discount_pct

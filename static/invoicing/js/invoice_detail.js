@@ -42,12 +42,9 @@
                 });
             }
 
-            var discountRows = document.querySelectorAll(
-                '[data-totals-discount], [data-totals-net-after]'
-            );
-            discountRows.forEach(function (el) {
-                el.hidden = !showDiscount;
-            });
+            if (window._invoiceLinesUpdateTotals) {
+                window._invoiceLinesUpdateTotals();
+            }
         }
 
         applyDiscount(toggle.value === 'on');

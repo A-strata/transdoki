@@ -46,7 +46,8 @@
         var totalCell = row.querySelector('[data-line-total]');
 
         var price   = parseNum(priceEl && priceEl.value);
-        var vatRate = vatEl ? (parseInt(vatEl.value) || 0) : 0;
+        var vatRateRaw = vatEl ? vatEl.value : '';
+        var vatRate = vatRateRaw !== '' ? (parseInt(vatRateRaw, 10) || 0) : null;
 
         var maxAmt = Math.max(0, round2(price - 0.01));
         var pct, discAmt;
@@ -64,11 +65,11 @@
         }
 
         var net   = round2(price - discAmt);
-        var vat   = round2(net * vatRate / 100);
+        var vat   = vatRate !== null ? round2(net * vatRate / 100) : 0;
         var total = round2(net + vat);
 
         if (netCell)   netCell.textContent   = fmtMoney(net);
-        if (vatCell)   vatCell.textContent   = vatRate === 0 ? '—' : fmtMoney(vat);
+        if (vatCell)   vatCell.textContent   = vatRate !== null ? fmtMoney(vat) : '—';
         if (totalCell) totalCell.textContent = fmtMoney(total);
 
         updateTotals();
@@ -78,19 +79,20 @@
         var table = document.querySelector('.lines-table');
         if (!table) return;
 
-        var sumGross = 0, sumDiscount = 0, sumNet = 0, sumVat = 0, sumTotal = 0;
+        var sumNet = 0, sumVat = 0, sumTotal = 0;
+        var vatRates = {};
         table.querySelectorAll('tr[data-line-row]').forEach(function (row) {
-            var priceEl = row.querySelector('[data-line-price]');
-            var amtEl   = row.querySelector('[data-line-disc-amt]');
-            var price    = priceEl ? parseNum(priceEl.value) : 0;
-            var discount = amtEl ? parseNum(amtEl.value) : 0;
-            var net      = round2(price - discount);
+            var vatEl = row.querySelector('[data-line-vat]');
+            var vatSelectEl = row.querySelector('[data-line-vat-select]');
+            var vat = vatEl ? parseNum(vatEl.textContent) : 0;
+            var total = parseNum(row.querySelector('[data-line-total]') && row.querySelector('[data-line-total]').textContent);
+            var net = round2(total - vat);
+            var rateRaw = vatSelectEl ? vatSelectEl.value : '';
 
-            sumGross    += price;
-            sumDiscount += discount;
-            sumNet      += net;
-            sumVat      += parseNum(row.querySelector('[data-line-vat]') && row.querySelector('[data-line-vat]').textContent);
-            sumTotal    += parseNum(row.querySelector('[data-line-total]') && row.querySelector('[data-line-total]').textContent);
+            sumNet   += net;
+            sumVat   += vat;
+            sumTotal += total;
+            if (rateRaw !== '') vatRates[parseInt(rateRaw, 10)] = true;
         });
 
         var set = function (sel, val) {
@@ -98,11 +100,20 @@
             if (el) el.textContent = fmtMoney(val);
         };
 
-        set('[data-foot-gross]', sumGross);
-        set('[data-foot-discount]', sumDiscount);
         set('[data-foot-net]', sumNet);
-        set('[data-foot-vat]', sumVat);
         set('[data-foot-total]', sumTotal);
+
+        var vatLabel = document.querySelector('[data-foot-vat-label]');
+        var vatValue = document.querySelector('[data-foot-vat]');
+        var rates = Object.keys(vatRates);
+        if (rates.length === 0) {
+            if (vatLabel) vatLabel.textContent = 'Не облагается НДС';
+            if (vatValue) vatValue.textContent = '—';
+        } else {
+            var rateText = rates.length === 1 ? rates[0] + '%' : 'смеш.';
+            if (vatLabel) vatLabel.textContent = 'НДС ' + rateText;
+            if (vatValue) vatValue.textContent = fmtMoney(sumVat);
+        }
     }
 
     window._invoiceLinesRecalcRow = recalcRow;

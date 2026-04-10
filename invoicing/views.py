@@ -196,7 +196,7 @@ def invoice_create(request):
         desc = request.POST.get(f"{prefix}description", "")
         price = request.POST.get(f"{prefix}unit_price", "0")
         disc_amt = request.POST.get(f"{prefix}discount_amount", "0")
-        vat = request.POST.get(f"{prefix}vat_rate", "0")
+        vat = request.POST.get(f"{prefix}vat_rate", "")
         try:
             unit_price = Decimal(price.replace(",", ".").replace(" ", ""))
         except (InvalidOperation, ValueError):
@@ -205,10 +205,13 @@ def invoice_create(request):
             discount_amount = Decimal(disc_amt.replace(",", ".").replace(" ", ""))
         except (InvalidOperation, ValueError):
             discount_amount = Decimal("0")
-        try:
-            vat_rate = int(vat)
-        except (ValueError, TypeError):
-            vat_rate = 0
+        if vat == "":
+            vat_rate = None
+        else:
+            try:
+                vat_rate = int(vat)
+            except (ValueError, TypeError):
+                vat_rate = None
         lines_data.append({
             "trip_id": tid,
             "description": desc,
@@ -327,9 +330,8 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         ctx["has_act"] = hasattr(invoice, "act")
         ctx["vat_rate_choices"] = InvoiceLine.VatRate.choices
         ctx["status_choices"] = Invoice.Status.choices
-        can_edit = invoice.status == Invoice.Status.DRAFT
-        ctx["can_edit"] = can_edit
-        ctx["editable"] = can_edit and self.request.GET.get("edit") == "1"
+        ctx["can_edit"] = True
+        ctx["editable"] = self.request.GET.get("edit") == "1"
 
         bank_accounts = list(_get_own_bank_accounts(account))
         ctx["bank_accounts"] = bank_accounts
@@ -340,7 +342,9 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         ctx["has_discount"] = any(
             l.discount_amount > 0 for l in lines
         )
-        ctx["has_vat"] = any(l.vat_rate != 0 for l in lines)
+        vat_rates = set(l.vat_rate for l in lines if l.vat_rate is not None)
+        ctx["has_vat"] = bool(vat_rates)
+        ctx["vat_rate_display"] = f"{vat_rates.pop()}%" if len(vat_rates) == 1 else "смеш."
         ctx["totals"] = {
             "gross": sum(l.unit_price for l in lines),
             "discount": sum(l.discount_amount for l in lines),
@@ -359,10 +363,6 @@ class InvoiceEditView(LoginRequiredMixin, View):
             Invoice.objects.for_account(account), pk=pk
         )
 
-        if invoice.status != Invoice.Status.DRAFT:
-            messages.error(request, "Редактировать можно только черновик.")
-            return redirect("invoicing:invoice_detail", pk=pk)
-
         lines = list(invoice.lines.all())
         updated = []
         for line in lines:
@@ -380,10 +380,13 @@ class InvoiceEditView(LoginRequiredMixin, View):
                 except (InvalidOperation, ValueError):
                     pass
             if vat is not None:
-                try:
-                    line.vat_rate = int(vat)
-                except (ValueError, TypeError):
-                    pass
+                if vat == "":
+                    line.vat_rate = None
+                else:
+                    try:
+                        line.vat_rate = int(vat)
+                    except (ValueError, TypeError):
+                        pass
             if disc_amt is not None:
                 try:
                     line.discount_amount = Decimal(disc_amt.replace(",", ".").replace(" ", ""))
@@ -433,7 +436,8 @@ class InvoiceEditView(LoginRequiredMixin, View):
 
         ALLOWED_TRANSITIONS = {
             Invoice.Status.DRAFT: [Invoice.Status.SENT],
-            Invoice.Status.SENT:  [Invoice.Status.DRAFT],
+            Invoice.Status.SENT:  [Invoice.Status.DRAFT, Invoice.Status.PAID],
+            Invoice.Status.PAID:  [Invoice.Status.SENT],
         }
         status = request.POST.get("status")
         if status:
