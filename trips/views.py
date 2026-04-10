@@ -571,13 +571,24 @@ class TripListView(UserOwnedListView):
 
 class TripTNDownloadView(LoginRequiredMixin, View):
     def get(self, request, pk):
-        trip = get_object_or_404(Trip, pk=pk, account=get_request_account(request))
+        trip = get_object_or_404(
+            Trip.objects.select_related("carrier", "client", "driver"),
+            pk=pk,
+            account=get_request_account(request),
+        )
         return TNGenerator.generate_response(trip)
 
 
 class TripAgreementDownloadView(LoginRequiredMixin, View):
     def get(self, request, pk):
-        trip = get_object_or_404(Trip, pk=pk, account=get_request_account(request))
+        trip = get_object_or_404(
+            Trip.objects.select_related("carrier", "client", "driver").prefetch_related(
+                "carrier__bank_accounts__account_bank",
+                "client__bank_accounts__account_bank",
+            ),
+            pk=pk,
+            account=get_request_account(request),
+        )
         return AgreementRequestGenerator.generate_response(trip)
 
 

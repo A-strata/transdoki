@@ -203,10 +203,42 @@ class AgreementRequestGenerator(TNGenerator):
             parts.append(f"к.п. {dept_code}")
         return ", ".join(parts) if parts else "—"
 
+    @staticmethod
+    def _bank_details(org) -> dict:
+        accounts = list(org.bank_accounts.all()) if org else []
+        ba = min(accounts, key=lambda a: a.pk, default=None) if accounts else None
+        if not ba:
+            return {"rs": "—", "ks": "—", "bank_name": "—", "bik": "—"}
+        bank = ba.account_bank
+        return {
+            "rs": ba.account_num or "—",
+            "ks": bank.corr_account if bank else "—",
+            "bank_name": bank.bank_name if bank else "—",
+            "bik": bank.bic if bank else "—",
+        }
+
     @classmethod
     def build_context(cls, trip) -> dict:
         context = super().build_context(trip)
         context["passport_data"] = cls._format_passport(trip.driver)
+
+        if trip.carrier and trip.carrier.is_own_company:
+            own, counterparty = trip.carrier, trip.client
+        else:
+            own, counterparty = trip.client, trip.carrier
+
+        own_bank = cls._bank_details(own)
+        context["own_rs"] = own_bank["rs"]
+        context["own_ks"] = own_bank["ks"]
+        context["own_bank_name"] = own_bank["bank_name"]
+        context["own_bik"] = own_bank["bik"]
+
+        cparty_bank = cls._bank_details(counterparty)
+        context["cparty_rs"] = cparty_bank["rs"]
+        context["cparty_ks"] = cparty_bank["ks"]
+        context["cparty_bank_name"] = cparty_bank["bank_name"]
+        context["cparty_bik"] = cparty_bank["bik"]
+
         return context
 
     @classmethod
