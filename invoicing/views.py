@@ -19,12 +19,13 @@ from transdoki.views import UserOwnedListView
 from trips.models import Trip
 
 from organizations.models import Organization, OrganizationBank
-from .models import Act, Invoice, InvoiceLine
+from .models import Act, Invoice, InvoiceLine, Payment, PaymentDirection, PaymentMethod
 from .services import (
     InvoiceGenerator,
     cancel_invoice,
     create_act_from_invoice,
     create_invoice_from_trips,
+    get_counterparty_balances,
     prepare_invoice_data,
 )
 
@@ -499,3 +500,118 @@ class ActDetailView(LoginRequiredMixin, DetailView):
         return Act.objects.for_account(
             get_request_account(self.request)
         ).select_related("invoice", "invoice__customer")
+
+
+
+
+class SettlementsView(LoginRequiredMixin, View):
+
+    def get(self, request):
+        account = get_request_account(request)
+
+        date_from = request.GET.get("date_from")
+        date_to = request.GET.get("date_to")
+        hide_zero = request.GET.get("hide_zero") == "1"
+
+        parsed_from = None
+        parsed_to = None
+        if date_from:
+            try:
+                parsed_from = date.fromisoformat(date_from)
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                parsed_to = date.fromisoformat(date_to)
+            except ValueError:
+                pass
+
+        qs = get_counterparty_balances(account, date_from=parsed_from, date_to=parsed_to)
+        if hide_zero:
+            qs = qs.exclude(balance=0)
+
+        total_invoiced = sum(row.invoiced for row in qs)
+        total_paid = sum(row.paid for row in qs)
+        total_balance = total_invoiced - total_paid
+
+        return render(request, "invoicing/settlements.html", {
+            "rows": qs,
+            "filters": {
+                "date_from": date_from or "",
+                "date_to": date_to or "",
+                "hide_zero": hide_zero,
+            },
+            "totals": {
+                "invoiced": total_invoiced,
+                "paid": total_paid,
+                "balance": total_balance,
+            },
+        })
+
+
+class SettlementDetailView(LoginRequiredMixin, View):
+
+    def get(self, request, org_pk):
+        account = get_request_account(request)
+        org = get_object_or_404(
+            Organization.objects.for_account(account), pk=org_pk
+        )
+
+        acts = list(
+            Act.objects.filter(
+                account=account,
+                invoice__customer=org,
+                status=Act.Status.SIGNED,
+            ).select_related("invoice").order_by("date", "pk")
+        )
+
+        payments = list(
+            Payment.objects.filter(
+                account=account,
+                organization=org,
+            ).order_by("date", "pk")
+        )
+
+        timeline = []
+        for act in acts:
+            timeline.append({
+                "date": act.date,
+                "type": "act",
+                "label": f"Акт {act.number}",
+                "act": act,
+                "invoiced": act.amount_total,
+                "paid": None,
+            })
+        for p in payments:
+            timeline.append({
+                "date": p.date,
+                "type": "payment",
+                "label": f"Платёж",
+                "payment": p,
+                "invoiced": None,
+                "paid": p.amount,
+            })
+
+        timeline.sort(key=lambda e: (e["date"], 0 if e["type"] == "act" else 1))
+
+        running_balance = Decimal("0")
+        for entry in timeline:
+            if entry["invoiced"]:
+                running_balance += entry["invoiced"]
+            if entry["paid"]:
+                running_balance -= entry["paid"]
+            entry["balance"] = running_balance
+
+        total_invoiced = sum(a.amount_total for a in acts)
+        total_paid = sum(p.amount for p in payments)
+
+        return render(request, "invoicing/settlement_detail.html", {
+            "org": org,
+            "timeline": timeline,
+            "totals": {
+                "invoiced": total_invoiced,
+                "paid": total_paid,
+                "balance": total_invoiced - total_paid,
+            },
+            "payment_methods": PaymentMethod.choices,
+        })

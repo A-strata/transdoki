@@ -198,3 +198,68 @@ class Act(UserOwnedModel):
 
     def __str__(self):
         return f"Акт {self.number} от {self.date}"
+
+    @property
+    def amount_paid(self):
+        """Сумма платежей, разнесённых на этот акт.
+        На первом этапе всегда 0 — PaymentAllocation реализуется позже."""
+        return Decimal("0")
+
+    @property
+    def amount_due(self):
+        return self.amount_total - self.amount_paid
+
+    @property
+    def is_fully_paid(self):
+        return self.amount_due <= 0
+
+
+class PaymentMethod(models.TextChoices):
+    CASH          = "cash",          "Наличные"
+    BANK_TRANSFER = "bank_transfer", "Безналичный перевод"
+
+
+class PaymentDirection(models.TextChoices):
+    INCOMING = "incoming", "Поступление"
+    OUTGOING = "outgoing", "Списание"
+
+
+class Payment(UserOwnedModel):
+
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="payments",
+        verbose_name="Контрагент",
+    )
+    date   = models.DateField(verbose_name="Дата платежа")
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Сумма",
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        verbose_name="Способ оплаты",
+    )
+    direction = models.CharField(
+        max_length=20,
+        choices=PaymentDirection.choices,
+        default=PaymentDirection.INCOMING,
+        verbose_name="Направление",
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Комментарий",
+    )
+
+    class Meta:
+        verbose_name = "Платёж"
+        verbose_name_plural = "Платежи"
+        ordering = ["-date", "-pk"]
+
+    def __str__(self):
+        return f"Платёж {self.amount} ₽ от {self.date}"

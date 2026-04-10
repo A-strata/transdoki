@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load static invoice_filters %}
+
+{% block title %}Акты сверки расчётов — Трансдоки{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'invoicing/css/invoice_list.css' %}">
+<link rel="stylesheet" href="{% static 'invoicing/css/settlements.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="invoices-page">
+
+    <div class="list-toolbar">
+        <div class="toolbar-zone-title">
+            <h1>Акты сверки расчётов</h1>
+        </div>
+    </div>
+
+
+    <div class="card">
+        <div class="section">
+            <form method="get" class="settlements-filters">
+                <div class="settlements-filters-row">
+                    <div class="field--inline">
+                        <label for="date_from">Период с</label>
+                        <input type="date" name="date_from" id="date_from"
+                               value="{{ filters.date_from }}">
+                    </div>
+                    <div class="field--inline">
+                        <label for="date_to">по</label>
+                        <input type="date" name="date_to" id="date_to"
+                               value="{{ filters.date_to }}">
+                    </div>
+                    <label class="settlements-checkbox">
+                        <input type="checkbox" name="hide_zero" value="1"
+                               {% if filters.hide_zero %}checked{% endif %}>
+                        <span>Только с долгом</span>
+                    </label>
+                    <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm">Применить</button>
+                </div>
+            </form>
+
+            {% if rows %}
+            <table class="tms-table settlements-table">
+                <thead>
+                    <tr>
+                        <th>Контрагент</th>
+                        <th class="cell-money">Выставлено</th>
+                        <th class="cell-money">Оплачено</th>
+                        <th class="cell-money">Долг</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr class="{% if row.balance == 0 %}row--zero{% endif %}"
+                        data-detail-url="{% url 'invoicing:settlement_detail' row.pk %}">
+                        <td>{{ row.short_name }}</td>
+                        <td class="cell-money">{{ row.invoiced|money }}</td>
+                        <td class="cell-money">{{ row.paid|money }}</td>
+                        <td class="cell-money cell-money--bold{% if row.balance > 0 %} cell-money--debt{% endif %}">{{ row.balance|money }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="totals-row">
+                        <td>Итого</td>
+                        <td class="cell-money">{{ totals.invoiced|money }}</td>
+                        <td class="cell-money">{{ totals.paid|money }}</td>
+                        <td class="cell-money cell-money--bold{% if totals.balance > 0 %} cell-money--debt{% endif %}">{{ totals.balance|money }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>Нет выставленных счетов за выбранный период</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="{% static 'trips/js/trips_row_click.js' %}"></script>
+{% endblock %}

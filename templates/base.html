@@ -35,11 +35,29 @@
                        class="nav-link {% if request.path == trips_url %}active{% endif %}">
                         Рейсы
                     </a>
-                    {% url 'invoicing:invoice_list' as invoices_url %}
-                    <a href="{{ invoices_url }}"
-                       class="nav-link {% if '/invoices/' in request.path %}active{% endif %}">
-                        Счета
-                    </a>
+
+                    <div class="nav-menu">
+                        <button type="button"
+                                class="nav-link nav-menu-trigger {% if '/bank/' in request.path or '/invoices/' in request.path %}active{% endif %}">
+                            Финансы
+                            <svg class="nav-menu-chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
+                        </button>
+                        <div class="nav-menu-dropdown">
+                            <div class="nav-menu-section-label">Банк и касса</div>
+                            <a href="{% url 'bank:statement' %}" class="nav-menu-item">Банковские выписки</a>
+                            <div class="nav-menu-divider"></div>
+                            <div class="nav-menu-section-label">Продажи</div>
+                            <a href="{% url 'invoicing:invoice_list' %}" class="nav-menu-item">Счета покупателям</a>
+                            <a href="{% url 'invoicing:invoice_list' %}" class="nav-menu-item">Реализация</a>
+                            <a href="{% url 'invoicing:settlements' %}" class="nav-menu-item">Акты сверки расчётов</a>
+                            <div class="nav-menu-divider"></div>
+                            <div class="nav-menu-section-label">Покупки</div>
+                            <span class="nav-menu-item nav-menu-item--disabled" title="Готовится">Счета от поставщиков</span>
+                            <span class="nav-menu-item nav-menu-item--disabled" title="Готовится">Поступление</span>
+                            <span class="nav-menu-item nav-menu-item--disabled" title="Готовится">Акты сверки расчётов</span>
+                        </div>
+                    </div>
+
                     {% url 'organizations:list' as organizations_url %}
                     <a href="{{ organizations_url }}"
                        class="nav-link {% if request.path == organizations_url %}active{% endif %}">

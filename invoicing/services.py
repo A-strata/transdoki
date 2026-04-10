@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models import Max
 from django.http import FileResponse
 
@@ -10,7 +10,7 @@ from organizations.models import Organization
 from trips.models import Trip
 from trips.services import BaseDocxGenerator
 
-from .models import Act, Invoice, InvoiceLine
+from .models import Act, Invoice, InvoiceLine, Payment
 
 
 def _build_description(trip):
@@ -223,6 +223,103 @@ def cancel_invoice(invoice, user):
     invoice.status = Invoice.Status.CANCELLED
     invoice.updated_by = user
     invoice.save(update_fields=["status", "updated_by", "updated_at"])
+
+
+def create_payment(organization, date, amount, payment_method, direction, created_by, description=""):
+    """
+    Регистрирует платёж по контрагенту.
+
+    direction — обязательный: INCOMING (поступление) или OUTGOING (списание/возврат).
+    Платёж привязан к контрагенту, не к конкретному счёту или акту.
+    Разнесение по актам (PaymentAllocation) — следующий этап.
+    """
+    if amount <= 0:
+        raise ValueError("Сумма платежа должна быть положительной.")
+
+    return Payment.objects.create(
+        account=organization.account,
+        created_by=created_by,
+        organization=organization,
+        date=date,
+        amount=amount,
+        payment_method=payment_method,
+        direction=direction,
+        description=description,
+    )
+
+
+def delete_payment(payment):
+    """Удаляет платёж."""
+    payment.delete()
+
+
+def get_counterparty_balances(account, date_from=None, date_to=None):
+    """
+    Сальдо по контрагентам: начислено (по подписанным актам), оплачено (платежи), долг.
+
+    Учитываются все платежи по контрагенту — поступления со знаком плюс,
+    возвраты (списания) со знаком минус.
+
+    Период фильтрует по Act.date (дата акта) и Payment.date (дата платежа).
+
+    Возвращает queryset Organization с аннотациями: invoiced, paid, balance.
+    """
+    from django.db.models import Q, Sum, Value
+    from django.db.models.functions import Coalesce
+
+    from .models import PaymentDirection
+
+    act_filter = Q(
+        invoices__act__account=account,
+        invoices__act__status=Act.Status.SIGNED,
+    )
+    incoming_filter = Q(
+        payments__account=account,
+        payments__direction=PaymentDirection.INCOMING,
+    )
+    outgoing_filter = Q(
+        payments__account=account,
+        payments__direction=PaymentDirection.OUTGOING,
+    )
+
+    if date_from:
+        act_filter &= Q(invoices__act__date__gte=date_from)
+        incoming_filter &= Q(payments__date__gte=date_from)
+        outgoing_filter &= Q(payments__date__gte=date_from)
+    if date_to:
+        act_filter &= Q(invoices__act__date__lte=date_to)
+        incoming_filter &= Q(payments__date__lte=date_to)
+        outgoing_filter &= Q(payments__date__lte=date_to)
+
+    any_payment_filter = Q(payments__account=account)
+    if date_from:
+        any_payment_filter &= Q(payments__date__gte=date_from)
+    if date_to:
+        any_payment_filter &= Q(payments__date__lte=date_to)
+
+    zero = Value(Decimal("0"))
+
+    return (
+        Organization.objects.for_account(account)
+        .filter(act_filter | any_payment_filter)
+        .annotate(
+            invoiced=Coalesce(
+                Sum("invoices__act__amount_total", filter=act_filter),
+                zero,
+            ),
+            _incoming=Coalesce(
+                Sum("payments__amount", filter=incoming_filter),
+                zero,
+            ),
+            _outgoing=Coalesce(
+                Sum("payments__amount", filter=outgoing_filter),
+                zero,
+            ),
+        )
+        .annotate(paid=models.F("_incoming") - models.F("_outgoing"))
+        .annotate(balance=models.F("invoiced") - models.F("paid"))
+        .order_by("-balance", "short_name")
+    )
 
 
 def _fmt_money(value):

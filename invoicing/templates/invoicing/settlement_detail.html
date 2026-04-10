@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static invoice_filters %}
+
+{% block title %}{{ org.short_name }} — Акты сверки расчётов — Трансдоки{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'invoicing/css/invoice_list.css' %}">
+<link rel="stylesheet" href="{% static 'invoicing/css/settlements.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="invoices-page">
+
+    <div class="list-toolbar">
+        <div class="toolbar-zone-title">
+            <h1>{{ org.short_name }}</h1>
+        </div>
+        <div class="toolbar-zone-filters">
+            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-modal-open="payment-modal">+ Внести платёж</button>
+        </div>
+    </div>
+
+    <div class="invoicing-tabs">
+        <a href="{% url 'invoicing:settlements' %}" class="invoicing-tab">Акты сверки расчётов</a>
+        <span class="invoicing-tab invoicing-tab--active">{{ org.short_name }}</span>
+    </div>
+
+    <div class="card">
+        <div class="section">
+            <div class="kv-grid" style="margin-bottom: 16px;">
+                <div class="kv">
+                    <p class="kv-label">Начислено</p>
+                    <p class="kv-value kv-value--bold">{{ totals.invoiced|money }} ₽</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Оплачено</p>
+                    <p class="kv-value kv-value--bold">{{ totals.paid|money }} ₽</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Задолженность</p>
+                    <p class="kv-value kv-value--bold{% if totals.balance > 0 %} settlement-debt{% endif %}">{{ totals.balance|money }} ₽</p>
+                </div>
+            </div>
+
+            {% if timeline %}
+            <table class="tms-table settlements-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Документ</th>
+                        <th class="cell-money">Начислено</th>
+                        <th class="cell-money">Оплачено</th>
+                        <th class="cell-money">Сальдо</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in timeline %}
+                    <tr class="{% if entry.type == 'payment' %}row--payment{% endif %}">
+                        <td>{{ entry.date|date:"d.m.Y" }}</td>
+                        <td>
+                            {% if entry.type == 'act' %}
+                                <a href="{% url 'invoicing:act_detail' entry.act.pk %}">{{ entry.label }}</a>
+                            {% else %}
+                                {{ entry.label }}
+                                {% if entry.payment.description %}
+                                    <span class="payment-desc">— {{ entry.payment.description }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="cell-money">{% if entry.invoiced %}{{ entry.invoiced|money }}{% else %}—{% endif %}</td>
+                        <td class="cell-money">{% if entry.paid %}{{ entry.paid|money }}{% else %}—{% endif %}</td>
+                        <td class="cell-money cell-money--bold{% if entry.balance > 0 %} cell-money--debt{% endif %}">{{ entry.balance|money }}</td>
+                        <td class="row-actions-cell">
+                            {% if entry.type == 'payment' %}
+                            <div class="confirm-inline" data-confirm>
+                                <button type="button" class="row-action row-action--delete"
+                                        title="Удалить" data-confirm-trigger>
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                        <path d="M2 4h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M13 4v9.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <div class="confirm-inline-prompt" hidden>
+                                    <span>Удалить?</span>
+                                    <form method="post" action="{% url 'bank:payment_delete' entry.payment.pk %}" class="inline-form">
+                                        <input type="hidden" name="next" value="{% url 'invoicing:settlement_detail' org.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="tms-btn tms-btn-danger tms-btn-sm">Да</button>
+                                    </form>
+                                    <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                            data-confirm-cancel>Нет</button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="totals-row">
+                        <td colspan="2">Итого</td>
+                        <td class="cell-money">{{ totals.invoiced|money }}</td>
+                        <td class="cell-money">{{ totals.paid|money }}</td>
+                        <td class="cell-money cell-money--bold{% if totals.balance > 0 %} cell-money--debt{% endif %}">{{ totals.balance|money }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>Нет подписанных актов или платежей</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</section>
+
+<div class="modal-overlay" id="payment-modal" hidden>
+    <div class="modal-dialog modal-dialog--wide">
+        <h3 class="modal-title">Внести платёж</h3>
+        <p class="modal-body">Контрагент: {{ org.short_name }}</p>
+        <form method="post" action="{% url 'bank:payment_create' %}" novalidate>
+            <input type="hidden" name="organization" value="{{ org.pk }}">
+            <input type="hidden" name="next" value="{% url 'invoicing:settlement_detail' org.pk %}">
+            {% csrf_token %}
+            <div class="modal-fields">
+                <div class="modal-field">
+                    <label for="payment_date">Дата</label>
+                    <input type="date" name="payment_date" id="payment_date"
+                           value="{% now 'Y-m-d' %}" required>
+                </div>
+                <div class="modal-field">
+                    <label for="payment_amount">Сумма</label>
+                    <input type="text" name="amount" id="payment_amount"
+                           placeholder="{% if totals.balance > 0 %}{{ totals.balance }}{% endif %}" required>
+                </div>
+                <div class="modal-field">
+                    <label for="payment_method">Способ оплаты</label>
+                    <select name="payment_method" id="payment_method">
+                        {% for value, label in payment_methods %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label for="payment_description">Комментарий</label>
+                    <input type="text" name="description" id="payment_description">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-primary"
+                        data-loading-text="Сохранение...">Сохранить</button>
+                <button type="button" class="tms-btn tms-btn-secondary"
+                        data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="{% static 'trips/js/trips_row_click.js' %}"></script>
+{% endblock %}

@@ -81,6 +81,7 @@ urlpatterns = [
     path("waybills/", include("waybills.urls")),
     path("contracts/", include("contracts.urls")),
     path("", include("invoicing.urls")),
+    path("bank/", include("bank.urls")),
     path(
         "oferta/",
         TemplateView.as_view(template_name="legal/oferta.html"),

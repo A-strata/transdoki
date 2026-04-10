@@ -107,6 +107,34 @@
     color: var(--muted);
 }
 
+/* ── Tabs ── */
+
+.invoicing-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+}
+
+.invoicing-tab {
+    padding: 8px 20px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.invoicing-tab:hover {
+    color: var(--text);
+}
+
+.invoicing-tab--active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
 /* Клик по строке — переход в карточку */
 .invoices-page .tms-table tbody tr[data-detail-url] {
     cursor: pointer;

@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "integrations",
     "contracts",
     "invoicing",
+    "bank",
 ]
 
 MIDDLEWARE = [
