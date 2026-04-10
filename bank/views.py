@@ -42,8 +42,6 @@ class BankStatementView(LoginRequiredMixin, View):
         total_incoming = sum(p.amount for p in payments if p.direction == PaymentDirection.INCOMING)
         total_outgoing = sum(p.amount for p in payments if p.direction == PaymentDirection.OUTGOING)
 
-        organizations = Organization.objects.for_account(account).order_by("short_name")
-
         context = {
             "payments": payments,
             "filters": {
@@ -57,7 +55,6 @@ class BankStatementView(LoginRequiredMixin, View):
                 "outgoing": total_outgoing,
                 "balance": total_incoming - total_outgoing,
             },
-            "organizations": organizations,
             "direction_choices": PaymentDirection.choices,
             "method_choices": PaymentMethod.choices,
         }

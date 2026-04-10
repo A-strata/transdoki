@@ -41,7 +41,7 @@
                 </thead>
                 <tbody>
                     {% for wb in waybills %}
-                    <tr>
+                    <tr data-detail-url="{% url 'waybills:waybill-detail' wb.pk %}">
                         <td><a href="{% url 'waybills:waybill-detail' wb.pk %}" class="wl-num-link">№ {{ wb.number }}</a></td>
                         <td>{{ wb.date|date:"d.m.Y" }}</td>
                         <td>{{ wb.organization.short_name|default:"—" }}</td>
@@ -99,4 +99,8 @@
     {% endif %}
 
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="{% static 'js/row_click.js' %}"></script>
 {% endblock %}

@@ -237,6 +237,12 @@
             fetchList(params);
         });
 
+        // --- Autocomplete в модалке платежа ---
+
+        if (typeof initAutocomplete === 'function') {
+            initAutocomplete('pm_organization');
+        }
+
         // --- Инициализация ---
 
         updateSearchState();

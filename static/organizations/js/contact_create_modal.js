@@ -4,9 +4,9 @@ document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("create-contact-form");
     if (!form) return;
 
+    var modal = document.getElementById("create-contact-modal");
     var errorsBox = document.getElementById("cp-errors");
     var submitBtn = form.querySelector('button[type="submit"]');
-    var originalText = submitBtn.textContent;
 
     var fieldMap = {
         name: "cp-name",
@@ -14,19 +14,10 @@ document.addEventListener("DOMContentLoaded", function () {
         position: "cp-position"
     };
 
-    function clearErrors() {
-        errorsBox.hidden = true;
-        errorsBox.innerHTML = "";
-        form.querySelectorAll(".modal-field-error").forEach(function (el) { el.remove(); });
-        form.querySelectorAll(".is-invalid").forEach(function (el) { el.classList.remove("is-invalid"); });
-    }
-
     form.addEventListener("submit", function (e) {
         e.preventDefault();
-        clearErrors();
-
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Сохранение...";
+        ModalHelpers.clearErrors(modal);
+        ModalHelpers.setSubmitting(submitBtn, true);
 
         var data = new FormData(form);
         data.append("org_id", form.dataset.orgId);
@@ -44,65 +35,26 @@ document.addEventListener("DOMContentLoaded", function () {
                     window.location.reload();
                     return;
                 }
-
-                var errors = result.body.errors || {};
-                var generalErrors = [];
-
-                for (var field in errors) {
-                    var inputId = fieldMap[field];
-                    if (inputId) {
-                        var input = document.getElementById(inputId);
-                        if (input) {
-                            input.classList.add("is-invalid");
-                            var errEl = document.createElement("p");
-                            errEl.className = "modal-field-error";
-                            errEl.textContent = errors[field];
-                            input.parentNode.appendChild(errEl);
-                            continue;
-                        }
-                    }
-                    generalErrors.push(errors[field]);
-                }
-
-                if (generalErrors.length) {
-                    errorsBox.textContent = generalErrors.join(". ");
-                    errorsBox.hidden = false;
-                }
-
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+                ModalHelpers.applyFieldErrors(modal, fieldMap, result.body.errors || {}, errorsBox);
+                ModalHelpers.setSubmitting(submitBtn, false);
             })
             .catch(function () {
-                errorsBox.textContent = "Ошибка сети. Попробуйте ещё раз.";
-                errorsBox.hidden = false;
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+                ModalHelpers.showGeneralError(errorsBox, "Ошибка сети. Попробуйте ещё раз.");
+                ModalHelpers.setSubmitting(submitBtn, false);
             });
     });
 
-    // Reset on modal close
-    var modal = document.getElementById("create-contact-modal");
     if (modal) {
-        var observer = new MutationObserver(function (mutations) {
-            mutations.forEach(function (m) {
-                if (m.attributeName === "hidden" && modal.hidden) {
-                    form.reset();
-                    clearErrors();
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
-                }
-            });
-        });
-        observer.observe(modal, { attributes: true });
+        ModalHelpers.setupResetOnClose(modal);
     }
 
     // ── Редактирование контактного лица ──
 
     var editForm = document.getElementById("edit-contact-form");
     if (editForm) {
+        var editModal = document.getElementById("edit-contact-modal");
         var editErrorsBox = document.getElementById("ecp-errors");
         var editSubmitBtn = editForm.querySelector('button[type="submit"]');
-        var editOriginalText = editSubmitBtn.textContent;
 
         var editFieldMap = {
             name: "ecp-name",
@@ -110,14 +62,6 @@ document.addEventListener("DOMContentLoaded", function () {
             position: "ecp-position"
         };
 
-        function clearEditErrors() {
-            editErrorsBox.hidden = true;
-            editErrorsBox.innerHTML = "";
-            editForm.querySelectorAll(".modal-field-error").forEach(function (el) { el.remove(); });
-            editForm.querySelectorAll(".is-invalid").forEach(function (el) { el.classList.remove("is-invalid"); });
-        }
-
-        // Populate from data-attributes
         document.addEventListener("click", function (e) {
             var btn = e.target.closest('[data-modal-open="edit-contact-modal"]');
             if (!btn) return;
@@ -137,10 +81,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         editForm.addEventListener("submit", function (e) {
             e.preventDefault();
-            clearEditErrors();
-
-            editSubmitBtn.disabled = true;
-            editSubmitBtn.textContent = "Сохранение...";
+            ModalHelpers.clearErrors(editModal);
+            ModalHelpers.setSubmitting(editSubmitBtn, true);
 
             var data = new FormData(editForm);
 
@@ -157,56 +99,17 @@ document.addEventListener("DOMContentLoaded", function () {
                         window.location.reload();
                         return;
                     }
-
-                    var errors = result.body.errors || {};
-                    var generalErrors = [];
-
-                    for (var field in errors) {
-                        var inputId = editFieldMap[field];
-                        if (inputId) {
-                            var input = document.getElementById(inputId);
-                            if (input) {
-                                input.classList.add("is-invalid");
-                                var errEl = document.createElement("p");
-                                errEl.className = "modal-field-error";
-                                errEl.textContent = errors[field];
-                                input.parentNode.appendChild(errEl);
-                                continue;
-                            }
-                        }
-                        generalErrors.push(errors[field]);
-                    }
-
-                    if (generalErrors.length) {
-                        editErrorsBox.textContent = generalErrors.join(". ");
-                        editErrorsBox.hidden = false;
-                    }
-
-                    editSubmitBtn.disabled = false;
-                    editSubmitBtn.textContent = editOriginalText;
+                    ModalHelpers.applyFieldErrors(editModal, editFieldMap, result.body.errors || {}, editErrorsBox);
+                    ModalHelpers.setSubmitting(editSubmitBtn, false);
                 })
                 .catch(function () {
-                    editErrorsBox.textContent = "Ошибка сети. Попробуйте ещё раз.";
-                    editErrorsBox.hidden = false;
-                    editSubmitBtn.disabled = false;
-                    editSubmitBtn.textContent = editOriginalText;
+                    ModalHelpers.showGeneralError(editErrorsBox, "Ошибка сети. Попробуйте ещё раз.");
+                    ModalHelpers.setSubmitting(editSubmitBtn, false);
                 });
         });
 
-        // Reset on modal close
-        var editModal = document.getElementById("edit-contact-modal");
         if (editModal) {
-            var editObserver = new MutationObserver(function (mutations) {
-                mutations.forEach(function (m) {
-                    if (m.attributeName === "hidden" && editModal.hidden) {
-                        editForm.reset();
-                        clearEditErrors();
-                        editSubmitBtn.disabled = false;
-                        editSubmitBtn.textContent = editOriginalText;
-                    }
-                });
-            });
-            editObserver.observe(editModal, { attributes: true });
+            ModalHelpers.setupResetOnClose(editModal);
         }
     }
 
@@ -230,8 +133,7 @@ document.addEventListener("DOMContentLoaded", function () {
         e.preventDefault();
 
         var deleteBtn = deleteForm.querySelector('button[type="submit"]');
-        deleteBtn.disabled = true;
-        deleteBtn.textContent = "Удаление...";
+        ModalHelpers.setSubmitting(deleteBtn, true);
 
         var data = new FormData(deleteForm);
 
@@ -249,13 +151,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
                 alert(result.body.error || "Ошибка при удалении");
-                deleteBtn.disabled = false;
-                deleteBtn.textContent = "Удалить";
+                ModalHelpers.setSubmitting(deleteBtn, false);
             })
             .catch(function () {
                 alert("Ошибка сети. Попробуйте ещё раз.");
-                deleteBtn.disabled = false;
-                deleteBtn.textContent = "Удалить";
+                ModalHelpers.setSubmitting(deleteBtn, false);
             });
     });
 });

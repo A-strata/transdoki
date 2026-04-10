@@ -14,7 +14,7 @@
             <tbody>
                 {% for vehicle in vehicles %}
                 {% with pt=vehicle.property_type %}
-                <tr>
+                <tr data-detail-url="{% url 'vehicles:detail' vehicle.pk %}">
                     <td data-label="Тип ТС">{{ vehicle.get_vehicle_type_display }}</td>
                     <td data-label="Госномер"><span class="vehicle-grn">{{ vehicle.grn }}</span></td>
                     <td data-label="Марка">{{ vehicle.brand }}</td>

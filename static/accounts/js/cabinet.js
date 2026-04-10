@@ -9,44 +9,65 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* ── Модалка добавления пользователя ── */
-    var overlay   = document.getElementById("add-user-overlay");
-    var openBtn   = document.getElementById("add-user-btn");
-    var cancelBtn = document.getElementById("add-user-cancel");
-    var submitBtn = document.getElementById("add-user-submit");
-    var errorBox  = document.getElementById("add-user-error");
-    var formBody  = document.getElementById("au-form-body");
+    var overlay     = document.getElementById("add-user-overlay");
+    var submitBtn   = document.getElementById("add-user-submit");
+    var errorBox    = document.getElementById("add-user-error");
+    var formBody    = document.getElementById("au-form-body");
     var credentials = document.getElementById("au-credentials");
-    var credClose = document.getElementById("au-cred-close");
+    var credClose   = document.getElementById("au-cred-close");
 
-    function openModal() {
-        overlay.querySelectorAll(".au-input").forEach(function (el) { el.value = ""; });
-        overlay.querySelectorAll(".au-err").forEach(function (el) { el.style.display = "none"; el.textContent = ""; });
-        overlay.querySelectorAll(".au-input").forEach(function (el) { el.style.borderColor = ""; });
-        errorBox.style.display = "none";
-        formBody.style.display = "block";
-        credentials.style.display = "none";
-        overlay.style.display = "flex";
+    /*
+     * Сброс модалки при открытии через data-modal-open (base.js).
+     * Очистка полей, ошибок, переключение на экран формы.
+     * Ошибки (.modal-field-error) управляются через style.display,
+     * а не через ModalHelpers — элементы статические (data-err паттерн).
+     */
+    function resetModal() {
+        overlay.querySelectorAll(".modal-field input, .modal-field select").forEach(function (el) {
+            el.value = "";
+            el.classList.remove("is-invalid");
+        });
+        overlay.querySelectorAll(".modal-field-error").forEach(function (el) {
+            el.style.display = "none";
+            el.textContent = "";
+        });
+        errorBox.hidden = true;
+        errorBox.textContent = "";
+        formBody.hidden = false;
+        credentials.hidden = true;
+        ModalHelpers.setSubmitting(submitBtn, false);
     }
 
-    function closeModal() {
-        overlay.style.display = "none";
+    /*
+     * Сброс при закрытии модалки (base.js ставит hidden = true
+     * через Escape, клик по overlay или data-modal-close).
+     * Сброс именно при закрытии, а не при открытии — иначе
+     * программное открытие из «Сбросить пароль» (credentials-экран)
+     * будет перезатёрто resetModal().
+     */
+    if (overlay) {
+        new MutationObserver(function (mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                if (mutations[i].attributeName === "hidden" && overlay.hidden) {
+                    resetModal();
+                }
+            }
+        }).observe(overlay, { attributes: true, attributeFilter: ["hidden"] });
     }
 
     function showCredentials(username, password) {
         document.getElementById("cred-login").textContent = username;
         document.getElementById("cred-pass").textContent = password;
-        formBody.style.display = "none";
-        credentials.style.display = "block";
+        formBody.hidden = true;
+        credentials.hidden = false;
     }
 
-    if (openBtn) openBtn.addEventListener("click", openModal);
-    cancelBtn.addEventListener("click", closeModal);
-    credClose.addEventListener("click", function () { closeModal(); location.reload(); });
-    overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal(); });
-    document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape" && overlay.style.display === "flex") closeModal();
+    credClose.addEventListener("click", function () {
+        overlay.hidden = true;
+        location.reload();
     });
 
+    /* Копирование credentials */
     overlay.addEventListener("click", function (e) {
         if (e.target.classList.contains("copy-btn")) {
             var targetId = e.target.dataset.target;
@@ -59,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    /* Сброс пароля */
+    /* Сброс пароля — открывает модалку программно, сразу в credentials-экране */
     document.querySelectorAll(".reset-pwd-btn").forEach(function (btn) {
         btn.addEventListener("click", async function () {
             if (!confirm("Сбросить пароль пользователя? Будет создан новый временный пароль.")) return;
@@ -72,8 +93,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
                 var data = await resp.json();
                 if (data.ok) {
+                    formBody.hidden = true;
                     showCredentials(data.username, data.temp_password);
-                    overlay.style.display = "flex";
+                    overlay.hidden = false;
                 } else {
                     alert(data.error || "Ошибка сброса пароля.");
                 }
@@ -88,9 +110,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /* Создание пользователя */
     submitBtn.addEventListener("click", async function () {
-        overlay.querySelectorAll(".au-err").forEach(function (el) { el.style.display = "none"; el.textContent = ""; });
-        overlay.querySelectorAll(".au-input").forEach(function (el) { el.style.borderColor = ""; });
-        errorBox.style.display = "none";
+        /* Очистка ошибок */
+        overlay.querySelectorAll(".modal-field-error").forEach(function (el) {
+            el.style.display = "none";
+            el.textContent = "";
+        });
+        overlay.querySelectorAll(".modal-field input, .modal-field select").forEach(function (el) {
+            el.classList.remove("is-invalid");
+        });
+        errorBox.hidden = true;
 
         var params = new URLSearchParams();
         ["first_name", "last_name", "role"].forEach(function (name) {
@@ -98,8 +126,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (el) params.set(name, el.value.trim());
         });
 
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Сохраняем…";
+        ModalHelpers.setSubmitting(submitBtn, true);
 
         var createUrl = submitBtn.dataset.createUrl;
         try {
@@ -121,17 +148,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 for (var field in errors) {
                     var errEl = overlay.querySelector("[data-err='" + field + "']");
                     var inputEl = overlay.querySelector("[name='" + field + "']");
-                    if (errEl) { errEl.textContent = errors[field]; errEl.style.display = "block"; hasField = true; }
-                    if (inputEl) inputEl.style.borderColor = "#ef4444";
+                    if (errEl) {
+                        errEl.textContent = errors[field];
+                        errEl.style.display = "block";
+                        hasField = true;
+                    }
+                    if (inputEl) inputEl.classList.add("is-invalid");
                 }
-                if (!hasField) { errorBox.textContent = Object.values(errors).join("; ") || "Ошибка"; errorBox.style.display = "block"; }
+                if (!hasField) {
+                    errorBox.textContent = Object.values(errors).join("; ") || "Ошибка";
+                    errorBox.hidden = false;
+                }
+                ModalHelpers.setSubmitting(submitBtn, false);
             }
         } catch (_) {
             errorBox.textContent = "Ошибка соединения.";
-            errorBox.style.display = "block";
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Создать";
+            errorBox.hidden = false;
+            ModalHelpers.setSubmitting(submitBtn, false);
         }
     });
 

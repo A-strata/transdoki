@@ -22,6 +22,7 @@
 Глобальные компоненты (не дублировать в app-стилях):
 - `static/css/tables.css` — `.search-field-wrap`, `.tms-table`, `.pagination`, `.row-actions`, `.empty-state`
 - `static/css/globals.css` — `.modal-*`, `.alert`, `.status-badge`
+- `static/js/row_click.js` — навигация по клику на строку таблицы (`data-detail-url`)
 
 ---
 
@@ -222,6 +223,7 @@ def get_context_data(self, **kwargs):
 {% endblock %}
 
 {% block extra_js %}
+<script defer src="{% static 'js/row_click.js' %}"></script>
 <script defer src="{% static '<app>/js/<entity>_list.js' %}"></script>
 {% endblock %}
 ```
@@ -280,7 +282,7 @@ def get_context_data(self, **kwargs):
                 <tr>
                     <td colspan="N">
                         <div class="empty-state">
-                            {% if filters.q %}
+                            {% if filters.q or filters.date_from or filters.date_to %}
                                 <p>Ничего не найдено</p>
                             {% else %}
                                 <p>Записей пока нет</p>
@@ -360,11 +362,27 @@ def get_context_data(self, **kwargs):
 - Обёртка `.table-card > .table-wrap > table.tms-table`
 - `<thead>` рендерится всегда (заголовки видны при пустой таблице)
 - Пустое состояние — `{% empty %}` внутри `<tbody>`, `<td colspan="N">`
-- Если фильтр поиска активен: «Ничего не найдено». Иначе: «Записей пока нет»
+- Если любой фильтр активен (q, date_from, date_to, доп.): «Ничего не найдено». Иначе: «Записей пока нет»
 - `<tfoot>` с итогами — только при наличии данных (`{% if items %}`)
-- `data-detail-url` на `<tr>` — для навигации по клику на строку
+- `data-detail-url` на `<tr>` — для навигации по клику на строку (см. ниже)
 - `data-label` на `<td>` — для мобильной адаптации
 - Pagination footer — вне `.table-card`, внутри `data-list-content`
+- Hover-иконки действий (`.row-actions`) — спецификация в `docs/ui-guide.md`, раздел 13
+
+### Навигация по клику на строку (`row_click.js`)
+
+Глобальный скрипт `static/js/row_click.js` обрабатывает клики по `tr[data-detail-url]`. Подключается в каждом списковом шаблоне отдельно (не в `base.html`), потому что не все таблицы в проекте имеют `data-detail-url`.
+
+Поведение:
+- Обычный клик → `location.href` (переход в текущей вкладке)
+- Ctrl/Cmd+клик → `window.open` (новая вкладка)
+- Средняя кнопка мыши (`auxclick`) → новая вкладка
+
+Исключения — клик **не вызывает переход**, если:
+- Целевой элемент — интерактивный (`a`, `button`, `input`, `textarea`, `select`, `label`, `summary`, `[data-docs-dropdown]`)
+- Пользователь выделял текст (проверяется `window.getSelection()` и на `mousedown`, и на `click`)
+
+Это разделяет ответственность: `row_click.js` управляет навигацией, `.row-actions` (hover-иконки) — конкретными действиями. Клики по иконкам не конфликтуют с навигацией благодаря проверке `isInteractive`.
 
 ---
 
@@ -647,6 +665,8 @@ function restoreFormFromParams(params) {
 
 ### Что определяется в app-стилях
 
+App-CSS содержит **только** layout страницы и ширины колонок. Все компоненты фильтров — глобальные из `tables.css`.
+
 ```css
 /* Обёртка страницы */
 .<entity>s-page {
@@ -688,32 +708,32 @@ function restoreFormFromParams(params) {
     margin-left: auto;
 }
 
-/* Кнопка-тоггл календаря */
-.<entity>s-page .visibility-toggle { ... }
-.<entity>s-page .visibility-toggle:hover { ... }
-.<entity>s-page .visibility-toggle[aria-expanded="true"] { ... }
-
-/* Поля дат */
-.<entity>s-page .filter-input { ... }
-.<entity>s-page .date-range-expand { visibility: hidden; pointer-events: none; }
-.<entity>s-page .date-range-expand.is-visible { visibility: visible; pointer-events: auto; }
-.<entity>s-page .date-range-expand .filter-input.is-filled { border-color: var(--primary); background: var(--hover-active); }
-.<entity>s-page .date-range-expand .filter-input { width: 150px; }
-
 /* Контейнер данных */
-[data-list-content] { display: flex; flex-direction: column; gap: 14px; }
-[data-list-content].is-loading { opacity: 0.5; pointer-events: none; transition: opacity 0.15s ease; }
+[data-list-content] {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
 
 /* Ширины колонок (table-layout: fixed) */
-.col-name   { width: 250px; }
-.col-date   { width: 110px; }
-.col-amount { width: 120px; }
+.col-name    { width: 250px; }
+.col-date    { width: 110px; }
+.col-amount  { width: 120px; }
 .col-actions { width: 90px; }
 ```
 
 ### Что НЕ определяется в app-стилях (берётся из tables.css)
 
+Компоненты поиска:
 - `.search-field-wrap`, `.search-icon`, `.search-input`, `.search-clear`
+
+Компоненты фильтров:
+- `.visibility-toggle` (кнопка-тоггл календаря и др.)
+- `.filter-input`, `.filter-select` (поля и селекты фильтров)
+- `.date-range-expand`, `.date-range-sep`, `.is-visible`, `.is-filled`
+- `[data-list-content].is-loading` (приглушение при загрузке)
+
+Компоненты таблиц:
 - `.tms-table`, `thead th`, `tbody td`
 - `.row-actions`, `.row-action`, `.row-action--view`
 - `.pagination`, `.pagination-link`, `.pagination-footer`
@@ -741,7 +761,7 @@ function restoreFormFromParams(params) {
 - [ ] Поиск — `search-field-wrap` с `search-icon`, `search-input`, `search-clear`
 - [ ] Календарь — `visibility-toggle[data-calendar-toggle]` + `.date-range-expand[data-calendar-fields]`
 - [ ] `<div data-list-content>{% include partial %}</div>`
-- [ ] JS подключён в `{% block extra_js %}`
+- [ ] `row_click.js` + app-JS подключены в `{% block extra_js %}`
 - [ ] Нет кнопки «Применить» — всё реактивное
 - [ ] Одна `tms-btn-primary` на странице
 
@@ -749,9 +769,10 @@ function restoreFormFromParams(params) {
 - [ ] `.table-card > .table-wrap > table.tms-table`
 - [ ] `<thead>` рендерится всегда
 - [ ] `{% empty %}` внутри `<tbody>` с `colspan`
-- [ ] Пустое состояние: «Ничего не найдено» при поиске, «Записей пока нет» без фильтров
-- [ ] `data-detail-url` на `<tr>` для навигации
+- [ ] Пустое состояние: «Ничего не найдено» при любом активном фильтре, «Записей пока нет» без фильтров
+- [ ] `data-detail-url` на `<tr>` для навигации (обрабатывается `row_click.js`)
 - [ ] `data-label` на `<td>` для мобилки
+- [ ] Hover-иконки — `.row-actions` в `.row-actions-cell` (стили в `tables.css`, спецификация в `ui-guide.md` раздел 13)
 - [ ] Pagination footer — вне `.table-card`, внутри `data-list-content`
 
 ### JavaScript

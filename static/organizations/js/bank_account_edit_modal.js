@@ -4,9 +4,9 @@ document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("edit-bank-account-form");
     if (!form) return;
 
+    var modal = document.getElementById("edit-bank-account-modal");
     var errorsBox = document.getElementById("eba-errors");
     var submitBtn = form.querySelector('button[type="submit"]');
-    var originalText = submitBtn.textContent;
     var suggestUrl = form.dataset.suggestUrl;
 
     var hiddenId = document.getElementById("eba-id");
@@ -95,12 +95,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ── Suggest dropdown ──
 
-    function escapeHtml(str) {
-        var div = document.createElement("div");
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
     function showDropdown(items) {
         dropdown.innerHTML = "";
         if (!items.length) {
@@ -111,8 +105,8 @@ document.addEventListener("DOMContentLoaded", function () {
             var el = document.createElement("div");
             el.className = "suggest-item";
             el.innerHTML =
-                '<span class="suggest-item-title">' + escapeHtml(item.bank_name) + '</span>' +
-                '<span class="suggest-item-sub">БИК ' + escapeHtml(item.bic) + '</span>';
+                '<span class="suggest-item-title">' + ModalHelpers.escapeHtml(item.bank_name) + '</span>' +
+                '<span class="suggest-item-sub">БИК ' + ModalHelpers.escapeHtml(item.bic) + '</span>';
             el.addEventListener("mousedown", function (e) {
                 e.preventDefault();
                 selectBank(item);
@@ -233,22 +227,15 @@ document.addEventListener("DOMContentLoaded", function () {
         corr_account: "eba-manual-corr-account"
     };
 
-    function clearErrors() {
-        errorsBox.hidden = true;
-        errorsBox.innerHTML = "";
-        form.querySelectorAll(".modal-field-error").forEach(function (el) { el.remove(); });
-        form.querySelectorAll(".is-invalid").forEach(function (el) { el.classList.remove("is-invalid"); });
-    }
-
     form.addEventListener("submit", function (e) {
         e.preventDefault();
-        clearErrors();
+        ModalHelpers.clearErrors(modal);
         if (isManualMode) syncManualToHidden();
 
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Сохранение...";
+        ModalHelpers.setSubmitting(submitBtn, true);
 
         var data = new FormData(form);
+        var targetMap = isManualMode ? manualFieldMap : fieldMap;
 
         fetch(form.dataset.url, {
             method: "POST",
@@ -263,67 +250,31 @@ document.addEventListener("DOMContentLoaded", function () {
                     window.location.reload();
                     return;
                 }
-
-                var errors = result.body.errors || {};
-                var generalErrors = [];
-                var targetMap = isManualMode ? manualFieldMap : fieldMap;
-
-                for (var field in errors) {
-                    var inputId = targetMap[field] || fieldMap[field];
-                    if (inputId) {
-                        var input = document.getElementById(inputId);
-                        if (input && input.type !== "hidden") {
-                            input.classList.add("is-invalid");
-                            var errEl = document.createElement("p");
-                            errEl.className = "modal-field-error";
-                            errEl.textContent = errors[field];
-                            input.parentNode.appendChild(errEl);
-                            continue;
-                        }
-                    }
-                    generalErrors.push(errors[field]);
-                }
-
-                if (generalErrors.length) {
-                    errorsBox.textContent = generalErrors.join(". ");
-                    errorsBox.hidden = false;
-                }
-
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+                var mergedMap = {};
+                for (var k in fieldMap) mergedMap[k] = targetMap[k] || fieldMap[k];
+                ModalHelpers.applyFieldErrors(modal, mergedMap, result.body.errors || {}, errorsBox);
+                ModalHelpers.setSubmitting(submitBtn, false);
             })
             .catch(function () {
-                errorsBox.textContent = "Ошибка сети. Попробуйте ещё раз.";
-                errorsBox.hidden = false;
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+                ModalHelpers.showGeneralError(errorsBox, "Ошибка сети. Попробуйте ещё раз.");
+                ModalHelpers.setSubmitting(submitBtn, false);
             });
     });
 
     // Reset on modal close
-    var modal = document.getElementById("edit-bank-account-modal");
     if (modal) {
-        var observer = new MutationObserver(function (mutations) {
-            mutations.forEach(function (m) {
-                if (m.attributeName === "hidden" && modal.hidden) {
-                    form.reset();
-                    clearErrors();
-                    updateAccountHint();
-                    hiddenBic.value = "";
-                    hiddenBankName.value = "";
-                    hiddenCorrAccount.value = "";
-                    isManualMode = false;
-                    searchWrap.hidden = false;
-                    selectedWrap.hidden = true;
-                    manualWrap.hidden = true;
-                    dropdown.classList.remove("visible");
-                    if (spin) spin.classList.remove("active");
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
-                }
-            });
+        ModalHelpers.setupResetOnClose(modal, function () {
+            updateAccountHint();
+            hiddenBic.value = "";
+            hiddenBankName.value = "";
+            hiddenCorrAccount.value = "";
+            isManualMode = false;
+            searchWrap.hidden = false;
+            selectedWrap.hidden = true;
+            manualWrap.hidden = true;
+            dropdown.classList.remove("visible");
+            if (spin) spin.classList.remove("active");
         });
-        observer.observe(modal, { attributes: true });
     }
 
     // ── Удаление банковского счёта ──
@@ -346,8 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
         e.preventDefault();
 
         var deleteBtn = deleteForm.querySelector('button[type="submit"]');
-        deleteBtn.disabled = true;
-        deleteBtn.textContent = "Удаление...";
+        ModalHelpers.setSubmitting(deleteBtn, true);
 
         var data = new FormData(deleteForm);
 
@@ -365,13 +315,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
                 alert(result.body.error || "Ошибка при удалении");
-                deleteBtn.disabled = false;
-                deleteBtn.textContent = "Удалить";
+                ModalHelpers.setSubmitting(deleteBtn, false);
             })
             .catch(function () {
                 alert("Ошибка сети. Попробуйте ещё раз.");
-                deleteBtn.disabled = false;
-                deleteBtn.textContent = "Удалить";
+                ModalHelpers.setSubmitting(deleteBtn, false);
             });
     });
 });

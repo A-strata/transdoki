@@ -25,7 +25,7 @@
             </thead>
             <tbody>
                 {% for organization in organizations %}
-                <tr>
+                <tr data-detail-url="{% url 'organizations:detail' organization.pk %}">
                     <td data-label="Название">
                         <span class="org-name" title="{{ organization.short_name }}">{{ organization.short_name }}</span>
                         {% if organization.vehicles_count %}
@@ -53,13 +53,16 @@
                                     <path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </a>
-                            <a href="{% url 'organizations:delete' organization.pk %}" class="row-action row-action--delete" title="Удалить">
+                            <button type="button" class="row-action row-action--delete" title="Удалить"
+                                    data-modal-open="delete-org-modal"
+                                    data-delete-url="{% url 'organizations:delete' organization.pk %}"
+                                    data-delete-name="{{ organization.short_name }}">
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                     <path d="M2 4h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                                     <path d="M13 4v9.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                                     <path d="M5.5 4V2.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
-                            </a>
+                            </button>
                         </div>
                     </td>
                 </tr>

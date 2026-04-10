@@ -30,7 +30,7 @@
                 </thead>
                 <tbody>
                     {% for person in persons %}
-                    <tr>
+                    <tr data-detail-url="{% url 'persons:detail' person.pk %}">
                         <td data-label="Фамилия"><span class="person-name">{{ person.surname }}</span></td>
                         <td data-label="Имя">{{ person.name }}</td>
                         <td data-label="Отчество">{{ person.patronymic|default:"—" }}</td>
@@ -55,4 +55,8 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="{% static 'js/row_click.js' %}"></script>
 {% endblock %}

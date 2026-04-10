@@ -146,6 +146,11 @@
     font-size: var(--text-xs);
 }
 
+/* Клик по строке — переход в карточку */
+.tms-table tbody tr[data-detail-url] {
+    cursor: pointer;
+}
+
 /* Row actions — hover-иконки */
 .row-actions {
     display: flex;
@@ -262,6 +267,107 @@
 .search-field-wrap .search-clear:hover {
     color: var(--text);
     background: var(--neutral-border);
+}
+
+/* Кнопка-тоггл (календарь, другие visibility-переключатели) */
+.visibility-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border-interactive);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.visibility-toggle:hover {
+    background: var(--hover);
+    color: var(--text);
+    border-color: var(--border-input-hover);
+}
+
+.visibility-toggle[aria-expanded="true"] {
+    background: var(--hover-active);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* Поля фильтров (дата, inline-input) */
+.filter-input {
+    min-height: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border-input);
+    border-radius: 8px;
+    font-size: var(--text-xs);
+    background: var(--surface);
+    color: var(--text);
+    box-sizing: border-box;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Select-фильтр (направление, статус и т.д.) */
+.filter-select {
+    min-height: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border-input);
+    border-radius: 8px;
+    font-size: var(--text-xs);
+    background: var(--surface);
+    color: var(--text);
+    box-sizing: border-box;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Диапазон дат — скрыт через visibility, место зарезервировано */
+.date-range-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.date-range-expand.is-visible {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.date-range-expand .filter-input {
+    width: 150px;
+}
+
+.date-range-expand .filter-input.is-filled {
+    border-color: var(--primary);
+    background: var(--hover-active);
+}
+
+.date-range-sep {
+    font-size: var(--text-xs);
+    color: var(--muted);
+}
+
+/* Состояние загрузки контента */
+[data-list-content].is-loading {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
 }
 
 /* Pagination footer — сетка: page-size | пагинация | счётчик */

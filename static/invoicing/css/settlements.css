@@ -46,14 +46,6 @@
     vertical-align: middle;
 }
 
-.settlements-table tbody tr[data-detail-url] {
-    cursor: pointer;
-}
-
-.settlements-table tbody tr[data-detail-url]:hover {
-    background: var(--hover);
-}
-
 .settlements-table .row--zero td {
     color: var(--muted);
 }

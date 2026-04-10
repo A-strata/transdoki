@@ -277,6 +277,139 @@ button:disabled {
 - Ошибки валидации — inline под полями (`.is-invalid` + `.modal-field-error`), не `alert()`
 - При закрытии — сбрасывать форму и ошибки
 - AJAX-формы: отправка через `fetch`, при успехе `location.reload()` или обновление DOM
+- Все модальные стили — **только** в `globals.css`. Не создавать `.modal-*` классы в CSS отдельных приложений
+- Кнопки в модалках — **только** `.tms-btn-*`. Не создавать `.modal-btn` или аналоги
+
+### ModalHelpers (`static/js/modal-helpers.js`)
+
+Общая библиотека для работы с модальными формами. Namespace `window.ModalHelpers`, подключается в `base.html` перед `base.js`.
+
+| Метод | Назначение |
+|---|---|
+| `clearErrors(modal)` | Снять `.is-invalid`, удалить `.modal-field-error`, скрыть `.modal-form-errors` |
+| `showFieldError(modal, inputId, message)` | Ошибка под полем: `.is-invalid` + `<p class="modal-field-error">`. Скрытые поля (`type="hidden"`) пропускаются |
+| `showGeneralError(errorsBox, message)` | Показать текст в `.modal-form-errors` |
+| `applyFieldErrors(modal, fieldMap, errors, errorsBox)` | Цикл по серверным ошибкам → `fieldMap` → `showFieldError`, остаток → `showGeneralError` |
+| `setupResetOnClose(modal, callback?)` | MutationObserver на `hidden`: сброс формы + clearErrors + setSubmitting(false). Безопасен при повторном вызове (no-op) |
+| `setSubmitting(btn, isLoading)` | Кнопка в состояние загрузки. Принимает элемент кнопки. Хранит оригинальный HTML в `btn._originalHTML` |
+| `escapeHtml(str)` | Экранирование для безопасной вставки через `innerHTML` |
+
+**JS-паттерн AJAX-формы в модалке (полный пример):**
+
+```javascript
+document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("my-form");
+    if (!form) return;
+
+    var modal = document.getElementById("my-modal");
+    var errorsBox = document.getElementById("my-errors");
+    var submitBtn = form.querySelector('button[type="submit"]');
+
+    var fieldMap = {
+        name: "my-name",       // серверное поле → id элемента в DOM
+        phone: "my-phone",
+        hidden_fk: null        // null — ошибка попадёт в general
+    };
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        ModalHelpers.clearErrors(modal);
+        ModalHelpers.setSubmitting(submitBtn, true);
+
+        fetch(form.dataset.url, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+            .then(function (resp) {
+                return resp.json().then(function (body) {
+                    return { ok: resp.ok, body: body };
+                });
+            })
+            .then(function (result) {
+                if (result.ok) {
+                    window.location.reload();
+                    return;
+                }
+                ModalHelpers.applyFieldErrors(
+                    modal, fieldMap, result.body.errors || {}, errorsBox
+                );
+                ModalHelpers.setSubmitting(submitBtn, false);
+            })
+            .catch(function () {
+                ModalHelpers.showGeneralError(errorsBox, "Ошибка сети. Попробуйте ещё раз.");
+                ModalHelpers.setSubmitting(submitBtn, false);
+            });
+    });
+
+    if (modal) {
+        ModalHelpers.setupResetOnClose(modal);
+    }
+});
+```
+
+**Кастомный сброс при закрытии** — если модалка содержит состояние помимо формы (dropdown, режим ввода, скрытые поля):
+
+```javascript
+ModalHelpers.setupResetOnClose(modal, function () {
+    // Стандартный сброс (form.reset, clearErrors, setSubmitting)
+    // уже выполнен. Здесь — дополнительная логика:
+    dropdown.classList.remove("visible");
+    isManualMode = false;
+    searchWrap.hidden = false;
+});
+```
+
+### Статические ошибки (data-err паттерн)
+
+Альтернативный подход для модалок, где ошибки отображаются в **статических** элементах, а не динамически создаваемых. Используется в `quick_create.js` и `cabinet.js`.
+
+```html
+<span class="modal-field-error" data-err="field_name" style="display:none"></span>
+```
+
+**Когда использовать**: если модалка не использует `<form>` или имеет нестандартный флоу (двухшаговый экран, credentials). В этом случае `ModalHelpers.clearErrors()` не подходит — он удаляет `.modal-field-error` элементы из DOM.
+
+**Правило**: в шаблоне рядом со `style="display:none"` оставлять Django-комментарий:
+```html
+{# display управляется JS, не через ModalHelpers #}
+```
+
+### Программное открытие модалки
+
+`data-modal-open` — стандартный способ. Но если модалка открывается из JS-кода (например, после async-операции), использовать `hidden` напрямую:
+
+```javascript
+// Программное открытие (не из data-modal-open)
+overlay.hidden = false;
+
+// base.js aria-атрибуты НЕ установятся автоматически —
+// они добавляются только через openModal() при data-modal-open.
+```
+
+### Accessibility
+
+`base.js` автоматически управляет aria-атрибутами при открытии через `data-modal-open`:
+
+- `role="dialog"` и `aria-modal="true"` устанавливаются при открытии
+- `aria-labelledby` привязывается к `.modal-title` (id генерируется автоматически)
+- Фокус переносится на первый интерактивный элемент внутри модалки
+- При закрытии фокус возвращается на кнопку-триггер
+
+Focus trap (удержание Tab внутри модалки) пока не реализован — запланирован как отдельная задача.
+
+### Responsive
+
+На экранах `<= 560px`:
+- `.modal-fields` переключается с `1fr 1fr` на одну колонку
+- `.modal-field-row` также переключается на одну колонку
+- Overlay имеет `padding: 16px` — модалка не прилипает к краям
+
+Модалки рассчитаны на `max-width: 420px` / `520px` — на мобильных они занимают почти всю ширину автоматически.
+
+### Длинные формы и скролл
+
+Если форма содержит больше полей, чем помещается в viewport (например, банковский счёт на мобильном), скролл происходит внутри overlay — `overflow: auto` на `.modal-overlay`. Диалог центрирован через flexbox, при переполнении уходит вверх и прокручивается.
 
 ---
 
@@ -390,6 +523,7 @@ static/
   css/nav.css          # навбар
   css/tables.css       # таблицы
   css/globals.css      # глобальные компоненты (модалки, алерты, бейджи)
+  js/modal-helpers.js  # ModalHelpers — общие функции модальных форм
   js/base.js           # глобальный JS (модалки, data-confirm, data-loading)
   js/password_toggle.js
   js/phone_mask.js
@@ -1108,6 +1242,8 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 ```
 Но не все интерактивные кастомные элементы (dropdown-пункты, toggle) проходят проверку по доступности. При критичных пользовательских действиях добавлять `aria-label`, `role`, `tabindex`.
 
+Модальные окна: `role="dialog"`, `aria-modal`, `aria-labelledby`, фокус на первый элемент и возврат фокуса — реализованы в `base.js`. Focus trap (удержание Tab внутри модалки) — запланирован отдельной задачей (см. `docs/modal-audit.md`, шаг 4b).
+
 ---
 
 ## 22. Быстрый справочник
@@ -1128,6 +1264,9 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 | Подтверждение удаления              | `.confirm-inline` с двумя кнопками (не `confirm()`)  |
 | Модалка подтверждения               | `.modal-overlay` + `.modal-dialog` + `data-modal-open` |
 | Модалка с формой                    | `.modal-dialog--wide` + `.modal-fields` + `.modal-field` |
+| AJAX-форма в модалке                | `ModalHelpers.applyFieldErrors()` + `setupResetOnClose()` (раздел 4) |
+| Ошибки модалки (стандарт)           | `ModalHelpers.clearErrors()` + `applyFieldErrors()` |
+| Ошибки модалки (data-err)           | Статические `<span>` + `style.display` (раздел 4) |
 | Hover/focus-переход                 | `transition: 0.15s ease`                             |
 | Зависимые поля                      | `data-cascade-source` + `data-cascade-target` (раздел 12) |
 | Состояние загрузки кнопки           | `data-loading-text` на `<button>` (раздел 19)        |

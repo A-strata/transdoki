@@ -82,6 +82,14 @@ function initAutocomplete(selectId) {
     select.addEventListener('change', syncInputToSelect);
     syncInputToSelect();
 
+    // form.reset() не вызывает change на select — слушаем reset отдельно
+    var parentForm = select.closest('form');
+    if (parentForm) {
+        parentForm.addEventListener('reset', function () {
+            setTimeout(syncInputToSelect, 0);
+        });
+    }
+
     // ── Рендер выпадающего списка ──────────────────────────────────────────
     function createItemEl(item, muted) {
         var el = document.createElement('div');

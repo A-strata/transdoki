@@ -47,54 +47,7 @@
     margin-left: auto;
 }
 
-/* 4) Поля фильтров (дата) */
-.filter-input {
-    min-height: 34px;
-    height: 34px;
-    padding: 0 10px;
-    border: 1px solid var(--border-input);
-    border-radius: 8px;
-    font-size: var(--text-xs);
-    background: var(--surface);
-    color: var(--text);
-    box-sizing: border-box;
-}
-
-.filter-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-/* Поля диапазона дат — всегда занимают место, скрыты через visibility */
-.date-range-expand {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-.date-range-expand.is-visible {
-    visibility: visible;
-    pointer-events: auto;
-}
-
-.date-range-expand .filter-input.is-filled {
-    border-color: var(--primary);
-    background: var(--hover-active);
-}
-
-.date-range-expand .filter-input {
-    width: 150px;
-}
-
-.date-range-sep {
-    font-size: var(--text-xs);
-    color: var(--muted);
-}
-
-/* Чипы активных фильтров */
+/* 4) Чипы активных фильтров */
 .active-filters {
     display: flex;
     align-items: center;
@@ -217,33 +170,6 @@ tr:hover .cell-filter-btn {
 /* 9) Панель видимости колонок */
 .columns-visibility {
     position: relative;
-}
-
-.visibility-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: 1px solid var(--border-interactive);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    color: var(--muted);
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.visibility-toggle:hover {
-    background: var(--hover);
-    color: var(--text);
-    border-color: var(--border-input-hover);
-}
-
-.visibility-toggle[aria-expanded="true"] {
-    background: var(--hover-active);
-    color: var(--primary);
-    border-color: var(--primary);
 }
 
 .visibility-panel {
@@ -413,11 +339,6 @@ tr:hover .cell-filter-btn {
 .tms-table tbody tr.is-dropdown-open td,
 .tms-table tbody tr.is-dropdown-open:hover td {
     background: var(--hover-active);
-}
-
-/* Клик по строке — переход в карточку */
-.tms-table tbody tr[data-detail-url] {
-    cursor: pointer;
 }
 
 /* интерактив внутри ячеек */

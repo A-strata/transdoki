@@ -49,6 +49,41 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* ── Модальные окна [data-modal-open] / [data-modal-close] ── */
+
+    var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    function openModal(modal, opener) {
+        /* aria-атрибуты */
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        var title = modal.querySelector(".modal-title");
+        if (title) {
+            if (!title.id) title.id = modal.id + "-title";
+            modal.setAttribute("aria-labelledby", title.id);
+        }
+
+        /* Запомнить триггер для возврата фокуса */
+        modal._modalOpener = opener || null;
+
+        modal.hidden = false;
+
+        /* Фокус на первый интерактивный элемент */
+        var firstFocusable = modal.querySelector(FOCUSABLE);
+        if (firstFocusable) firstFocusable.focus();
+    }
+
+    function closeModal(modal) {
+        modal.hidden = true;
+        modal.removeAttribute("aria-modal");
+
+        /* Вернуть фокус на триггер */
+        var opener = modal._modalOpener;
+        if (opener && opener.focus) {
+            opener.focus();
+            modal._modalOpener = null;
+        }
+    }
+
     document.addEventListener("click", function (e) {
         var opener = e.target.closest("[data-modal-open]");
         if (opener) {
@@ -70,7 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (form && opener.dataset.deleteUrl) {
                     form.action = opener.dataset.deleteUrl;
                 }
-                modal.hidden = false;
+                openModal(modal, opener);
             }
             return;
         }
@@ -78,13 +113,13 @@ document.addEventListener("DOMContentLoaded", function () {
         var closer = e.target.closest("[data-modal-close]");
         if (closer) {
             var modal = closer.closest(".modal-overlay");
-            if (modal) modal.hidden = true;
+            if (modal) closeModal(modal);
             return;
         }
 
         /* Клик по overlay (за пределами dialog) закрывает модал */
         if (e.target.classList.contains("modal-overlay")) {
-            e.target.hidden = true;
+            closeModal(e.target);
         }
     });
 
@@ -92,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") {
             var modal = document.querySelector(".modal-overlay:not([hidden])");
-            if (modal) modal.hidden = true;
+            if (modal) closeModal(modal);
         }
     });
 

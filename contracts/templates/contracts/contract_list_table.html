@@ -38,7 +38,7 @@
             </thead>
             <tbody>
                 {% for contract in contracts %}
-                <tr>
+                <tr data-detail-url="{% url 'contracts:detail' contract.pk %}">
                     <td data-label="Номер">
                         <a href="{% url 'contracts:detail' contract.pk %}" class="entity-link">
                             №{{ contract.number }}

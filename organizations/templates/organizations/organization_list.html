@@ -37,8 +37,23 @@
         {% include "organizations/organization_list_table.html" %}
     </div>
 </section>
+
+<div class="modal-overlay" id="delete-org-modal" hidden>
+    <div class="modal-dialog">
+        <h3 class="modal-title">Удалить {% if is_own %}компанию{% else %}контрагента{% endif %}?</h3>
+        <p class="modal-body"><span></span></p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="modal-actions">
+                <button type="submit" class="tms-btn tms-btn-danger">Удалить</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<script defer src="{% static 'js/row_click.js' %}"></script>
 <script src="{% static 'organizations/js/organization_list.js' %}"></script>
 {% endblock %}

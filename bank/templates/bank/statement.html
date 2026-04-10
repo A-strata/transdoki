@@ -99,11 +99,9 @@
                 </div>
                 <div class="modal-field modal-field--full">
                     <label for="pm_organization">Контрагент</label>
-                    <select name="organization" id="pm_organization" required>
-                        <option value="">Выберите контрагента</option>
-                        {% for org in organizations %}
-                        <option value="{{ org.pk }}">{{ org.short_name }}</option>
-                        {% endfor %}
+                    <select name="organization" id="pm_organization"
+                            data-search-url="{% url 'organizations:search' %}" required>
+                        <option value="">— начните вводить —</option>
                     </select>
                 </div>
                 <div class="modal-field">
@@ -140,5 +138,6 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/autocomplete.js' %}"></script>
 <script defer src="{% static 'bank/js/bank_statement.js' %}"></script>
 {% endblock %}

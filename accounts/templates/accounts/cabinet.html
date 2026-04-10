@@ -119,7 +119,8 @@
             <h2 class="cabinet-card-title">Пользователи аккаунта</h2>
 
             {% if can_manage_users %}
-                <button type="button" id="add-user-btn" class="cab-add-btn">
+                <button type="button" class="cab-add-btn"
+                        data-modal-open="add-user-overlay">
                     + Добавить пользователя
                 </button>
             {% endif %}
@@ -222,43 +223,45 @@
     </div>
 </section>
 
-<div id="add-user-overlay" class="modal-overlay" style="display:none;">
-    <div class="modal-box">
+<div id="add-user-overlay" class="modal-overlay" hidden>
+    <div class="modal-dialog">
         <h3 class="modal-title">Добавить пользователя</h3>
 
-        <!-- Форма ввода -->
         <div id="au-form-body">
-            <div id="add-user-error" class="modal-error" style="display:none;"></div>
+            <div id="add-user-error" class="modal-form-errors" hidden></div>
 
-            <div class="au-field">
-                <label class="au-label">Фамилия *</label>
-                <input type="text" name="last_name" class="au-input">
-                <span class="au-err" data-err="last_name"></span>
-            </div>
-            <div class="au-field">
-                <label class="au-label">Имя *</label>
-                <input type="text" name="first_name" class="au-input">
-                <span class="au-err" data-err="first_name"></span>
-            </div>
-            <div class="au-field">
-                <label class="au-label">Роль *</label>
-                <select name="role" class="au-input">
-                    <option value="admin">Администратор</option>
-                    <option value="dispatcher">Диспетчер</option>
-                    <option value="logist">Логист</option>
-                </select>
-                <span class="au-err" data-err="role"></span>
+            <div class="modal-fields">
+                <div class="modal-field">
+                    <label>Фамилия</label>
+                    <input type="text" name="last_name" required>
+                    {# display управляется JS cabinet.js, не через ModalHelpers #}
+                    <span class="modal-field-error" data-err="last_name" style="display:none"></span>
+                </div>
+                <div class="modal-field">
+                    <label>Имя</label>
+                    <input type="text" name="first_name" required>
+                    <span class="modal-field-error" data-err="first_name" style="display:none"></span>
+                </div>
+                <div class="modal-field modal-field--full">
+                    <label>Роль</label>
+                    <select name="role" required>
+                        <option value="admin">Администратор</option>
+                        <option value="dispatcher">Диспетчер</option>
+                        <option value="logist">Логист</option>
+                    </select>
+                    <span class="modal-field-error" data-err="role" style="display:none"></span>
+                </div>
             </div>
 
             <div class="modal-actions">
-                <button type="button" id="add-user-cancel" class="modal-btn modal-btn-cancel">Отмена</button>
-                <button type="button" id="add-user-submit" class="modal-btn modal-btn-primary"
-                        data-create-url="{% url 'accounts:user_create' %}">Создать</button>
+                <button type="button" id="add-user-submit" class="tms-btn tms-btn-primary"
+                        data-create-url="{% url 'accounts:user_create' %}"
+                        data-loading-text="Сохраняем...">Создать</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
             </div>
         </div>
 
-        <!-- Экран с credentials после создания -->
-        <div id="au-credentials" style="display:none;">
+        <div id="au-credentials" hidden>
             <div class="cred-box">
                 <div class="cred-box-title">Пользователь создан</div>
                 <div class="cred-box-desc">
@@ -278,7 +281,7 @@
                 </div>
             </div>
             <div class="modal-actions">
-                <button type="button" id="au-cred-close" class="modal-btn modal-btn-primary">Готово</button>
+                <button type="button" id="au-cred-close" class="tms-btn tms-btn-primary">Готово</button>
             </div>
         </div>
     </div>
