@@ -106,7 +106,7 @@ function initAutocomplete(selectId) {
         rafId = requestAnimationFrame(function () {
             var rect = input.getBoundingClientRect();
             var visibleTop = getVisibleTop();
-            if (rect.bottom < visibleTop || rect.top > window.innerHeight) {
+            if (rect.top < visibleTop || rect.top > window.innerHeight) {
                 closeDropdown();
             } else {
                 positionDropdown();
