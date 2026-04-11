@@ -33,21 +33,102 @@ function initAutocomplete(selectId) {
 
     const dropdown = document.createElement('div');
     dropdown.style.cssText = [
-        'display:none; position:absolute; top:100%; left:0; right:0;',
+        'display:none; position:fixed;',
         'max-height:220px; overflow-y:auto; background:#fff;',
-        'border:1px solid #e5e7eb; border-top:none; border-radius:0 0 10px 10px;',
+        'border:1px solid #e5e7eb; border-radius:0 0 10px 10px;',
         'box-shadow:0 8px 16px rgba(15,23,42,.1); z-index:1100;',
     ].join('');
     dropdown.className = 'autocomplete-dropdown';
+    dropdown.setAttribute('data-ac-for', selectId);
 
     select.parentNode.insertBefore(container, select);
     container.appendChild(input);
     container.appendChild(clearBtn);
-    container.appendChild(dropdown);
     container.appendChild(select);
+    document.body.appendChild(dropdown);
 
     // Скрываем оригинальный select, оставляем в DOM для отправки формы
     select.style.cssText = 'position:absolute; opacity:0; height:1px; width:1px; pointer-events:none; z-index:-1;';
+
+    // ── Позиционирование dropdown в body ──────────────────────────────────
+    function getScrollParent(el) {
+        var node = el.parentElement;
+        while (node && node !== document.body) {
+            if (/(auto|scroll)/.test(getComputedStyle(node).overflowY)) return node;
+            node = node.parentElement;
+        }
+        return null;
+    }
+
+    var scrollParent = null;
+    var rafId = null;
+
+    function getVisibleTop() {
+        var top = 0;
+        var header = document.querySelector('.nav-wrap');
+        if (header) top = header.getBoundingClientRect().bottom;
+        var sticky = input.closest('form');
+        if (sticky) {
+            var nav = sticky.querySelector('.sticky-nav');
+            if (nav) {
+                var nb = nav.getBoundingClientRect().bottom;
+                if (nb > top) top = nb;
+            }
+        }
+        return top;
+    }
+
+    function positionDropdown() {
+        var rect = input.getBoundingClientRect();
+        var visibleTop = getVisibleTop();
+        var spaceBelow = window.innerHeight - rect.bottom;
+        var spaceAbove = rect.top - visibleTop;
+        var maxH = 220;
+        var openUp = spaceBelow < maxH && spaceAbove > spaceBelow;
+
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.width = rect.width + 'px';
+
+        if (openUp) {
+            dropdown.style.top = 'auto';
+            dropdown.style.bottom = (window.innerHeight - rect.top) + 'px';
+            dropdown.style.borderRadius = '10px 10px 0 0';
+        } else {
+            dropdown.style.top = rect.bottom + 'px';
+            dropdown.style.bottom = 'auto';
+            dropdown.style.borderRadius = '0 0 10px 10px';
+        }
+    }
+
+    function onScrollReposition() {
+        if (dropdown.style.display === 'none') return;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(function () {
+            var rect = input.getBoundingClientRect();
+            var visibleTop = getVisibleTop();
+            if (rect.bottom < visibleTop || rect.top > window.innerHeight) {
+                closeDropdown();
+            } else {
+                positionDropdown();
+            }
+        });
+    }
+
+    function attachScrollListener() {
+        if (!scrollParent) scrollParent = getScrollParent(input);
+        if (scrollParent) {
+            scrollParent.addEventListener('scroll', onScrollReposition, { passive: true });
+        }
+        window.addEventListener('scroll', onScrollReposition, { passive: true });
+    }
+
+    function detachScrollListener() {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        if (scrollParent) {
+            scrollParent.removeEventListener('scroll', onScrollReposition);
+        }
+        window.removeEventListener('scroll', onScrollReposition);
+    }
 
     // ── Кнопка очистки ────────────────────────────────────────────────────
     function updateClearBtn() {
@@ -123,12 +204,15 @@ function initAutocomplete(selectId) {
         dropdown.innerHTML = '';
         if (!items.length) {
             dropdown.style.display = 'none';
+            detachScrollListener();
             return;
         }
         items.forEach(function (item) {
             dropdown.appendChild(createItemEl(item, false));
         });
+        positionDropdown();
         dropdown.style.display = 'block';
+        attachScrollListener();
     }
 
     function renderGrouped(data, q) {
@@ -139,6 +223,7 @@ function initAutocomplete(selectId) {
 
         if (!carrier.length && !others.length) {
             dropdown.style.display = 'none';
+            detachScrollListener();
             return;
         }
 
@@ -159,7 +244,9 @@ function initAutocomplete(selectId) {
             });
         }
 
+        positionDropdown();
         dropdown.style.display = 'block';
+        attachScrollListener();
     }
 
     function selectItem(item) {
@@ -171,12 +258,13 @@ function initAutocomplete(selectId) {
         }
         select.value = item.id;
         input.value = item.text;
-        dropdown.style.display = 'none';
+        closeDropdown();
         select.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     function closeDropdown() {
         dropdown.style.display = 'none';
+        detachScrollListener();
     }
 
     // ── AJAX-режим ────────────────────────────────────────────────────────
@@ -280,7 +368,7 @@ function initAutocomplete(selectId) {
     });
 
     document.addEventListener('click', function (e) {
-        if (!container.contains(e.target)) closeDropdown();
+        if (!container.contains(e.target) && !dropdown.contains(e.target)) closeDropdown();
     });
 
     input.addEventListener('keydown', function (e) {

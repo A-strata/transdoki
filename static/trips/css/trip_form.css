@@ -566,11 +566,7 @@ select[data-search-url] {
 }
 
 .address-suggest-list {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: var(--z-inline-dropdown);
+    z-index: var(--z-autocomplete);
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);

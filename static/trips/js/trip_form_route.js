@@ -81,6 +81,14 @@
         // Сохраняем фокус
         var activeId = document.activeElement ? document.activeElement.id : null;
 
+        // Удаляем осиротевшие дропдауны из body (от предыдущего рендера)
+        document.querySelectorAll('.address-suggest-list[data-rp-suggest]').forEach(function (el) {
+            el.remove();
+        });
+        document.querySelectorAll('.autocomplete-dropdown[data-ac-for^="rp-org-"]').forEach(function (el) {
+            el.remove();
+        });
+
         container.innerHTML = '';
 
         points.forEach(function (pt, idx) {
@@ -560,14 +568,96 @@
 
         var list = document.createElement('div');
         list.className = 'address-suggest-list';
-        wrapper.appendChild(list);
+        list.setAttribute('data-rp-suggest', '');
+        document.body.appendChild(list);
 
         var controller = null;
         var debounceTimer = null;
 
+        function getScrollParent(el) {
+            var node = el.parentElement;
+            while (node && node !== document.body) {
+                if (/(auto|scroll)/.test(getComputedStyle(node).overflowY)) return node;
+                node = node.parentElement;
+            }
+            return null;
+        }
+
+        var scrollParent = null;
+        var rafId = null;
+
+        function getVisibleTop() {
+            var top = 0;
+            var header = document.querySelector('.nav-wrap');
+            if (header) top = header.getBoundingClientRect().bottom;
+            var formEl = input.closest('form');
+            if (formEl) {
+                var nav = formEl.querySelector('.sticky-nav');
+                if (nav) {
+                    var nb = nav.getBoundingClientRect().bottom;
+                    if (nb > top) top = nb;
+                }
+            }
+            return top;
+        }
+
+        function positionList() {
+            var rect = input.getBoundingClientRect();
+            var visibleTop = getVisibleTop();
+            var spaceBelow = window.innerHeight - rect.bottom;
+            var spaceAbove = rect.top - visibleTop;
+            var maxH = 220;
+            var openUp = spaceBelow < maxH && spaceAbove > spaceBelow;
+
+            list.style.position = 'fixed';
+            list.style.left = rect.left + 'px';
+            list.style.width = rect.width + 'px';
+
+            if (openUp) {
+                list.style.top = 'auto';
+                list.style.bottom = (window.innerHeight - rect.top) + 'px';
+                list.style.borderRadius = 'var(--radius-sm) var(--radius-sm) 0 0';
+            } else {
+                list.style.top = (rect.bottom + 4) + 'px';
+                list.style.bottom = 'auto';
+                list.style.borderRadius = '0 0 var(--radius-sm) var(--radius-sm)';
+            }
+        }
+
+        function onScrollReposition() {
+            if (list.style.display === 'none') return;
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(function () {
+                var rect = input.getBoundingClientRect();
+                var visibleTop = getVisibleTop();
+                if (rect.bottom < visibleTop || rect.top > window.innerHeight) {
+                    closeList();
+                } else {
+                    positionList();
+                }
+            });
+        }
+
+        function attachScroll() {
+            if (!scrollParent) scrollParent = getScrollParent(input);
+            if (scrollParent) {
+                scrollParent.addEventListener('scroll', onScrollReposition, { passive: true });
+            }
+            window.addEventListener('scroll', onScrollReposition, { passive: true });
+        }
+
+        function detachScroll() {
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            if (scrollParent) {
+                scrollParent.removeEventListener('scroll', onScrollReposition);
+            }
+            window.removeEventListener('scroll', onScrollReposition);
+        }
+
         function closeList() {
             list.style.display = 'none';
             list.innerHTML = '';
+            detachScroll();
         }
 
         input.addEventListener('input', function () {
@@ -597,7 +687,9 @@
                             });
                             list.appendChild(el);
                         });
+                        positionList();
                         list.style.display = 'block';
+                        attachScroll();
                     })
                     .catch(function (e) {
                         if (e.name !== 'AbortError') closeList();
@@ -610,7 +702,7 @@
         });
 
         document.addEventListener('click', function (e) {
-            if (!wrapper.contains(e.target)) closeList();
+            if (!wrapper.contains(e.target) && !list.contains(e.target)) closeList();
         });
     }
 
