@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 
+from transdoki.enums import VatRate
 from transdoki.forms import ErrorHighlightMixin
 
 from .models import Trip, TripPoint
@@ -184,6 +185,13 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
                 empty_label=orig.empty_label,
                 to_field_name=orig.to_field_name,
             )
+
+        for vat_field in ("client_vat_rate", "carrier_vat_rate"):
+            if vat_field in self.fields:
+                self.fields[vat_field].empty_value = None
+                self.fields[vat_field].widget.choices = [
+                    ("", "Без НДС"),
+                ] + [(c.value, c.label) for c in VatRate]
 
         if self.user and self.user.is_authenticated:
             self._apply_queryset_filters()

@@ -127,9 +127,10 @@ def prepare_invoice_data(account, trip_ids):
 
     lines = []
     for trip in trips:
-        unit_price = trip.client_total or trip.client_cost
-        if not unit_price:
-            raise ValueError(f"У рейса №{trip.num_of_trip} не указана стоимость.")
+        unit_price = trip.client_total if trip.client_total is not None else trip.client_cost
+        if unit_price is None:
+            unit_price = Decimal("0")
+
         line = InvoiceLine(
             trip=trip,
             kind=InvoiceLine.Kind.SERVICE,
@@ -138,7 +139,7 @@ def prepare_invoice_data(account, trip_ids):
             unit=InvoiceLine.UnitOfMeasure.SERVICE,
             unit_price=unit_price,
             discount_pct=0,
-            vat_rate=InvoiceLine.VatRate.ZERO,
+            vat_rate=trip.client_vat_rate,
         )
         line.compute()
         lines.append(line)

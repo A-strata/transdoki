@@ -164,6 +164,8 @@ def invoice_create(request):
             data = prepare_invoice_data(account, trip_ids)
         except ValueError as e:
             messages.error(request, str(e))
+            if len(trip_ids) == 1:
+                return redirect("trips:detail", pk=trip_ids[0])
             return redirect("trips:list")
 
         bank_accounts = list(_get_own_bank_accounts(account))

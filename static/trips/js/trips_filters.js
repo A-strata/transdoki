@@ -72,16 +72,15 @@
             if (val) contractorFilterOrder.push({ role: role, value: val });
         });
 
-        // Восстановить page_size из localStorage при первом визите
+        // Восстановить page_size из localStorage при первом визите.
+        // Используем fetch вместо полного reload, чтобы не терять flash-сообщения.
         if (pageSizeSelect) {
             var urlParams = new URLSearchParams(window.location.search);
             if (!urlParams.has('page_size')) {
                 var saved = localStorage.getItem(STORAGE_KEY);
                 if (saved && saved !== pageSizeSelect.value) {
-                    urlParams.set('page_size', saved);
-                    urlParams.set('page', '1');
-                    window.location.search = urlParams.toString();
-                    return;
+                    pageSizeSelect.value = saved;
+                    fetchList(buildParams({ page: '1' }));
                 }
             }
         }

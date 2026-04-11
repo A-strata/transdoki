@@ -43,9 +43,9 @@
     <td data-col="weight">{{ trip.weight|default:"—" }}</td>
     <td data-col="client_cost">{% if trip.client_financial_status != 'open' and trip.client_total_fixed is not None %}{{ trip.client_total_fixed|money }}{% else %}{{ trip.client_total|money }}{% endif %}</td>
     <td data-col="carrier_cost">{% if trip.carrier_financial_status != 'open' and trip.carrier_total_fixed is not None %}{{ trip.carrier_total_fixed|money }}{% else %}{{ trip.carrier_total|money }}{% endif %}</td>
-    <td data-col="client_payment_method">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless_vat' and trip.client_vat_rate %} {{ trip.client_vat_rate }}%{% endif %}</td>
+    <td data-col="client_payment_method">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless' and trip.client_vat_rate is not None %} НДС {{ trip.get_client_vat_rate_display }}{% endif %}</td>
     <td data-col="payment_condition">{% if trip.payment_condition == 'unloading' %}На выгрузке{% elif trip.payment_term %}{{ trip.payment_term }} дн.{% else %}—{% endif %}</td>
-    <td data-col="carrier_payment_method">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %} {{ trip.carrier_vat_rate }}%{% endif %}</td>
+    <td data-col="carrier_payment_method">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless' and trip.carrier_vat_rate is not None %} НДС {{ trip.get_carrier_vat_rate_display }}{% endif %}</td>
     <td data-col="comments">{{ trip.comments|default:"—" }}</td>
     <td data-col="invoice">
         {% if trip.invoice_pk %}

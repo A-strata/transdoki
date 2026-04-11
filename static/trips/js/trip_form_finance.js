@@ -5,7 +5,12 @@
         var method = document.getElementById(methodId);
         var wrap = document.getElementById(vatWrapId);
         if (!method || !wrap) return;
-        function update() { wrap.style.display = method.value === 'cashless_vat' ? '' : 'none'; }
+        var vatSelect = wrap.querySelector('select');
+        function update() {
+            var show = method.value === 'cashless';
+            wrap.style.display = show ? '' : 'none';
+            if (!show && vatSelect) vatSelect.value = '';
+        }
         method.addEventListener('change', update);
         update();
     }

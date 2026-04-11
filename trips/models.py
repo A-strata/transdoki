@@ -6,9 +6,10 @@ from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError, models, transaction
 
 from organizations.models import Organization
-from transdoki.models import UserOwnedModel
 from persons.models import Person
 from persons.validators import validate_phone_number
+from transdoki.enums import VatRate
+from transdoki.models import UserOwnedModel
 from vehicles.models import Vehicle
 
 from .validators import RussianMinValueValidator
@@ -31,16 +32,10 @@ class PaymentCondition(models.TextChoices):
 
 class PaymentMethod(models.TextChoices):
     CASH = "cash", "Наличными (в т.ч. на карту)"
-    CASHLESS_VAT = "cashless_vat", "Безнал с НДС"
-    CASHLESS_NO_VAT = "cashless_no_vat", "Безнал без НДС"
+    CASHLESS = "cashless", "Безнал"
 
 
-class VatRate(models.TextChoices):
-    VAT_20 = "20", "20%"
-    VAT_10 = "10", "10%"
-    VAT_7 = "7", "7%"
-    VAT_5 = "5", "5%"
-    VAT_0 = "0", "0%"
+VatRate = VatRate  # реэкспорт для обратной совместимости
 
 
 class CostUnit(models.TextChoices):
@@ -127,11 +122,10 @@ class Trip(UserOwnedModel):
         default="",
         verbose_name="Форма оплаты (заказчик)",
     )
-    client_vat_rate = models.CharField(
-        max_length=5,
+    client_vat_rate = models.IntegerField(
         choices=VatRate.choices,
+        null=True,
         blank=True,
-        default="",
         verbose_name="Ставка НДС (заказчик)",
     )
     payment_condition = models.CharField(
@@ -189,11 +183,10 @@ class Trip(UserOwnedModel):
         default="",
         verbose_name="Форма оплаты (перевозчик)",
     )
-    carrier_vat_rate = models.CharField(
-        max_length=5,
+    carrier_vat_rate = models.IntegerField(
         choices=VatRate.choices,
+        null=True,
         blank=True,
-        default="",
         verbose_name="Ставка НДС (перевозчик)",
     )
     carrier_payment_condition = models.CharField(

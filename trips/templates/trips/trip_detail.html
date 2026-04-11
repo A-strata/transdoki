@@ -223,7 +223,7 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Форма оплаты</p>
-                            <p class="kv-value">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %}&nbsp;{{ trip.carrier_vat_rate }}%{% endif %}</p>
+                            <p class="kv-value">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless' and trip.carrier_vat_rate is not None %}&nbsp;НДС {{ trip.get_carrier_vat_rate_display }}{% endif %}</p>
                         </div>
                         <div class="kv">
                             <p class="kv-label">Срок оплаты</p>
@@ -253,7 +253,7 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Форма оплаты</p>
-                            <p class="kv-value">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless_vat' and trip.client_vat_rate %}&nbsp;{{ trip.client_vat_rate }}%{% endif %}</p>
+                            <p class="kv-value">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless' and trip.client_vat_rate is not None %}&nbsp;НДС {{ trip.get_client_vat_rate_display }}{% endif %}</p>
                         </div>
                         <div class="kv">
                             <p class="kv-label">Срок оплаты</p>
@@ -282,7 +282,7 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Форма оплаты</p>
-                            <p class="kv-value">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless_vat' and trip.client_vat_rate %}&nbsp;{{ trip.client_vat_rate }}%{% endif %}</p>
+                            <p class="kv-value">{{ trip.get_client_payment_method_display|default:"—" }}{% if trip.client_payment_method == 'cashless' and trip.client_vat_rate is not None %}&nbsp;НДС {{ trip.get_client_vat_rate_display }}{% endif %}</p>
                         </div>
                         <div class="kv">
                             <p class="kv-label">Срок оплаты</p>
@@ -307,7 +307,7 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Форма оплаты</p>
-                            <p class="kv-value">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless_vat' and trip.carrier_vat_rate %}&nbsp;{{ trip.carrier_vat_rate }}%{% endif %}</p>
+                            <p class="kv-value">{{ trip.get_carrier_payment_method_display|default:"—" }}{% if trip.carrier_payment_method == 'cashless' and trip.carrier_vat_rate is not None %}&nbsp;НДС {{ trip.get_carrier_vat_rate_display }}{% endif %}</p>
                         </div>
                         <div class="kv">
                             <p class="kv-label">Срок оплаты</p>

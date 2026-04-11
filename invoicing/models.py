@@ -1,8 +1,9 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import models
 from django.db.models import Sum
 
+from transdoki.enums import VatRate
 from transdoki.models import UserOwnedModel
 
 
@@ -66,12 +67,7 @@ class InvoiceLine(models.Model):
         SERVICE = "service", "Услуга"
         PENALTY = "penalty", "Штраф"
 
-    class VatRate(models.IntegerChoices):
-        ZERO       = 0,  "0%"
-        FIVE       = 5,  "5%"
-        SEVEN      = 7,  "7%"
-        TEN        = 10, "10%"
-        TWENTY_TWO = 22, "22%"
+    VatRate = VatRate  # алиас → transdoki.enums.VatRate
 
     class UnitOfMeasure(models.TextChoices):
         SERVICE = "усл.", "усл."    # ОКЕИ 642
