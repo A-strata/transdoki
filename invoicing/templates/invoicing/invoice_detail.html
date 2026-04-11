@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static invoice_filters %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'invoicing/css/invoice_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="invoice-detail-page">
+
+    <div class="sticky-nav" id="sticky-nav">
+        <div class="sticky-nav-left">
+            <div class="sticky-nav-breadcrumb">
+                <a href="{% url 'invoicing:invoice_list' %}">Счета</a>
+                <span class="breadcrumb-sep">/</span>
+                <span>{{ invoice.number }}</span>
+            </div>
+            {% include "invoicing/_invoice_status_badge.html" %}
+        </div>
+
+        <div class="sticky-nav-actions">
+            <a href="{% url 'invoicing:invoice_list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">К списку</a>
+            {% if invoice.status != 'cancelled' %}
+                <a href="{% url 'invoicing:invoice_download' invoice.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
+            {% endif %}
+            {% if invoice.status != 'cancelled' and invoice.status != 'paid' %}
+                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                        data-modal-open="cancel-invoice-modal">Аннулировать</button>
+            {% endif %}
+            {% if can_edit %}
+                <a href="{% url 'invoicing:invoice_edit' invoice.pk %}" class="tms-btn tms-btn-primary tms-btn-sm">Редактировать</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section">
+            <h2 class="section-title">Реквизиты</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Номер</p>
+                    <p class="kv-value">{{ invoice.number }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Дата счёта</p>
+                    <p class="kv-value">{{ invoice.date|date:"d.m.Y" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Статус</p>
+                    <p class="kv-value">{% include "invoicing/_invoice_status_badge.html" %}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Оплатить до</p>
+                    <p class="kv-value">{{ invoice.payment_due|date:"d.m.Y"|default:"—" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Заказчик</p>
+                    <p class="kv-value">{{ customer }}</p>
+                    {% if customer.inn %}
+                        <small class="field-hint">ИНН {{ customer.inn }}</small>
+                    {% endif %}
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Расчётный счёт</p>
+                    <p class="kv-value">
+                        {% if invoice.bank_account %}
+                            {{ invoice.bank_account.account_bank.bank_name }} — р/с {{ invoice.bank_account.account_num }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section" id="section-lines">
+            <h2 class="section-title">Товары и услуги</h2>
+
+            <div class="lines-table-wrap">
+                <table class="tms-table lines-table{% if not has_discount %} discount-off{% endif %}{% if not has_vat %} vat-off{% endif %}" id="lines-table">
+                    <thead>
+                        <tr>
+                            <th class="col-trip">Рейс</th>
+                            <th>Наименование</th>
+                            <th class="col-qty">Кол-во</th>
+                            <th class="col-unit">Ед.</th>
+                            <th class="col-price">Цена без НДС</th>
+                            <th class="col-discount" data-col-discount>Скидка %</th>
+                            <th class="col-discount" data-col-discount>Скидка ₽</th>
+                            <th class="col-vat-rate">Ставка НДС</th>
+                            <th class="col-vat-amount" data-col-vat>Сумма НДС</th>
+                            <th class="col-total">Итого</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in lines %}
+                        <tr>
+                            <td>
+                                {% if line.trip %}
+                                    <a href="{% url 'trips:detail' line.trip.pk %}">
+                                        №{{ line.trip.num_of_trip }}
+                                    </a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ line.description }}</td>
+                            <td class="cell-money">{{ line.quantity }}</td>
+                            <td>{{ line.get_unit_display }}</td>
+                            <td class="cell-money">{{ line.unit_price|money }}</td>
+                            <td class="cell-money col-discount" data-col-discount>{% if has_discount %}{{ line.discount_pct }}%{% endif %}</td>
+                            <td class="cell-money col-discount" data-col-discount>{% if has_discount %}{{ line.discount_amount|money }}{% endif %}</td>
+                            <td>{% if line.vat_rate is not None %}{{ line.get_vat_rate_display }}{% else %}Без НДС{% endif %}</td>
+                            <td class="cell-money" data-col-vat>{{ line.vat_amount|money }}</td>
+                            <td class="cell-money cell-money--bold">{{ line.amount_total|money }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% include "invoicing/_invoice_totals.html" %}
+        </div>
+    </div>
+
+    {% if has_act %}
+    <div class="card">
+        <div class="section">
+            <h2 class="section-title">Связанные документы</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Акт</p>
+                    <p class="kv-value">
+                        <a href="{% url 'invoicing:act_detail' invoice.act.pk %}">{{ invoice.act.number }}</a>
+                    </p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Дата</p>
+                    <p class="kv-value">{{ invoice.act.date|date:"d.m.Y" }}</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Статус</p>
+                    <p class="kv-value">
+                        {% if invoice.act.status == 'draft' %}
+                            <span class="status-badge status-badge--neutral">Черновик</span>
+                        {% elif invoice.act.status == 'signed' %}
+                            <span class="status-badge status-badge--success">Подписан</span>
+                        {% elif invoice.act.status == 'cancelled' %}
+                            <span class="status-badge status-badge--error">Аннулирован</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif invoice.status != 'cancelled' %}
+    <div class="card">
+        <div class="section">
+            <h2 class="section-title">Связанные документы</h2>
+            <p class="sidebar-empty">Акт ещё не создан</p>
+            <form method="post" action="{% url 'invoicing:act_create' invoice.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm"
+                        data-loading-text="Создание...">Создать акт</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if invoice.status != 'cancelled' and invoice.status != 'paid' %}
+    <div class="modal-overlay" id="cancel-invoice-modal" hidden>
+        <div class="modal-dialog">
+            <h3 class="modal-title">Аннулировать счёт?</h3>
+            <p class="modal-body">
+                Счёт {{ invoice.number }} будет аннулирован. Действие нельзя отменить.
+            </p>
+            <div class="modal-actions">
+                <form method="post" action="{% url 'invoicing:invoice_cancel' invoice.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="tms-btn tms-btn-danger"
+                            data-loading-text="Аннулирование...">Аннулировать</button>
+                </form>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</section>
+{% endblock %}

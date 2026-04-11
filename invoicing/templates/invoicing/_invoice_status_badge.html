@@ -1,0 +1,9 @@
+{% if invoice.status == 'draft' %}
+    <span class="status-badge status-badge--neutral">Черновик</span>
+{% elif invoice.status == 'sent' %}
+    <span class="status-badge status-badge--info">Выставлен</span>
+{% elif invoice.status == 'paid' %}
+    <span class="status-badge status-badge--success">Оплачен</span>
+{% elif invoice.status == 'cancelled' %}
+    <span class="status-badge status-badge--error">Аннулирован</span>
+{% endif %}

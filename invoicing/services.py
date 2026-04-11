@@ -134,6 +134,8 @@ def prepare_invoice_data(account, trip_ids):
             trip=trip,
             kind=InvoiceLine.Kind.SERVICE,
             description=_build_description(trip),
+            quantity=Decimal("1"),
+            unit=InvoiceLine.UnitOfMeasure.SERVICE,
             unit_price=unit_price,
             discount_pct=0,
             vat_rate=InvoiceLine.VatRate.ZERO,
@@ -183,6 +185,8 @@ def create_invoice_from_trips(
                 kind=InvoiceLine.Kind.SERVICE,
                 description=ld["description"],
                 unit_price=ld["unit_price"],
+                quantity=ld.get("quantity", Decimal("1")),
+                unit=ld.get("unit", InvoiceLine.UnitOfMeasure.SERVICE),
                 discount_amount=ld.get("discount_amount", 0),
                 vat_rate=ld.get("vat_rate", InvoiceLine.VatRate.ZERO),
             )
@@ -359,6 +363,8 @@ class InvoiceGenerator(BaseDocxGenerator):
             fmt_lines.append(
                 {
                     "description": line.description,
+                    "quantity": str(line.quantity).rstrip("0").rstrip("."),
+                    "unit": line.get_unit_display(),
                     "price": _fmt_money(line.unit_price),
                     "amount": _fmt_money(line.amount_total),
                 }

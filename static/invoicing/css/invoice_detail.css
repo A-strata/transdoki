@@ -270,11 +270,13 @@
 }
 
 .lines-table {
-    width: 100%;
-    table-layout: fixed;
+    min-width: 100%;
+    table-layout: auto;
 }
 
 .col-trip       { width: 70px; }
+.col-qty        { width: 65px; }
+.col-unit       { width: 100px; }
 .col-price      { width: 120px; }
 .col-discount   { width: 85px; }
 .col-vat-rate   { width: 110px; }
@@ -330,12 +332,10 @@
 }
 
 .line-input--num {
-    width: 100px;
     text-align: right;
 }
 
 .line-input--sm {
-    width: 70px;
     text-align: right;
 }
 
@@ -346,6 +346,8 @@
     font-size: var(--text-sm);
     background: var(--surface);
     color: var(--text);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .cell-money {

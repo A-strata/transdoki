@@ -18,7 +18,7 @@ class InvoiceLineInline(admin.TabularInline):
     extra = 0
     readonly_fields = ("amount_net", "vat_amount", "amount_total", "discount_amount")
     fields = (
-        "trip", "kind", "description", "unit_price",
+        "trip", "kind", "description", "quantity", "unit", "unit_price",
         "discount_pct", "discount_amount", "vat_rate",
         "amount_net", "vat_amount", "amount_total",
     )

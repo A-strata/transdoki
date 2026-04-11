@@ -1,0 +1,15 @@
+{% load invoice_filters %}
+<div class="invoice-totals">
+    <div class="invoice-totals-row">
+        <span class="invoice-totals-label">Итого без НДС</span>
+        <span class="invoice-totals-value" data-foot-net>{{ totals.net|money }}</span>
+    </div>
+    <div class="invoice-totals-row">
+        <span class="invoice-totals-label" data-foot-vat-label>{% if has_vat %}НДС {{ vat_rate_display }}{% else %}Не облагается НДС{% endif %}</span>
+        <span class="invoice-totals-value" data-foot-vat>{% if has_vat %}{{ totals.vat|money }}{% else %}—{% endif %}</span>
+    </div>
+    <div class="invoice-totals-row invoice-totals-row--grand">
+        <span class="invoice-totals-label">Всего к оплате</span>
+        <span class="invoice-totals-value" data-foot-total>{{ totals.total|money }}</span>
+    </div>
+</div>

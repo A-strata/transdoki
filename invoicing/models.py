@@ -73,6 +73,13 @@ class InvoiceLine(models.Model):
         TEN        = 10, "10%"
         TWENTY_TWO = 22, "22%"
 
+    class UnitOfMeasure(models.TextChoices):
+        SERVICE = "усл.", "усл."    # ОКЕИ 642
+        TRIP    = "рейс", "рейс"   # ОКЕИ 796
+        TON     = "т",    "т"      # ОКЕИ 168
+        KM      = "км",   "км"     # ОКЕИ 008
+        HOUR    = "ч",    "ч"      # ОКЕИ 356
+
     invoice = models.ForeignKey(
         Invoice,
         on_delete=models.CASCADE,
@@ -90,6 +97,14 @@ class InvoiceLine(models.Model):
     kind        = models.CharField(max_length=20, choices=Kind.choices, verbose_name="Тип")
     description = models.CharField(max_length=255, verbose_name="Наименование")
 
+    quantity = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("1"),
+        verbose_name="Количество",
+    )
+    unit = models.CharField(
+        max_length=10, choices=UnitOfMeasure.choices,
+        default=UnitOfMeasure.SERVICE, verbose_name="Ед. изм.",
+    )
     unit_price      = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена без НДС")
     discount_pct    = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("0"), verbose_name="Скидка %")
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0"), verbose_name="Скидка ₽")
@@ -114,8 +129,16 @@ class InvoiceLine(models.Model):
         last_edited="amt" (default) — discount_amount фиксирован, pct пересчитывается.
         last_edited="pct" — discount_pct фиксирован, amount пересчитывается.
             Используется только в apply_discount_to_invoice (массовая скидка).
+
+        Формулы:
+            gross = unit_price × quantity
+            discount_amount (при pct) = gross × discount_pct / 100
+            amount_net = gross − discount_amount
+            vat_amount = amount_net × vat_rate / 100
+            amount_total = amount_net + vat_amount
         """
         two = Decimal("0.01")
+        qty = self.quantity or Decimal("1")
 
         if not self.unit_price:
             self.discount_pct    = Decimal("0")
@@ -125,6 +148,8 @@ class InvoiceLine(models.Model):
             self.amount_total    = Decimal("0")
             return
 
+        gross = (self.unit_price * qty).quantize(two, ROUND_HALF_UP)
+
         if last_edited == "pct":
             if self.discount_pct > Decimal("99.99"):
                 raise ValueError(
@@ -132,21 +157,21 @@ class InvoiceLine(models.Model):
                     f"(указано {self.discount_pct}%)"
                 )
             self.discount_amount = (
-                self.unit_price * self.discount_pct / 100
+                gross * self.discount_pct / 100
             ).quantize(two, ROUND_HALF_UP)
         else:
-            max_amt = self.unit_price - two
+            max_amt = gross - two
             if self.discount_amount > max_amt:
                 raise ValueError(
                     f"Скидка ({self.discount_amount} ₽) не может быть "
                     f"больше {max_amt} ₽"
                 )
             self.discount_pct = (
-                self.discount_amount / self.unit_price * 100
+                self.discount_amount / gross * 100
             ).quantize(two, ROUND_HALF_UP)
 
         self.amount_net = (
-            self.unit_price - self.discount_amount
+            gross - self.discount_amount
         ).quantize(two, ROUND_HALF_UP)
 
         if self.vat_rate is not None:

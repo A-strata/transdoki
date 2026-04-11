@@ -176,11 +176,11 @@ def invoice_create(request):
             "invoice_date": data["date"],
             "trip_ids": ",".join(str(t.pk) for t in data["trips"]),
             "vat_rate_choices": InvoiceLine.VatRate.choices,
+            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
             "status_choices": Invoice.Status.choices,
             "bank_accounts": bank_accounts,
             "selected_bank_id": selected_bank_id,
             "is_create": True,
-            "editable": True,
         })
 
     raw_ids = request.POST.get("trip_ids", "")
@@ -197,6 +197,8 @@ def invoice_create(request):
         price = request.POST.get(f"{prefix}unit_price", "0")
         disc_amt = request.POST.get(f"{prefix}discount_amount", "0")
         vat = request.POST.get(f"{prefix}vat_rate", "")
+        qty_raw = request.POST.get(f"{prefix}quantity", "1")
+        unit_val = request.POST.get(f"{prefix}unit", InvoiceLine.UnitOfMeasure.SERVICE)
         try:
             unit_price = Decimal(price.replace(",", ".").replace(" ", ""))
         except (InvalidOperation, ValueError):
@@ -205,6 +207,12 @@ def invoice_create(request):
             discount_amount = Decimal(disc_amt.replace(",", ".").replace(" ", ""))
         except (InvalidOperation, ValueError):
             discount_amount = Decimal("0")
+        try:
+            quantity = Decimal(qty_raw.replace(",", ".").replace(" ", ""))
+            if quantity <= 0:
+                quantity = Decimal("1")
+        except (InvalidOperation, ValueError):
+            quantity = Decimal("1")
         if vat == "":
             vat_rate = None
         else:
@@ -216,6 +224,8 @@ def invoice_create(request):
             "trip_id": tid,
             "description": desc,
             "unit_price": unit_price,
+            "quantity": quantity,
+            "unit": unit_val,
             "discount_amount": discount_amount,
             "vat_rate": vat_rate,
         })
@@ -277,6 +287,8 @@ def invoice_create(request):
                 kind=InvoiceLine.Kind.SERVICE,
                 description=ld["description"],
                 unit_price=ld["unit_price"],
+                quantity=ld.get("quantity", Decimal("1")),
+                unit=ld.get("unit", InvoiceLine.UnitOfMeasure.SERVICE),
                 discount_amount=ld["discount_amount"],
                 vat_rate=ld["vat_rate"],
             )
@@ -302,17 +314,17 @@ def invoice_create(request):
             "payment_due": payment_due,
             "trip_ids": ",".join(str(t.pk) for t in trips),
             "vat_rate_choices": InvoiceLine.VatRate.choices,
+            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
             "status_choices": Invoice.Status.choices,
             "bank_accounts": bank_accounts,
             "selected_bank_id": selected_bank_id,
             "is_create": True,
-            "editable": True,
         })
 
 
 class InvoiceDetailView(LoginRequiredMixin, DetailView):
     model = Invoice
-    template_name = "invoicing/invoice_form.html"
+    template_name = "invoicing/invoice_detail.html"
     context_object_name = "invoice"
 
     def get_queryset(self):
@@ -323,21 +335,11 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         invoice = self.object
-        account = get_request_account(self.request)
-        lines = invoice.lines.select_related("trip").all()
+        lines = list(invoice.lines.select_related("trip").all())
         ctx["lines"] = lines
         ctx["customer"] = invoice.customer
         ctx["has_act"] = hasattr(invoice, "act")
-        ctx["vat_rate_choices"] = InvoiceLine.VatRate.choices
-        ctx["status_choices"] = Invoice.Status.choices
-        ctx["can_edit"] = True
-        ctx["editable"] = self.request.GET.get("edit") == "1"
-
-        bank_accounts = list(_get_own_bank_accounts(account))
-        ctx["bank_accounts"] = bank_accounts
-        ctx["selected_bank_id"] = invoice.bank_account_id or (
-            bank_accounts[0].pk if bank_accounts else None
-        )
+        ctx["can_edit"] = invoice.status != Invoice.Status.CANCELLED
 
         ctx["has_discount"] = any(
             l.discount_amount > 0 for l in lines
@@ -346,7 +348,7 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         ctx["has_vat"] = bool(vat_rates)
         ctx["vat_rate_display"] = f"{vat_rates.pop()}%" if len(vat_rates) == 1 else "смеш."
         ctx["totals"] = {
-            "gross": sum(l.unit_price for l in lines),
+            "gross": sum(l.unit_price * l.quantity for l in lines),
             "discount": sum(l.discount_amount for l in lines),
             "net": sum(l.amount_net for l in lines),
             "vat": sum(l.vat_amount for l in lines),
@@ -356,6 +358,42 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
 
 
 class InvoiceEditView(LoginRequiredMixin, View):
+
+    def get(self, request, pk):
+        account = get_request_account(request)
+        invoice = get_object_or_404(
+            Invoice.objects.for_account(account)
+            .select_related("customer", "bank_account__account_bank"),
+            pk=pk,
+        )
+        lines = list(invoice.lines.select_related("trip").all())
+        bank_accounts = list(_get_own_bank_accounts(account))
+
+        has_discount = any(l.discount_amount > 0 for l in lines)
+        vat_rates = set(l.vat_rate for l in lines if l.vat_rate is not None)
+
+        return render(request, "invoicing/invoice_form.html", {
+            "invoice": invoice,
+            "customer": invoice.customer,
+            "lines": lines,
+            "vat_rate_choices": InvoiceLine.VatRate.choices,
+            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
+            "status_choices": Invoice.Status.choices,
+            "bank_accounts": bank_accounts,
+            "selected_bank_id": invoice.bank_account_id or (
+                bank_accounts[0].pk if bank_accounts else None
+            ),
+            "has_discount": has_discount,
+            "has_vat": bool(vat_rates),
+            "vat_rate_display": f"{vat_rates.pop()}%" if len(vat_rates) == 1 else "смеш.",
+            "totals": {
+                "gross": sum(l.unit_price * l.quantity for l in lines),
+                "discount": sum(l.discount_amount for l in lines),
+                "net": sum(l.amount_net for l in lines),
+                "vat": sum(l.vat_amount for l in lines),
+                "total": sum(l.amount_total for l in lines),
+            },
+        })
 
     def post(self, request, pk):
         account = get_request_account(request)
@@ -369,6 +407,8 @@ class InvoiceEditView(LoginRequiredMixin, View):
             prefix = f"line_{line.pk}_"
             desc = request.POST.get(f"{prefix}description")
             price = request.POST.get(f"{prefix}unit_price")
+            qty_raw = request.POST.get(f"{prefix}quantity")
+            unit_val = request.POST.get(f"{prefix}unit")
             vat = request.POST.get(f"{prefix}vat_rate")
             disc_amt = request.POST.get(f"{prefix}discount_amount")
 
@@ -379,6 +419,15 @@ class InvoiceEditView(LoginRequiredMixin, View):
                     line.unit_price = Decimal(price.replace(",", ".").replace(" ", ""))
                 except (InvalidOperation, ValueError):
                     pass
+            if qty_raw is not None:
+                try:
+                    qty = Decimal(qty_raw.replace(",", ".").replace(" ", ""))
+                    if qty > 0:
+                        line.quantity = qty
+                except (InvalidOperation, ValueError):
+                    pass
+            if unit_val is not None:
+                line.unit = unit_val
             if vat is not None:
                 if vat == "":
                     line.vat_rate = None
@@ -404,7 +453,8 @@ class InvoiceEditView(LoginRequiredMixin, View):
             InvoiceLine.objects.bulk_update(
                 updated,
                 [
-                    "description", "unit_price", "discount_pct", "discount_amount",
+                    "description", "unit_price", "quantity", "unit",
+                    "discount_pct", "discount_amount",
                     "vat_rate", "amount_net", "vat_amount", "amount_total",
                 ],
             )
