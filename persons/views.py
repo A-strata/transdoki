@@ -90,11 +90,19 @@ class PersonDeleteView(LoginRequiredMixin, DeleteView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         try:
             self.object.delete()
+            if is_ajax:
+                return JsonResponse({"ok": True})
             messages.success(request, f"«{self.object}» удалён.")
             return redirect(self.get_success_url())
         except ProtectedError:
+            if is_ajax:
+                return JsonResponse(
+                    {"ok": False, "error": "Невозможно удалить: есть связанные рейсы или путевые листы."},
+                    status=409,
+                )
             messages.error(
                 request,
                 "Невозможно удалить: есть связанные рейсы или путевые листы.",

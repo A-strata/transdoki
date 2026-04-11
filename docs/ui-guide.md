@@ -600,6 +600,16 @@ const suggestUrl = wrap.dataset.suggestUrl;
 
 > **Рекомендация на будущее**: при рефакторинге модалок применить `isolation: isolate` на `.modal-overlay`. Это создаёт изолированный stacking context — внутри модалки можно использовать z-index 1, 2, 3 без конфликтов с остальной страницей. Тогда дропдауны и автокомплиты внутри модалок не потребуют значений выше `--z-modal`.
 
+### Скролл-контейнер — `<main>`, не `window`
+
+`.app-shell` имеет `height: 100vh; overflow: hidden`, а `<main>` — `flex: 1; overflow-y: auto`. Это значит:
+
+- **Страница скроллится внутри `<main>`**, а не через `window`/`document`
+- `window.addEventListener('scroll', ...)` **не сработает** для скролла страницы
+- Для scroll-зависимой логики нужно вешать listener на `<main>` или использовать `getScrollParent()` для поиска ближайшего скроллящегося предка
+
+Это критично для: позиционирования дропдаунов, бесконечного скролла, IntersectionObserver, любой логики «поле ушло из зоны видимости».
+
 ---
 
 ## 9. Карточки и структура страниц
@@ -831,6 +841,24 @@ document.querySelectorAll('[data-cascade-source]').forEach(source => {
 - При очистке родителя — сбрасывать зависимое поле в дефолтное состояние
 - При ошибке загрузки — показывать «Ошибка загрузки» в option, не оставлять пустым
 - View для API — возвращает JSON-список `[{id, name}, ...]`, проверяет `is_authenticated`
+
+### Дропдауны внутри overflow: hidden (портирование в body)
+
+Если выпадающий список рендерится внутри контейнера с `overflow: hidden` (карточки, аккордеоны), он будет обрезан. Решение — портировать дропдаун в `document.body` с `position: fixed`.
+
+**Паттерн (реализован в `autocomplete.js` и `trip_form_route.js`):**
+
+1. **Создание**: `document.body.appendChild(dropdown)` вместо вставки в контейнер поля
+2. **Позиционирование**: `position: fixed` + `getBoundingClientRect()` от input-поля
+3. **Направление**: если `spaceBelow < maxHeight && spaceAbove > spaceBelow` — открывать вверх
+4. **Скролл**: listener на `getScrollParent(input)` (не на `window` — см. раздел 8), перепозиционирование через `requestAnimationFrame`
+5. **Видимость**: закрывать дропдаун когда `rect.top` поля уходит под sticky-элементы (`getVisibleTop()` учитывает `.nav-wrap` и `.sticky-nav`)
+6. **Cleanup**: при ре-рендере (route builder) — удалять осиротевшие дропдауны из body через `data-`атрибуты
+
+**Правила:**
+- Клик вне — проверять и контейнер поля, и дропдаун (теперь в разных поддеревьях DOM)
+- Scroll listener снимать при закрытии дропдауна, не накапливать
+- `z-index: var(--z-autocomplete)` (1100) — выше навбара и модалок
 
 ---
 

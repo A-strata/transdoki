@@ -253,7 +253,7 @@
         </div>
         <div class="collapsible-body">
             {% if vehicles %}
-            <table class="vehicle-table">
+            <table class="vehicle-table" data-empty-text="Нет добавленных транспортных средств">
                 <thead>
                     <tr>
                         <th>Рег. номер</th>
@@ -331,7 +331,7 @@
         </div>
         <div class="collapsible-body">
             {% if employees %}
-            <table class="vehicle-table">
+            <table class="vehicle-table" data-empty-text="Нет добавленных водителей">
                 <thead>
                     <tr>
                         <th>ФИО</th>
@@ -544,6 +544,7 @@
 
 <script src="{% static 'organizations/js/vehicle_create_modal.js' %}"></script>
 <script src="{% static 'organizations/js/person_create_modal.js' %}"></script>
+<script src="{% static 'organizations/js/organization_detail_delete.js' %}"></script>
 {% endif %}
 
 {# ── Модал создания банковского счёта ── #}
