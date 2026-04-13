@@ -13,23 +13,16 @@
             <div class="sticky-nav-breadcrumb">
                 <a href="{% url 'invoicing:invoice_list' %}">Счета</a>
                 <span class="breadcrumb-sep">/</span>
-                <span>{{ invoice.number }}</span>
+                <span>{{ invoice.display_number }}</span>
             </div>
-            {% include "invoicing/_invoice_status_badge.html" %}
         </div>
 
         <div class="sticky-nav-actions">
             <a href="{% url 'invoicing:invoice_list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">К списку</a>
-            {% if invoice.status != 'cancelled' %}
-                <a href="{% url 'invoicing:invoice_download' invoice.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
-            {% endif %}
-            {% if invoice.status != 'cancelled' and invoice.status != 'paid' %}
-                <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
-                        data-modal-open="cancel-invoice-modal">Аннулировать</button>
-            {% endif %}
-            {% if can_edit %}
-                <a href="{% url 'invoicing:invoice_edit' invoice.pk %}" class="tms-btn tms-btn-primary tms-btn-sm">Редактировать</a>
-            {% endif %}
+            <a href="{% url 'invoicing:invoice_download' invoice.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
+            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                    data-modal-open="delete-invoice-modal">Удалить</button>
+            <a href="{% url 'invoicing:invoice_edit' invoice.pk %}" class="tms-btn tms-btn-primary tms-btn-sm">Редактировать</a>
         </div>
     </div>
 
@@ -39,15 +32,11 @@
             <div class="kv-grid">
                 <div class="kv">
                     <p class="kv-label">Номер</p>
-                    <p class="kv-value">{{ invoice.number }}</p>
+                    <p class="kv-value">{{ invoice.display_number }}</p>
                 </div>
                 <div class="kv">
                     <p class="kv-label">Дата счёта</p>
                     <p class="kv-value">{{ invoice.date|date:"d.m.Y" }}</p>
-                </div>
-                <div class="kv">
-                    <p class="kv-label">Статус</p>
-                    <p class="kv-value">{% include "invoicing/_invoice_status_badge.html" %}</p>
                 </div>
                 <div class="kv">
                     <p class="kv-label">Оплатить до</p>
@@ -125,68 +114,23 @@
         </div>
     </div>
 
-    {% if has_act %}
-    <div class="card">
-        <div class="section">
-            <h2 class="section-title">Связанные документы</h2>
-            <div class="kv-grid">
-                <div class="kv">
-                    <p class="kv-label">Акт</p>
-                    <p class="kv-value">
-                        <a href="{% url 'invoicing:act_detail' invoice.act.pk %}">{{ invoice.act.number }}</a>
-                    </p>
-                </div>
-                <div class="kv">
-                    <p class="kv-label">Дата</p>
-                    <p class="kv-value">{{ invoice.act.date|date:"d.m.Y" }}</p>
-                </div>
-                <div class="kv">
-                    <p class="kv-label">Статус</p>
-                    <p class="kv-value">
-                        {% if invoice.act.status == 'draft' %}
-                            <span class="status-badge status-badge--neutral">Черновик</span>
-                        {% elif invoice.act.status == 'signed' %}
-                            <span class="status-badge status-badge--success">Подписан</span>
-                        {% elif invoice.act.status == 'cancelled' %}
-                            <span class="status-badge status-badge--error">Аннулирован</span>
-                        {% endif %}
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% elif invoice.status != 'cancelled' %}
-    <div class="card">
-        <div class="section">
-            <h2 class="section-title">Связанные документы</h2>
-            <p class="sidebar-empty">Акт ещё не создан</p>
-            <form method="post" action="{% url 'invoicing:act_create' invoice.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="tms-btn tms-btn-secondary tms-btn-sm"
-                        data-loading-text="Создание...">Создать акт</button>
-            </form>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if invoice.status != 'cancelled' and invoice.status != 'paid' %}
-    <div class="modal-overlay" id="cancel-invoice-modal" hidden>
+    <div class="modal-overlay" id="delete-invoice-modal" hidden>
         <div class="modal-dialog">
-            <h3 class="modal-title">Аннулировать счёт?</h3>
+            <h3 class="modal-title">Удалить счёт?</h3>
             <p class="modal-body">
-                Счёт {{ invoice.number }} будет аннулирован. Действие нельзя отменить.
+                Счёт {{ invoice.display_number }} будет удалён вместе со всеми строками.
+                Действие нельзя отменить.
             </p>
             <div class="modal-actions">
-                <form method="post" action="{% url 'invoicing:invoice_cancel' invoice.pk %}">
+                <form method="post" action="{% url 'invoicing:invoice_delete' invoice.pk %}">
                     {% csrf_token %}
                     <button type="submit" class="tms-btn tms-btn-danger"
-                            data-loading-text="Аннулирование...">Аннулировать</button>
+                            data-loading-text="Удаление...">Удалить</button>
                 </form>
                 <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
             </div>
         </div>
     </div>
-    {% endif %}
 
 </section>
 {% endblock %}

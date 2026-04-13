@@ -22,16 +22,8 @@
     white-space: nowrap;
 }
 
-.invoices-page .toolbar-zone-title {
-    flex-shrink: 0;
-}
-
-.invoices-page .toolbar-zone-filters {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
+/* .toolbar-zone-title / .toolbar-zone-filters / .toolbar-zone-action —
+   в static/css/globals.css (Pattern B зоны тулбара). */
 
 /* ── Tabs ── */
 

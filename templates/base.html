@@ -44,12 +44,12 @@
                         </button>
                         <div class="nav-menu-dropdown">
                             <div class="nav-menu-section-label">Банк и касса</div>
-                            <a href="{% url 'bank:statement' %}" class="nav-menu-item">Банковские выписки</a>
+                            <span class="nav-menu-item nav-menu-item--disabled" title="Готовится">Банковские выписки</span>
                             <div class="nav-menu-divider"></div>
                             <div class="nav-menu-section-label">Продажи</div>
                             <a href="{% url 'invoicing:invoice_list' %}" class="nav-menu-item">Счета покупателям</a>
-                            <a href="{% url 'invoicing:invoice_list' %}" class="nav-menu-item">Реализация</a>
-                            <a href="{% url 'invoicing:settlements' %}" class="nav-menu-item">Акты сверки расчётов</a>
+                            <span class="nav-menu-item nav-menu-item--disabled" title="Готовится">Реализация</span>
+                            <span class="nav-menu-item nav-menu-item--disabled" title="Готовится">Акты сверки расчётов</span>
                             <div class="nav-menu-divider"></div>
                             <div class="nav-menu-section-label">Покупки</div>
                             <span class="nav-menu-item nav-menu-item--disabled" title="Готовится">Счета от поставщиков</span>

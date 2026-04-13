@@ -24,21 +24,8 @@
     white-space: nowrap;
 }
 
-.bank-page .toolbar-zone-title {
-    flex-shrink: 0;
-}
-
-.bank-page .toolbar-zone-filters {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.bank-page .toolbar-zone-action {
-    flex-shrink: 0;
-    margin-left: auto;
-}
+/* .toolbar-zone-title / .toolbar-zone-filters / .toolbar-zone-action —
+   в static/css/globals.css (Pattern B зоны тулбара). */
 
 
 /* ── Table ── */

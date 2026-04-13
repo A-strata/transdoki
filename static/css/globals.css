@@ -495,3 +495,33 @@ textarea.is-invalid:focus {
 .site-footer a:hover {
     color: var(--text);
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   Зоны тулбара списковых страниц (Pattern B: trips/invoicing/bank)
+
+   Используется в парe с .list-toolbar (flex-контейнер, чьё определение
+   остаётся в локальных CSS каждого списка, потому что Pattern A
+   (contracts/organizations/persons/vehicles/waybills) использует другую
+   раскладку .list-toolbar с .list-toolbar-left / .list-toolbar-right).
+
+   Унификация Pattern A ↔ Pattern B — отдельный техдолг.
+   ───────────────────────────────────────────────────────────────────── */
+.toolbar-zone-title {
+    flex-shrink: 0;
+}
+
+.toolbar-zone-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-zone-filters > .active-filters {
+    flex-basis: 100%;
+}
+
+.toolbar-zone-action {
+    flex-shrink: 0;
+    margin-left: auto;
+}

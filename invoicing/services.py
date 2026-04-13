@@ -1,23 +1,36 @@
-from datetime import date
 from decimal import Decimal
 
-from django.db import models, transaction
-from django.db.models import Max
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.db import IntegrityError, transaction
+from django.db.models import F, Max, ProtectedError, Q, Sum, Value
+from django.db.models.functions import Coalesce
 from django.http import FileResponse
+from django.utils.timezone import localdate
 
 from contracts.services import _org_context, amount_to_words
 from organizations.models import Organization
-from trips.models import Trip
+from trips.models import Trip, TripPoint
 from trips.services import BaseDocxGenerator
 
-from .models import Act, Invoice, InvoiceLine, Payment
+from .models import Invoice, InvoiceLine, Payment, PaymentDirection
+
+# ─────────────────────────────────────────────────────────────────────
+# Хелперы
+# ─────────────────────────────────────────────────────────────────────
+
+
+def _require_account(user):
+    """Извлекает account из user.profile, бросает ValidationError если нет."""
+    profile = getattr(user, "profile", None)
+    account = getattr(profile, "account", None)
+    if account is None:
+        raise ValidationError("У пользователя не найден account.")
+    return account
 
 
 def _build_description(trip):
-    from trips.models import TripPoint
-
+    """Текстовое наименование строки счёта по рейсу."""
     points = list(trip.points.order_by("sequence").all())
-
     loads = [p for p in points if p.point_type == TripPoint.Type.LOAD]
     unloads = [p for p in points if p.point_type == TripPoint.Type.UNLOAD]
 
@@ -27,9 +40,7 @@ def _build_description(trip):
     first_load_date = loads[0].planned_date if loads else None
     last_unload_date = unloads[-1].planned_date if unloads else None
 
-    parts = [
-        f"Перевозка груза по маршруту: {first_load_addr} — {last_unload_addr}",
-    ]
+    parts = [f"Перевозка груза по маршруту: {first_load_addr} — {last_unload_addr}"]
 
     date_parts = []
     if first_load_date:
@@ -53,49 +64,56 @@ def _build_description(trip):
     return ", ".join(parts) + "."
 
 
-def _pluralize_trips(n):
-    if 11 <= n % 100 <= 19:
-        return f"{n} рейсов"
-    r = n % 10
-    if r == 1:
-        return f"{n} рейс"
-    if 2 <= r <= 4:
-        return f"{n} рейса"
-    return f"{n} рейсов"
-
-
-def next_invoice_number(account):
-    year = date.today().year
-    prefix = f"СЧ-{year}-"
-    last = Invoice.objects.filter(account=account, number__startswith=prefix).aggregate(
-        m=Max("number")
-    )["m"]
-    seq = (int(last.split("-")[-1]) + 1) if last else 1
-    return f"{prefix}{seq:04d}"
-
-
-def next_act_number(account):
-    year = date.today().year
-    prefix = f"АКТ-{year}-"
-    last = Act.objects.filter(account=account, number__startswith=prefix).aggregate(
-        m=Max("number")
-    )["m"]
-    seq = (int(last.split("-")[-1]) + 1) if last else 1
-    return f"{prefix}{seq:04d}"
-
-
-def prepare_invoice_data(account, trip_ids):
+def _check_trips_availability(trip_ids, account_id, exclude_invoice=None):
     """
-    Валидирует рейсы и возвращает предзаполненные данные для формы создания счёта.
-    Ничего не записывает в БД.
+    Блокирует и проверяет что рейсы не заняты другим счётом.
+
+    Вызывать только внутри transaction.atomic().
+    select_for_update(of=("self",)) — блокирует только InvoiceLine,
+    не связанную Invoice-таблицу, чтобы избежать взаимных блокировок
+    с update_invoice на ту же шапку.
+
+    list() на qs обязательно — без него select_for_update ленив и
+    блокировка не применяется.
+    """
+    if not trip_ids:
+        return
+
+    qs = InvoiceLine.objects.select_for_update(of=("self",)).filter(
+        trip_id__in=trip_ids, invoice__account_id=account_id
+    )
+    if exclude_invoice is not None:
+        qs = qs.exclude(invoice=exclude_invoice)
+
+    busy = list(qs.values_list("trip__num_of_trip", flat=True))
+    if busy:
+        raise ValidationError(
+            {
+                NON_FIELD_ERRORS: f"Рейсы уже включены в другой счёт: {', '.join(map(str, busy))}",
+            }
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Invoice — prepare / create / update
+# ─────────────────────────────────────────────────────────────────────
+
+
+def prepare_invoice_data(user, trip_ids):
+    """
+    Валидирует рейсы и собирает данные для префилла формы.
+    Ничего не пишет в БД.
 
     Возвращает dict:
         customer: Organization
-        trips: list[Trip]
-        lines: list[dict]  — предзаполненные строки
-        date: date
-    Бросает ValueError при проблемах с данными.
+        lines:    list[dict] — готово и для initial= в формсете,
+                  и для передачи в create_invoice(lines_data=...)
+
+    Занятость рейсов здесь не проверяется: она требует atomic-блока
+    и проверяется внутри create_invoice.
     """
+    account = _require_account(user)
+
     trips = list(
         Trip.objects.for_account(account)
         .filter(pk__in=trip_ids)
@@ -104,139 +122,273 @@ def prepare_invoice_data(account, trip_ids):
     )
 
     if not trips:
-        raise ValueError("Рейсы не найдены.")
+        raise ValidationError({NON_FIELD_ERRORS: "Рейсы не найдены."})
 
     customers = {t.client_id for t in trips}
     if len(customers) > 1:
-        raise ValueError("Все рейсы должны принадлежать одному заказчику.")
-
-    already_invoiced = []
-    for t in trips:
-        if InvoiceLine.objects.filter(
-            trip=t,
-            invoice__status__in=[
-                Invoice.Status.DRAFT,
-                Invoice.Status.SENT,
-                Invoice.Status.PAID,
-            ],
-        ).exists():
-            already_invoiced.append(t)
-    if already_invoiced:
-        nums = ", ".join(str(t.num_of_trip) for t in already_invoiced)
-        raise ValueError(f"Рейсы уже включены в действующий счёт: {nums}")
+        raise ValidationError(
+            {
+                NON_FIELD_ERRORS: "Все рейсы должны принадлежать одному заказчику.",
+            }
+        )
 
     lines = []
     for trip in trips:
-        unit_price = trip.client_total if trip.client_total is not None else trip.client_cost
-        if unit_price is None:
-            unit_price = Decimal("0")
-
-        line = InvoiceLine(
-            trip=trip,
-            kind=InvoiceLine.Kind.SERVICE,
-            description=_build_description(trip),
-            quantity=Decimal("1"),
-            unit=InvoiceLine.UnitOfMeasure.SERVICE,
-            unit_price=unit_price,
-            discount_pct=0,
-            vat_rate=trip.client_vat_rate,
+        unit_price = (
+            trip.client_total if trip.client_total is not None else trip.client_cost
         )
-        line.compute()
-        lines.append(line)
+        if unit_price is None:
+            raise ValidationError(
+                {
+                    NON_FIELD_ERRORS: f"У рейса №{trip.num_of_trip} не указана стоимость для клиента.",
+                }
+            )
+
+        lines.append(
+            {
+                "trip": trip,
+                "kind": InvoiceLine.Kind.SERVICE,
+                "description": _build_description(trip),
+                "quantity": Decimal("1"),
+                "unit": InvoiceLine.UnitOfMeasure.SERVICE,
+                "unit_price": unit_price,
+                "discount_amount": Decimal("0"),
+                "vat_rate": trip.client_vat_rate,
+            }
+        )
 
     return {
         "customer": trips[0].client,
-        "trips": trips,
         "lines": lines,
-        "date": date.today(),
     }
 
 
-@transaction.atomic
-def create_invoice_from_trips(
-    account, trip_ids, user, invoice_date=None, lines_data=None, invoice_number=None
+def create_invoice(
+    *,
+    user,
+    customer,
+    lines_data,
+    number=None,
+    invoice_date=None,
+    payment_due=None,
+    bank_account=None,
 ):
     """
-    Создаёт Invoice + InvoiceLine из рейсов.
+    Единственная точка создания счёта.
 
-    invoice_number — пользовательский номер; если None — генерируется автоматически.
-    lines_data — опциональный список dict с пользовательскими правками строк:
-        [{"trip_id": int, "description": str, "unit_price": Decimal,
-          "discount_amount": Decimal, "vat_rate": int}, ...]
-    Если не передан — строки формируются автоматически.
+    lines_data: list[dict] с полями InvoiceLine. Ключ "trip" — объект
+    Trip или None (контракт сервиса: объекты, не id).
+
+    number:
+        None — автогенерация: внутри atomic select_for_update + Max+1
+        с retry-циклом на IntegrityError (защита от гонок).
+        int  — явный пользовательский номер: одна попытка, при коллизии
+        с unique (account, year, number) — ValidationError под полем.
     """
-    data = prepare_invoice_data(account, trip_ids)
+    account = _require_account(user)
+    invoice_date = invoice_date or localdate()
+    year = invoice_date.year
 
-    invoice = Invoice.objects.create(
-        account=account,
-        created_by=user,
-        number=invoice_number or next_invoice_number(account),
-        date=invoice_date or data["date"],
-        customer=data["customer"],
-        status=Invoice.Status.DRAFT,
-    )
+    if customer.account_id != account.id:
+        raise ValidationError(
+            {
+                "customer": "Заказчик не принадлежит вашему аккаунту.",
+            }
+        )
+    if bank_account is not None and bank_account.account_id != account.id:
+        raise ValidationError(
+            {
+                "bank_account": "Расчётный счёт не принадлежит вашему аккаунту.",
+            }
+        )
 
-    if lines_data:
-        trip_map = {t.pk: t for t in data["trips"]}
-        for ld in lines_data:
-            trip = trip_map.get(ld.get("trip_id"))
-            line = InvoiceLine(
-                invoice=invoice,
-                trip=trip,
-                kind=InvoiceLine.Kind.SERVICE,
-                description=ld["description"],
-                unit_price=ld["unit_price"],
-                quantity=ld.get("quantity", Decimal("1")),
-                unit=ld.get("unit", InvoiceLine.UnitOfMeasure.SERVICE),
-                discount_amount=ld.get("discount_amount", 0),
-                vat_rate=ld.get("vat_rate", InvoiceLine.VatRate.ZERO),
+    trip_ids = [ld["trip"].pk for ld in lines_data if ld.get("trip")]
+
+    user_provided_number = number is not None
+    max_attempts = 1 if user_provided_number else 5
+
+    for attempt in range(max_attempts):
+        try:
+            with transaction.atomic():
+                _check_trips_availability(trip_ids, account.id)
+
+                if user_provided_number:
+                    invoice_number = number
+                else:
+                    last_number = (
+                        Invoice.objects.select_for_update()
+                        .filter(account_id=account.id, year=year)
+                        .aggregate(m=Max("number"))["m"]
+                        or 0
+                    )
+                    invoice_number = last_number + 1
+
+                invoice = Invoice(
+                    account=account,
+                    created_by=user,
+                    updated_by=user,
+                    year=year,
+                    number=invoice_number,
+                    date=invoice_date,
+                    payment_due=payment_due,
+                    customer=customer,
+                    bank_account=bank_account,
+                )
+                invoice.full_clean()
+                invoice.save(force_insert=True)
+
+                for ld in lines_data:
+                    line = InvoiceLine(invoice=invoice, **ld)
+                    line.full_clean()  # → clean() → compute()
+                    line.save(force_insert=True)
+
+                return invoice
+
+        except IntegrityError as e:
+            if user_provided_number:
+                raise ValidationError(
+                    {
+                        "number": f"Счёт №{number} за {year} год уже существует.",
+                    }
+                ) from e
+            if attempt == max_attempts - 1:
+                raise
+
+
+def update_invoice(invoice, *, user, header_data, lines_diff):
+    """
+    Редактирование счёта.
+
+    header_data: dict с полями Invoice (date, payment_due, customer, bank_account).
+    lines_diff: {"to_create": [...], "to_update": [(pk, {...}), ...], "to_delete": [pk, ...]}
+
+    Порядок внутри atomic():
+      1. Блокировка и проверка занятости рейсов (с учётом to_create + to_update)
+      2. Обновление шапки
+      3. delete → update → create для строк (delete первым, чтобы высвободить
+         trip'ы до того как _check_trips_availability увидит их как «занятые»)
+
+    Смена date на другой год запрещена: number привязан к году, перенос
+    создаёт дыры в нумерации.
+
+    ProtectedError на delete (будущий PaymentAllocation) конвертируется
+    в ValidationError.
+    """
+    account = _require_account(user)
+
+    if invoice.account_id != account.id:
+        raise ValidationError(
+            {NON_FIELD_ERRORS: "Счёт не принадлежит вашему аккаунту."}
+        )
+
+    new_date = header_data.get("date")
+    if new_date and new_date.year != invoice.year:
+        raise ValidationError(
+            {
+                "date": "Смена года счёта требует создания нового счёта. "
+                "Удалите текущий и создайте новый с нужной датой.",
+            }
+        )
+
+    customer = header_data.get("customer")
+    if customer is not None and customer.account_id != account.id:
+        raise ValidationError({"customer": "Заказчик не принадлежит вашему аккаунту."})
+
+    bank_account = header_data.get("bank_account")
+    if bank_account is not None and bank_account.account_id != account.id:
+        raise ValidationError(
+            {
+                "bank_account": "Расчётный счёт не принадлежит вашему аккаунту.",
+            }
+        )
+
+    # Смена номера: pre-check коллизии (account, year, number).
+    # Гонка возможна, но окно узкое — финальная защита через unique
+    # constraint на уровне БД.
+    new_number = header_data.get("number")
+    if new_number is not None and new_number != invoice.number:
+        collision = (
+            Invoice.objects.filter(
+                account_id=account.id, year=invoice.year, number=new_number
             )
-            line.compute()
+            .exclude(pk=invoice.pk)
+            .exists()
+        )
+        if collision:
+            raise ValidationError(
+                {
+                    "number": f"Счёт №{new_number} за {invoice.year} год уже существует.",
+                }
+            )
+
+    # Рейсы которые останутся или появятся после apply
+    trip_ids = []
+    for payload in lines_diff["to_create"]:
+        if payload.get("trip"):
+            trip_ids.append(payload["trip"].pk)
+    for _, payload in lines_diff["to_update"]:
+        if payload.get("trip"):
+            trip_ids.append(payload["trip"].pk)
+
+    with transaction.atomic():
+        # 1
+        _check_trips_availability(trip_ids, account.id, exclude_invoice=invoice)
+
+        # 2
+        for field, value in header_data.items():
+            setattr(invoice, field, value)
+        invoice.updated_by = user
+        invoice.full_clean()
+        invoice.save(
+            update_fields=[
+                *header_data.keys(),
+                "updated_by",
+                "updated_at",
+            ]
+        )
+
+        # 3a delete
+        if lines_diff["to_delete"]:
+            try:
+                invoice.lines.filter(pk__in=lines_diff["to_delete"]).delete()
+            except ProtectedError as e:
+                raise ValidationError(
+                    {
+                        NON_FIELD_ERRORS: "Нельзя удалить строки, на которые разнесены платежи.",
+                    }
+                ) from e
+
+        # 3b update
+        for pk, payload in lines_diff["to_update"]:
+            line = invoice.lines.get(pk=pk)
+            for field, value in payload.items():
+                setattr(line, field, value)
+            line.full_clean()
             line.save()
-    else:
-        for line in data["lines"]:
-            line.invoice = invoice
-            line.save()
 
-    return invoice
-
-
-def apply_discount_to_invoice(invoice, discount_pct, user):
-    lines = list(invoice.lines.filter(kind=InvoiceLine.Kind.SERVICE))
-    for line in lines:
-        line.discount_pct = discount_pct
-        line.compute(last_edited="pct")
-
-    InvoiceLine.objects.bulk_update(
-        lines,
-        ["discount_pct", "discount_amount", "amount_net", "vat_amount", "amount_total"],
-    )
-
-    invoice.updated_by = user
-    invoice.save(update_fields=["updated_by", "updated_at"])
+        # 3c create
+        for payload in lines_diff["to_create"]:
+            line = InvoiceLine(invoice=invoice, **payload)
+            line.full_clean()
+            line.save(force_insert=True)
 
 
-@transaction.atomic
-def cancel_invoice(invoice, user):
-    if invoice.status == Invoice.Status.PAID:
-        raise ValueError("Нельзя аннулировать оплаченный счёт.")
-
-    invoice.lines.all().delete()
-    invoice.status = Invoice.Status.CANCELLED
-    invoice.updated_by = user
-    invoice.save(update_fields=["status", "updated_by", "updated_at"])
+# ─────────────────────────────────────────────────────────────────────
+# Payments
+# ─────────────────────────────────────────────────────────────────────
 
 
-def create_payment(organization, date, amount, payment_method, direction, created_by, description=""):
+def create_payment(
+    organization, date, amount, payment_method, direction, created_by, description=""
+):
     """
     Регистрирует платёж по контрагенту.
 
-    direction — обязательный: INCOMING (поступление) или OUTGOING (списание/возврат).
-    Платёж привязан к контрагенту, не к конкретному счёту или акту.
-    Разнесение по актам (PaymentAllocation) — следующий этап.
+    direction: INCOMING (поступление) или OUTGOING (списание/возврат).
+    Платёж привязан к контрагенту, не к счёту или акту.
     """
     if amount <= 0:
-        raise ValueError("Сумма платежа должна быть положительной.")
+        raise ValidationError({"amount": "Сумма платежа должна быть положительной."})
 
     return Payment.objects.create(
         account=organization.account,
@@ -250,31 +402,18 @@ def create_payment(organization, date, amount, payment_method, direction, create
     )
 
 
-def delete_payment(payment):
-    """Удаляет платёж."""
-    payment.delete()
-
-
 def get_counterparty_balances(account, date_from=None, date_to=None):
     """
-    Сальдо по контрагентам: начислено (по подписанным актам), оплачено (платежи), долг.
+    Сальдо по контрагентам: начислено (по счетам), оплачено (платежи), долг.
 
-    Учитываются все платежи по контрагенту — поступления со знаком плюс,
-    возвраты (списания) со знаком минус.
+    «Начислено» берётся напрямую из Invoice (через строки счёта), без
+    привязки к актам — связь между моделями будет добавлена в отдельной
+    итерации.
 
-    Период фильтрует по Act.date (дата акта) и Payment.date (дата платежа).
-
-    Возвращает queryset Organization с аннотациями: invoiced, paid, balance.
+    Поступления идут со знаком плюс, возвраты (OUTGOING) со знаком минус.
+    Период фильтрует по Invoice.date и Payment.date.
     """
-    from django.db.models import Q, Sum, Value
-    from django.db.models.functions import Coalesce
-
-    from .models import PaymentDirection
-
-    act_filter = Q(
-        invoices__act__account=account,
-        invoices__act__status=Act.Status.SIGNED,
-    )
+    invoice_filter = Q(invoices__account=account)
     incoming_filter = Q(
         payments__account=account,
         payments__direction=PaymentDirection.INCOMING,
@@ -285,11 +424,11 @@ def get_counterparty_balances(account, date_from=None, date_to=None):
     )
 
     if date_from:
-        act_filter &= Q(invoices__act__date__gte=date_from)
+        invoice_filter &= Q(invoices__date__gte=date_from)
         incoming_filter &= Q(payments__date__gte=date_from)
         outgoing_filter &= Q(payments__date__gte=date_from)
     if date_to:
-        act_filter &= Q(invoices__act__date__lte=date_to)
+        invoice_filter &= Q(invoices__date__lte=date_to)
         incoming_filter &= Q(payments__date__lte=date_to)
         outgoing_filter &= Q(payments__date__lte=date_to)
 
@@ -303,10 +442,10 @@ def get_counterparty_balances(account, date_from=None, date_to=None):
 
     return (
         Organization.objects.for_account(account)
-        .filter(act_filter | any_payment_filter)
+        .filter(Q(invoices__account=account) | any_payment_filter)
         .annotate(
             invoiced=Coalesce(
-                Sum("invoices__act__amount_total", filter=act_filter),
+                Sum("invoices__lines__amount_total", filter=invoice_filter),
                 zero,
             ),
             _incoming=Coalesce(
@@ -318,10 +457,16 @@ def get_counterparty_balances(account, date_from=None, date_to=None):
                 zero,
             ),
         )
-        .annotate(paid=models.F("_incoming") - models.F("_outgoing"))
-        .annotate(balance=models.F("invoiced") - models.F("paid"))
+        .annotate(paid=F("_incoming") - F("_outgoing"))
+        .annotate(balance=F("invoiced") - F("paid"))
         .order_by("-balance", "short_name")
+        .distinct()
     )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Печатная форма счёта (DOCX)
+# ─────────────────────────────────────────────────────────────────────
 
 
 def _fmt_money(value):
@@ -356,7 +501,7 @@ class InvoiceGenerator(BaseDocxGenerator):
         ctx.update(_org_context(own_company, "own_company"))
         ctx.update(_org_context(customer, "contractor"))
 
-        ctx["invoice_number"] = invoice.number
+        ctx["invoice_number"] = invoice.display_number
         ctx["invoice_date"] = invoice.date.strftime("%d.%m.%Y") if invoice.date else "—"
 
         fmt_lines = []
@@ -382,7 +527,7 @@ class InvoiceGenerator(BaseDocxGenerator):
         ctx["amount_words"] = amount_to_words(total)
 
         if total_vat > 0:
-            vat_rates = {ln.vat_rate for ln in lines if ln.vat_rate > 0}
+            vat_rates = {ln.vat_rate for ln in lines if ln.vat_rate and ln.vat_rate > 0}
             if len(vat_rates) == 1:
                 ctx["vat_text"] = f"В том числе НДС {vat_rates.pop()}%"
             else:
@@ -397,7 +542,7 @@ class InvoiceGenerator(BaseDocxGenerator):
     @classmethod
     def build_download_name(cls, invoice) -> str:
         date_str = invoice.date.strftime("%d.%m.%Y") if invoice.date else ""
-        return f"Счёт {invoice.number} от {date_str}.docx"
+        return f"Счёт {invoice.display_number} от {date_str}.docx"
 
     @classmethod
     def generate_response(cls, invoice) -> FileResponse:
@@ -413,54 +558,3 @@ class InvoiceGenerator(BaseDocxGenerator):
                 "officedocument.wordprocessingml.document"
             ),
         )
-
-
-@transaction.atomic
-def create_act_from_invoice(invoice, user):
-    if Act.objects.filter(invoice=invoice).exists():
-        raise ValueError("К этому счёту уже создан акт.")
-
-    service_lines = list(
-        invoice.lines.filter(kind=InvoiceLine.Kind.SERVICE).select_related("trip")
-    )
-
-    if len(service_lines) == 1:
-        line = service_lines[0]
-        trip = line.trip
-        if trip:
-            route = _build_route(trip)
-            description = (
-                f"Услуги по перевозке грузов ({route}, {trip.date_of_trip:%d.%m.%Y})"
-            )
-        else:
-            description = line.description
-    elif service_lines:
-        dates = sorted(
-            line.trip.date_of_trip
-            for line in service_lines
-            if line.trip and line.trip.date_of_trip
-        )
-        date_from = dates[0] if dates else invoice.date
-        date_to = dates[-1] if dates else invoice.date
-        count = len(service_lines)
-        description = (
-            f"Услуги по перевозке грузов за период "
-            f"{date_from:%d.%m.%Y}–{date_to:%d.%m.%Y}, "
-            f"{_pluralize_trips(count)} согласно счёту №{invoice.number}"
-        )
-    else:
-        description = f"Услуги согласно счёту №{invoice.number}"
-
-    act = Act.objects.create(
-        account=invoice.account,
-        created_by=user,
-        number=next_act_number(invoice.account),
-        date=date.today(),
-        invoice=invoice,
-        description=description,
-        amount_net=invoice.total_net,
-        vat_amount=invoice.total_vat,
-        amount_total=invoice.total,
-    )
-
-    return act

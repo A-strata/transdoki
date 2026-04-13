@@ -1,45 +1,116 @@
-import logging
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import BooleanField, Case, Q, Sum, Value, When
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
-from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView
 
 from billing.mixins import BillingProtectedMixin
+from organizations.models import Organization
+from transdoki.enums import VatRate
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
-from trips.models import Trip
 
-from organizations.models import Organization, OrganizationBank
-from .models import Act, Invoice, InvoiceLine, Payment, PaymentDirection, PaymentMethod
+from .forms import (
+    LINE_META_KEYS,
+    InvoiceForm,
+    InvoiceLineFormSet,
+    InvoiceLineFormSetNew,
+)
+from .models import Invoice, InvoiceLine, Payment, PaymentMethod
 from .services import (
     InvoiceGenerator,
-    cancel_invoice,
-    create_act_from_invoice,
-    create_invoice_from_trips,
+    create_invoice,
     get_counterparty_balances,
     prepare_invoice_data,
+    update_invoice,
 )
 
 
-def _get_own_bank_accounts(account):
-    """Банковские счета «своей компании» для выбора в счёте."""
-    own = Organization.objects.filter(account=account, is_own_company=True).first()
-    if not own:
-        return OrganizationBank.objects.none()
-    return OrganizationBank.objects.filter(
-        account_owner=own,
-    ).select_related("account_bank")
+# ─────────────────────────────────────────────────────────────────────
+# Формсет-хелперы
+# ─────────────────────────────────────────────────────────────────────
 
-logger = logging.getLogger(__name__)
+def _formset_to_lines_data(formset):
+    """
+    Create-ветка: плоский list[dict] всех не-DELETE строк.
+
+    Используется только в InvoiceCreateView, где новых строк всегда
+    несколько, существующих нет — diff не нужен.
+    """
+    return [
+        {k: v for k, v in f.cleaned_data.items() if k not in LINE_META_KEYS}
+        for f in formset
+        if f.cleaned_data and not f.cleaned_data.get("DELETE")
+    ]
+
+
+def _formset_to_lines_diff(formset):
+    """
+    Edit-ветка: раскладывает формсет на три группы для update_invoice.
+
+    Возвращает:
+        to_create: list[dict]       — новые строки без id
+        to_update: list[(pk, dict)] — существующие без DELETE
+        to_delete: list[pk]         — существующие с DELETE=True
+
+    'id' в cleaned_data — объект InvoiceLine (ModelChoiceField),
+    не int. Берём .pk.
+    """
+    to_create, to_update, to_delete = [], [], []
+
+    for f in formset:
+        if not f.cleaned_data:
+            continue
+
+        instance = f.cleaned_data.get("id")  # InvoiceLine | None
+        is_delete = f.cleaned_data.get("DELETE", False)
+
+        if is_delete:
+            if instance:
+                to_delete.append(instance.pk)
+            continue
+
+        payload = {
+            k: v for k, v in f.cleaned_data.items() if k not in LINE_META_KEYS
+        }
+
+        if instance:
+            to_update.append((instance.pk, payload))
+        else:
+            to_create.append(payload)
+
+    return {"to_create": to_create, "to_update": to_update, "to_delete": to_delete}
+
+
+def _apply_service_errors(exc, form):
+    """
+    Раскладывает ValidationError из сервиса по полям формы.
+
+    NON_FIELD_ERRORS → non_field_errors формы.
+    Ключи, совпадающие с полями формы → под поле.
+    Остальные → non_field_errors.
+    """
+    if hasattr(exc, "message_dict"):
+        for field, errs in exc.message_dict.items():
+            target = (
+                field
+                if field != NON_FIELD_ERRORS and field in form.fields
+                else None
+            )
+            form.add_error(target, errs)
+    else:
+        form.add_error(None, exc)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Invoice list
+# ─────────────────────────────────────────────────────────────────────
 
 class InvoiceListView(UserOwnedListView):
     model = Invoice
@@ -62,13 +133,16 @@ class InvoiceListView(UserOwnedListView):
         q = self.request.GET.get("q", "").strip()
         if not q:
             return qs
-        lookups = (
-            Q(number__icontains=q)
-            | Q(customer__short_name__icontains=q)
-        )
-        # Поиск по сумме: если введено число, ищем по total строк
-        # Приводим total к строке через Cast и ищем вхождение
+
+        lookups = Q(customer__short_name__icontains=q)
+
         cleaned = q.replace(",", ".").replace(" ", "")
+
+        # Поиск по номеру (целое число)
+        if cleaned.isdigit():
+            lookups |= Q(number=int(cleaned))
+
+        # Поиск по сумме счёта
         try:
             Decimal(cleaned)
             from django.db.models import CharField
@@ -81,17 +155,15 @@ class InvoiceListView(UserOwnedListView):
                 .filter(_total_str__contains=cleaned)
                 .values("pk")
             )
-            lookups = lookups | Q(pk__in=matching_pks)
+            lookups |= Q(pk__in=matching_pks)
         except (InvalidOperation, ValueError):
             pass
+
         return qs.filter(lookups)
 
     def _apply_date_filters(self, qs):
         date_from = self._normalize_date_value(self.request.GET.get("date_from"))
         date_to = self._normalize_date_value(self.request.GET.get("date_to"))
-
-        if not date_from and not date_to:
-            return qs
 
         if date_from:
             qs = qs.filter(date__gte=date_from)
@@ -101,19 +173,9 @@ class InvoiceListView(UserOwnedListView):
 
     def get_queryset(self):
         qs = super().get_queryset().select_related("customer")
-        today = timezone.localdate()
-        qs = qs.annotate(
-            is_overdue=Case(
-                When(payment_due__lt=today, status=Invoice.Status.SENT, then=Value(True)),
-                default=Value(False),
-                output_field=BooleanField(),
-            ),
-        )
-
         qs = self._apply_search(qs)
         qs = self._apply_date_filters(qs)
-
-        return qs.order_by("-date", "-pk")
+        return qs.order_by("-year", "-number")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -148,181 +210,91 @@ class InvoiceListView(UserOwnedListView):
         return ctx
 
 
-@login_required
-def invoice_create(request):
-    account = get_request_account(request)
+# ─────────────────────────────────────────────────────────────────────
+# Invoice create
+# ─────────────────────────────────────────────────────────────────────
 
-    if request.method == "GET":
+class InvoiceCreateView(BillingProtectedMixin, LoginRequiredMixin, View):
+
+    template_name = "invoicing/invoice_form.html"
+
+    def _render(self, request, form, formset, *, trip_ids=""):
+        return render(request, self.template_name, {
+            "form": form,
+            "formset": formset,
+            "is_create": True,
+            "trip_ids": trip_ids,
+            "vat_rate_choices": VatRate.choices,
+            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
+        })
+
+    def get(self, request):
+        account = get_request_account(request)
+
         raw_ids = request.GET.get("trip_ids", "") or request.GET.get("trip_id", "")
         trip_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
 
-        if not trip_ids:
-            messages.error(request, "Не указаны рейсы для создания счёта.")
-            return redirect("trips:list")
+        initial_header = {"date": date.today()}
+        initial_lines = []
+        prefilled_trips = []
 
-        try:
-            data = prepare_invoice_data(account, trip_ids)
-        except ValueError as e:
-            messages.error(request, str(e))
-            if len(trip_ids) == 1:
-                return redirect("trips:detail", pk=trip_ids[0])
-            return redirect("trips:list")
-
-        bank_accounts = list(_get_own_bank_accounts(account))
-        selected_bank_id = bank_accounts[0].pk if bank_accounts else None
-
-        return render(request, "invoicing/invoice_form.html", {
-            "customer": data["customer"],
-            "lines": data["lines"],
-            "trips": data["trips"],
-            "invoice_date": data["date"],
-            "trip_ids": ",".join(str(t.pk) for t in data["trips"]),
-            "vat_rate_choices": InvoiceLine.VatRate.choices,
-            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
-            "status_choices": Invoice.Status.choices,
-            "bank_accounts": bank_accounts,
-            "selected_bank_id": selected_bank_id,
-            "is_create": True,
-        })
-
-    raw_ids = request.POST.get("trip_ids", "")
-    trip_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
-
-    if not trip_ids:
-        messages.error(request, "Не указаны рейсы для создания счёта.")
-        return redirect("trips:list")
-
-    lines_data = []
-    for i, tid in enumerate(trip_ids):
-        prefix = f"line_{i}_"
-        desc = request.POST.get(f"{prefix}description", "")
-        price = request.POST.get(f"{prefix}unit_price", "0")
-        disc_amt = request.POST.get(f"{prefix}discount_amount", "0")
-        vat = request.POST.get(f"{prefix}vat_rate", "")
-        qty_raw = request.POST.get(f"{prefix}quantity", "1")
-        unit_val = request.POST.get(f"{prefix}unit", InvoiceLine.UnitOfMeasure.SERVICE)
-        try:
-            unit_price = Decimal(price.replace(",", ".").replace(" ", ""))
-        except (InvalidOperation, ValueError):
-            unit_price = Decimal("0")
-        try:
-            discount_amount = Decimal(disc_amt.replace(",", ".").replace(" ", ""))
-        except (InvalidOperation, ValueError):
-            discount_amount = Decimal("0")
-        try:
-            quantity = Decimal(qty_raw.replace(",", ".").replace(" ", ""))
-            if quantity <= 0:
-                quantity = Decimal("1")
-        except (InvalidOperation, ValueError):
-            quantity = Decimal("1")
-        if vat == "":
-            vat_rate = None
-        else:
+        if trip_ids:
             try:
-                vat_rate = int(vat)
-            except (ValueError, TypeError):
-                vat_rate = None
-        lines_data.append({
-            "trip_id": tid,
-            "description": desc,
-            "unit_price": unit_price,
-            "quantity": quantity,
-            "unit": unit_val,
-            "discount_amount": discount_amount,
-            "vat_rate": vat_rate,
-        })
+                data = prepare_invoice_data(request.user, trip_ids)
+            except ValidationError as e:
+                msgs = (
+                    e.message_dict.get(NON_FIELD_ERRORS, [str(e)])
+                    if hasattr(e, "message_dict")
+                    else [str(e)]
+                )
+                for m in msgs:
+                    messages.error(request, m)
+                if len(trip_ids) == 1:
+                    return redirect("trips:detail", pk=trip_ids[0])
+                return redirect("trips:list")
 
-    invoice_date_raw = request.POST.get("invoice_date", "")
-    try:
-        invoice_date = date.fromisoformat(invoice_date_raw) if invoice_date_raw else None
-    except ValueError:
-        invoice_date = None
+            initial_lines = data["lines"]
+            initial_header["customer"] = data["customer"]
+            prefilled_trips = [ld["trip"] for ld in initial_lines]
 
-    payment_due_raw = request.POST.get("payment_due", "")
-    try:
-        payment_due = date.fromisoformat(payment_due_raw) if payment_due_raw else None
-    except ValueError:
-        payment_due = None
+        form = InvoiceForm(initial=initial_header, account=account)
+        formset = InvoiceLineFormSetNew(initial=initial_lines, prefix="lines")
 
-    invoice_number = request.POST.get("invoice_number", "").strip() or None
-
-    try:
-        invoice = create_invoice_from_trips(
-            account, trip_ids, request.user,
-            invoice_date=invoice_date,
-            lines_data=lines_data,
-            invoice_number=invoice_number,
+        return self._render(
+            request, form, formset,
+            trip_ids=",".join(str(t.pk) for t in prefilled_trips),
         )
-        update_fields = []
-        if payment_due:
-            invoice.payment_due = payment_due
-            update_fields.append("payment_due")
 
-        bank_account_id = request.POST.get("bank_account")
-        if bank_account_id:
+    def post(self, request):
+        account = get_request_account(request)
+        form = InvoiceForm(request.POST, account=account)
+        formset = InvoiceLineFormSetNew(request.POST, prefix="lines")
+
+        if form.is_valid() and formset.is_valid():
             try:
-                invoice.bank_account_id = int(bank_account_id)
-                update_fields.append("bank_account")
-            except (ValueError, TypeError):
-                pass
+                invoice = create_invoice(
+                    user=request.user,
+                    customer=form.cleaned_data["customer"],
+                    lines_data=_formset_to_lines_data(formset),
+                    number=form.cleaned_data.get("number"),  # None → автогенерация
+                    invoice_date=form.cleaned_data["date"],
+                    payment_due=form.cleaned_data.get("payment_due"),
+                    bank_account=form.cleaned_data.get("bank_account"),
+                )
+                messages.success(request, f"Создан счёт {invoice.display_number}.")
+                return redirect("invoicing:invoice_detail", pk=invoice.pk)
+            except ValidationError as e:
+                _apply_service_errors(e, form)
 
-        if update_fields:
-            invoice.save(update_fields=update_fields)
-        messages.success(request, f"Создан счёт {invoice.number}.")
-        return redirect("invoicing:invoice_detail", pk=invoice.pk)
-    except ValueError as e:
-        messages.error(request, str(e))
-        trips = list(
-            Trip.objects.for_account(account)
-            .filter(pk__in=trip_ids)
-            .prefetch_related("points")
-            .select_related("client")
+        return self._render(
+            request, form, formset,
+            trip_ids=request.POST.get("trip_ids", ""),
         )
-        if not trips:
-            return redirect("trips:list")
-        trip_map = {t.pk: t for t in trips}
-        lines = []
-        for ld in lines_data:
-            trip = trip_map.get(ld["trip_id"])
-            line = InvoiceLine(
-                trip=trip,
-                kind=InvoiceLine.Kind.SERVICE,
-                description=ld["description"],
-                unit_price=ld["unit_price"],
-                quantity=ld.get("quantity", Decimal("1")),
-                unit=ld.get("unit", InvoiceLine.UnitOfMeasure.SERVICE),
-                discount_amount=ld["discount_amount"],
-                vat_rate=ld["vat_rate"],
-            )
-            try:
-                line.compute()
-            except ValueError:
-                pass
-            lines.append(line)
-        bank_accounts = list(_get_own_bank_accounts(account))
-        selected_bank_id_raw = request.POST.get("bank_account")
-        try:
-            selected_bank_id = int(selected_bank_id_raw) if selected_bank_id_raw else (
-                bank_accounts[0].pk if bank_accounts else None
-            )
-        except (ValueError, TypeError):
-            selected_bank_id = bank_accounts[0].pk if bank_accounts else None
 
-        return render(request, "invoicing/invoice_form.html", {
-            "customer": trips[0].client,
-            "lines": lines,
-            "trips": trips,
-            "invoice_date": invoice_date or date.today(),
-            "payment_due": payment_due,
-            "trip_ids": ",".join(str(t.pk) for t in trips),
-            "vat_rate_choices": InvoiceLine.VatRate.choices,
-            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
-            "status_choices": Invoice.Status.choices,
-            "bank_accounts": bank_accounts,
-            "selected_bank_id": selected_bank_id,
-            "is_create": True,
-        })
 
+# ─────────────────────────────────────────────────────────────────────
+# Invoice detail
+# ─────────────────────────────────────────────────────────────────────
 
 class InvoiceDetailView(LoginRequiredMixin, DetailView):
     model = Invoice
@@ -340,202 +312,128 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         lines = list(invoice.lines.select_related("trip").all())
         ctx["lines"] = lines
         ctx["customer"] = invoice.customer
-        ctx["has_act"] = hasattr(invoice, "act")
-        ctx["can_edit"] = invoice.status != Invoice.Status.CANCELLED
 
-        ctx["has_discount"] = any(
-            l.discount_amount > 0 for l in lines
-        )
-        vat_rates = set(l.vat_rate for l in lines if l.vat_rate is not None)
+        ctx["has_discount"] = any(line.discount_amount > 0 for line in lines)
+        vat_rates = {line.vat_rate for line in lines if line.vat_rate is not None}
         ctx["has_vat"] = bool(vat_rates)
-        ctx["vat_rate_display"] = f"{vat_rates.pop()}%" if len(vat_rates) == 1 else "смеш."
+        if len(vat_rates) == 1:
+            ctx["vat_rate_display"] = f"{vat_rates.pop()}%"
+        elif len(vat_rates) > 1:
+            ctx["vat_rate_display"] = "смеш."
+        else:
+            ctx["vat_rate_display"] = "—"
+
         ctx["totals"] = {
-            "gross": sum(l.unit_price * l.quantity for l in lines),
-            "discount": sum(l.discount_amount for l in lines),
-            "net": sum(l.amount_net for l in lines),
-            "vat": sum(l.vat_amount for l in lines),
-            "total": sum(l.amount_total for l in lines),
+            "gross": sum(line.unit_price * line.quantity for line in lines),
+            "discount": sum(line.discount_amount for line in lines),
+            "net": sum(line.amount_net for line in lines),
+            "vat": sum(line.vat_amount for line in lines),
+            "total": sum(line.amount_total for line in lines),
         }
         return ctx
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Invoice edit
+# ─────────────────────────────────────────────────────────────────────
+
 class InvoiceEditView(LoginRequiredMixin, View):
 
-    def get(self, request, pk):
-        account = get_request_account(request)
-        invoice = get_object_or_404(
-            Invoice.objects.for_account(account)
+    template_name = "invoicing/invoice_form.html"
+
+    def _get_invoice(self, request, pk):
+        return get_object_or_404(
+            Invoice.objects
+            .for_account(get_request_account(request))
             .select_related("customer", "bank_account__account_bank"),
             pk=pk,
         )
-        lines = list(invoice.lines.select_related("trip").all())
-        bank_accounts = list(_get_own_bank_accounts(account))
 
-        has_discount = any(l.discount_amount > 0 for l in lines)
-        vat_rates = set(l.vat_rate for l in lines if l.vat_rate is not None)
+    def _render(self, request, invoice, form, formset):
+        existing_lines = list(invoice.lines.select_related("trip").all())
+        has_discount = any(line.discount_amount > 0 for line in existing_lines)
+        vat_rates = {line.vat_rate for line in existing_lines if line.vat_rate is not None}
 
-        return render(request, "invoicing/invoice_form.html", {
+        if len(vat_rates) == 1:
+            vat_rate_display = f"{vat_rates.pop()}%"
+        elif len(vat_rates) > 1:
+            vat_rate_display = "смеш."
+        else:
+            vat_rate_display = "—"
+
+        return render(request, self.template_name, {
             "invoice": invoice,
             "customer": invoice.customer,
-            "lines": lines,
-            "vat_rate_choices": InvoiceLine.VatRate.choices,
-            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
-            "status_choices": Invoice.Status.choices,
-            "bank_accounts": bank_accounts,
-            "selected_bank_id": invoice.bank_account_id or (
-                bank_accounts[0].pk if bank_accounts else None
-            ),
+            "form": form,
+            "formset": formset,
             "has_discount": has_discount,
             "has_vat": bool(vat_rates),
-            "vat_rate_display": f"{vat_rates.pop()}%" if len(vat_rates) == 1 else "смеш.",
+            "vat_rate_display": vat_rate_display,
+            "vat_rate_choices": VatRate.choices,
+            "unit_choices": InvoiceLine.UnitOfMeasure.choices,
             "totals": {
-                "gross": sum(l.unit_price * l.quantity for l in lines),
-                "discount": sum(l.discount_amount for l in lines),
-                "net": sum(l.amount_net for l in lines),
-                "vat": sum(l.vat_amount for l in lines),
-                "total": sum(l.amount_total for l in lines),
+                "gross": sum(line.unit_price * line.quantity for line in existing_lines),
+                "discount": sum(line.discount_amount for line in existing_lines),
+                "net": sum(line.amount_net for line in existing_lines),
+                "vat": sum(line.vat_amount for line in existing_lines),
+                "total": sum(line.amount_total for line in existing_lines),
             },
         })
 
-    def post(self, request, pk):
+    def get(self, request, pk):
+        invoice = self._get_invoice(request, pk)
         account = get_request_account(request)
-        invoice = get_object_or_404(
-            Invoice.objects.for_account(account), pk=pk
-        )
+        form = InvoiceForm(instance=invoice, account=account)
+        formset = InvoiceLineFormSet(instance=invoice, prefix="lines")
+        return self._render(request, invoice, form, formset)
 
-        lines = list(invoice.lines.all())
-        updated = []
-        for line in lines:
-            prefix = f"line_{line.pk}_"
-            desc = request.POST.get(f"{prefix}description")
-            price = request.POST.get(f"{prefix}unit_price")
-            qty_raw = request.POST.get(f"{prefix}quantity")
-            unit_val = request.POST.get(f"{prefix}unit")
-            vat = request.POST.get(f"{prefix}vat_rate")
-            disc_amt = request.POST.get(f"{prefix}discount_amount")
+    def post(self, request, pk):
+        invoice = self._get_invoice(request, pk)
+        account = get_request_account(request)
+        form = InvoiceForm(request.POST, instance=invoice, account=account)
+        formset = InvoiceLineFormSet(request.POST, instance=invoice, prefix="lines")
 
-            if desc is not None:
-                line.description = desc
-            if price is not None:
-                try:
-                    line.unit_price = Decimal(price.replace(",", ".").replace(" ", ""))
-                except (InvalidOperation, ValueError):
-                    pass
-            if qty_raw is not None:
-                try:
-                    qty = Decimal(qty_raw.replace(",", ".").replace(" ", ""))
-                    if qty > 0:
-                        line.quantity = qty
-                except (InvalidOperation, ValueError):
-                    pass
-            if unit_val is not None:
-                line.unit = unit_val
-            if vat is not None:
-                if vat == "":
-                    line.vat_rate = None
-                else:
-                    try:
-                        line.vat_rate = int(vat)
-                    except (ValueError, TypeError):
-                        pass
-            if disc_amt is not None:
-                try:
-                    line.discount_amount = Decimal(disc_amt.replace(",", ".").replace(" ", ""))
-                except (InvalidOperation, ValueError):
-                    line.discount_amount = Decimal("0")
-
+        if form.is_valid() and formset.is_valid():
+            header_data = dict(form.cleaned_data)
+            # Если пользователь очистил поле "номер" — не трогаем его:
+            # сохраняется исходное значение invoice.number.
+            if header_data.get("number") is None:
+                header_data.pop("number", None)
             try:
-                line.compute()
-            except ValueError as e:
-                messages.error(request, str(e))
-                return redirect("invoicing:invoice_detail", pk=pk)
-            updated.append(line)
+                update_invoice(
+                    invoice,
+                    user=request.user,
+                    header_data=header_data,
+                    lines_diff=_formset_to_lines_diff(formset),
+                )
+                messages.success(request, f"Счёт {invoice.display_number} обновлён.")
+                return redirect("invoicing:invoice_detail", pk=invoice.pk)
+            except ValidationError as e:
+                _apply_service_errors(e, form)
 
-        if updated:
-            InvoiceLine.objects.bulk_update(
-                updated,
-                [
-                    "description", "unit_price", "quantity", "unit",
-                    "discount_pct", "discount_amount",
-                    "vat_rate", "amount_net", "vat_amount", "amount_total",
-                ],
-            )
-
-        invoice_number = request.POST.get("invoice_number", "").strip()
-        if invoice_number:
-            invoice.number = invoice_number
-
-        invoice_date = request.POST.get("invoice_date")
-        if invoice_date is not None:
-            try:
-                invoice.date = date.fromisoformat(invoice_date) if invoice_date else invoice.date
-            except ValueError:
-                pass
-
-        payment_due = request.POST.get("payment_due")
-        if payment_due is not None:
-            try:
-                invoice.payment_due = date.fromisoformat(payment_due) if payment_due else None
-            except ValueError:
-                pass
-
-        bank_account_raw = request.POST.get("bank_account")
-        if bank_account_raw is not None:
-            try:
-                invoice.bank_account_id = int(bank_account_raw) if bank_account_raw else None
-            except (ValueError, TypeError):
-                pass
-
-        ALLOWED_TRANSITIONS = {
-            Invoice.Status.DRAFT: [Invoice.Status.SENT],
-            Invoice.Status.SENT:  [Invoice.Status.DRAFT, Invoice.Status.PAID],
-            Invoice.Status.PAID:  [Invoice.Status.SENT],
-        }
-        status = request.POST.get("status")
-        if status:
-            allowed = ALLOWED_TRANSITIONS.get(invoice.status, [])
-            if status in allowed:
-                invoice.status = status
-
-        invoice.updated_by = request.user
-        invoice.save(update_fields=[
-            "number", "date", "payment_due", "bank_account",
-            "status", "updated_by", "updated_at",
-        ])
-
-        return redirect("invoicing:invoice_detail", pk=pk)
+        return self._render(request, invoice, form, formset)
 
 
-class InvoiceCancelView(LoginRequiredMixin, View):
+# ─────────────────────────────────────────────────────────────────────
+# Invoice delete
+# ─────────────────────────────────────────────────────────────────────
+
+class InvoiceDeleteView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         account = get_request_account(request)
         invoice = get_object_or_404(
             Invoice.objects.for_account(account), pk=pk
         )
-        try:
-            cancel_invoice(invoice, request.user)
-            messages.success(request, f"Счёт {invoice.number} аннулирован.")
-        except ValueError as e:
-            messages.error(request, str(e))
-        return redirect("invoicing:invoice_detail", pk=pk)
+        display = invoice.display_number
+        invoice.delete()
+        messages.success(request, f"Счёт {display} удалён.")
+        return redirect("invoicing:invoice_list")
 
 
-class ActCreateView(LoginRequiredMixin, View):
-
-    def post(self, request, pk):
-        account = get_request_account(request)
-        invoice = get_object_or_404(
-            Invoice.objects.for_account(account), pk=pk
-        )
-        try:
-            act = create_act_from_invoice(invoice, request.user)
-            messages.success(request, f"Создан акт {act.number}.")
-            return redirect("invoicing:act_detail", pk=act.pk)
-        except ValueError as e:
-            messages.error(request, str(e))
-            return redirect("invoicing:invoice_detail", pk=pk)
-
+# ─────────────────────────────────────────────────────────────────────
+# Invoice download (DOCX)
+# ─────────────────────────────────────────────────────────────────────
 
 class InvoiceDownloadView(LoginRequiredMixin, View):
 
@@ -547,18 +445,9 @@ class InvoiceDownloadView(LoginRequiredMixin, View):
         return InvoiceGenerator.generate_response(invoice)
 
 
-class ActDetailView(LoginRequiredMixin, DetailView):
-    model = Act
-    template_name = "invoicing/act_detail.html"
-    context_object_name = "act"
-
-    def get_queryset(self):
-        return Act.objects.for_account(
-            get_request_account(self.request)
-        ).select_related("invoice", "invoice__customer")
-
-
-
+# ─────────────────────────────────────────────────────────────────────
+# Settlements
+# ─────────────────────────────────────────────────────────────────────
 
 class SettlementsView(LoginRequiredMixin, View):
 
@@ -606,6 +495,13 @@ class SettlementsView(LoginRequiredMixin, View):
 
 
 class SettlementDetailView(LoginRequiredMixin, View):
+    """
+    Детальная страница сальдо по контрагенту.
+
+    Timeline строится из Invoice (начисления) и Payment (платежи).
+    Акты не участвуют — связь между моделями будет добавлена в отдельной
+    итерации.
+    """
 
     def get(self, request, org_pk):
         account = get_request_account(request)
@@ -613,12 +509,12 @@ class SettlementDetailView(LoginRequiredMixin, View):
             Organization.objects.for_account(account), pk=org_pk
         )
 
-        acts = list(
-            Act.objects.filter(
-                account=account,
-                invoice__customer=org,
-                status=Act.Status.SIGNED,
-            ).select_related("invoice").order_by("date", "pk")
+        invoices = list(
+            Invoice.objects
+            .for_account(account)
+            .filter(customer=org)
+            .prefetch_related("lines")
+            .order_by("date", "pk")
         )
 
         payments = list(
@@ -629,26 +525,26 @@ class SettlementDetailView(LoginRequiredMixin, View):
         )
 
         timeline = []
-        for act in acts:
+        for inv in invoices:
             timeline.append({
-                "date": act.date,
-                "type": "act",
-                "label": f"Акт {act.number}",
-                "act": act,
-                "invoiced": act.amount_total,
+                "date": inv.date,
+                "type": "invoice",
+                "label": f"Счёт {inv.display_number}",
+                "invoice": inv,
+                "invoiced": inv.total,
                 "paid": None,
             })
         for p in payments:
             timeline.append({
                 "date": p.date,
                 "type": "payment",
-                "label": f"Платёж",
+                "label": "Платёж",
                 "payment": p,
                 "invoiced": None,
                 "paid": p.amount,
             })
 
-        timeline.sort(key=lambda e: (e["date"], 0 if e["type"] == "act" else 1))
+        timeline.sort(key=lambda e: (e["date"], 0 if e["type"] == "invoice" else 1))
 
         running_balance = Decimal("0")
         for entry in timeline:
@@ -658,7 +554,7 @@ class SettlementDetailView(LoginRequiredMixin, View):
                 running_balance -= entry["paid"]
             entry["balance"] = running_balance
 
-        total_invoiced = sum(a.amount_total for a in acts)
+        total_invoiced = sum(inv.total for inv in invoices)
         total_paid = sum(p.amount for p in payments)
 
         return render(request, "invoicing/settlement_detail.html", {

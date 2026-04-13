@@ -27,25 +27,8 @@
     white-space: nowrap;
 }
 
-.toolbar-zone-title {
-    flex-shrink: 0;
-}
-
-.toolbar-zone-filters {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.toolbar-zone-filters > .active-filters {
-    flex-basis: 100%;
-}
-
-.toolbar-zone-action {
-    flex-shrink: 0;
-    margin-left: auto;
-}
+/* .toolbar-zone-title / .toolbar-zone-filters / .toolbar-zone-action —
+   вынесены в static/css/globals.css (Pattern B зоны тулбара). */
 
 /* 4) Чипы активных фильтров */
 .active-filters {

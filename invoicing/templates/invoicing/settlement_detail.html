@@ -60,8 +60,8 @@
                     <tr class="{% if entry.type == 'payment' %}row--payment{% endif %}">
                         <td>{{ entry.date|date:"d.m.Y" }}</td>
                         <td>
-                            {% if entry.type == 'act' %}
-                                <a href="{% url 'invoicing:act_detail' entry.act.pk %}">{{ entry.label }}</a>
+                            {% if entry.type == 'invoice' %}
+                                <a href="{% url 'invoicing:invoice_detail' entry.invoice.pk %}">{{ entry.label }}</a>
                             {% else %}
                                 {{ entry.label }}
                                 {% if entry.payment.description %}
@@ -111,7 +111,7 @@
             </table>
             {% else %}
             <div class="empty-state">
-                <p>Нет подписанных актов или платежей</p>
+                <p>Нет счетов или платежей</p>
             </div>
             {% endif %}
         </div>

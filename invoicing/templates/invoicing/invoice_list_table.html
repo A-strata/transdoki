@@ -7,7 +7,6 @@
                     <th class="col-date">Дата</th>
                     <th class="col-customer">Заказчик</th>
                     <th class="col-amount">Сумма</th>
-                    <th class="col-status">Статус</th>
                     <th class="col-due">Оплатить до</th>
                     <th class="col-spacer"></th>
                     <th class="col-actions"></th>
@@ -16,15 +15,10 @@
             <tbody>
                 {% for invoice in invoices %}
                 <tr data-detail-url="{% url 'invoicing:invoice_detail' invoice.pk %}">
-                    <td data-label="Номер">{{ invoice.number }}</td>
+                    <td data-label="Номер">{{ invoice.display_number }}</td>
                     <td data-label="Дата">{{ invoice.date|date:"d.m.Y" }}</td>
                     <td data-label="Заказчик" title="{{ invoice.customer.short_name }}">{{ invoice.customer.short_name }}</td>
                     <td data-label="Сумма" class="cell-money">{{ invoice.total }}&nbsp;&#8381;</td>
-                    <td data-label="Статус">
-                        <span class="status-badge status-badge--{% if invoice.status == 'paid' %}success{% elif invoice.status == 'sent' %}{% if invoice.is_overdue %}error{% else %}info{% endif %}{% elif invoice.status == 'cancelled' %}error{% else %}neutral{% endif %}">
-                            {% if invoice.status == 'sent' and invoice.is_overdue %}Просрочен{% else %}{{ invoice.get_status_display }}{% endif %}
-                        </span>
-                    </td>
                     <td data-label="Оплатить до">{{ invoice.payment_due|date:"d.m.Y"|default:"—" }}</td>
                     <td class="col-spacer"></td>
                     <td class="row-actions-cell">
@@ -41,7 +35,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8">
+                    <td colspan="7">
                         <div class="empty-state">
                             {% if filters.q %}
                                 <p>Ничего не найдено</p>

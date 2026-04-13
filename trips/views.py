@@ -465,12 +465,9 @@ class TripListView(UserOwnedListView):
         if current_org:
             qs = qs.filter(Q(client=current_org) | Q(carrier=current_org))
 
-        from invoicing.models import Invoice, InvoiceLine
+        from invoicing.models import InvoiceLine
 
-        active_lines = InvoiceLine.objects.filter(
-            trip=OuterRef("pk"),
-            invoice__status__in=[Invoice.Status.DRAFT, Invoice.Status.SENT, Invoice.Status.PAID],
-        )
+        active_lines = InvoiceLine.objects.filter(trip=OuterRef("pk"))
         qs = qs.annotate(
             invoice_pk=Subquery(active_lines.values("invoice_id")[:1]),
             invoice_number=Subquery(active_lines.values("invoice__number")[:1]),

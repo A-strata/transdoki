@@ -16,28 +16,24 @@ def _get_request_account(request):
 class InvoiceLineInline(admin.TabularInline):
     model = InvoiceLine
     extra = 0
-    readonly_fields = ("amount_net", "vat_amount", "amount_total", "discount_amount")
+    readonly_fields = ("amount_net", "vat_amount", "amount_total")
     fields = (
         "trip", "kind", "description", "quantity", "unit", "unit_price",
-        "discount_pct", "discount_amount", "vat_rate",
+        "discount_amount", "vat_rate",
         "amount_net", "vat_amount", "amount_total",
     )
-
-    def save_model(self, request, obj, form, change):
-        obj.compute(last_edited="pct")
-        super().save_model(request, obj, form, change)
 
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ("number", "date", "customer", "status", "account", "created_by")
-    list_filter = ("status", "date", "account")
+    list_display = ("display_number", "date", "customer", "account", "created_by")
+    list_filter = ("year", "date", "account")
     search_fields = ("number", "customer__short_name")
-    readonly_fields = ("created_by", "updated_by", "created_at", "updated_at")
+    readonly_fields = ("year", "number", "created_by", "updated_by", "created_at", "updated_at")
     inlines = [InvoiceLineInline]
 
     fieldsets = (
-        (None, {"fields": ("number", "date", "payment_due", "customer", "status", "account")}),
+        (None, {"fields": ("year", "number", "date", "payment_due", "customer", "bank_account", "account")}),
         ("Служебные", {"fields": ("created_by", "updated_by", "created_at", "updated_at")}),
     )
 
@@ -64,16 +60,16 @@ class InvoiceAdmin(admin.ModelAdmin):
 
 @admin.register(Act)
 class ActAdmin(admin.ModelAdmin):
-    list_display = ("number", "date", "status", "amount_total", "account", "created_by")
-    list_filter = ("status", "date", "account")
-    search_fields = ("number",)
+    list_display = ("display_number", "date", "customer", "amount_total", "account", "created_by")
+    list_filter = ("year", "date", "account")
+    search_fields = ("number", "customer__short_name")
     readonly_fields = (
-        "amount_net", "vat_amount", "amount_total",
+        "year", "number",
         "created_by", "updated_by", "created_at", "updated_at",
     )
 
     fieldsets = (
-        (None, {"fields": ("number", "date", "status", "invoice", "description", "account")}),
+        (None, {"fields": ("year", "number", "date", "customer", "description", "account")}),
         ("Суммы", {"fields": ("amount_net", "vat_amount", "amount_total")}),
         ("Служебные", {"fields": ("created_by", "updated_by", "created_at", "updated_at")}),
     )

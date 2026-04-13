@@ -12,7 +12,7 @@ from organizations.models import Organization
 from transdoki.tenancy import get_request_account
 
 from invoicing.models import Payment, PaymentDirection, PaymentMethod
-from invoicing.services import create_payment, delete_payment
+from invoicing.services import create_payment
 
 
 class BankStatementView(LoginRequiredMixin, View):
@@ -111,7 +111,7 @@ class PaymentDeleteView(LoginRequiredMixin, View):
         payment = get_object_or_404(
             Payment.objects.filter(account=account), pk=pk
         )
-        delete_payment(payment)
+        payment.delete()
         messages.success(request, "Платёж удалён.")
 
         next_url = request.POST.get("next") or request.GET.get("next")
