@@ -307,6 +307,14 @@ tr:hover .cell-filter-btn {
     background: var(--surface);
 }
 
+/* Денежные колонки — выравнивание по правому краю */
+.tms-table th[data-col="client_cost"],
+.tms-table th[data-col="carrier_cost"],
+.tms-table td[data-col="client_cost"],
+.tms-table td[data-col="carrier_cost"] {
+    text-align: right;
+}
+
 .tms-table tbody tr:last-child td {
     border-bottom: none;
 }
