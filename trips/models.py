@@ -335,18 +335,22 @@ class Trip(UserOwnedModel):
             }
 
         if org_id == self.client_id:
+            # Мы — заказчик. Наш расход — это carrier_cost (сколько мы платим
+            # перевозчику). client_cost тут по валидатору должен быть пуст.
             return {
                 "role": "client",
                 "income_total": None,
-                "expense_total": self._client_amount(),
+                "expense_total": self._carrier_amount(),
                 "margin": None,
                 "counterparty": self.forwarder or self.carrier,
             }
 
         if org_id == self.carrier_id:
+            # Мы — перевозчик. Наш доход — это client_cost (сколько клиент
+            # платит нам). carrier_cost тут по валидатору должен быть пуст.
             return {
                 "role": "carrier",
-                "income_total": self._carrier_amount(),
+                "income_total": self._client_amount(),
                 "expense_total": None,
                 "margin": None,
                 "counterparty": self.forwarder or self.client,

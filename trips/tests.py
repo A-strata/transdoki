@@ -685,8 +685,12 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         return Trip.objects.create(**defaults)
 
     def test_perspective_client_role(self):
+        """
+        Мы — заказчик. Наш расход = carrier_cost (то, что мы платим
+        перевозчику). client_cost по валидатору пуст.
+        """
         trip = self._make_trip(client=self.our_org, carrier=self.external_org,
-                               client_cost=50000)
+                               carrier_cost=50000)
         p = trip.perspective(self.our_org)
         self.assertEqual(p["role"], "client")
         self.assertEqual(p["expense_total"], 50000)
@@ -694,8 +698,12 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         self.assertIsNone(p["margin"])
 
     def test_perspective_carrier_role(self):
+        """
+        Мы — перевозчик. Наш доход = client_cost (то, что клиент
+        платит нам). carrier_cost по валидатору пуст.
+        """
         trip = self._make_trip(client=self.external_org, carrier=self.our_org,
-                               carrier_cost=50000)
+                               client_cost=50000)
         p = trip.perspective(self.our_org)
         self.assertEqual(p["role"], "carrier")
         self.assertEqual(p["income_total"], 50000)
@@ -789,30 +797,36 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_perspective_client_with_fixed_total(self):
-        """Зафиксированная client-сумма перекрывает расчётную."""
+        """
+        Мы — заказчик, carrier-сумма зафиксирована (carrier_total_fixed).
+        Наш расход должен читаться из carrier_total_fixed.
+        """
         from decimal import Decimal
         from trips.models import FinancialStatus
 
         trip = self._make_trip(
             client=self.our_org, carrier=self.external_org,
-            client_cost=Decimal("5000"),
-            client_total_fixed=Decimal("4800"),
-            client_financial_status=FinancialStatus.CALCULATED,
+            carrier_cost=Decimal("5000"),
+            carrier_total_fixed=Decimal("4800"),
+            carrier_financial_status=FinancialStatus.CALCULATED,
         )
         p = trip.perspective(self.our_org)
         self.assertEqual(p["role"], "client")
         self.assertEqual(p["expense_total"], Decimal("4800"))
 
     def test_perspective_carrier_with_fixed_total(self):
-        """Зафиксированная carrier-сумма перекрывает расчётную."""
+        """
+        Мы — перевозчик, client-сумма зафиксирована.
+        Наш доход читается из client_total_fixed.
+        """
         from decimal import Decimal
         from trips.models import FinancialStatus
 
         trip = self._make_trip(
             client=self.external_org, carrier=self.our_org,
-            carrier_cost=Decimal("5000"),
-            carrier_total_fixed=Decimal("4800"),
-            carrier_financial_status=FinancialStatus.CALCULATED,
+            client_cost=Decimal("5000"),
+            client_total_fixed=Decimal("4800"),
+            client_financial_status=FinancialStatus.CALCULATED,
         )
         p = trip.perspective(self.our_org)
         self.assertEqual(p["role"], "carrier")
@@ -824,9 +838,9 @@ class ForwarderFieldTests(RouteBuilderTestBase):
 
         trip = self._make_trip(
             client=self.our_org, carrier=self.external_org,
-            client_cost=Decimal("5000"),
-            client_total_fixed=Decimal("4800"),
-            # client_financial_status по дефолту = OPEN
+            carrier_cost=Decimal("5000"),
+            carrier_total_fixed=Decimal("4800"),
+            # carrier_financial_status по дефолту = OPEN
         )
         p = trip.perspective(self.our_org)
         self.assertEqual(p["expense_total"], Decimal("5000"))
@@ -853,13 +867,17 @@ class ForwarderFieldTests(RouteBuilderTestBase):
 
     def test_list_perspective_legacy_internal_trip(self):
         """
-        Старая односторонняя запись: A=client(own), B=carrier(own),
-        client_cost=5000, carrier_cost=None.
+        Старая односторонняя запись (pre-migration 0048):
+        A=client(own), B=carrier(own), client_cost=5000, carrier_cost=None.
 
-        Ожидаемое поведение (до data-миграции):
-        - под навбаром A: my_perspective.expense_total == 5000, income_total is None
-        - под навбаром B: my_perspective.income_total is None, expense_total is None
-          (сумма физически отсутствует на стороне carrier, это честное отражение БД)
+        Семантика: внутри старого internal-рейса сумма хранится в client_cost
+        (валидатор запрещал carrier_cost через ветку different_own_companies).
+
+        Ожидаемое поведение ДО data-миграции:
+        - под навбаром B (carrier): income_total == 5000 — читается через
+          _client_amount() из client_cost, единственного заполненного поля.
+        - под навбаром A (client): expense_total is None — _carrier_amount()
+          пуст, это и есть регрессия, которую исправила миграция 0048.
         """
         from decimal import Decimal
 
@@ -870,7 +888,7 @@ class ForwarderFieldTests(RouteBuilderTestBase):
             carrier_cost=None,
         )
 
-        # ── Под навбаром A (client) ──
+        # ── Под навбаром A (client): pre-migration не видит сумму ──
         session = self.client.session
         session["current_org_id"] = self.our_org.pk
         session.save()
@@ -879,10 +897,10 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         row = next((t for t in resp.context["trips"] if t.pk == trip.pk), None)
         self.assertIsNotNone(row, "Рейс не найден в списке под навбаром A")
         self.assertEqual(row.my_perspective["role"], "client")
-        self.assertEqual(row.my_perspective["expense_total"], Decimal("5000"))
+        self.assertIsNone(row.my_perspective["expense_total"])
         self.assertIsNone(row.my_perspective["income_total"])
 
-        # ── Под навбаром B (carrier) ──
+        # ── Под навбаром B (carrier): видит сумму ──
         session = self.client.session
         session["current_org_id"] = self.our_org2.pk
         session.save()
@@ -891,9 +909,7 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         row = next((t for t in resp.context["trips"] if t.pk == trip.pk), None)
         self.assertIsNotNone(row, "Рейс не найден в списке под навбаром B")
         self.assertEqual(row.my_perspective["role"], "carrier")
-        # Старая односторонняя запись: у перевозчика carrier_cost пустой,
-        # поэтому income_total — None. После data-миграции станет 5000.
-        self.assertIsNone(row.my_perspective["income_total"])
+        self.assertEqual(row.my_perspective["income_total"], Decimal("5000"))
         self.assertIsNone(row.my_perspective["expense_total"])
 
     def test_migration_0048_backfill_forward_and_reverse(self):
