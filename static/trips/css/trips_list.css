@@ -547,7 +547,21 @@ tbody .row-actions-cell {
     background: var(--hover);
 }
 
-/* 15) Footer-right: кнопка «Вид» + page-size в одну строку */
+/* 15) Footer-row: пагинация + кнопка «Настройка колонок» в одну строку.
+   Кнопка вынесена из partial'а пагинации, чтобы не пересоздавалась при
+   fetch-обновлении списка (иначе listener отваливается). */
+.trips-footer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.trips-footer-pagination {
+    flex: 1;
+    min-width: 0;
+}
+
 .trips-page .pagination-footer-right {
     display: flex;
     align-items: center;
