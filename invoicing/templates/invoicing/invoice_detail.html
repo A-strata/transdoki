@@ -68,18 +68,19 @@
             <h2 class="section-title">Товары и услуги</h2>
 
             <div class="lines-table-wrap">
-                <table class="tms-table lines-table{% if not has_discount %} discount-off{% endif %}{% if not has_vat %} vat-off{% endif %}" id="lines-table">
+                <table class="tms-table lines-table lines-table--readonly{% if not has_discount %} discount-off{% endif %}" id="lines-table">
                     <thead>
                         <tr>
                             <th class="col-trip">Рейс</th>
-                            <th>Наименование</th>
+                            <th class="col-name">Наименование</th>
                             <th class="col-qty">Кол-во</th>
                             <th class="col-unit">Ед.</th>
                             <th class="col-price">Цена без НДС</th>
                             <th class="col-discount" data-col-discount>Скидка %</th>
                             <th class="col-discount" data-col-discount>Скидка ₽</th>
-                            <th class="col-vat-rate">Ставка НДС</th>
-                            <th class="col-vat-amount" data-col-vat>Сумма НДС</th>
+                            <th class="col-net">Сумма без НДС</th>
+                            <th class="col-vat-rate">% НДС</th>
+                            <th class="col-vat-amount">НДС</th>
                             <th class="col-total">Итого</th>
                         </tr>
                     </thead>
@@ -101,8 +102,9 @@
                             <td class="cell-money">{{ line.unit_price|money }}</td>
                             <td class="cell-money col-discount" data-col-discount>{% if has_discount %}{{ line.discount_pct }}%{% endif %}</td>
                             <td class="cell-money col-discount" data-col-discount>{% if has_discount %}{{ line.discount_amount|money }}{% endif %}</td>
+                            <td class="cell-money">{{ line.amount_net|money }}</td>
                             <td>{% if line.vat_rate is not None %}{{ line.get_vat_rate_display }}{% else %}Без НДС{% endif %}</td>
-                            <td class="cell-money" data-col-vat>{{ line.vat_amount|money }}</td>
+                            <td class="cell-money">{% if line.vat_rate is not None %}{{ line.vat_amount|money }}{% else %}—{% endif %}</td>
                             <td class="cell-money cell-money--bold">{{ line.amount_total|money }}</td>
                         </tr>
                         {% endfor %}

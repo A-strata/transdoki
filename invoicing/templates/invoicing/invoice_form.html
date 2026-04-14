@@ -98,11 +98,11 @@
                 <div class="section-header">
                     <h2 class="section-title">Товары и услуги</h2>
                     <div class="section-header-actions">
-                        <label class="discount-label" for="discount-toggle">Скидка</label>
+                        <!--<label class="discount-label" for="discount-toggle">Скидка</label>
                         <select id="discount-toggle" class="discount-toggle">
                             <option value="off" {% if not has_discount %}selected{% endif %}>не применяется</option>
                             <option value="on" {% if has_discount %}selected{% endif %}>на отдельные позиции</option>
-                        </select>
+                        </select>-->
                     </div>
                 </div>
 
@@ -119,7 +119,7 @@
                 {% endif %}
 
                 <div class="lines-table-wrap">
-                    <table class="tms-table lines-table{% if not has_discount %} discount-off{% endif %}{% if not has_vat %} vat-off{% endif %}" id="lines-table">
+                    <table class="tms-table lines-table{% if not has_discount %} discount-off{% endif %}" id="lines-table">
                         <thead>
                             <tr>
                                 <th class="col-trip">Рейс</th>
@@ -129,8 +129,9 @@
                                 <th class="col-price">Цена без НДС</th>
                                 <th class="col-discount" data-col-discount>Скидка %</th>
                                 <th class="col-discount" data-col-discount>Скидка ₽</th>
-                                <th class="col-vat-rate">Ставка НДС</th>
-                                <th class="col-vat-amount" data-col-vat>Сумма НДС</th>
+                                <th class="col-net">Сумма без НДС</th>
+                                <th class="col-vat-rate">% НДС</th>
+                                <th class="col-vat-amount" data-col-vat>НДС</th>
                                 <th class="col-total">Итого</th>
                                 <th class="col-actions"></th>
                             </tr>
@@ -148,24 +149,19 @@
                                     {% else %}
                                         —
                                     {% endif %}
-                                    {% if line_form.errors %}
-                                        <div class="form-errors">
-                                            {% for field, errors in line_form.errors.items %}
-                                                {% for error in errors %}<p>{{ field }}: {{ error }}</p>{% endfor %}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
+                                    {{ line_form.non_field_errors }}
                                 </td>
-                                <td>{{ line_form.description }}</td>
-                                <td>{{ line_form.quantity }}</td>
-                                <td>{{ line_form.unit }}</td>
-                                <td>{{ line_form.unit_price }}</td>
+                                <td>{{ line_form.description }}{{ line_form.description.errors }}</td>
+                                <td>{{ line_form.quantity }}{{ line_form.quantity.errors }}</td>
+                                <td>{{ line_form.unit }}{{ line_form.unit.errors }}</td>
+                                <td>{{ line_form.unit_price }}{{ line_form.unit_price.errors }}</td>
                                 <td class="col-discount" data-col-discount>
                                     <input type="text" value="{{ line_form.instance.discount_pct|default:'0' }}"
                                            class="line-input line-input--sm" data-line-disc-pct>
                                 </td>
-                                <td class="col-discount" data-col-discount>{{ line_form.discount_amount }}</td>
-                                <td>{{ line_form.vat_rate }}</td>
+                                <td class="col-discount" data-col-discount>{{ line_form.discount_amount }}{{ line_form.discount_amount.errors }}</td>
+                                <td class="cell-money" data-line-net>{{ line_form.instance.amount_net|money }}</td>
+                                <td>{{ line_form.vat_rate }}{{ line_form.vat_rate.errors }}</td>
                                 <td class="cell-money" data-line-vat data-col-vat>{{ line_form.instance.vat_amount|money }}</td>
                                 <td class="cell-money cell-money--bold" data-line-total>{{ line_form.instance.amount_total|money }}</td>
                                 <td class="row-actions-cell">
@@ -225,6 +221,7 @@
                 <input type="text" name="lines-__prefix__-discount_amount" value="0"
                        class="line-input line-input--sm" data-line-disc-amt>
             </td>
+            <td class="cell-money" data-line-net>0,00</td>
             <td>
                 <select name="lines-__prefix__-vat_rate" class="line-select" data-line-vat-select></select>
             </td>

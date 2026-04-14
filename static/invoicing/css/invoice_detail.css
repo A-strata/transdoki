@@ -275,16 +275,81 @@
 }
 
 .col-trip       { width: 70px; }
-.col-qty        { width: 65px; }
-.col-unit       { width: 100px; }
-.col-price      { width: 120px; }
+/* Ширина под значение "1,000" (поле quantity, 3 знака после запятой) */
+.col-qty        { width: 80px; min-width: 80px; max-width: 80px; }
+
+.col-qty .line-input {
+    width: 100%;
+    min-width: 50px;
+}
+/* Ширина под самую длинную опцию "рейс" (см. InvoiceLine.UnitOfMeasure) */
+.col-unit       { width: 100px; min-width: 100px; max-width: 100px; }
+
+.col-unit .line-select {
+    width: 100%;
+    min-width: 70px;
+}
+/* Ширина колонок с длинными заголовками подобрана так, чтобы шапка
+   помещалась в одну строку при uppercase + letter-spacing: 0.03em */
+.col-price      { width: 130px; min-width: 130px; max-width: 130px; }
 .col-discount   { width: 85px; }
-.col-vat-rate   { width: 110px; }
-.col-vat-amount { width: 100px; }
-.col-total      { width: 110px; }
+.col-net        { width: 140px; min-width: 140px; max-width: 140px; }
+.col-vat-rate   { width: 120px; min-width: 120px; max-width: 120px; }
+/* Ширина под максимальное значение "999 999,99" (10 символов tabular-nums + padding) */
+.col-vat-amount { width: 110px; min-width: 110px; max-width: 110px; }
+
+/* Ставка НДС: фиксируем ширину select по самому длинному варианту
+   ("Без НДС"), чтобы колонка не «прыгала» при смене значения.
+   Без этого table-layout: auto пересчитывает ширину под контент. */
+.col-vat-rate .line-select {
+    width: 100%;
+    min-width: 100px;
+}
+.col-total      { width: 110px; min-width: 110px; max-width: 110px; }
 .col-actions    { width: 48px; }
 
-.lines-table th {
+/* ── Карточка счёта (read-only) ──
+   В режиме просмотра ширины большинства колонок сбрасываются, чтобы
+   они подстраивались под max(ширина заголовка, ширина содержимого).
+   Фиксируется только "Наименование" — чтобы длинные описания
+   не раздували таблицу, а переносились на несколько строк. */
+.lines-table--readonly {
+    table-layout: auto;
+}
+
+.lines-table--readonly .col-trip,
+.lines-table--readonly .col-qty,
+.lines-table--readonly .col-unit,
+.lines-table--readonly .col-price,
+.lines-table--readonly .col-discount,
+.lines-table--readonly .col-net,
+.lines-table--readonly .col-vat-rate,
+.lines-table--readonly .col-vat-amount,
+.lines-table--readonly .col-total {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+}
+
+.lines-table--readonly .col-name {
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Ошибки полей строк: всегда слева, независимо от text-align ячейки
+   (у cell-money он right). Перенос по словам — чтобы текст ошибки
+   не расширял фиксированные колонки. */
+.lines-table .errorlist {
+    text-align: left;
+    margin: 4px 0 0;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.lines-table thead th {
     font-size: var(--text-xs);
     font-weight: 600;
     color: var(--muted);
