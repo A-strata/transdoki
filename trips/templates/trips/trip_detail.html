@@ -150,7 +150,7 @@
         {# ── Участники ── #}
         <div class="section" id="section-participants">
             <h2 class="section-title">Участники перевозки</h2>
-            <div class="two-cols">
+            <div class="{% if trip.forwarder %}three-cols{% else %}two-cols{% endif %}">
                 <div class="sub-card">
                     <h3 class="sub-title">Заказчик</h3>
                     <div class="kv">
@@ -164,6 +164,20 @@
                         </p>
                     </div>
                 </div>
+
+                {% if trip.forwarder %}
+                <div class="sub-card">
+                    <h3 class="sub-title">Экспедитор</h3>
+                    <div class="kv">
+                        <p class="kv-label">Организация</p>
+                        <p class="kv-value">
+                            <a class="entity-link" href="{% url 'organizations:detail' trip.forwarder.pk %}?next={% url 'trips:detail' trip.pk %}">
+                                {{ trip.forwarder }}
+                            </a>
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
 
                 <div class="sub-card">
                     <h3 class="sub-title">Исполнение перевозки</h3>

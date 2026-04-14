@@ -49,21 +49,59 @@ def validate_client_cannot_be_carrier(client, carrier):
         )
 
 
-def validate_our_company_participation(client, carrier):
+def validate_our_company_participation(client, carrier, forwarder=None):
     """
     Валидатор для проверки, что в заявке участвует наша фирма
+    в одной из трёх ролей: заказчик, перевозчик или экспедитор.
     """
     our_participation = any(
         [
             client.is_own_company if client else False,
             carrier.is_own_company if carrier else False,
+            forwarder.is_own_company if forwarder else False,
         ]
     )
 
     if not our_participation:
         raise ValidationError(
             "Ваша компания должна быть участником перевозки."
-            "Укажите Вашу компанию в качестве заказчика или перевозчика."
+            "Укажите Вашу компанию в качестве заказчика, перевозчика или экспедитора."
+        )
+
+
+def validate_forwarder(forwarder, client, carrier, current_org=None):
+    """
+    Экспедитор, если задан:
+    - должен быть own-фирмой аккаунта (is_own_company=True);
+    - должен совпадать с текущей фирмой в навбаре (если передана);
+    - не должен совпадать с заказчиком или перевозчиком.
+    """
+    if forwarder is None:
+        return
+
+    if not forwarder.is_own_company:
+        raise ValidationError(
+            {"forwarder": "Экспедитором может быть только ваша фирма."}
+        )
+
+    if current_org is not None and forwarder.pk != current_org.pk:
+        raise ValidationError(
+            {
+                "forwarder": (
+                    "Экспедитором может быть только текущая выбранная "
+                    "в навбаре фирма."
+                )
+            }
+        )
+
+    if client and forwarder.pk == client.pk:
+        raise ValidationError(
+            {"forwarder": "Экспедитор не может совпадать с заказчиком."}
+        )
+
+    if carrier and forwarder.pk == carrier.pk:
+        raise ValidationError(
+            {"forwarder": "Экспедитор не может совпадать с перевозчиком."}
         )
 
 
@@ -131,9 +169,12 @@ def _is_filled(value):
     return value is not None and value != ""
 
 
-def validate_costs_by_our_company_role(*, client, carrier, client_cost, carrier_cost):
+def validate_costs_by_our_company_role(
+    *, client, carrier, client_cost, carrier_cost, forwarder=None
+):
     """
     Правило:
+    - Если задан экспедитор — оба поля cost разрешены (маржа посредника).
     - Если наша фирма = перевозчик (carrier.is_own_company=True),
       то можно указывать только client_cost.
       => carrier_cost должен быть пустым.
@@ -143,6 +184,10 @@ def validate_costs_by_our_company_role(*, client, carrier, client_cost, carrier_
 
     Оба поля остаются необязательными.
     """
+    # Для экспедитора — ограничений нет, он явно посредник с двумя суммами
+    if forwarder is not None:
+        return
+
     errors = {}
 
     we_are_carrier = bool(carrier and carrier.is_own_company)

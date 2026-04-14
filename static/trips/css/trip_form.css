@@ -226,13 +226,17 @@
     animation: slideIn 0.25s ease;
 }
 
-/* Участники: заказчик + перевозчик */
+/* Участники: заказчик + (экспедитор) + перевозчик */
 .parties-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1px;
     background: var(--border);
     border-radius: var(--radius-sm);
+}
+
+.parties-grid.parties-grid--with-forwarder {
+    grid-template-columns: 1fr 1fr 1fr;
 }
 
 .parties-col {
@@ -246,6 +250,13 @@
 
 .parties-col:last-child {
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.parties-forwarder-name {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text);
 }
 
 .parties-col-title {
@@ -524,6 +535,7 @@
 
     .fields-grid,
     .parties-grid,
+    .parties-grid.parties-grid--with-forwarder,
     .logistics-grid,
     .finance-grid,
     .role-cards {

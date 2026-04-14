@@ -651,3 +651,384 @@ class RouteBuilderTenantIsolationTests(RouteBuilderTestBase):
         else:
             # Форма вернулась с ошибкой — рейс не создан, это тоже ок
             self.assertEqual(resp.status_code, 200)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 8. Экспедитор (forwarder): perspective, фильтр списка, валидация
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ForwarderFieldTests(RouteBuilderTestBase):
+    """Тесты поля forwarder: perspective(), фильтр списка, валидация формы."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        # Вторая own-фирма — для сценария экспедитора
+        cls.our_org2 = Organization.objects.create(
+            full_name='ООО "Тест Экспедитор"', short_name="Тест Экспедитор",
+            inn="7728168971", is_own_company=True,
+            created_by=cls.user, account=cls.account,
+        )
+
+    def _make_trip(self, **kwargs):
+        defaults = {
+            "date_of_trip": "2026-05-01",
+            "client": self.our_org,
+            "carrier": self.external_org,
+            "driver": self.driver,
+            "truck": self.truck,
+            "cargo": "Груз",
+            "account": self.account,
+            "created_by": self.user,
+        }
+        defaults.update(kwargs)
+        return Trip.objects.create(**defaults)
+
+    def test_perspective_client_role(self):
+        trip = self._make_trip(client=self.our_org, carrier=self.external_org,
+                               client_cost=50000)
+        p = trip.perspective(self.our_org)
+        self.assertEqual(p["role"], "client")
+        self.assertEqual(p["expense_total"], 50000)
+        self.assertIsNone(p["income_total"])
+        self.assertIsNone(p["margin"])
+
+    def test_perspective_carrier_role(self):
+        trip = self._make_trip(client=self.external_org, carrier=self.our_org,
+                               carrier_cost=50000)
+        p = trip.perspective(self.our_org)
+        self.assertEqual(p["role"], "carrier")
+        self.assertEqual(p["income_total"], 50000)
+        self.assertIsNone(p["expense_total"])
+
+    def test_perspective_forwarder_role_with_margin(self):
+        trip = self._make_trip(
+            client=self.external_org, carrier=self.our_org,
+            forwarder=self.our_org2,
+            client_cost=60000, carrier_cost=50000,
+        )
+        p = trip.perspective(self.our_org2)
+        self.assertEqual(p["role"], "forwarder")
+        self.assertEqual(p["income_total"], 60000)
+        self.assertEqual(p["expense_total"], 50000)
+        self.assertEqual(p["margin"], 10000)
+
+    def test_perspective_observer(self):
+        other_user = User.objects.create_user(username="u3", password="p")
+        other_account = Account.objects.create(name="Other", owner=other_user)
+        other_user.profile.account = other_account
+        other_user.profile.save()
+        stranger = Organization.objects.create(
+            full_name="Чужая", short_name="Чужая", inn="5024002119",
+            is_own_company=True,
+            created_by=other_user, account=other_account,
+        )
+        trip = self._make_trip()
+        p = trip.perspective(stranger)
+        self.assertEqual(p["role"], "observer")
+
+    def test_perspective_none_org(self):
+        trip = self._make_trip()
+        p = trip.perspective(None)
+        self.assertEqual(p["role"], "observer")
+
+    def test_list_shows_trip_to_forwarder(self):
+        """Фирма-экспедитор должна видеть рейс в списке, даже если она
+        не является ни клиентом, ни перевозчиком."""
+        trip = self._make_trip(
+            client=self.external_org, carrier=self.external_org,
+            forwarder=self.our_org2,
+        )
+        # Переключаем навбар на own_org2
+        session = self.client.session
+        session["current_org_id"] = self.our_org2.pk
+        session.save()
+
+        resp = self.client.get(reverse("trips:list"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(trip, list(resp.context["trips"]))
+
+    def test_form_rejects_foreign_forwarder(self):
+        """forwarder должен быть = current_org, иначе валидация падает."""
+        from trips.forms import TripForm
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.external_org.pk,
+                "carrier": self.external_org.pk,
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "forwarder": self.our_org.pk,  # наша, но НЕ current_org
+            },
+            user=self.user,
+            current_org=self.our_org2,  # current_org — вторая
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("forwarder", form.errors)
+
+    def test_form_accepts_forwarder_equal_to_current_org(self):
+        from trips.forms import TripForm
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.third_org.pk,
+                "carrier": self.external_org.pk,
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "client_cost": "50000",
+                "client_cost_unit": "rub",
+                "carrier_cost": "40000",
+                "carrier_cost_unit": "rub",
+                "forwarder": self.our_org2.pk,
+            },
+            user=self.user,
+            current_org=self.our_org2,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_perspective_client_with_fixed_total(self):
+        """Зафиксированная client-сумма перекрывает расчётную."""
+        from decimal import Decimal
+        from trips.models import FinancialStatus
+
+        trip = self._make_trip(
+            client=self.our_org, carrier=self.external_org,
+            client_cost=Decimal("5000"),
+            client_total_fixed=Decimal("4800"),
+            client_financial_status=FinancialStatus.CALCULATED,
+        )
+        p = trip.perspective(self.our_org)
+        self.assertEqual(p["role"], "client")
+        self.assertEqual(p["expense_total"], Decimal("4800"))
+
+    def test_perspective_carrier_with_fixed_total(self):
+        """Зафиксированная carrier-сумма перекрывает расчётную."""
+        from decimal import Decimal
+        from trips.models import FinancialStatus
+
+        trip = self._make_trip(
+            client=self.external_org, carrier=self.our_org,
+            carrier_cost=Decimal("5000"),
+            carrier_total_fixed=Decimal("4800"),
+            carrier_financial_status=FinancialStatus.CALCULATED,
+        )
+        p = trip.perspective(self.our_org)
+        self.assertEqual(p["role"], "carrier")
+        self.assertEqual(p["income_total"], Decimal("4800"))
+
+    def test_perspective_open_status_ignores_fixed(self):
+        """При статусе OPEN fixed-значение игнорируется — берётся расчётное."""
+        from decimal import Decimal
+
+        trip = self._make_trip(
+            client=self.our_org, carrier=self.external_org,
+            client_cost=Decimal("5000"),
+            client_total_fixed=Decimal("4800"),
+            # client_financial_status по дефолту = OPEN
+        )
+        p = trip.perspective(self.our_org)
+        self.assertEqual(p["expense_total"], Decimal("5000"))
+
+    def test_perspective_forwarder_mixed_fixed(self):
+        """Forwarder: одна сторона fixed, другая расчётная — margin из смешанных."""
+        from decimal import Decimal
+        from trips.models import FinancialStatus
+
+        trip = self._make_trip(
+            client=self.external_org, carrier=self.our_org,
+            forwarder=self.our_org2,
+            client_cost=Decimal("60000"),
+            client_total_fixed=Decimal("58000"),
+            client_financial_status=FinancialStatus.CALCULATED,
+            carrier_cost=Decimal("50000"),
+            # carrier_financial_status по дефолту = OPEN
+        )
+        p = trip.perspective(self.our_org2)
+        self.assertEqual(p["role"], "forwarder")
+        self.assertEqual(p["income_total"], Decimal("58000"))
+        self.assertEqual(p["expense_total"], Decimal("50000"))
+        self.assertEqual(p["margin"], Decimal("8000"))
+
+    def test_list_perspective_legacy_internal_trip(self):
+        """
+        Старая односторонняя запись: A=client(own), B=carrier(own),
+        client_cost=5000, carrier_cost=None.
+
+        Ожидаемое поведение (до data-миграции):
+        - под навбаром A: my_perspective.expense_total == 5000, income_total is None
+        - под навбаром B: my_perspective.income_total is None, expense_total is None
+          (сумма физически отсутствует на стороне carrier, это честное отражение БД)
+        """
+        from decimal import Decimal
+
+        trip = self._make_trip(
+            client=self.our_org,
+            carrier=self.our_org2,
+            client_cost=Decimal("5000"),
+            carrier_cost=None,
+        )
+
+        # ── Под навбаром A (client) ──
+        session = self.client.session
+        session["current_org_id"] = self.our_org.pk
+        session.save()
+        resp = self.client.get(reverse("trips:list"))
+        self.assertEqual(resp.status_code, 200)
+        row = next((t for t in resp.context["trips"] if t.pk == trip.pk), None)
+        self.assertIsNotNone(row, "Рейс не найден в списке под навбаром A")
+        self.assertEqual(row.my_perspective["role"], "client")
+        self.assertEqual(row.my_perspective["expense_total"], Decimal("5000"))
+        self.assertIsNone(row.my_perspective["income_total"])
+
+        # ── Под навбаром B (carrier) ──
+        session = self.client.session
+        session["current_org_id"] = self.our_org2.pk
+        session.save()
+        resp = self.client.get(reverse("trips:list"))
+        self.assertEqual(resp.status_code, 200)
+        row = next((t for t in resp.context["trips"] if t.pk == trip.pk), None)
+        self.assertIsNotNone(row, "Рейс не найден в списке под навбаром B")
+        self.assertEqual(row.my_perspective["role"], "carrier")
+        # Старая односторонняя запись: у перевозчика carrier_cost пустой,
+        # поэтому income_total — None. После data-миграции станет 5000.
+        self.assertIsNone(row.my_perspective["income_total"])
+        self.assertIsNone(row.my_perspective["expense_total"])
+
+    def test_migration_0048_backfill_forward_and_reverse(self):
+        """
+        Data-миграция 0048: для старых внутрифирменных рейсов (обе стороны own,
+        carrier_cost пуст, forwarder пуст) зеркалит client_cost/unit/vat_rate
+        в carrier_*. Проверяется логика forward + reverse напрямую.
+        """
+        import importlib
+        from decimal import Decimal
+        from django.apps import apps
+
+        _0048 = importlib.import_module(
+            "trips.migrations.0048_backfill_internal_trip_carrier_cost"
+        )
+
+        # ── Подходящий под критерий рейс (legacy-кейс) ──
+        eligible = self._make_trip(
+            client=self.our_org,
+            carrier=self.our_org2,
+            client_cost=Decimal("5000"),
+            client_cost_unit="rub",
+            client_vat_rate=20,
+            carrier_cost=None,
+        )
+
+        # ── Не подходит: только одна сторона own ──
+        one_sided = self._make_trip(
+            client=self.our_org,
+            carrier=self.external_org,  # не own
+            client_cost=Decimal("3000"),
+            client_cost_unit="rub",
+            carrier_cost=None,
+        )
+
+        # ── Не подходит: carrier_cost уже заполнен ──
+        already_mirrored = self._make_trip(
+            client=self.our_org,
+            carrier=self.our_org2,
+            client_cost=Decimal("4000"),
+            client_cost_unit="rub",
+            carrier_cost=Decimal("4000"),
+            carrier_cost_unit="rub",
+        )
+
+        _0048.backfill_forward(apps, None)
+
+        eligible.refresh_from_db()
+        self.assertEqual(eligible.carrier_cost, Decimal("5000"))
+        self.assertEqual(eligible.carrier_cost_unit, "rub")
+        self.assertEqual(eligible.carrier_vat_rate, 20)
+
+        one_sided.refresh_from_db()
+        self.assertIsNone(one_sided.carrier_cost)
+
+        already_mirrored.refresh_from_db()
+        self.assertEqual(already_mirrored.carrier_cost, Decimal("4000"))  # не изменён
+
+        # ── Reverse: обнуляет только тот, что был зеркален ──
+        _0048.backfill_reverse(apps, None)
+
+        eligible.refresh_from_db()
+        self.assertIsNone(eligible.carrier_cost)
+        self.assertEqual(eligible.carrier_cost_unit, "")
+        self.assertIsNone(eligible.carrier_vat_rate)
+
+        # already_mirrored тоже попадает под критерий reverse
+        # (carrier_cost == client_cost), так и задумано — это по факту
+        # неотличимо от результата forward. Reverse консервативен: сбрасывает
+        # всё, что выглядит как результат forward. Проверим:
+        already_mirrored.refresh_from_db()
+        self.assertIsNone(already_mirrored.carrier_cost)
+
+        # one_sided reverse не трогает
+        one_sided.refresh_from_db()
+        self.assertIsNone(one_sided.carrier_cost)
+
+    def test_form_forwarder_with_both_costs_valid(self):
+        """При роли forwarder обе суммы (client_cost + carrier_cost) разрешены."""
+        from trips.forms import TripForm
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.third_org.pk,
+                "carrier": self.external_org.pk,
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "client_cost": "60000",
+                "client_cost_unit": "rub",
+                "carrier_cost": "50000",
+                "carrier_cost_unit": "rub",
+                "forwarder": self.our_org2.pk,
+            },
+            user=self.user,
+            current_org=self.our_org2,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_forwarder_with_partial_costs_valid(self):
+        """При роли forwarder разрешено оставлять одну из сумм пустой
+        (промежуточное состояние: ещё не договорились со второй стороной)."""
+        from trips.forms import TripForm
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.third_org.pk,
+                "carrier": self.external_org.pk,
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "client_cost": "60000",
+                "client_cost_unit": "rub",
+                # carrier_cost не задан
+                "forwarder": self.our_org2.pk,
+            },
+            user=self.user,
+            current_org=self.our_org2,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_forwarder_cannot_equal_client_or_carrier(self):
+        from trips.forms import TripForm
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.our_org2.pk,  # совпадает с forwarder
+                "carrier": self.external_org.pk,
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "forwarder": self.our_org2.pk,
+            },
+            user=self.user,
+            current_org=self.our_org2,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("forwarder", form.errors)

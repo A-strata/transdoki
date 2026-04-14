@@ -139,6 +139,7 @@ class TripCreateView(RoutePointsMixin, LoginRequiredMixin, CreateView):
         "client_quantity", "carrier_quantity",
         "client_financial_status", "client_total_fixed",
         "carrier_financial_status", "carrier_total_fixed",
+        "forwarder",
     }
 
     def get_context_data(self, **kwargs):
@@ -157,6 +158,7 @@ class TripCreateView(RoutePointsMixin, LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
+        kwargs["current_org"] = getattr(self.request, "current_org", None)
         return kwargs
 
     def _get_copy_source(self):
@@ -171,11 +173,18 @@ class TripCreateView(RoutePointsMixin, LoginRequiredMixin, CreateView):
     def get_initial(self):
         initial = super().get_initial()
         source = self._get_copy_source()
-        if not source:
+        if source:
+            form_fields = set(self.form_class.base_fields.keys())
+            fields_to_copy = [f for f in form_fields if f not in self.COPY_EXCLUDE_FIELDS]
+            initial.update(model_to_dict(source, fields=fields_to_copy))
             return initial
-        form_fields = set(self.form_class.base_fields.keys())
-        fields_to_copy = [f for f in form_fields if f not in self.COPY_EXCLUDE_FIELDS]
-        initial.update(model_to_dict(source, fields=fields_to_copy))
+
+        # Без copy_from: предзаполняем client или carrier текущей навбар-фирмой.
+        # Правило: has_vehicles → carrier, иначе → client.
+        org = getattr(self.request, "current_org", None)
+        if org:
+            field = "carrier" if org.vehicle_set.exists() else "client"
+            initial.setdefault(field, org.pk)
         return initial
 
     def _get_initial_points(self):
@@ -244,6 +253,7 @@ class TripUpdateView(RoutePointsMixin, LoginRequiredMixin, UpdateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
+        kwargs["current_org"] = getattr(self.request, "current_org", None)
         return kwargs
 
     def get(self, request, *args, **kwargs):
@@ -286,7 +296,9 @@ class TripDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Trip.objects.for_account(
             get_request_account(self.request)
-        ).prefetch_related("attachments", "points", "points__organization")
+        ).select_related("client", "carrier", "forwarder").prefetch_related(
+            "attachments", "points", "points__organization"
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -304,15 +316,11 @@ class TripDetailView(LoginRequiredMixin, DetailView):
                 )
         context["route_summary"] = self._build_route_summary(trip)
 
-        # Определение роли пользователя в рейсе
+        # Роль текущей фирмы через perspective()
         org = getattr(self.request, "current_org", None)
-        if org:
-            if trip.client_id == org.id:
-                context["trip_role"] = "client"
-            elif trip.carrier_id == org.id:
-                context["trip_role"] = "carrier"
-            else:
-                context["trip_role"] = "forwarder"
+        perspective = trip.perspective(org)
+        context["perspective"] = perspective
+        context["trip_role"] = perspective["role"] if org else None
 
         return context
 
@@ -454,6 +462,7 @@ class TripListView(UserOwnedListView):
             .select_related(
                 "client",
                 "carrier",
+                "forwarder",
                 "driver",
                 "truck",
                 "trailer",
@@ -463,7 +472,11 @@ class TripListView(UserOwnedListView):
 
         current_org = getattr(self.request, "current_org", None)
         if current_org:
-            qs = qs.filter(Q(client=current_org) | Q(carrier=current_org))
+            qs = qs.filter(
+                Q(client=current_org)
+                | Q(carrier=current_org)
+                | Q(forwarder=current_org)
+            )
 
         from invoicing.models import InvoiceLine
 
@@ -525,6 +538,10 @@ class TripListView(UserOwnedListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        current_org = getattr(self.request, "current_org", None)
+        for trip in context.get("trips", []):
+            trip.my_perspective = trip.perspective(current_org)
 
         current_page_size = self.get_paginate_by(self.object_list)
 

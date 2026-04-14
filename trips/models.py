@@ -70,6 +70,14 @@ class Trip(UserOwnedModel):
         related_name="trips_as_carrier",
         verbose_name="Перевозчик",
     )
+    forwarder = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT,
+        related_name="trips_as_forwarder",
+        verbose_name="Экспедитор",
+        null=True,
+        blank=True,
+    )
     driver = models.ForeignKey(
         Person,
         on_delete=models.PROTECT,
@@ -264,6 +272,93 @@ class Trip(UserOwnedModel):
         return self._compute_total(
             self.carrier_cost, self.carrier_cost_unit, self.carrier_quantity
         )
+
+    def _client_amount(self):
+        """
+        Сумма со стороны клиента с учётом фиксации.
+        Если финансовый статус не OPEN и есть зафиксированное значение —
+        берём его, иначе расчётный client_total.
+        """
+        if (
+            self.client_financial_status != FinancialStatus.OPEN
+            and self.client_total_fixed is not None
+        ):
+            return self.client_total_fixed
+        return self.client_total
+
+    def _carrier_amount(self):
+        """
+        Сумма со стороны перевозчика с учётом фиксации.
+        Если финансовый статус не OPEN и есть зафиксированное значение —
+        берём его, иначе расчётный carrier_total.
+        """
+        if (
+            self.carrier_financial_status != FinancialStatus.OPEN
+            and self.carrier_total_fixed is not None
+        ):
+            return self.carrier_total_fixed
+        return self.carrier_total
+
+    def perspective(self, org):
+        """
+        Возвращает финансовую перспективу рейса от лица указанной организации.
+
+        role:
+            'client'    — org является заказчиком (платит)
+            'carrier'   — org является перевозчиком (получает)
+            'forwarder' — org является экспедитором-посредником (маржа)
+            'observer'  — org не участвует в рейсе
+        """
+        if org is None:
+            return {
+                "role": "observer",
+                "income_total": None,
+                "expense_total": None,
+                "margin": None,
+                "counterparty": None,
+            }
+
+        org_id = getattr(org, "id", None) or getattr(org, "pk", None)
+
+        if self.forwarder_id and org_id == self.forwarder_id:
+            income = self._client_amount()
+            expense = self._carrier_amount()
+            margin = None
+            if income is not None and expense is not None:
+                margin = income - expense
+            return {
+                "role": "forwarder",
+                "income_total": income,
+                "expense_total": expense,
+                "margin": margin,
+                "counterparty": None,
+            }
+
+        if org_id == self.client_id:
+            return {
+                "role": "client",
+                "income_total": None,
+                "expense_total": self._client_amount(),
+                "margin": None,
+                "counterparty": self.forwarder or self.carrier,
+            }
+
+        if org_id == self.carrier_id:
+            return {
+                "role": "carrier",
+                "income_total": self._carrier_amount(),
+                "expense_total": None,
+                "margin": None,
+                "counterparty": self.forwarder or self.client,
+            }
+
+        return {
+            "role": "observer",
+            "income_total": None,
+            "expense_total": None,
+            "margin": None,
+            "counterparty": None,
+        }
 
     @property
     def load_point(self):

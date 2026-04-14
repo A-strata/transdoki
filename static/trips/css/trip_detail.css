@@ -181,10 +181,16 @@
     word-break: break-word;
 }
 
-/* ── Участники: два столбца ── */
+/* ── Участники: два или три столбца ── */
 .two-cols {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.three-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 12px;
 }
 
@@ -751,6 +757,7 @@
     }
 
     .two-cols,
+    .three-cols,
     .finance-grid,
     .kv-grid {
         grid-template-columns: 1fr;

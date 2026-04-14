@@ -120,6 +120,7 @@ class AjaxModelChoiceField(forms.ModelChoiceField):
 from .validators import (
     validate_client_cannot_be_carrier,
     validate_costs_by_our_company_role,
+    validate_forwarder,
     validate_our_company_participation,
     validate_trailer_for_truck,
     validate_unique_trip_number_and_date,
@@ -161,6 +162,7 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
+        self.current_org = kwargs.pop("current_org", None)
         kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
 
@@ -223,6 +225,26 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
         self._setup_ajax_field("driver", full_person, person_search_url)
         self._setup_ajax_field("truck", full_truck, vehicle_search_url, search_type="truck")
         self._setup_ajax_field("trailer", full_trailer, vehicle_search_url, search_type="trailer")
+
+        # Экспедитор: только own-фирмы аккаунта. Для редактирования —
+        # существующее значение; для создания — только current_org
+        # (по требованию UX: единственный допустимый выбор).
+        # Поле скрытое — управляется через карточки ролей в trip_form_role.js.
+        if "forwarder" in self.fields:
+            forwarder_field = self.fields["forwarder"]
+            forwarder_field.required = False
+            forwarder_field.widget = forms.HiddenInput()
+            own_orgs = full_org.filter(is_own_company=True)
+            forwarder_field._validation_qs = own_orgs
+
+            current = getattr(self.instance, "forwarder", None)
+            current_pk = current.pk if (current and current.pk) else None
+            if current_pk:
+                forwarder_field.queryset = own_orgs.filter(pk=current_pk)
+            elif self.current_org is not None:
+                forwarder_field.queryset = own_orgs.filter(pk=self.current_org.pk)
+            else:
+                forwarder_field.queryset = own_orgs.none()
 
     def _lock_fixed_finance_fields(self):
         from .models import CostUnit, FinancialStatus
@@ -287,9 +309,16 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
             validate_client_cannot_be_carrier(
                 client=cleaned_data.get("client"), carrier=cleaned_data.get("carrier")
             )
+            validate_forwarder(
+                forwarder=cleaned_data.get("forwarder"),
+                client=cleaned_data.get("client"),
+                carrier=cleaned_data.get("carrier"),
+                current_org=self.current_org,
+            )
             validate_our_company_participation(
                 client=cleaned_data.get("client"),
                 carrier=cleaned_data.get("carrier"),
+                forwarder=cleaned_data.get("forwarder"),
             )
             validate_trailer_for_truck(
                 truck=cleaned_data.get("truck"), trailer=cleaned_data.get("trailer")
@@ -304,6 +333,7 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
                 carrier=cleaned_data.get("carrier"),
                 client_cost=cleaned_data.get("client_cost"),
                 carrier_cost=cleaned_data.get("carrier_cost"),
+                forwarder=cleaned_data.get("forwarder"),
             )
 
         return cleaned_data

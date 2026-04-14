@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var ROLE_TO_SELECT = {
         client: 'id_client',
         carrier: 'id_carrier',
+        forwarder: 'id_forwarder',
     };
 
     var activeRole = null;
@@ -24,12 +25,14 @@ document.addEventListener('DOMContentLoaded', function () {
         var select = document.getElementById(selectId);
         if (!select) return;
 
-        var opt = Array.from(select.options).find(function (o) {
-            return String(o.value) === String(orgId);
-        });
-        if (!opt) {
-            opt = new Option(orgName, orgId);
-            select.add(opt);
+        if (select.tagName === 'SELECT') {
+            var opt = Array.from(select.options).find(function (o) {
+                return String(o.value) === String(orgId);
+            });
+            if (!opt) {
+                opt = new Option(orgName, orgId);
+                select.add(opt);
+            }
         }
         select.value = orgId;
         select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -65,8 +68,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (hint) hint.remove();
     }
 
+    // ── Видимость карточки экспедитора в секции «Участники» ──
+    var partiesGrid = document.getElementById('parties-grid');
+    var forwarderCol = document.getElementById('parties-forwarder-col');
+
+    function syncForwarderCard(role) {
+        if (!partiesGrid || !forwarderCol) return;
+        var isForwarder = role === 'forwarder';
+        forwarderCol.hidden = !isForwarder;
+        partiesGrid.classList.toggle('parties-grid--with-forwarder', isForwarder);
+    }
+
     // ── Уведомление об изменении роли ──
     function dispatchRoleChange(role) {
+        syncForwarderCard(role);
         document.dispatchEvent(new CustomEvent('trip-role-change', { detail: { role: role } }));
     }
 
@@ -161,11 +176,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // Автодетекция при загрузке
     var clientSelect = document.getElementById('id_client');
     var carrierSelect = document.getElementById('id_carrier');
+    var forwarderInput = document.getElementById('id_forwarder');
     var clientIsOrg = clientSelect && String(clientSelect.value) === String(orgId);
     var carrierIsOrg = carrierSelect && String(carrierSelect.value) === String(orgId);
+    var forwarderIsOrg = forwarderInput && String(forwarderInput.value) === String(orgId);
     var formHasValues = (clientSelect && clientSelect.value) || (carrierSelect && carrierSelect.value);
 
-    if (clientIsOrg) {
+    if (forwarderIsOrg) {
+        // Своя org в поле «Экспедитор» — подсветить карточку
+        activeRole = 'forwarder';
+        var fcard = document.querySelector('.role-card[data-role="forwarder"]');
+        if (fcard) fcard.classList.add('is-active');
+        dispatchRoleChange('forwarder');
+    } else if (clientIsOrg) {
         // Своя org в поле «Заказчик» — подсветить карточку без prefilled
         activeRole = 'client';
         var card = document.querySelector('.role-card[data-role="client"]');
