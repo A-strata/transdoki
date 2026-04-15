@@ -67,13 +67,43 @@ class RoutePointsMixin:
             })
         return points
 
-    def _points_from_post(self, post_data):
-        """Парсит points_json из POST."""
+    def _points_from_post(self, post_data, account=None):
+        """Парсит points_json из POST и обогащает точки именем организации
+        из БД (в пределах account). Имя, пришедшее с клиента, игнорируется —
+        клиент не источник истины, это защита от рассинхрона и IDOR."""
         raw = post_data.get("points_json", "[]")
         try:
-            return json.loads(raw)
+            points = json.loads(raw)
         except (json.JSONDecodeError, TypeError):
             return []
+        if not isinstance(points, list):
+            return []
+
+        if account is not None:
+            from organizations.models import Organization
+
+            ids = {
+                p["organization"]
+                for p in points
+                if isinstance(p, dict) and p.get("organization")
+            }
+            names = {}
+            if ids:
+                names = dict(
+                    Organization.objects.for_account(account)
+                    .filter(pk__in=ids)
+                    .values_list("pk", "short_name")
+                )
+            for p in points:
+                if not isinstance(p, dict):
+                    continue
+                org_id = p.get("organization")
+                try:
+                    org_pk = int(org_id) if org_id not in (None, "") else None
+                except (TypeError, ValueError):
+                    org_pk = None
+                p["organization_name"] = names.get(org_pk, "") if org_pk else ""
+        return points
 
     def _validate_points(self, points_data, user):
         """Валидирует каждую точку через TripPointForm. Возвращает (forms, is_valid, global_errors)."""
@@ -204,7 +234,7 @@ class TripCreateView(RoutePointsMixin, LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         self.object = None
         form = self.get_form()
-        points_data = self._points_from_post(request.POST)
+        points_data = self._points_from_post(request.POST, account=get_request_account(request))
         point_forms, points_valid, points_errors = self._validate_points(points_data, request.user)
 
         if form.is_valid() and points_valid:
@@ -267,7 +297,7 @@ class TripUpdateView(RoutePointsMixin, LoginRequiredMixin, UpdateView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        points_data = self._points_from_post(request.POST)
+        points_data = self._points_from_post(request.POST, account=get_request_account(request))
         point_forms, points_valid, points_errors = self._validate_points(points_data, request.user)
 
         if form.is_valid() and points_valid:

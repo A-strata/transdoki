@@ -23,10 +23,22 @@
             </div>
         </div>
 
-        {% if form.non_field_errors %}
-            <div class="form-errors" role="alert">
+        {% if form.errors or points_errors %}
+            <div class="form-errors" role="alert" tabindex="-1" id="form-errors-summary">
+                <p><strong>Форма не сохранена. Исправьте ошибки:</strong></p>
                 {% for error in form.non_field_errors %}
                     <p>{{ error }}</p>
+                {% endfor %}
+                {% for field in form %}
+                    {% if field.errors %}
+                        <p>
+                            <a href="#{{ field.id_for_label }}">{{ field.label }}</a>:
+                            {{ field.errors|join:" " }}
+                        </p>
+                    {% endif %}
+                {% endfor %}
+                {% for err in points_errors %}
+                    <p>Маршрут: {{ err }}</p>
                 {% endfor %}
             </div>
         {% endif %}

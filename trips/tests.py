@@ -1048,3 +1048,107 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         )
         self.assertFalse(form.is_valid())
         self.assertIn("forwarder", form.errors)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Регрессия: ставка с запятой + сохранение имён организаций при ошибке формы
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class DecimalLocalizationAndDtoRegressionTests(RouteBuilderTestBase):
+    """
+    Баг на проде (рейс 9): при попытке изменить ставку на "0,5" форма
+    «молча» не сохранялась и организации в точках показывались как
+    «Организация #42» — признак двух отдельных проблем:
+
+      1. DecimalField не принимал запятую как разделитель → форма невалидна.
+      2. При ре-рендере DTO точек не содержал organization_name, т.к. клиент
+         не присылал его в POST, а сервер не обогащал DTO именами из БД.
+    """
+
+    def _edit_post(self, trip, **overrides):
+        data = self._base_trip_data(**overrides)
+        points = [
+            self._make_point("LOAD", "Москва, Складская 5", organization=self.our_org.pk),
+            self._make_point("UNLOAD", "СПб, Невский 1", organization=self.third_org.pk),
+        ]
+        data["points_json"] = json.dumps(points)
+        return self.client.post(reverse("trips:edit", kwargs={"pk": trip.pk}), data)
+
+    def _create_trip_with_points(self):
+        # В _base_trip_data: client = our_org (наша), carrier = external_org.
+        # Валидатор validate_costs_by_our_company_role требует: мы — заказчик,
+        # значит заполнен только carrier_cost (наш расход), client_cost пуст.
+        points = [
+            self._make_point("LOAD", "Москва, Складская 5", organization=self.our_org.pk),
+            self._make_point("UNLOAD", "СПб, Невский 1", organization=self.third_org.pk),
+        ]
+        resp = self._post_with_points(
+            points,
+            carrier_cost="10000.00",
+            carrier_cost_unit="rub",
+        )
+        if resp.status_code != 302:
+            self.fail(
+                "Фикстура create failed. form.errors не в 302-ответе.\n"
+                + repr(resp.context.get("form").errors if resp.context else "no ctx")
+            )
+        return Trip.objects.order_by("-pk").first()
+
+    def test_carrier_cost_accepts_comma_decimal(self):
+        """POST со ставкой '0,5' (запятая) должен валидно сохраняться.
+
+        Мы — заказчик, поэтому редактируем carrier_cost (наш расход).
+        """
+        trip = self._create_trip_with_points()
+        resp = self._edit_post(
+            trip,
+            carrier_cost="0,5",
+            carrier_cost_unit="rub_kg",
+            weight="1000",
+        )
+        if resp.status_code != 302:
+            errs = resp.context.get("form").errors if resp.context else "no ctx"
+            self.fail(f"Форма должна сохраниться. form.errors={errs!r}")
+        trip.refresh_from_db()
+        from decimal import Decimal
+        self.assertEqual(trip.carrier_cost, Decimal("0.5"))
+
+    def test_invalid_form_rerender_keeps_org_names_in_points(self):
+        """
+        Если форма не прошла валидацию, ре-рендер точек маршрута должен
+        содержать organization_name (подтянутое сервером из БД), а не
+        оставлять клиента с fallback-ом 'Организация #<id>'.
+        """
+        trip = self._create_trip_with_points()
+        # Делаем форму невалидной: client==carrier (валидатор запрещает).
+        resp = self._edit_post(
+            trip,
+            client=str(self.external_org.pk),
+            carrier=str(self.external_org.pk),
+            carrier_cost="90",
+            carrier_cost_unit="rub",
+        )
+        self.assertEqual(resp.status_code, 200, "Ожидаем ре-рендер формы с ошибками")
+        content = resp.content.decode()
+
+        import html
+        import re
+        match = re.search(r'data-points="([^"]*)"', content)
+        self.assertIsNotNone(match)
+        points = json.loads(html.unescape(match.group(1)))
+        names = {p.get("organization_name") for p in points}
+        self.assertIn("Тест Транспорт", names)
+        self.assertIn("Склад", names)
+
+    def test_invalid_form_shows_error_summary(self):
+        """При ошибке валидации шаблон рендерит сводку ошибок наверху формы."""
+        trip = self._create_trip_with_points()
+        resp = self._edit_post(
+            trip,
+            client=str(self.external_org.pk),
+            carrier=str(self.external_org.pk),
+            carrier_cost="100",
+            carrier_cost_unit="rub",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "form-errors-summary")

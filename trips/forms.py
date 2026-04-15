@@ -160,11 +160,31 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
     # FK-поля, переводимые в AjaxModelChoiceField
     _AJAX_FIELDS = ["client", "carrier", "driver", "truck", "trailer"]
 
+    # Поля с дробными числами — принимаем/показываем в локали (запятая как
+    # десятичный разделитель). Работает в связке с LANGUAGE_CODE=ru,
+    # USE_I18N=True — Django уважает localize только при явном флаге на поле.
+    _LOCALIZED_DECIMAL_FIELDS = [
+        "client_cost", "carrier_cost",
+        "client_quantity", "carrier_quantity",
+        "volume",
+    ]
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
         self.current_org = kwargs.pop("current_org", None)
         kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
+
+        for fname in self._LOCALIZED_DECIMAL_FIELDS:
+            field = self.fields.get(fname)
+            if field is None:
+                continue
+            field.localize = True
+            field.widget.is_localized = True
+            field.widget.input_type = "text"
+            attrs = field.widget.attrs
+            attrs.setdefault("inputmode", "decimal")
+            attrs["autocomplete"] = "off"
 
         # Показываем номер рейса только при редактировании
         if self.instance and self.instance.pk:
