@@ -73,8 +73,11 @@ class CurrentOrganizationMiddleware:
         session_org_id = request.session.get("current_org_id")
         org = by_id.get(session_org_id) if session_org_id else None
 
-        profile = getattr(request.user, "profile", None)
+        # profile подгружаем только если session-hit промахнулся —
+        # на hot path обычного запроса это экономит один SELECT
+        # на accounts_userprofile.
         if org is None:
+            profile = getattr(request.user, "profile", None)
             last_id = getattr(profile, "last_active_org_id", None)
             if last_id:
                 org = by_id.get(last_id)
