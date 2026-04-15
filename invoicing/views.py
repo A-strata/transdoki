@@ -31,7 +31,6 @@ from .services import (
     update_invoice,
 )
 
-
 # ─────────────────────────────────────────────────────────────────────
 # Формсет-хелперы
 # ─────────────────────────────────────────────────────────────────────
@@ -172,7 +171,12 @@ class InvoiceListView(UserOwnedListView):
         return qs
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related("customer")
+        qs = super().get_queryset().select_related("customer", "seller")
+        current_org = getattr(self.request, "current_org", None)
+        if current_org is None:
+            qs = qs.none()
+        else:
+            qs = qs.filter(seller=current_org)
         qs = self._apply_search(qs)
         qs = self._apply_date_filters(qs)
         return qs.order_by("-year", "-number")
@@ -230,6 +234,7 @@ class InvoiceCreateView(BillingProtectedMixin, LoginRequiredMixin, View):
 
     def get(self, request):
         account = get_request_account(request)
+        current_org = getattr(request, "current_org", None)
 
         raw_ids = request.GET.get("trip_ids", "") or request.GET.get("trip_id", "")
         trip_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
@@ -240,7 +245,9 @@ class InvoiceCreateView(BillingProtectedMixin, LoginRequiredMixin, View):
 
         if trip_ids:
             try:
-                data = prepare_invoice_data(request.user, trip_ids)
+                data = prepare_invoice_data(
+                    request.user, trip_ids, current_org=current_org
+                )
             except ValidationError as e:
                 msgs = (
                     e.message_dict.get(NON_FIELD_ERRORS, [str(e)])
@@ -257,7 +264,7 @@ class InvoiceCreateView(BillingProtectedMixin, LoginRequiredMixin, View):
             initial_header["customer"] = data["customer"]
             prefilled_trips = [ld["trip"] for ld in initial_lines]
 
-        form = InvoiceForm(initial=initial_header, account=account)
+        form = InvoiceForm(initial=initial_header, account=account, current_org=current_org)
         formset = InvoiceLineFormSetNew(initial=initial_lines, prefix="lines")
 
         return self._render(
@@ -267,7 +274,8 @@ class InvoiceCreateView(BillingProtectedMixin, LoginRequiredMixin, View):
 
     def post(self, request):
         account = get_request_account(request)
-        form = InvoiceForm(request.POST, account=account)
+        current_org = getattr(request, "current_org", None)
+        form = InvoiceForm(request.POST, account=account, current_org=current_org)
         formset = InvoiceLineFormSetNew(request.POST, prefix="lines")
 
         if form.is_valid() and formset.is_valid():
@@ -275,6 +283,7 @@ class InvoiceCreateView(BillingProtectedMixin, LoginRequiredMixin, View):
                 invoice = create_invoice(
                     user=request.user,
                     customer=form.cleaned_data["customer"],
+                    seller=form.cleaned_data["seller"],
                     lines_data=_formset_to_lines_data(formset),
                     number=form.cleaned_data.get("number"),  # None → автогенерация
                     invoice_date=form.cleaned_data["date"],
@@ -304,7 +313,7 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Invoice.objects.for_account(
             get_request_account(self.request)
-        ).select_related("customer", "bank_account__account_bank")
+        ).select_related("seller", "customer", "bank_account__account_bank")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -312,6 +321,13 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         lines = list(invoice.lines.select_related("trip").all())
         ctx["lines"] = lines
         ctx["customer"] = invoice.customer
+
+        current_org = getattr(self.request, "current_org", None)
+        ctx["can_edit"] = (
+            invoice.seller_id is not None
+            and current_org is not None
+            and invoice.seller_id == current_org.pk
+        )
 
         ctx["has_discount"] = any(line.discount_amount > 0 for line in lines)
         vat_rates = {line.vat_rate for line in lines if line.vat_rate is not None}
@@ -345,9 +361,43 @@ class InvoiceEditView(LoginRequiredMixin, View):
         return get_object_or_404(
             Invoice.objects
             .for_account(get_request_account(request))
-            .select_related("customer", "bank_account__account_bank"),
+            .select_related("seller", "customer", "bank_account__account_bank"),
             pk=pk,
         )
+
+    def _guard_current_org(self, request, invoice):
+        """
+        Запрещает редактирование счёта, если текущая своя фирма
+        пользователя не совпадает с invoice.seller. Возвращает
+        HttpResponse-редирект на detail или None, если всё ОК.
+
+        Три блокируемых случая:
+          - invoice.seller IS NULL (исторический счёт из backfill bucket
+            без автоматически определённого поставщика) — редактировать
+            через UI нельзя, заполнить seller можно только через админку;
+          - current_org is None (у пользователя нет своих фирм);
+          - current_org.pk != invoice.seller_id (сидит под другой фирмой).
+        """
+        current_org = getattr(request, "current_org", None)
+        if (
+            invoice.seller_id is None
+            or current_org is None
+            or current_org.pk != invoice.seller_id
+        ):
+            if invoice.seller_id is None:
+                messages.error(
+                    request,
+                    f"У счёта {invoice.display_number} не определён "
+                    f"поставщик. Заполните его через админку.",
+                )
+            else:
+                messages.error(
+                    request,
+                    f"Для редактирования счёта {invoice.display_number} "
+                    f"переключитесь на фирму «{invoice.seller.short_name}».",
+                )
+            return redirect("invoicing:invoice_detail", pk=invoice.pk)
+        return None
 
     def _render(self, request, invoice, form, formset):
         existing_lines = list(invoice.lines.select_related("trip").all())
@@ -382,15 +432,25 @@ class InvoiceEditView(LoginRequiredMixin, View):
 
     def get(self, request, pk):
         invoice = self._get_invoice(request, pk)
+        guard = self._guard_current_org(request, invoice)
+        if guard is not None:
+            return guard
         account = get_request_account(request)
-        form = InvoiceForm(instance=invoice, account=account)
+        current_org = getattr(request, "current_org", None)
+        form = InvoiceForm(instance=invoice, account=account, current_org=current_org)
         formset = InvoiceLineFormSet(instance=invoice, prefix="lines")
         return self._render(request, invoice, form, formset)
 
     def post(self, request, pk):
         invoice = self._get_invoice(request, pk)
+        guard = self._guard_current_org(request, invoice)
+        if guard is not None:
+            return guard
         account = get_request_account(request)
-        form = InvoiceForm(request.POST, instance=invoice, account=account)
+        current_org = getattr(request, "current_org", None)
+        form = InvoiceForm(
+            request.POST, instance=invoice, account=account, current_org=current_org
+        )
         formset = InvoiceLineFormSet(request.POST, instance=invoice, prefix="lines")
 
         if form.is_valid() and formset.is_valid():
@@ -423,8 +483,22 @@ class InvoiceDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         account = get_request_account(request)
         invoice = get_object_or_404(
-            Invoice.objects.for_account(account), pk=pk
+            Invoice.objects.for_account(account).select_related("seller"), pk=pk
         )
+        current_org = getattr(request, "current_org", None)
+        if invoice.seller_id is None or current_org is None or \
+                invoice.seller_id != current_org.pk:
+            # Исторический счёт без seller (backfill bucket) или чужая
+            # фирма — редирект на detail с flash. Тот же контракт что
+            # и у InvoiceEditView._guard_current_org.
+            seller_name = invoice.seller.short_name if invoice.seller else "—"
+            messages.error(
+                request,
+                f"Для удаления счёта {invoice.display_number} "
+                f"переключитесь на фирму «{seller_name}».",
+            )
+            return redirect("invoicing:invoice_detail", pk=invoice.pk)
+
         display = invoice.display_number
         invoice.delete()
         messages.success(request, f"Счёт {display} удалён.")

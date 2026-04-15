@@ -234,7 +234,7 @@ class TripForm(ErrorHighlightMixin, forms.ModelForm):
             forwarder_field = self.fields["forwarder"]
             forwarder_field.required = False
             forwarder_field.widget = forms.HiddenInput()
-            own_orgs = full_org.filter(is_own_company=True)
+            own_orgs = Organization.objects.own_for(account_id)
             forwarder_field._validation_qs = own_orgs
 
             current = getattr(self.instance, "forwarder", None)

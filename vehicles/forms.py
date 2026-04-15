@@ -51,11 +51,8 @@ class VehicleFormWithOwner(VehicleForm):
                 account=account,
             ).order_by('short_name')
             self.fields['owner'].widget.attrs['data-search-url'] = reverse('organizations:search')
-            # Предзаполнение: первая собственная компания
             if not self.initial.get('owner'):
-                first_own = Organization.objects.filter(
-                    account=account, is_own_company=True,
-                ).order_by('pk').first()
+                first_own = Organization.objects.own_for(account).first()
                 if first_own:
                     self.initial['owner'] = first_own.pk
 

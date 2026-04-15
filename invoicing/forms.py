@@ -28,7 +28,7 @@ class InvoiceForm(forms.ModelForm):
 
     class Meta:
         model = Invoice
-        fields = ["number", "date", "payment_due", "customer", "bank_account"]
+        fields = ["number", "date", "payment_due", "seller", "customer", "bank_account"]
         widgets = {
             # format="%Y-%m-%d" обязателен для <input type="date">:
             # HTML5 date-input принимает только ISO-формат. Без явного
@@ -39,7 +39,7 @@ class InvoiceForm(forms.ModelForm):
             "number": forms.NumberInput(attrs={"min": "1"}),
         }
 
-    def __init__(self, *args, account=None, **kwargs):
+    def __init__(self, *args, account=None, current_org=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Номер — необязательное поле на уровне формы:
@@ -92,40 +92,42 @@ class InvoiceForm(forms.ModelForm):
             "data-search-url": reverse_lazy("organizations:search"),
         })
 
-        own = Organization.objects.filter(
-            account=account,
-            is_own_company=True,
-        ).first()
-        if not own:
-            self.fields["bank_account"].queryset = OrganizationBank.objects.none()
-            return
+        # ── Seller: всегда прибит к current_org (create) или
+        #    instance.seller (edit). Поле disabled — пользователь не
+        #    может сменить поставщика через форму. Контракт: нельзя
+        #    выставлять счёт от фирмы, под которой не сидишь.
+        seller_field = self.fields["seller"]
+        fixed_seller = None
+        if self.instance and self.instance.pk and self.instance.seller_id:
+            fixed_seller = self.instance.seller
+        elif current_org is not None:
+            fixed_seller = current_org
 
-        bank_qs = OrganizationBank.objects.filter(account_owner=own).select_related(
-            "account_bank"
-        )
-        self.fields["bank_account"].queryset = bank_qs
-        # Поле обязательное на уровне формы. Модель оставлена nullable
-        # (blank=True) — безопаснее для admin и исторических данных,
-        # но в пользовательском потоке счёт без расчётного счёта
-        # не создаётся.
-        self.fields["bank_account"].required = True
-        # Подпись в <option>: "р/с NNN (Название банка)".
-        # Дефолтный __str__ у OrganizationBank показывает название
-        # собственной компании, которое в контексте счёта избыточно —
-        # компания одна и уже видна в шапке документа.
-        self.fields["bank_account"].label_from_instance = lambda ba: (
+        if fixed_seller is not None:
+            seller_field.queryset = Organization.objects.filter(pk=fixed_seller.pk)
+            self.initial["seller"] = fixed_seller.pk
+        else:
+            seller_field.queryset = Organization.objects.none()
+        seller_field.required = True
+        seller_field.disabled = True
+
+        # bank_account: только счета зафиксированного seller'а.
+        bank_field = self.fields["bank_account"]
+        if fixed_seller is not None:
+            bank_qs = OrganizationBank.objects.filter(
+                account_owner=fixed_seller,
+            ).select_related("account_bank")
+        else:
+            bank_qs = OrganizationBank.objects.none()
+
+        bank_field.queryset = bank_qs
+        bank_field.required = True
+        bank_field.label_from_instance = lambda ba: (
             f"{ba.account_num} ({ba.account_bank.bank_name})"
         )
 
-        # Предвыбор расчётного счёта при создании нового счёта: берём
-        # первый банковский счёт собственной компании. Для edit Django
-        # сам подставляет invoice.bank_account через instance — здесь
-        # не вмешиваемся. Условие `"bank_account" not in self.initial`
-        # уважает явный initial, переданный из view.
-        #
-        # TODO: когда появится OrganizationBank.is_primary —
-        # выбирать банк с is_primary=True, с фоллбэком на первый.
-        if not self.instance.pk and "bank_account" not in self.initial:
+        # Предвыбор р/с при создании: первый счёт зафиксированного seller'а.
+        if not self.instance.pk and "bank_account" not in self.initial and fixed_seller:
             first_bank = bank_qs.first()
             if first_bank:
                 self.initial["bank_account"] = first_bank.pk

@@ -26,14 +26,15 @@ class InvoiceLineInline(admin.TabularInline):
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ("display_number", "date", "customer", "account", "created_by")
-    list_filter = ("year", "date", "account")
-    search_fields = ("number", "customer__short_name")
+    list_display = ("display_number", "date", "seller", "customer", "account", "created_by")
+    list_filter = ("year", "date", "seller", "account")
+    search_fields = ("number", "customer__short_name", "seller__short_name")
     readonly_fields = ("year", "number", "created_by", "updated_by", "created_at", "updated_at")
     inlines = [InvoiceLineInline]
+    autocomplete_fields = ("seller", "customer", "bank_account")
 
     fieldsets = (
-        (None, {"fields": ("year", "number", "date", "payment_due", "customer", "bank_account", "account")}),
+        (None, {"fields": ("year", "number", "date", "payment_due", "seller", "customer", "bank_account", "account")}),
         ("Служебные", {"fields": ("created_by", "updated_by", "created_at", "updated_at")}),
     )
 

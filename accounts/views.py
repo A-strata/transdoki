@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -14,8 +16,6 @@ from transdoki.tenancy import get_request_account
 from .forms import AccountRegistrationForm, AccountUserCreateForm
 from .models import UserProfile
 from .services import reset_account_user_password
-
-import logging
 
 security_logger = logging.getLogger("security")
 
@@ -71,11 +71,13 @@ class SwitchOrganizationView(LoginRequiredMixin, View):
         account = get_request_account(request)
         org_id = request.POST.get("org_id")
         if org_id:
-            exists = Organization.objects.filter(
-                pk=org_id, account=account, is_own_company=True
-            ).exists()
-            if exists:
-                request.session["current_org_id"] = int(org_id)
+            org = Organization.objects.own_for(account).filter(pk=org_id).first()
+            if org is not None:
+                request.session["current_org_id"] = org.pk
+                profile = request.user.profile
+                if profile.last_active_org_id != org.pk:
+                    profile.last_active_org = org
+                    profile.save(update_fields=["last_active_org"])
         referer = request.META.get("HTTP_REFERER") or reverse("trips:list")
         return redirect(referer)
 
@@ -119,10 +121,7 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
             UserProfile.Role.ADMIN,
         }
 
-        own_companies = Organization.objects.filter(
-            account=account,
-            is_own_company=True,
-        ).order_by("short_name")
+        own_companies = Organization.objects.own_for(account)
 
         context.update(
             {

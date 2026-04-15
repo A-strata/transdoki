@@ -43,8 +43,8 @@ class ContractForm(ErrorHighlightMixin, forms.ModelForm):
             )
             if account_id:
                 all_orgs = Organization.objects.filter(account_id=account_id)
-                self.fields["own_company"].queryset = all_orgs.filter(
-                    is_own_company=True
+                self.fields["own_company"].queryset = Organization.objects.own_for(
+                    account_id
                 )
                 self.fields["contractor"].queryset = all_orgs.filter(
                     is_own_company=False

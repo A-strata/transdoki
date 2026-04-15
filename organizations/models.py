@@ -4,9 +4,26 @@ from django.db.models import Q, UniqueConstraint
 from django.urls import reverse
 from django_cryptography.fields import encrypt
 
-from transdoki.models import UserOwnedModel  # noqa: F401
+from transdoki.models import TenantManager, TenantQuerySet, UserOwnedModel  # noqa: F401
 
 from .validators import validate_inn
+
+
+class OrganizationQuerySet(TenantQuerySet):
+    def own_for(self, account):
+        if account is None:
+            return self.none()
+        return self.filter(account=account, is_own_company=True).order_by(
+            "created_at", "pk"
+        )
+
+
+class OrganizationManager(TenantManager):
+    def get_queryset(self):
+        return OrganizationQuerySet(self.model, using=self._db)
+
+    def own_for(self, account):
+        return self.get_queryset().own_for(account)
 
 ORG_NAME_LENGTH = 200
 INN_LENGTH = 12
@@ -100,6 +117,8 @@ class Organization(UserOwnedModel):
         blank=True,
         null=True,
     )
+
+    objects = OrganizationManager()
 
     def get_absolute_url(self):
         return reverse("organizations:edit", kwargs={"pk": self.pk})

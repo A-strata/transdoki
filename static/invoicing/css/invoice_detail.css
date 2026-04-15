@@ -560,3 +560,16 @@
 .inline-form {
     display: inline;
 }
+
+.notice {
+    margin: 12px 0;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+
+.notice-warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border-color: var(--warning-border);
+}

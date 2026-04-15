@@ -8,6 +8,37 @@ from django.db.models import Sum
 from transdoki.enums import VatRate
 from transdoki.models import UserOwnedModel
 
+# ─────────────────────────────────────────────────────────────────────
+# Константы модуля
+# ─────────────────────────────────────────────────────────────────────
+
+# Денежные поля: до 9 999 999 999.99 ₽
+MONEY_MAX_DIGITS = 12
+MONEY_DECIMAL_PLACES = 2
+
+# Количество: до 9 999 999.999
+QUANTITY_MAX_DIGITS = 10
+QUANTITY_DECIMAL_PLACES = 3
+
+# Длины строковых полей
+DESCRIPTION_MAX_LENGTH = 350
+UNIT_MAX_LENGTH = 10
+CHOICE_MAX_LENGTH = 20
+
+# Денежные константы
+MONEY_ZERO = Decimal("0")
+MONEY_QUANTUM = Decimal("0.01")
+MIN_MONEY = Decimal("0")
+MIN_QUANTITY = Decimal("0.001")
+MIN_PAYMENT_AMOUNT = Decimal("0.01")
+DEFAULT_QUANTITY = Decimal("1")
+
+# Допустимое расхождение при сверке инварианта total = net + vat
+AMOUNT_TOLERANCE = Decimal("0.01")
+
+# Процент → доля
+PERCENT_DENOMINATOR = Decimal("100")
+
 
 class PaymentMethod(models.TextChoices):
     CASH = "cash", "Наличные"
@@ -32,6 +63,15 @@ class Invoice(UserOwnedModel):
     number = models.PositiveIntegerField(verbose_name="Номер")
     date = models.DateField(verbose_name="Дата")
     payment_due = models.DateField(null=True, blank=True, verbose_name="Оплатить до")
+    seller = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="invoices_as_seller",
+        limit_choices_to={"is_own_company": True},
+        verbose_name="Поставщик (наша фирма)",
+    )
     customer = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.PROTECT,
@@ -53,8 +93,8 @@ class Invoice(UserOwnedModel):
         ordering = ["-year", "-number"]
         constraints = [
             models.UniqueConstraint(
-                fields=["account", "year", "number"],
-                name="uniq_invoice_account_year_number",
+                fields=["seller", "year", "number"],
+                name="uniq_invoice_seller_year_number",
             ),
         ]
 
@@ -96,18 +136,37 @@ class Invoice(UserOwnedModel):
                     "bank_account": "Расчётный счёт не принадлежит вашей компании.",
                 }
             )
+        if self.account_id and self.seller_id:
+            if self.seller.account_id != self.account_id:
+                raise ValidationError(
+                    {"seller": "Поставщик не принадлежит вашему аккаунту."}
+                )
+            if not self.seller.is_own_company:
+                raise ValidationError(
+                    {"seller": "Поставщиком может быть только своя фирма."}
+                )
+        if (
+            self.seller_id
+            and self.bank_account_id
+            and self.bank_account.account_owner_id != self.seller_id
+        ):
+            raise ValidationError(
+                {
+                    "bank_account": "Расчётный счёт не принадлежит выбранному поставщику.",
+                }
+            )
 
     @property
     def total_net(self):
-        return self.lines.aggregate(t=Sum("amount_net"))["t"] or Decimal("0")
+        return self.lines.aggregate(t=Sum("amount_net"))["t"] or MONEY_ZERO
 
     @property
     def total_vat(self):
-        return self.lines.aggregate(t=Sum("vat_amount"))["t"] or Decimal("0")
+        return self.lines.aggregate(t=Sum("vat_amount"))["t"] or MONEY_ZERO
 
     @property
     def total(self):
-        return self.lines.aggregate(t=Sum("amount_total"))["t"] or Decimal("0")
+        return self.lines.aggregate(t=Sum("amount_total"))["t"] or MONEY_ZERO
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -151,37 +210,40 @@ class InvoiceLine(models.Model):
         verbose_name="Рейс",
     )
     kind = models.CharField(
-        max_length=20,
+        max_length=CHOICE_MAX_LENGTH,
         choices=Kind.choices,
         default=Kind.SERVICE,
         verbose_name="Тип",
     )
-    description = models.CharField(max_length=255, verbose_name="Наименование")
+    description = models.CharField(
+        max_length=DESCRIPTION_MAX_LENGTH,
+        verbose_name="Наименование",
+    )
 
     quantity = models.DecimalField(
-        max_digits=10,
-        decimal_places=3,
-        default=Decimal("1"),
-        validators=[MinValueValidator(Decimal("0.001"))],
+        max_digits=QUANTITY_MAX_DIGITS,
+        decimal_places=QUANTITY_DECIMAL_PLACES,
+        default=DEFAULT_QUANTITY,
+        validators=[MinValueValidator(MIN_QUANTITY)],
         verbose_name="Количество",
     )
     unit = models.CharField(
-        max_length=10,
+        max_length=UNIT_MAX_LENGTH,
         choices=UnitOfMeasure.choices,
         default=UnitOfMeasure.SERVICE,
         verbose_name="Ед. изм.",
     )
     unit_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal("0"))],
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        validators=[MinValueValidator(MIN_MONEY)],
         verbose_name="Цена без НДС",
     )
     discount_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0"),
-        validators=[MinValueValidator(Decimal("0"))],
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        default=MONEY_ZERO,
+        validators=[MinValueValidator(MIN_MONEY)],
         verbose_name="Скидка ₽",
     )
     vat_rate = models.IntegerField(
@@ -193,23 +255,23 @@ class InvoiceLine(models.Model):
 
     # Производные поля. editable=False → не попадают в ModelForm.
     amount_net = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0"),
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        default=MONEY_ZERO,
         editable=False,
         verbose_name="Сумма без НДС",
     )
     vat_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0"),
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        default=MONEY_ZERO,
         editable=False,
         verbose_name="Сумма НДС",
     )
     amount_total = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0"),
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        default=MONEY_ZERO,
         editable=False,
         verbose_name="Сумма с НДС",
     )
@@ -225,11 +287,11 @@ class InvoiceLine(models.Model):
     @property
     def discount_pct(self) -> Decimal:
         """Процент скидки как производное от discount_amount."""
-        gross = (self.unit_price or Decimal("0")) * (self.quantity or Decimal("0"))
+        gross = (self.unit_price or MONEY_ZERO) * (self.quantity or MONEY_ZERO)
         if not gross:
-            return Decimal("0")
-        return (self.discount_amount / gross * 100).quantize(
-            Decimal("0.01"),
+            return MONEY_ZERO
+        return (self.discount_amount / gross * PERCENT_DENOMINATOR).quantize(
+            MONEY_QUANTUM,
             ROUND_HALF_UP,
         )
 
@@ -250,13 +312,11 @@ class InvoiceLine(models.Model):
              на финальном объекте перед save()
         Оба вызова работают с одинаковыми входными данными, результат совпадает.
         """
-        two = Decimal("0.01")
+        unit_price = self.unit_price or MONEY_ZERO
+        quantity = self.quantity or MONEY_ZERO
+        discount = self.discount_amount or MONEY_ZERO
 
-        unit_price = self.unit_price or Decimal("0")
-        quantity = self.quantity or Decimal("0")
-        discount = self.discount_amount or Decimal("0")
-
-        gross = (unit_price * quantity).quantize(two, ROUND_HALF_UP)
+        gross = (unit_price * quantity).quantize(MONEY_QUANTUM, ROUND_HALF_UP)
 
         if discount > gross:
             raise ValidationError(
@@ -269,11 +329,11 @@ class InvoiceLine(models.Model):
         self.amount_net = gross - discount
 
         if self.vat_rate is not None:
-            self.vat_amount = (self.amount_net * self.vat_rate / 100).quantize(
-                two, ROUND_HALF_UP
-            )
+            self.vat_amount = (
+                self.amount_net * self.vat_rate / PERCENT_DENOMINATOR
+            ).quantize(MONEY_QUANTUM, ROUND_HALF_UP)
         else:
-            self.vat_amount = Decimal("0")
+            self.vat_amount = MONEY_ZERO
 
         self.amount_total = self.amount_net + self.vat_amount
 
@@ -315,25 +375,28 @@ class Act(UserOwnedModel):
         related_name="acts",
         verbose_name="Заказчик",
     )
-    description = models.TextField(verbose_name="Наименование услуги")
+    description = models.TextField(
+        max_length=DESCRIPTION_MAX_LENGTH,
+        verbose_name="Наименование услуги",
+    )
 
     amount_net = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal("0"))],
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        validators=[MinValueValidator(MIN_MONEY)],
         verbose_name="Сумма без НДС",
     )
     vat_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0"),
-        validators=[MinValueValidator(Decimal("0"))],
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        default=MONEY_ZERO,
+        validators=[MinValueValidator(MIN_MONEY)],
         verbose_name="Сумма НДС",
     )
     amount_total = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal("0"))],
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        validators=[MinValueValidator(MIN_MONEY)],
         verbose_name="Сумма с НДС",
     )
 
@@ -370,7 +433,7 @@ class Act(UserOwnedModel):
             and self.amount_total is not None
         ):
             expected = self.amount_net + self.vat_amount
-            if abs(self.amount_total - expected) > Decimal("0.01"):
+            if abs(self.amount_total - expected) > AMOUNT_TOLERANCE:
                 raise ValidationError(
                     {
                         "amount_total": f"Сумма с НДС ({self.amount_total}) должна равняться "
@@ -393,24 +456,24 @@ class Payment(UserOwnedModel):
     )
     date = models.DateField(verbose_name="Дата платежа")
     amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal("0.01"))],
+        max_digits=MONEY_MAX_DIGITS,
+        decimal_places=MONEY_DECIMAL_PLACES,
+        validators=[MinValueValidator(MIN_PAYMENT_AMOUNT)],
         verbose_name="Сумма",
     )
     payment_method = models.CharField(
-        max_length=20,
+        max_length=CHOICE_MAX_LENGTH,
         choices=PaymentMethod.choices,
         verbose_name="Способ оплаты",
     )
     direction = models.CharField(
-        max_length=20,
+        max_length=CHOICE_MAX_LENGTH,
         choices=PaymentDirection.choices,
         default=PaymentDirection.INCOMING,
         verbose_name="Направление",
     )
     description = models.CharField(
-        max_length=255,
+        max_length=DESCRIPTION_MAX_LENGTH,
         blank=True,
         default="",
         verbose_name="Комментарий",

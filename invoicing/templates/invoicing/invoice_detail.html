@@ -20,11 +20,20 @@
         <div class="sticky-nav-actions">
             <a href="{% url 'invoicing:invoice_list' %}" class="tms-btn tms-btn-secondary tms-btn-sm">К списку</a>
             <a href="{% url 'invoicing:invoice_download' invoice.pk %}" class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
+            {% if can_edit %}
             <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
                     data-modal-open="delete-invoice-modal">Удалить</button>
             <a href="{% url 'invoicing:invoice_edit' invoice.pk %}" class="tms-btn tms-btn-primary tms-btn-sm">Редактировать</a>
+            {% endif %}
         </div>
     </div>
+
+    {% if not can_edit and invoice.seller %}
+    <div class="notice notice-warning">
+        Этот счёт выставлен от имени «{{ invoice.seller.short_name }}».
+        Переключитесь на эту фирму для редактирования.
+    </div>
+    {% endif %}
 
     <div class="card">
         <div class="section">
@@ -116,6 +125,7 @@
         </div>
     </div>
 
+    {% if can_edit %}
     <div class="modal-overlay" id="delete-invoice-modal" hidden>
         <div class="modal-dialog">
             <h3 class="modal-title">Удалить счёт?</h3>
@@ -133,6 +143,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
 </section>
 {% endblock %}

@@ -4,14 +4,13 @@ from django import forms
 from django.urls import reverse
 from django.utils import timezone
 
-from transdoki.forms import ErrorHighlightMixin
-
 from organizations.models import Organization
 from persons.models import Person
+from transdoki.forms import ErrorHighlightMixin
 from trips.models import Trip
 from vehicles.models import Vehicle
 
-from .models import Waybill, WaybillEvent, RoutePoint
+from .models import RoutePoint, Waybill, WaybillEvent
 
 
 class AjaxModelChoiceField(forms.ModelChoiceField):
@@ -25,12 +24,12 @@ class AjaxModelChoiceField(forms.ModelChoiceField):
         qs = getattr(self, "_validation_qs", self.queryset)
         try:
             return qs.get(pk=value)
-        except (ValueError, TypeError, qs.model.DoesNotExist):
+        except (ValueError, TypeError, qs.model.DoesNotExist) as err:
             raise forms.ValidationError(
                 self.error_messages["invalid_choice"],
                 code="invalid_choice",
                 params={"value": value},
-            )
+            ) from err
 
 
 def _is_event(record):
@@ -304,7 +303,7 @@ class WaybillForm(BaseStyledModelForm):
     def _setup_ajax_fields(self, account):
         self._setup_ajax_field(
             "organization",
-            Organization.objects.filter(account=account, is_own_company=True),
+            Organization.objects.own_for(account),
             reverse("organizations:search") + "?own=1",
             open_on_focus=True,
         )

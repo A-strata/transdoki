@@ -119,6 +119,14 @@ class UserProfile(models.Model):
     role = models.CharField(
         max_length=20, choices=Role.choices, default=Role.OWNER, verbose_name="Роль"
     )
+    last_active_org = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Последняя активная своя фирма",
+    )
 
     class Meta:
         verbose_name = "Профиль пользователя"
@@ -130,25 +138,6 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Профиль {self.user.username}"
-
-    @property
-    def own_companies_count(self):
-        """Количество собственных компаний в рамках account."""
-        from organizations.models import Organization
-
-        if not self.account_id:
-            return 0
-
-        return Organization.objects.filter(
-            account_id=self.account_id,
-            is_own_company=True,
-        ).count()
-
-    def can_add_own_company(self):
-        """Проверяет лимит собственных компаний account."""
-        if not self.account_id:
-            return False
-        return self.own_companies_count < self.account.free_orgs
 
     @property
     def active_sessions_count(self):
@@ -179,19 +168,6 @@ class UserProfile(models.Model):
         from billing.constants import MAX_SESSIONS_PER_USER
 
         return self.active_sessions_count < MAX_SESSIONS_PER_USER
-
-    def get_own_companies(self):
-        """Возвращает queryset собственных компаний account."""
-        from organizations.models import Organization
-
-        if not self.account_id:
-            return Organization.objects.none()
-
-        return Organization.objects.filter(
-            account_id=self.account_id,
-            is_own_company=True,
-        )
-
 
 class UserSession(models.Model):
     """Отслеживание активных сессий пользователя."""

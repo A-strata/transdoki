@@ -62,21 +62,31 @@ class CurrentOrganizationMiddleware:
         from transdoki.tenancy import get_request_account
 
         account = get_request_account(request)
-        own_orgs = Organization.objects.filter(
-            account=account, is_own_company=True
-        ).order_by("short_name")
+        own_orgs = list(Organization.objects.own_for(account))
         request.own_orgs = own_orgs
 
-        session_org_id = request.session.get("current_org_id")
-        org = None
+        if not own_orgs:
+            request.current_org = None
+            return
 
-        if session_org_id:
-            org = own_orgs.filter(pk=session_org_id).first()
+        by_id = {o.pk: o for o in own_orgs}
+        session_org_id = request.session.get("current_org_id")
+        org = by_id.get(session_org_id) if session_org_id else None
+
+        profile = getattr(request.user, "profile", None)
+        if org is None:
+            last_id = getattr(profile, "last_active_org_id", None)
+            if last_id:
+                org = by_id.get(last_id)
+                if org is None and profile is not None:
+                    profile.last_active_org = None
+                    profile.save(update_fields=["last_active_org"])
 
         if org is None:
-            org = own_orgs.first()
-            if org is not None and session_org_id != org.pk:
-                request.session["current_org_id"] = org.pk
+            org = own_orgs[0]
+
+        if request.session.get("current_org_id") != org.pk:
+            request.session["current_org_id"] = org.pk
 
         request.current_org = org
 

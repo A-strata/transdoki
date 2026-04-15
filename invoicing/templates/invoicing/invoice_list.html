@@ -68,9 +68,18 @@
 
     </form>
 
-    <div data-list-content>
-        {% include "invoicing/invoice_list_table.html" %}
-    </div>
+    {% if not current_org %}
+        <div class="empty-state">
+            <p>Для работы со счетами сначала создайте свою фирму.</p>
+            <a href="{% url 'organizations:own_list' %}" class="tms-btn tms-btn-primary">
+                Перейти к моим фирмам
+            </a>
+        </div>
+    {% else %}
+        <div data-list-content>
+            {% include "invoicing/invoice_list_table.html" %}
+        </div>
+    {% endif %}
 
 </section>
 {% endblock %}

@@ -79,6 +79,12 @@
                     </div>
 
                     <div class="field field--org">
+                        <label for="{{ form.seller.id_for_label }}">Поставщик</label>
+                        {{ form.seller }}
+                        {{ form.seller.errors }}
+                    </div>
+
+                    <div class="field field--org">
                         <label for="{{ form.customer.id_for_label }}">Заказчик</label>
                         {{ form.customer }}
                         {{ form.customer.errors }}

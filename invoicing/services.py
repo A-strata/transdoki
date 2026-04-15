@@ -99,15 +99,22 @@ def _check_trips_availability(trip_ids, account_id, exclude_invoice=None):
 # ─────────────────────────────────────────────────────────────────────
 
 
-def prepare_invoice_data(user, trip_ids):
+def prepare_invoice_data(user, trip_ids, *, current_org=None):
     """
     Валидирует рейсы и собирает данные для префилла формы.
     Ничего не пишет в БД.
 
     Возвращает dict:
         customer: Organization
+        seller:   Organization — наша фирма-исполнитель (carrier или forwarder)
         lines:    list[dict] — готово и для initial= в формсете,
                   и для передачи в create_invoice(lines_data=...)
+
+    current_org: если передан — проверяет что seller совпадает с ним и
+    падает с ValidationError при расхождении. None пропускает проверку
+    осознанно — для вызовов из management-команд и тестов, где нет
+    HTTP-контекста. Все user-facing пути (view) обязаны передавать
+    current_org из request.
 
     Занятость рейсов здесь не проверяется: она требует atomic-блока
     и проверяется внутри create_invoice.
@@ -118,7 +125,7 @@ def prepare_invoice_data(user, trip_ids):
         Trip.objects.for_account(account)
         .filter(pk__in=trip_ids)
         .prefetch_related("points")
-        .select_related("client", "truck", "trailer", "driver")
+        .select_related("client", "carrier", "forwarder", "truck", "trailer", "driver")
     )
 
     if not trips:
@@ -129,6 +136,38 @@ def prepare_invoice_data(user, trip_ids):
         raise ValidationError(
             {
                 NON_FIELD_ERRORS: "Все рейсы должны принадлежать одному заказчику.",
+            }
+        )
+
+    sellers = set()
+    for trip in trips:
+        if trip.carrier_id and trip.carrier.is_own_company:
+            sellers.add(trip.carrier)
+        elif trip.forwarder_id and trip.forwarder.is_own_company:
+            sellers.add(trip.forwarder)
+    if not sellers:
+        raise ValidationError(
+            {
+                NON_FIELD_ERRORS: "Ни одна ваша фирма не является исполнителем "
+                "по этим рейсам (перевозчик или экспедитор).",
+            }
+        )
+    if len(sellers) > 1:
+        raise ValidationError(
+            {
+                NON_FIELD_ERRORS: "Все рейсы должны иметь одного исполнителя "
+                "(вашу фирму как перевозчика или экспедитора).",
+            }
+        )
+    seller = sellers.pop()
+
+    if current_org is not None and seller.pk != current_org.pk:
+        raise ValidationError(
+            {
+                NON_FIELD_ERRORS: (
+                    f"Для выставления счёта по этим рейсам переключитесь "
+                    f"на фирму «{seller.short_name}»."
+                ),
             }
         )
 
@@ -159,6 +198,7 @@ def prepare_invoice_data(user, trip_ids):
 
     return {
         "customer": trips[0].client,
+        "seller": seller,
         "lines": lines,
     }
 
@@ -168,6 +208,7 @@ def create_invoice(
     user,
     customer,
     lines_data,
+    seller,
     number=None,
     invoice_date=None,
     payment_due=None,
@@ -195,12 +236,27 @@ def create_invoice(
                 "customer": "Заказчик не принадлежит вашему аккаунту.",
             }
         )
-    if bank_account is not None and bank_account.account_id != account.id:
+    if seller is None:
+        raise ValidationError({"seller": "Поставщик обязателен."})
+    if seller.account_id != account.id:
+        raise ValidationError({"seller": "Поставщик не принадлежит вашему аккаунту."})
+    if not seller.is_own_company:
         raise ValidationError(
-            {
-                "bank_account": "Расчётный счёт не принадлежит вашему аккаунту.",
-            }
+            {"seller": "Поставщиком может быть только своя фирма."}
         )
+    if bank_account is not None:
+        if bank_account.account_id != account.id:
+            raise ValidationError(
+                {
+                    "bank_account": "Расчётный счёт не принадлежит вашему аккаунту.",
+                }
+            )
+        if bank_account.account_owner_id != seller.id:
+            raise ValidationError(
+                {
+                    "bank_account": "Расчётный счёт не принадлежит выбранному поставщику.",
+                }
+            )
 
     trip_ids = [ld["trip"].pk for ld in lines_data if ld.get("trip")]
 
@@ -217,7 +273,7 @@ def create_invoice(
                 else:
                     last_number = (
                         Invoice.objects.select_for_update()
-                        .filter(account_id=account.id, year=year)
+                        .filter(seller_id=seller.id, year=year)
                         .aggregate(m=Max("number"))["m"]
                         or 0
                     )
@@ -231,6 +287,7 @@ def create_invoice(
                     number=invoice_number,
                     date=invoice_date,
                     payment_due=payment_due,
+                    seller=seller,
                     customer=customer,
                     bank_account=bank_account,
                 )
@@ -294,22 +351,42 @@ def update_invoice(invoice, *, user, header_data, lines_diff):
     if customer is not None and customer.account_id != account.id:
         raise ValidationError({"customer": "Заказчик не принадлежит вашему аккаунту."})
 
-    bank_account = header_data.get("bank_account")
-    if bank_account is not None and bank_account.account_id != account.id:
+    # Смена seller запрещена: ломает сквозную нумерацию per-seller.
+    # Для редкого случая «ошибся поставщиком» — удалить и создать новый.
+    new_seller = header_data.get("seller")
+    if new_seller is not None and new_seller.id != invoice.seller_id:
         raise ValidationError(
             {
-                "bank_account": "Расчётный счёт не принадлежит вашему аккаунту.",
+                "seller": "Смена поставщика требует создания нового счёта. "
+                "Удалите текущий и создайте новый с нужным поставщиком.",
             }
         )
 
-    # Смена номера: pre-check коллизии (account, year, number).
+    bank_account = header_data.get("bank_account")
+    if bank_account is not None:
+        if bank_account.account_id != account.id:
+            raise ValidationError(
+                {
+                    "bank_account": "Расчётный счёт не принадлежит вашему аккаунту.",
+                }
+            )
+        if bank_account.account_owner_id != invoice.seller_id:
+            raise ValidationError(
+                {
+                    "bank_account": "Расчётный счёт не принадлежит поставщику счёта.",
+                }
+            )
+
+    # Смена номера: pre-check коллизии (seller, year, number).
     # Гонка возможна, но окно узкое — финальная защита через unique
     # constraint на уровне БД.
     new_number = header_data.get("number")
     if new_number is not None and new_number != invoice.number:
         collision = (
             Invoice.objects.filter(
-                account_id=account.id, year=invoice.year, number=new_number
+                seller_id=invoice.seller_id,
+                year=invoice.year,
+                number=new_number,
             )
             .exclude(pk=invoice.pk)
             .exists()
@@ -490,10 +567,7 @@ class InvoiceGenerator(BaseDocxGenerator):
 
     @classmethod
     def build_context(cls, invoice) -> dict:
-        own_company = Organization.objects.filter(
-            account=invoice.account,
-            is_own_company=True,
-        ).first()
+        own_company = invoice.seller
         customer = invoice.customer
         lines = list(invoice.lines.select_related("trip").all())
 

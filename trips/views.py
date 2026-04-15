@@ -496,10 +496,16 @@ class TripListView(UserOwnedListView):
         q = (self.request.GET.get("q") or "").strip()
         if not q:
             return qs
+        point_match = TripPoint.objects.filter(
+            trip=OuterRef("pk"),
+            organization__short_name__icontains=q,
+        )
         return qs.filter(
             Q(num_of_trip__icontains=q)
             | Q(client__short_name__icontains=q)
             | Q(carrier__short_name__icontains=q)
+            | Q(forwarder__short_name__icontains=q)
+            | Exists(point_match)
         )
 
     def _build_pagination_items(self, page_obj):
