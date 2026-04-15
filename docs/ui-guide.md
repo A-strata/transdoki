@@ -860,6 +860,53 @@ document.querySelectorAll('[data-cascade-source]').forEach(source => {
 - Scroll listener снимать при закрытии дропдауна, не накапливать
 - `z-index: var(--z-autocomplete)` (1100) — выше навбара и модалок
 
+### 12.X Три правила для форм с денежными/числовыми полями и валидацией
+
+Выжимка инцидента с рейсом №9 (апрель 2026): пользователь пытался изменить ставку
+`12410 руб.` → `0,5 руб./кг`, форма молча не сохранялась, точки маршрута при
+ре-рендере показывали «Организация #42» вместо имён. Причины и правила:
+
+**1. Denary-поля — только через `LocalizedDecimalFormMixin`.**
+
+```python
+from transdoki.forms import ErrorHighlightMixin, LocalizedDecimalFormMixin
+
+class InvoiceForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
+    ...
+```
+
+Миксин автоматически находит все `DecimalField` формы и ставит `localize=True`,
+`input_type="text"`, `inputmode="decimal"`. Причина: браузерный `type="number"`
+несовместим с русской запятой — ввод `0,5` молча отбрасывается и форма
+становится невалидной без видимой причины. Никаких ручных `clean_*` с
+`replace(",", ".")` — это локальный костыль, который размножается по формам.
+
+**2. DTO из POST не доверяет клиенту денормализованные поля.**
+
+Имена контрагентов, подписи, расчётные суммы при ре-рендере формы после ошибки
+валидации — всегда ресолвить из БД по id с `for_account(account)`:
+
+```python
+ids = [p.get("organization") for p in points if p.get("organization")]
+name_by_id = dict(
+    Organization.objects.for_account(account)
+    .filter(id__in=ids)
+    .values_list("id", "short_name")
+)
+for p in points:
+    p["organization_name"] = name_by_id.get(p.get("organization"), "")
+```
+
+Причина: если имя берётся из POST, то при ре-рендере после ошибки валидации оно
+либо теряется (показывается fallback «Организация #id»), либо позволяет мелкий
+IDOR — клиент подсунет чужое имя к чужому id. Клиент никогда не источник истины
+для денормализованных данных.
+
+**3. На каждой форме — видимая сводка ошибок наверху** с якорями к невалидным
+полям (см. пример в [trips/trip_form.html](../trips/templates/trips/trip_form.html)).
+Причина: без сводки ре-рендер после ошибки выглядит как «ничего не происходит» и
+пользователь паникует. Это реальный инцидент, не теоретический риск.
+
 ---
 
 ## 13. Таблицы

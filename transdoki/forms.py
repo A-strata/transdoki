@@ -1,3 +1,42 @@
+from django import forms
+
+
+class LocalizedDecimalFormMixin:
+    """Локализует все ``DecimalField`` формы под русскую раскладку.
+
+    Автоматически находит каждое DecimalField и:
+
+    - включает ``localize=True`` (Django принимает и ``"0,5"``, и ``"0.5"``,
+      обратно рендерит с запятой);
+    - переводит виджет в ``input_type="text"`` + ``inputmode="decimal"`` —
+      браузерный ``type="number"`` несовместим с русской запятой и на
+      мобильных клавиатурах молча отбрасывает её.
+
+    Подключать **первым** в MRO, как и ErrorHighlightMixin::
+
+        class InvoiceForm(LocalizedDecimalFormMixin, ErrorHighlightMixin,
+                          forms.ModelForm):
+            ...
+
+    Причина существования миксина — инцидент с рейсом №9: ставка
+    ``0,5 руб/кг`` молча не сохранялась из-за ``type="number"``. Теперь
+    любая новая форма с денежными/количественными полями получает
+    корректный ввод бесплатно, без дублирования кода.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            if not isinstance(field, forms.DecimalField):
+                continue
+            field.localize = True
+            field.widget.is_localized = True
+            field.widget.input_type = "text"
+            attrs = field.widget.attrs
+            attrs.setdefault("inputmode", "decimal")
+            attrs.setdefault("autocomplete", "off")
+
+
 class ErrorHighlightMixin:
     """Добавляет CSS-класс ``is-invalid`` к виджетам полей с ошибками.
 

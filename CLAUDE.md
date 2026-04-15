@@ -98,6 +98,7 @@ python manage.py charge_daily --dry-run   # только расчёт, без з
 - Списковые страницы с поиском/сортировкой — через Partial HTML over Fetch (partial-шаблон + `X-Requested-With` в view + fetch в JS). Подробности в `docs/ui-guide.md` раздел 14.
 - При изменении объекта — проставлять `updated_by = request.user` (в `form_valid`, `post`, FBV). В `save(update_fields=[...])` добавлять `"updated_by"` в список полей.
 - Системные изменения (management commands, signals, Celery tasks) — `updated_by=None` осознанно.
+- Формы с денежными/числовыми полями — через `LocalizedDecimalFormMixin` из `transdoki/forms.py` (не `type="number"`, он несовместим с русской запятой). DTO из POST не доверяет клиенту денормализованные поля (имена контрагентов, расчётные суммы) — ресолвить из БД по id с `for_account`. На каждой форме — видимая сводка ошибок наверху с якорями. Подробности: `docs/ui-guide.md` раздел 12.X.
 
 ## Safety rules (важно!)
 - **Миграции**: перед `makemigrations` убедиться что изменения в models.py корректны.
