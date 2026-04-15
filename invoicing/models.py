@@ -66,8 +66,6 @@ class Invoice(UserOwnedModel):
     seller = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.PROTECT,
-        null=True,
-        blank=True,
         related_name="invoices_as_seller",
         limit_choices_to={"is_own_company": True},
         verbose_name="Поставщик (наша фирма)",

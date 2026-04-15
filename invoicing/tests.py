@@ -416,22 +416,6 @@ class InvoiceEditGuardTests(B1Base):
             resp, reverse("invoicing:invoice_detail", args=[inv.pk])
         )
 
-    def test_edit_null_seller_invoice_blocked(self):
-        """
-        Исторический счёт без seller (backfill bucket) нельзя
-        редактировать через UI — только через админку.
-        """
-        inv = self._create_invoice_for(self.own_a, self.bank_a)
-        # Симулируем результат backfill'а с непокрытым bucket'ом:
-        from invoicing.models import Invoice
-
-        Invoice.objects.filter(pk=inv.pk).update(seller=None)
-        self._set_current_org(self.own_a)
-        resp = self.http.get(reverse("invoicing:invoice_edit", args=[inv.pk]))
-        self.assertRedirects(
-            resp, reverse("invoicing:invoice_detail", args=[inv.pk])
-        )
-
 
 class InvoiceListFilterTests(B1Base):
     """
@@ -582,13 +566,3 @@ class InvoiceDeleteGuardTests(B1Base):
         from invoicing.models import Invoice
         self.assertTrue(Invoice.objects.filter(pk=inv.pk).exists())
 
-    def test_delete_null_seller_blocked(self):
-        inv = self._make_invoice(self.own_a, self.bank_a)
-        from invoicing.models import Invoice
-        Invoice.objects.filter(pk=inv.pk).update(seller=None)
-        self._set_current_org(self.own_a)
-        resp = self.http.post(reverse("invoicing:invoice_delete", args=[inv.pk]))
-        self.assertRedirects(
-            resp, reverse("invoicing:invoice_detail", args=[inv.pk])
-        )
-        self.assertTrue(Invoice.objects.filter(pk=inv.pk).exists())

@@ -371,31 +371,16 @@ class InvoiceEditView(LoginRequiredMixin, View):
         пользователя не совпадает с invoice.seller. Возвращает
         HttpResponse-редирект на detail или None, если всё ОК.
 
-        Три блокируемых случая:
-          - invoice.seller IS NULL (исторический счёт из backfill bucket
-            без автоматически определённого поставщика) — редактировать
-            через UI нельзя, заполнить seller можно только через админку;
-          - current_org is None (у пользователя нет своих фирм);
-          - current_org.pk != invoice.seller_id (сидит под другой фирмой).
+        Invoice.seller NOT NULL гарантируется на уровне БД
+        (миграция 0015), поэтому здесь проверяем только current_org.
         """
         current_org = getattr(request, "current_org", None)
-        if (
-            invoice.seller_id is None
-            or current_org is None
-            or current_org.pk != invoice.seller_id
-        ):
-            if invoice.seller_id is None:
-                messages.error(
-                    request,
-                    f"У счёта {invoice.display_number} не определён "
-                    f"поставщик. Заполните его через админку.",
-                )
-            else:
-                messages.error(
-                    request,
-                    f"Для редактирования счёта {invoice.display_number} "
-                    f"переключитесь на фирму «{invoice.seller.short_name}».",
-                )
+        if current_org is None or current_org.pk != invoice.seller_id:
+            messages.error(
+                request,
+                f"Для редактирования счёта {invoice.display_number} "
+                f"переключитесь на фирму «{invoice.seller.short_name}».",
+            )
             return redirect("invoicing:invoice_detail", pk=invoice.pk)
         return None
 
@@ -486,16 +471,11 @@ class InvoiceDeleteView(LoginRequiredMixin, View):
             Invoice.objects.for_account(account).select_related("seller"), pk=pk
         )
         current_org = getattr(request, "current_org", None)
-        if invoice.seller_id is None or current_org is None or \
-                invoice.seller_id != current_org.pk:
-            # Исторический счёт без seller (backfill bucket) или чужая
-            # фирма — редирект на detail с flash. Тот же контракт что
-            # и у InvoiceEditView._guard_current_org.
-            seller_name = invoice.seller.short_name if invoice.seller else "—"
+        if current_org is None or invoice.seller_id != current_org.pk:
             messages.error(
                 request,
                 f"Для удаления счёта {invoice.display_number} "
-                f"переключитесь на фирму «{seller_name}».",
+                f"переключитесь на фирму «{invoice.seller.short_name}».",
             )
             return redirect("invoicing:invoice_detail", pk=invoice.pk)
 
