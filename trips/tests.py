@@ -1031,6 +1031,37 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         )
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_form_internal_trip_with_both_costs_valid(self):
+        """
+        Internal trip: client и carrier — разные наши фирмы.
+        Миграция 0048_backfill_internal_trip_carrier_cost зеркалит
+        client_cost в carrier_cost, поэтому валидатор должен
+        разрешать ОБА поля заполненными одновременно — симметрично.
+        """
+        from trips.forms import TripForm
+        internal_truck = Vehicle.objects.create(
+            grn="В200ВВ77", brand="МАЗ", vehicle_type="single",
+            owner=self.our_org2,
+            created_by=self.user, account=self.account,
+        )
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.our_org.pk,
+                "carrier": self.our_org2.pk,
+                "driver": self.driver.pk,
+                "truck": internal_truck.pk,
+                "cargo": "Груз",
+                "client_cost": "2.50",
+                "client_cost_unit": "rub",
+                "carrier_cost": "2.50",
+                "carrier_cost_unit": "rub",
+            },
+            user=self.user,
+            current_org=self.our_org,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
     def test_form_forwarder_cannot_equal_client_or_carrier(self):
         from trips.forms import TripForm
         form = TripForm(

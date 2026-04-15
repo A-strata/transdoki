@@ -203,7 +203,7 @@ def validate_costs_by_our_company_role(
         and client.pk != carrier.pk
     )
 
-    if we_are_carrier and _is_filled(carrier_cost):
+    if we_are_carrier and not different_own_companies and _is_filled(carrier_cost):
         errors["carrier_cost"] = (
             "Когда наша фирма выступает перевозчиком, "
             'поле "Стоимость для перевозчика" должно быть пустым.'
