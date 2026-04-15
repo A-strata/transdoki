@@ -141,10 +141,7 @@ def get_daily_cost(account) -> tuple[Decimal, dict]:
     from organizations.models import Organization
     from vehicles.models import Vehicle
 
-    orgs_count = Organization.objects.filter(
-        account=account,
-        is_own_company=True,
-    ).count()
+    orgs_count = Organization.objects.own_for(account).count()
 
     vehicles_count = Vehicle.objects.filter(
         account=account,
