@@ -173,11 +173,38 @@ tr:hover .cell-filter-btn {
     display: none;
 }
 
+.visibility-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
 .visibility-title {
-    margin: 0 0 8px;
+    margin: 0;
     font-weight: 700;
     font-size: var(--text-sm);
     color: var(--text);
+}
+
+.visibility-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.visibility-close:hover {
+    color: var(--text);
+    background: var(--hover);
 }
 
 .visibility-list {
@@ -246,8 +273,30 @@ tr:hover .cell-filter-btn {
 
 .visibility-footer {
     margin-top: 10px;
-    display: flex;
-    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+}
+
+.visibility-reset-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: var(--text-sm);
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.visibility-reset-link:hover {
+    color: var(--text);
+}
+
+.visibility-reset-link.is-undo {
+    color: var(--primary);
+}
+
+.visibility-reset-link.is-undo:hover {
+    color: var(--primary-hover);
 }
 
 /* 10) Карточка таблицы — flex-layout для растяжения на всю высоту */

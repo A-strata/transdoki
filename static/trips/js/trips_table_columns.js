@@ -10,7 +10,7 @@
         const visibilityPanel = document.querySelector('[data-visibility-panel]');
         const visibilityList = document.querySelector('[data-visibility-list]');
         const visibilityReset = document.querySelector('[data-visibility-reset]');
-
+        const visibilityClose = document.querySelector('[data-visibility-close]');
         if (!table || !visibilityRoot || !visibilityToggle || !visibilityPanel || !visibilityList || !visibilityReset) {
             return;
         }
@@ -21,6 +21,9 @@
         const ROW_ACTIONS_WIDTH = 100;
 
         // Колонки, скрытые по умолчанию при первом визите
+        const ths = Array.from(table.querySelectorAll('thead th[data-col]'));
+        const defaultOrder = ths.map(th => th.dataset.col);
+
         const DEFAULT_HIDDEN = [
             'trailer',
             'planned_loading_date', 'planned_unloading_date',
@@ -28,10 +31,7 @@
             'client_cost', 'carrier_cost',
             'client_payment_method', 'payment_condition',
             'carrier_payment_method', 'comments'
-        ];
-
-        const ths = Array.from(table.querySelectorAll('thead th[data-col]'));
-        const defaultOrder = ths.map(th => th.dataset.col);
+        ].filter(key => defaultOrder.includes(key));
         const labels = Object.fromEntries(ths.map(th => [th.dataset.col, th.textContent.trim()]));
 
         let state = {
@@ -234,6 +234,19 @@
             saveState();
             renderVisibilityMenu();
             applyAll();
+
+        }
+
+        function isDefaultState() {
+            if (state.order.length !== defaultOrder.length) return false;
+            for (var i = 0; i < defaultOrder.length; i++) {
+                if (state.order[i] !== defaultOrder[i]) return false;
+            }
+            if (state.hidden.length !== DEFAULT_HIDDEN.length) return false;
+            for (var j = 0; j < DEFAULT_HIDDEN.length; j++) {
+                if (!state.hidden.includes(DEFAULT_HIDDEN[j])) return false;
+            }
+            return true;
         }
 
         function renderVisibilityMenu() {
@@ -264,6 +277,7 @@
 
                     saveState();
                     applyAll();
+        
                 });
 
                 const text = document.createElement('span');
@@ -342,12 +356,44 @@
 
         document.addEventListener('click', function (e) {
             if (!visibilityRoot.contains(e.target)) {
-                visibilityPanel.classList.add('is-hidden');
-                visibilityToggle.setAttribute('aria-expanded', 'false');
+                closeVisibilityPanel();
             }
         });
 
+        if (visibilityClose) {
+            visibilityClose.addEventListener('click', function () {
+                closeVisibilityPanel();
+            });
+        }
+
+        var resetUndoTimer = null;
+        var resetPrevState = null;
+
         visibilityReset.addEventListener('click', function () {
+            if (resetUndoTimer) {
+                clearTimeout(resetUndoTimer);
+                resetUndoTimer = null;
+
+                state = resetPrevState;
+                resetPrevState = null;
+                saveState();
+                renderVisibilityMenu();
+                applyAll();
+
+                visibilityReset.textContent = 'Сбросить настройки';
+                visibilityReset.classList.remove('is-undo');
+    
+                return;
+            }
+
+            if (isDefaultState()) return;
+
+            resetPrevState = {
+                order: [...state.order],
+                hidden: [...state.hidden],
+                widths: Object.assign({}, state.widths)
+            };
+
             state = {
                 order: [...defaultOrder],
                 hidden: [...DEFAULT_HIDDEN],
@@ -357,6 +403,18 @@
             saveState();
             renderVisibilityMenu();
             applyAll();
+
+            visibilityReset.textContent = 'Отменить';
+            visibilityReset.classList.add('is-undo');
+
+
+            resetUndoTimer = setTimeout(function () {
+                visibilityReset.textContent = 'Сбросить настройки';
+                visibilityReset.classList.remove('is-undo');
+                resetUndoTimer = null;
+                resetPrevState = null;
+    
+            }, 4000);
         });
 
         // Resize колонок

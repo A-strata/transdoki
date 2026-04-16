@@ -112,10 +112,18 @@
                 </svg>
             </button>
             <div class="visibility-panel is-hidden" data-visibility-panel>
-                <p class="visibility-title">Показать / скрыть колонки</p>
+                <div class="visibility-header">
+                    <p class="visibility-title">Показать / скрыть колонки</p>
+                    <button type="button" class="visibility-close" data-visibility-close aria-label="Закрыть">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
                 <ul class="visibility-list" data-visibility-list></ul>
                 <div class="visibility-footer">
-                    <button type="button" class="tms-btn tms-btn-secondary" data-visibility-reset>Сбросить</button>
+                    <button type="button" class="visibility-reset-link" data-visibility-reset>Сбросить настройки</button>
                 </div>
             </div>
         </div>
