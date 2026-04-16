@@ -51,6 +51,7 @@ Production URL: transdoki.ru
 transdoki/
   models.py       # UserOwnedModel, TenantManager — базовые классы мультитенантности
   views.py        # UserOwnedListView — единый базовый ListView с tenant-фильтрацией
+  forms.py        # LocalizedDecimalFormMixin, ErrorHighlightMixin — базовые миксины форм
   tenancy.py      # get_request_account() — извлечение account из request
 ```
 
