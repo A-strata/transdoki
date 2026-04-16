@@ -1,6 +1,5 @@
-﻿.persons-page {
-    display: flex;
-    flex-direction: column;
+﻿/* Лейаут страницы — базовые свойства в .list-page (tables.css) */
+.persons-page {
     gap: 14px;
 }
 

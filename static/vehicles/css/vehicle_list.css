@@ -1,6 +1,5 @@
-﻿.vehicles-page {
-    display: flex;
-    flex-direction: column;
+﻿/* Лейаут страницы — базовые свойства в .list-page (tables.css) */
+.vehicles-page {
     gap: 14px;
 }
 

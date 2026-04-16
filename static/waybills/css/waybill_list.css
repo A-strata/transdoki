@@ -1,8 +1,7 @@
-﻿.waybills-page {
+﻿/* Лейаут страницы — базовые свойства в .list-page (tables.css) */
+.waybills-page {
     max-width: 1280px;
     margin: 0 auto;
-    display: flex;
-    flex-direction: column;
     gap: 12px;
 }
 

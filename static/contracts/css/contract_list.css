@@ -1,6 +1,5 @@
+/* Лейаут страницы — базовые свойства в .list-page (tables.css) */
 .contracts-page {
-    display: flex;
-    flex-direction: column;
     gap: 14px;
 }
 

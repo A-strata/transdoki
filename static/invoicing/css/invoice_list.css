@@ -1,29 +1,6 @@
-.invoices-page {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    min-width: 0;
-    margin: 0;
-}
+/* Лейаут страницы — базовые свойства в .list-page (tables.css) */
 
-.invoices-page .list-toolbar {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    flex-shrink: 0;
-}
-
-.invoices-page .list-toolbar h1 {
-    margin: 0;
-    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
-    line-height: 36px;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
-}
-
-/* .toolbar-zone-title / .toolbar-zone-filters / .toolbar-zone-action —
-   в static/css/globals.css (Pattern B зоны тулбара). */
+/* .list-toolbar flex-shrink:0 — в .list-page (tables.css) */
 
 /* ── Tabs ── */
 
@@ -53,9 +30,10 @@
     border-bottom-color: var(--primary);
 }
 
+/* [data-list-content], .table-card, .table-wrap, .pagination-footer —
+   layout-свойства в .list-page (tables.css) */
+
 [data-list-content] {
-    display: flex;
-    flex-direction: column;
     gap: 14px;
 }
 
