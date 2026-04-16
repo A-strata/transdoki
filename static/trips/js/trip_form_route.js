@@ -573,6 +573,7 @@
 
         var controller = null;
         var debounceTimer = null;
+        var suppressSuggest = false;
 
         function getScrollParent(el) {
             var node = el.parentElement;
@@ -661,6 +662,7 @@
         }
 
         input.addEventListener('input', function () {
+            if (suppressSuggest) { suppressSuggest = false; return; }
             clearTimeout(debounceTimer);
             var q = input.value.trim();
             if (q.length < 3) { closeList(); return; }
@@ -682,6 +684,7 @@
                             el.addEventListener('mousedown', function (e) {
                                 e.preventDefault();
                                 input.value = item.value;
+                                suppressSuggest = true;
                                 input.dispatchEvent(new Event('input', { bubbles: true }));
                                 closeList();
                             });
