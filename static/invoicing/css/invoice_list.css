@@ -1,6 +1,18 @@
 /* Лейаут страницы — базовые свойства в .list-page (tables.css) */
 
-/* .list-toolbar flex-shrink:0 — в .list-page (tables.css) */
+.invoices-page .list-toolbar {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.invoices-page .list-toolbar h1 {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+    line-height: 36px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
 
 /* ── Tabs ── */
 
