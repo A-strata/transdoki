@@ -143,7 +143,6 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
             "loading_contact_name", "loading_contact_phone",
             "unloading_contact_name", "unloading_contact_phone",
             "loading_type", "unloading_type",
-            # управляются через action фиксации, не через форму редактирования
             "client_financial_status", "client_total_fixed",
             "carrier_financial_status", "carrier_total_fixed",
         ]
@@ -198,9 +197,6 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
         if self.user and self.user.is_authenticated:
             self._apply_queryset_filters()
 
-        if self.instance and self.instance.pk:
-            self._lock_fixed_finance_fields()
-
     def _apply_queryset_filters(self):
         from organizations.models import Organization
         from persons.models import Person
@@ -245,36 +241,6 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
                 forwarder_field.queryset = own_orgs.filter(pk=self.current_org.pk)
             else:
                 forwarder_field.queryset = own_orgs.none()
-
-    def _lock_fixed_finance_fields(self):
-        from .models import CostUnit, FinancialStatus
-
-        def lock(fields):
-            for f in fields:
-                if f in self.fields:
-                    self.fields[f].disabled = True
-
-        inst = self.instance
-        if inst.client_financial_status != FinancialStatus.OPEN:
-            lock([
-                "client_cost", "client_cost_unit", "client_payment_method",
-                "client_vat_rate", "payment_condition", "payment_term", "client_quantity",
-            ])
-            if inst.client_cost_unit == CostUnit.RUB_PER_KG:
-                lock(["weight"])
-            elif inst.client_cost_unit == CostUnit.RUB_PER_CBM:
-                lock(["volume"])
-
-        if inst.carrier_financial_status != FinancialStatus.OPEN:
-            lock([
-                "carrier_cost", "carrier_cost_unit", "carrier_payment_method",
-                "carrier_vat_rate", "carrier_payment_condition", "carrier_payment_term",
-                "carrier_quantity",
-            ])
-            if inst.carrier_cost_unit == CostUnit.RUB_PER_KG:
-                lock(["weight"])
-            elif inst.carrier_cost_unit == CostUnit.RUB_PER_CBM:
-                lock(["volume"])
 
     def _setup_ajax_field(self, fname, full_qs, search_url, search_type=""):
         """Устанавливает validation queryset, display queryset (текущее значение)

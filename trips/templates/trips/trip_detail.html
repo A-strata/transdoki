@@ -228,8 +228,6 @@
                     <h3 class="finance-col-title">Стоимость перевозки</h3>
                     <p class="finance-hint">Сумма, которую вы заплатите за перевозку</p>
 
-                    {% include "trips/_fin_progress.html" with status=trip.carrier_financial_status %}
-
                     <div class="kv-grid">
                         <div class="kv">
                             <p class="kv-label">Ставка</p>
@@ -245,7 +243,7 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Итого</p>
-                            {% include "trips/_fin_total.html" with fin_status=trip.carrier_financial_status total_fixed=trip.carrier_total_fixed total_calc=trip.carrier_total side="carrier" %}
+                            <p class="kv-value">{% if trip.carrier_total %}{{ trip.carrier_total }} ₽{% else %}—{% endif %}</p>
                         </div>
                     </div>
                 </div>
@@ -258,8 +256,6 @@
                     <h3 class="finance-col-title">Стоимость перевозки</h3>
                     <p class="finance-hint">Сумма, которую вы получите за перевозку</p>
 
-                    {% include "trips/_fin_progress.html" with status=trip.client_financial_status %}
-
                     <div class="kv-grid">
                         <div class="kv">
                             <p class="kv-label">Ставка</p>
@@ -275,7 +271,7 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Итого</p>
-                            {% include "trips/_fin_total.html" with fin_status=trip.client_financial_status total_fixed=trip.client_total_fixed total_calc=trip.client_total side="client" %}
+                            <p class="kv-value">{% if trip.client_total %}{{ trip.client_total }} ₽{% else %}—{% endif %}</p>
                         </div>
                     </div>
                 </div>
@@ -287,8 +283,6 @@
                 <div class="finance-col {% if trip_role == 'forwarder' %}finance-col--income{% endif %}">
                     <h3 class="finance-col-title">{% if trip_role == 'forwarder' %}Заказчик платит нам{% else %}Ставка заказчику{% endif %}</h3>
 
-                    {% include "trips/_fin_progress.html" with status=trip.client_financial_status %}
-
                     <div class="kv-grid">
                         <div class="kv">
                             <p class="kv-label">Ставка</p>
@@ -304,15 +298,13 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Итого</p>
-                            {% include "trips/_fin_total.html" with fin_status=trip.client_financial_status total_fixed=trip.client_total_fixed total_calc=trip.client_total side="client" %}
+                            <p class="kv-value">{% if trip.client_total %}{{ trip.client_total }} ₽{% else %}—{% endif %}</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="finance-col {% if trip_role == 'forwarder' %}finance-col--expense{% endif %}">
                     <h3 class="finance-col-title">{% if trip_role == 'forwarder' %}Мы платим перевозчику{% else %}Ставка перевозчику{% endif %}</h3>
-
-                    {% include "trips/_fin_progress.html" with status=trip.carrier_financial_status %}
 
                     <div class="kv-grid">
                         <div class="kv">
@@ -329,7 +321,7 @@
                         </div>
                         <div class="kv">
                             <p class="kv-label">Итого</p>
-                            {% include "trips/_fin_total.html" with fin_status=trip.carrier_financial_status total_fixed=trip.carrier_total_fixed total_calc=trip.carrier_total side="carrier" %}
+                            <p class="kv-value">{% if trip.carrier_total %}{{ trip.carrier_total }} ₽{% else %}—{% endif %}</p>
                         </div>
                     </div>
                 </div>

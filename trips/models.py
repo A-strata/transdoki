@@ -273,32 +273,6 @@ class Trip(UserOwnedModel):
             self.carrier_cost, self.carrier_cost_unit, self.carrier_quantity
         )
 
-    def _client_amount(self):
-        """
-        Сумма со стороны клиента с учётом фиксации.
-        Если финансовый статус не OPEN и есть зафиксированное значение —
-        берём его, иначе расчётный client_total.
-        """
-        if (
-            self.client_financial_status != FinancialStatus.OPEN
-            and self.client_total_fixed is not None
-        ):
-            return self.client_total_fixed
-        return self.client_total
-
-    def _carrier_amount(self):
-        """
-        Сумма со стороны перевозчика с учётом фиксации.
-        Если финансовый статус не OPEN и есть зафиксированное значение —
-        берём его, иначе расчётный carrier_total.
-        """
-        if (
-            self.carrier_financial_status != FinancialStatus.OPEN
-            and self.carrier_total_fixed is not None
-        ):
-            return self.carrier_total_fixed
-        return self.carrier_total
-
     def perspective(self, org):
         """
         Возвращает финансовую перспективу рейса от лица указанной организации.
@@ -321,8 +295,8 @@ class Trip(UserOwnedModel):
         org_id = getattr(org, "id", None) or getattr(org, "pk", None)
 
         if self.forwarder_id and org_id == self.forwarder_id:
-            income = self._client_amount()
-            expense = self._carrier_amount()
+            income = self.client_total
+            expense = self.carrier_total
             margin = None
             if income is not None and expense is not None:
                 margin = income - expense
@@ -335,22 +309,18 @@ class Trip(UserOwnedModel):
             }
 
         if org_id == self.client_id:
-            # Мы — заказчик. Наш расход — это carrier_cost (сколько мы платим
-            # перевозчику). client_cost тут по валидатору должен быть пуст.
             return {
                 "role": "client",
                 "income_total": None,
-                "expense_total": self._carrier_amount(),
+                "expense_total": self.carrier_total,
                 "margin": None,
                 "counterparty": self.forwarder or self.carrier,
             }
 
         if org_id == self.carrier_id:
-            # Мы — перевозчик. Наш доход — это client_cost (сколько клиент
-            # платит нам). carrier_cost тут по валидатору должен быть пуст.
             return {
                 "role": "carrier",
-                "income_total": self._client_amount(),
+                "income_total": self.client_total,
                 "expense_total": None,
                 "margin": None,
                 "counterparty": self.forwarder or self.client,
