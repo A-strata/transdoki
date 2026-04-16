@@ -70,6 +70,17 @@
                             Договоры
                         </a>
                     {% endif %}
+                {% else %}
+                    {% url 'billing:features' as features_url %}
+                    <a href="{{ features_url }}"
+                       class="nav-link {% if request.path == features_url %}active{% endif %}">
+                        Возможности
+                    </a>
+                    {% url 'billing:pricing' as pricing_url %}
+                    <a href="{{ pricing_url }}"
+                       class="nav-link {% if request.path == pricing_url %}active{% endif %}">
+                        Тарифы
+                    </a>
                 {% endif %}
             </div>
 

@@ -8,6 +8,7 @@ urlpatterns = [
     path("billing/", views.TransactionListView.as_view(), name="transactions"),
     path("billing/deposit/", views.DepositView.as_view(), name="deposit"),
     path("pricing/", views.PricingView.as_view(), name="pricing"),
+    path("features/", views.FeaturesView.as_view(), name="features"),
     # CloudPayments webhook endpoints.
     # Эти URL регистрируются в личном кабинете CP (раздел "Уведомления")
     # после регистрации в сервисе. Сами view уже готовы к приёму запросов.

@@ -36,6 +36,13 @@ class PricingView(View):
         return render(request, self.template_name)
 
 
+class FeaturesView(View):
+    template_name = "features.html"
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+
 class TransactionListView(LoginRequiredMixin, ListView):
     model = BillingTransaction
     template_name = "billing/transaction_list.html"

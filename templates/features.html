@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Возможности — Transdoki{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/features.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="features-hero">
+    <h1 class="features-hero-title">Меньше Excel. Меньше звонков. Меньше ошибок.</h1>
+    <p class="features-hero-sub">Transdoki автоматизирует рутину в грузоперевозках — от оформления заявки до закрывающих документов.</p>
+    <div class="features-hero-badges">
+        <span class="features-hero-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Автозаполнение по ИНН
+        </span>
+        <span class="features-hero-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Печатные формы .docx
+        </span>
+        <span class="features-hero-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Работает без IT-специалиста
+        </span>
+    </div>
+</section>
+
+<div class="features-wrap">
+
+    <section class="features-section" id="base">
+        <div class="features-section-header">
+            <span class="features-tag is-base">Доступно на всех тарифах</span>
+            <h2 class="features-section-title">Основа: управление перевозками</h2>
+            <p class="features-section-desc">Всё необходимое для ведения заявок, работы с контрагентами и оформления документов — с первого дня, без доплат.</p>
+        </div>
+
+        <div class="features-grid">
+
+            <div class="fc-highlight">
+                <div class="fc-highlight-text">
+                    <div class="fc-icon is-base">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--neutral-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    </div>
+                    <div class="fc-title">Единый журнал заявок на перевозку</div>
+                    <p class="fc-desc">
+                        Все перевозки в одном месте — текущие, выполненные, отменённые. Новая заявка создаётся за 2 минуты, копированием существующей — за одну.<br><br>
+                        <span class="fc-highlight-accent">Должники видны сразу:</span> заказчики с задолженностью подсвечены красным прямо в журнале — логист начинает работу по дебиторке без лишних отчётов.
+                    </p>
+                </div>
+                <div class="mini-table-wrap">
+                    <div class="mini-table">
+                        <div class="mt-head">
+                            <span>Заявка</span>
+                            <span>Заказчик</span>
+                            <span>Статус</span>
+                            <span>Сумма</span>
+                        </div>
+                        <div class="mt-row">
+                            <span>ТР-2847</span>
+                            <span class="mt-client">ООО Ромашка</span>
+                            <span><span class="mt-status is-ok">Выполнен</span></span>
+                            <span>48 000 &#8381;</span>
+                        </div>
+                        <div class="mt-row is-danger">
+                            <span>ТР-2846</span>
+                            <span class="mt-client">ИП Козлов А.В.</span>
+                            <span><span class="mt-status is-danger">Долг</span></span>
+                            <span>31 500 &#8381;</span>
+                        </div>
+                        <div class="mt-row">
+                            <span>ТР-2845</span>
+                            <span class="mt-client">ИП Логистик</span>
+                            <span><span class="mt-status is-warn">В работе</span></span>
+                            <span>62 000 &#8381;</span>
+                        </div>
+                        <div class="mt-row is-danger">
+                            <span>ТР-2844</span>
+                            <span class="mt-client">ООО СтройГрупп</span>
+                            <span><span class="mt-status is-danger">Долг</span></span>
+                            <span>19 200 &#8381;</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-base">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--neutral-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </div>
+                <div class="fc-title">Печатные формы за секунду</div>
+                <p class="fc-desc">Транспортная накладная, договор-заявка и другие документы формируются автоматически на основе данных рейса — без копирования и правки вручную.</p>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-base">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--neutral-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <div class="fc-title">Автозаполнение контрагентов по ИНН</div>
+                <p class="fc-desc">Введите ИНН — система получит название, адрес, реквизиты и заполнит карточку контрагента. Никаких опечаток в реквизитах, никакого ручного ввода.</p>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-base">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--neutral-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="fc-title">Подсказки при вводе адресов</div>
+                <p class="fc-desc">При вводе точек маршрута система предлагает варианты из базы адресов. Исключает некорректные адреса и экономит время при оформлении каждой заявки.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="features-section" id="carrier">
+        <div class="features-mod-layout">
+
+            <div class="features-mod-sidebar">
+                <div class="features-section-header">
+                    <span class="features-tag is-mod">Модуль</span>
+                    <h2 class="features-section-title">Перевозчик</h2>
+                    <p class="features-section-desc">Для компаний и ИП с собственным автопарком. Учёт транспортных средств, водителей и путевой документации.</p>
+                    <div class="features-section-price">
+                        <span class="features-price-val">990 &#8381;</span>
+                        <span class="features-price-per">/мес</span>
+                        <a href="{% url 'billing:pricing' %}" class="features-price-cta">Подключить</a>
+                    </div>
+                </div>
+
+                <div class="features-osago-card">
+                    <div class="features-osago-icon" style="flex-shrink:0; margin-top:1px">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    </div>
+                    <div>
+                        <div class="features-osago-title">Напоминания об истечении ОСАГО</div>
+                        <div class="features-osago-sub">Система предупредит заранее — не узнаете о проблеме в момент отправки машины на рейс.</div>
+                    </div>
+                </div>
+
+                <div class="features-addon-strip">
+                    <div class="features-addon-text">
+                        <strong>Топливные карты</strong> — интеграция с Petrolplus и другими провайдерами
+                    </div>
+                    <span class="features-addon-price">+490 &#8381;/мес</span>
+                </div>
+            </div>
+
+            <div class="features-grid is-2col">
+
+                <div class="fc">
+                    <div class="fc-icon is-mod">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    </div>
+                    <div class="fc-title">Карточка транспортного средства</div>
+                    <p class="fc-desc">Полные данные о машине: технические характеристики, документы, полис ОСАГО с датой истечения. Всё в одном месте.</p>
+                </div>
+
+                <div class="fc">
+                    <div class="fc-icon is-mod">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="fc-title">Управление водителями</div>
+                    <p class="fc-desc">Карточки водителей с документами и медосмотрами. Привязка к транспортному средству и рейсу.</p>
+                </div>
+
+                <div class="fc">
+                    <div class="fc-icon is-mod">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    </div>
+                    <div class="fc-title">Путевые листы с генерацией .docx</div>
+                    <p class="fc-desc">Путевой лист формируется автоматически на основе данных рейса, ТС и водителя. Скачать и распечатать — одно действие.</p>
+                </div>
+
+                <div class="fc">
+                    <div class="fc-icon is-mod">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <div class="fc-title">Выгрузка карточек для заказчика</div>
+                    <p class="fc-desc">Карточка ТС и водителя выгружается одним кликом для отправки заказчику. Не нужно каждый раз собирать пакет документов вручную.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section" id="finance">
+        <div class="features-section-header">
+            <span class="features-tag is-fin">Модуль</span>
+            <h2 class="features-section-title">Финансы</h2>
+            <p class="features-section-desc">Учёт расчётов с заказчиками и исполнителями — счета, оплаты, акты сверки и работа с задолженностью.</p>
+            <div class="features-section-price">
+                <span class="features-price-val">1 490 &#8381;</span>
+                <span class="features-price-per">/мес</span>
+                <a href="{% url 'billing:pricing' %}" class="features-price-cta">Подключить</a>
+            </div>
+        </div>
+
+        <div class="features-grid">
+
+            <div class="fc">
+                <div class="fc-icon is-fin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div class="fc-title">Учёт счетов и оплат</div>
+                <p class="fc-desc">Исходящие и входящие счета, поступления и реализации — всё в одном реестре. Видно кто, сколько и когда должен оплатить.</p>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-fin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </div>
+                <div class="fc-title">Акты сверки</div>
+                <p class="fc-desc">Формирование актов сверки по контрагенту за любой период. Не нужно сводить данные вручную из нескольких таблиц.</p>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-fin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="fc-title">Письма о задолженности</div>
+                <p class="fc-desc">Отправка уведомлений о погашении задолженности, возврате излишне перечисленных средств, оплате простоя или срыва погрузки — из системы, без Word и почтового клиента.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="features-section" id="contracts">
+        <div class="features-section-header">
+            <span class="features-tag is-contr">Модуль</span>
+            <h2 class="features-section-title">Договоры</h2>
+            <p class="features-section-desc">Реестр договоров с контрагентами, собственные шаблоны документов и создание заявок прямо из договора.</p>
+            <div class="features-section-price">
+                <span class="features-price-val">490 &#8381;</span>
+                <span class="features-price-per">/мес</span>
+                <a href="{% url 'billing:pricing' %}" class="features-price-cta">Подключить</a>
+            </div>
+        </div>
+
+        <div class="features-grid is-2col">
+
+            <div class="fc">
+                <div class="fc-icon is-contr">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--info-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </div>
+                <div class="fc-title">Реестр договоров</div>
+                <p class="fc-desc">Все действующие договоры с контрагентами в одном месте. Статусы, сроки, условия — доступны в любой момент без поиска по папкам.</p>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-contr">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--info-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </div>
+                <div class="fc-title">Заявки на основе договора</div>
+                <p class="fc-desc">Создайте заявку на перевозку прямо из договора — данные контрагента и условия подставляются автоматически. Меньше ошибок, быстрее оформление.</p>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-contr">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--info-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div class="fc-title">Собственные формы документов</div>
+                <p class="fc-desc">Загрузите свой шаблон договора или заявки — система будет заполнять его данными из рейса. Ваш фирменный стиль, ваши условия.</p>
+            </div>
+
+            <div class="fc">
+                <div class="fc-icon is-contr">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--info-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                </div>
+                <div class="fc-title">Заявки внутри договора</div>
+                <p class="fc-desc">К каждому договору привязан список заявок на перевозку. Виден весь объём работ по договору без построения сводных отчётов.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <div class="features-cta-bottom">
+        <h2>Попробуйте все возможности бесплатно</h2>
+        <p>14 дней полного доступа — все функции и все модули без ограничений. Карта не нужна.</p>
+        <div class="features-cta-actions">
+            <a href="{% url 'accounts:register' %}" class="features-cta-primary">Начать бесплатно &rarr;</a>
+            <a href="{% url 'billing:pricing' %}" class="features-cta-secondary">Посмотреть тарифы</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
