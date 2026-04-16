@@ -10,219 +10,234 @@
 
 <section class="pricing-page">
 
-    <!-- HERO -->
-    <div class="hero">
-        <div class="hero-badge">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <circle cx="5" cy="5" r="4.5" fill="#3B5ADB"/>
-                <path d="M3 5l1.5 1.5L7.5 3" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Учёт транспорта для малого и среднего бизнеса
-        </div>
-        <h1>Знайте сколько стоит<br>каждый <em>рейс</em></h1>
-        <p>Transdoki считает реальные затраты: топливо с карт, маршруты, водители. Начните бесплатно — без ограничений по времени.</p>
-        <div class="hero-cta">
-            <a href="{% url 'accounts:register' %}" class="btn-primary">Зарегистрироваться бесплатно</a>
-            <a href="{% url 'login' %}" class="btn-secondary">Войти →</a>
-        </div>
-        <div class="trust-row">
-            <span class="trust-item"><span class="dot-green"></span>Бесплатный тариф навсегда</span>
-            <span class="trust-item"><span class="dot-green"></span>Карта не нужна</span>
-            <span class="trust-item"><span class="dot-green"></span>Данные хранятся в России</span>
+    <div class="pricing-hero">
+        <h1>Тарифы для вашего бизнеса</h1>
+        <p>Выберите план и дополните нужными модулями</p>
+        <div class="trial-pill">
+            <span class="trial-dot"></span>
+            14 дней — полный доступ ко всем функциям и модулям, без оплаты
         </div>
     </div>
 
-    <!-- PRICING -->
-    <div class="pricing-section">
-        <div class="section-label">Тарифы</div>
-        <div class="section-title">Платите только за рост</div>
-        <div class="section-sub">Маленький бизнес работает бесплатно. Расширяетесь — платите только за дополнительные ресурсы.</div>
+    <div class="billing-row">
+        <span class="billing-label is-active" id="lbl-month">Ежемесячно</span>
+        <button class="billing-toggle" id="billing-toggle" type="button"
+                aria-label="Переключить период оплаты">
+            <span class="billing-toggle-knob"></span>
+        </button>
+        <span class="billing-label" id="lbl-year">Ежегодно</span>
+        <span class="discount-chip">&minus;20%</span>
+    </div>
 
-        <div class="plans">
+    <div class="seg-tabs" role="tablist" aria-label="Выберите ваш тип">
+        <button class="seg-tab is-active" data-seg="carrier" role="tab" type="button">Перевозчик</button>
+        <button class="seg-tab" data-seg="exp" role="tab" type="button">Экспедитор</button>
+        <button class="seg-tab" data-seg="customer" role="tab" type="button">Заказчик</button>
+    </div>
 
-            <!-- FREE -->
-            <div class="plan">
-                <div class="plan-header">
-                    <div class="plan-name">Бесплатно</div>
-                    <div class="plan-price">
-                        <span class="price-free">0 ₽</span>
-                        <span class="price-period">навсегда</span>
-                    </div>
-                    <div class="plan-desc">Для старта и небольшого парка. Без ограничений по времени и количеству рейсов.</div>
-                </div>
+    <div class="plans-grid">
 
-                <div class="plan-divider"></div>
+        <div class="plan-card">
+            <div class="plan-name">Freemium</div>
+            <div class="plan-price-area">
+                <div class="plan-price">0 &#8381;</div>
+                <div class="plan-period">бессрочно</div>
+            </div>
+            <a href="{% url 'accounts:register' %}" class="plan-cta">Начать бесплатно</a>
+            <hr class="plan-divider">
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">30</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value">30</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value">2</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value">20</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value">1</span></div>
+            <div class="plan-note">После триала — бесплатно навсегда</div>
+        </div>
 
-                <div class="plan-limits">
-                    <div class="limit-row">
-                        <span class="limit-label">Своих фирм</span>
-                        <span class="limit-val">{{ free_orgs }}</span>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Своих машин</span>
-                        <span class="limit-val">{{ free_vehicles }}</span>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Пользователей аккаунта</span>
-                        <span class="limit-val">{{ free_users }}</span>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Водителей</span>
-                        <span class="limit-val unlimited">∞</span>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Рейсов</span>
-                        <span class="limit-val unlimited">∞</span>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Контрагентов</span>
-                        <span class="limit-val unlimited">∞</span>
-                    </div>
-                </div>
+        <div class="plan-card">
+            <div class="plan-name">Старт</div>
+            <div class="plan-price-area">
+                <span class="plan-price" data-price="start">790 &#8381;</span>
+                <span class="plan-price-orig" data-orig="start"></span>
+                <div class="plan-period" data-period="start">в месяц</div>
+            </div>
+            <a href="{% url 'accounts:register' %}" class="plan-cta">Попробовать 14 дней</a>
+            <hr class="plan-divider">
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">300</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value">300</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value">5</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value">300</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value">3</span></div>
+            <div class="plan-note">После триала — <span data-after="start">790 &#8381;/мес</span></div>
+        </div>
 
-                <div class="plan-divider"></div>
+        <div class="plan-card is-featured">
+            <span class="plan-badge">Популярный</span>
+            <div class="plan-name">Бизнес</div>
+            <div class="plan-price-area">
+                <span class="plan-price" data-price="biz">1 990 &#8381;</span>
+                <span class="plan-price-orig" data-orig="biz"></span>
+                <div class="plan-period" data-period="biz">в месяц</div>
+            </div>
+            <a href="{% url 'accounts:register' %}" class="plan-cta is-primary">Попробовать 14 дней</a>
+            <hr class="plan-divider">
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">1 000</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value">1 000</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value">15</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value">10</span></div>
+            <div class="plan-note">После триала — <span data-after="biz">1 990 &#8381;/мес</span></div>
+        </div>
 
-                <div class="plan-features">
-                    <div class="feat"><span class="feat-check">✓</span>Учёт рейсов и маршрутов</div>
-                    <div class="feat"><span class="feat-check">✓</span>Путевые листы (.docx)</div>
-                    <div class="feat"><span class="feat-check">✓</span>Учёт затрат по рейсам</div>
-                    <div class="feat"><span class="feat-check">✓</span>Учёт водителей</div>
-                    <div class="feat dim"><span class="feat-check dim">✓</span><span>Интеграция Петролплюс</span></div>
-                    <div class="feat dim"><span class="feat-check dim">✓</span><span>Несколько пользователей и ролей</span></div>
-                </div>
+        <div class="plan-card">
+            <div class="plan-name">Корпоративный</div>
+            <div class="plan-price-area">
+                <span class="plan-price" data-price="corp">3 990 &#8381;</span>
+                <span class="plan-price-orig" data-orig="corp"></span>
+                <div class="plan-period" data-period="corp">в месяц</div>
+            </div>
+            <a href="{% url 'accounts:register' %}" class="plan-cta">Попробовать 14 дней</a>
+            <hr class="plan-divider">
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
+            <div class="plan-note">После триала — <span data-after="corp">3 990 &#8381;/мес</span></div>
+        </div>
 
-                <div class="plan-cta">
-                    <a href="{% url 'accounts:register' %}" class="btn-secondary">Начать бесплатно</a>
+    </div>
+
+    <div class="modules-section">
+        <div class="modules-header">
+            <span class="modules-title" id="modules-title">Модули для перевозчика</span>
+            <span class="modules-sub">Подключаются к любому тарифу</span>
+        </div>
+        <div class="modules-grid">
+
+            <div class="module-card is-recommended" data-module="carrier">
+                <span class="module-badge is-rec" data-mbadge="carrier">Рекомендуем</span>
+                <div class="module-name">Перевозчик</div>
+                <div class="module-desc">Транспортные средства, водители, медосмотры, топливные нормы, генерация путевых листов .docx</div>
+                <div>
+                    <span class="module-price" data-mprice="carrier">990 &#8381;/мес</span>
+                    <span class="module-price-orig" data-morig="carrier"></span>
                 </div>
             </div>
 
-            <!-- PAID -->
-            <div class="plan featured">
-                <div class="plan-header">
-                    <div class="plan-name">Профессиональный <span class="plan-tag">Pay as you grow</span></div>
-                    <div class="plan-price">
-                        <span class="price-amount">от {{ min_paid }} ₽</span>
-                        <span class="price-period">/ ед. в мес.</span>
-                    </div>
-                    <div class="plan-desc">Добавляйте фирмы, машины и пользователей — платите только за них.</div>
+            <div class="module-card is-visible" data-module="fuel">
+                <span class="module-badge is-neutral" data-mbadge="fuel">К модулю &laquo;Перевозчик&raquo;</span>
+                <div class="module-name">Топливные карты</div>
+                <div class="module-desc">Интеграция с Petrolplus и другими провайдерами топливных карт</div>
+                <div>
+                    <span class="module-price" data-mprice="fuel">490 &#8381;/мес</span>
+                    <span class="module-price-orig" data-morig="fuel"></span>
                 </div>
+            </div>
 
-                <div class="plan-divider"></div>
-
-                <div class="plan-limits">
-                    <div class="limit-row">
-                        <span class="limit-label">Своих фирм</span>
-                        <div class="limit-val-stack">
-                            <span class="limit-val limit-val--primary">+ сколько нужно</span>
-                            <span class="limit-price-hint">{{ monthly_org }} ₽/фирма в мес.</span>
-                        </div>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Своих машин</span>
-                        <div class="limit-val-stack">
-                            <span class="limit-val limit-val--primary">+ сколько нужно</span>
-                            <span class="limit-price-hint">{{ monthly_vehicle }} ₽/авто в мес.</span>
-                        </div>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Пользователей аккаунта</span>
-                        <div class="limit-val-stack">
-                            <span class="limit-val limit-val--primary">+ сколько нужно</span>
-                            <span class="limit-price-hint">{{ monthly_user }} ₽/польз. в мес.</span>
-                        </div>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Водителей</span>
-                        <span class="limit-val unlimited">∞</span>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Рейсов</span>
-                        <span class="limit-val unlimited">∞</span>
-                    </div>
-                    <div class="limit-row">
-                        <span class="limit-label">Контрагентов</span>
-                        <span class="limit-val unlimited">∞</span>
-                    </div>
+            <div class="module-card" data-module="fin">
+                <span class="module-badge is-neutral" data-mbadge="fin">Для экспедиторов и заказчиков</span>
+                <div class="module-name">Финансы</div>
+                <div class="module-desc">Счета, акты сверки, частичные оплаты, учёт дебиторки по контрагентам</div>
+                <div>
+                    <span class="module-price" data-mprice="fin">1 490 &#8381;/мес</span>
+                    <span class="module-price-orig" data-morig="fin"></span>
                 </div>
+            </div>
 
-                <div class="plan-divider"></div>
-
-                <div class="plan-features">
-                    <div class="feat"><span class="feat-check">✓</span>Всё из бесплатного</div>
-                    <div class="feat"><span class="feat-check">✓</span>Интеграция с Петролплюс</div>
-                    <div class="feat"><span class="feat-check">✓</span>Несколько пользователей и ролей</div>
-                    <div class="feat"><span class="feat-check">✓</span>Учёт нескольких организаций</div>
-                </div>
-
-                <div class="plan-cta">
-                    <a href="{% url 'accounts:register' %}" class="btn-primary">Попробовать бесплатно</a>
+            <div class="module-card is-visible" data-module="contr">
+                <span class="module-badge is-neutral" data-mbadge="contr">Для всех сегментов</span>
+                <div class="module-name">Договоры</div>
+                <div class="module-desc">Управление договорами, собственные печатные формы, заявки внутри договоров</div>
+                <div>
+                    <span class="module-price" data-mprice="contr">490 &#8381;/мес</span>
+                    <span class="module-price-orig" data-morig="contr"></span>
                 </div>
             </div>
 
         </div>
+        <div class="seg-note" id="seg-note"></div>
+    </div>
 
-        <!-- UNLIMITED BADGES -->
-        <div class="unlimited-note">На всех тарифах — без ограничений:</div>
-        <div class="unlimited-row">
-            <span class="unlimited-badge">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Водители
-            </span>
-            <span class="unlimited-badge">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Рейсы
-            </span>
-            <span class="unlimited-badge">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Путевые листы
-            </span>
-            <span class="unlimited-badge">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Контрагенты
-            </span>
-            <span class="unlimited-badge">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#065F46" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Учёт затрат по рейсам
-            </span>
+    <div class="year-banner">
+        <div class="year-banner-text">
+            <strong>Оплатите на год и сэкономьте 20%</strong>
+            <span>Скидка распространяется на тариф и все подключённые модули</span>
+        </div>
+        <button class="year-banner-btn" id="year-banner-btn" type="button">
+            Выбрать годовой план
+        </button>
+    </div>
+
+    <section class="faq-section">
+        <h2 class="faq-title">Частые вопросы</h2>
+        <p class="faq-sub">Если не нашли ответ — напишите в поддержку</p>
+
+        <div class="faq-item">
+            <button class="faq-q" type="button">
+                Что входит в 14 дней бесплатного доступа?
+                <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-body">
+                <div class="faq-inner">
+                    В течение пробного периода вам доступны все функции системы и все платные модули без каких-либо ограничений. Карта не требуется. По окончании 14 дней вы выбираете тариф и подключаете нужные модули — либо остаётесь на Freemium бесплатно навсегда.
+                </div>
+            </div>
         </div>
 
-        <!-- CALCULATOR -->
-        <div class="calc" id="pricing-calc"
-             data-free-orgs="{{ free_orgs }}"
-             data-free-vehicles="{{ free_vehicles }}"
-             data-free-users="{{ free_users }}"
-             data-price-org="{{ monthly_org }}"
-             data-price-vehicle="{{ monthly_vehicle }}"
-             data-price-user="{{ monthly_user }}">
-            <div class="calc-title">Посчитайте свою стоимость</div>
-            <div class="calc-rows">
-                <div class="calc-row">
-                    <label>Своих фирм</label>
-                    <input type="range" min="1" max="10" value="{{ free_orgs }}" id="c-firms">
-                    <span class="val" id="c-firms-val">{{ free_orgs }}</span>
+        <div class="faq-item">
+            <button class="faq-q" type="button">
+                Что происходит, если превышен лимит рейсов?
+                <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-body">
+                <div class="faq-inner">
+                    При достижении лимита создание новых рейсов приостанавливается до начала следующего расчётного месяца или до перехода на более высокий тариф. Все существующие данные сохраняются в полном объёме — ничего не удаляется.
                 </div>
-                <div class="calc-row">
-                    <label>Своих машин</label>
-                    <input type="range" min="1" max="30" value="{{ free_vehicles }}" id="c-cars">
-                    <span class="val" id="c-cars-val">{{ free_vehicles }}</span>
-                </div>
-                <div class="calc-row">
-                    <label>Пользователей аккаунта</label>
-                    <input type="range" min="1" max="15" value="{{ free_users }}" id="c-users">
-                    <span class="val" id="c-users-val">{{ free_users }}</span>
-                </div>
-            </div>
-
-            <div class="calc-result">
-                <span class="calc-result-label">Ваш тариф / месяц</span>
-                <span class="calc-result-amount" id="c-total">0 ₽</span>
-            </div>
-            <div class="calc-breakdown" id="c-breakdown"></div>
-
-            <div class="calc-action">
-                <a href="{% url 'accounts:register' %}" class="btn-primary" id="c-cta">Начать бесплатно</a>
             </div>
         </div>
+
+        <div class="faq-item">
+            <button class="faq-q" type="button">
+                Можно ли сменить тариф в любое время?
+                <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-body">
+                <div class="faq-inner">
+                    Да. Переход на более высокий тариф происходит немедленно. При переходе на более низкий — изменения вступают в силу с начала следующего оплачиваемого периода. Неиспользованный остаток при понижении тарифа зачисляется на баланс.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-q" type="button">
+                Как работают модули — к любому тарифу?
+                <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-body">
+                <div class="faq-inner">
+                    Да, каждый модуль подключается независимо к любому тарифу, включая Freemium. Единственное исключение: модуль &laquo;Топливные карты&raquo; требует активного модуля &laquo;Перевозчик&raquo;, поскольку карты привязываются к транспортным средствам и водителям.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-q" type="button">
+                Как оплатить и получить закрывающие документы?
+                <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-body">
+                <div class="faq-inner">
+                    Принимаем оплату картой (Visa, Mastercard, МИР) и через СБП. Для юридических лиц формируем счёт на оплату и закрывающие документы (акт, счёт-фактура). Документы доступны в личном кабинете в разделе &laquo;Биллинг&raquo;.
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <div class="bottom-cta">
+        <h2>Начните прямо сейчас</h2>
+        <p>14 дней полного доступа — без карты, без обязательств</p>
+        <a href="{% url 'accounts:register' %}" class="btn-cta">Начать бесплатно &rarr;</a>
     </div>
 
 </section>

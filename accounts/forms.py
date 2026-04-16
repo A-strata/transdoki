@@ -29,17 +29,20 @@ class AccountRegistrationForm(ErrorHighlightMixin, forms.Form):
     inn = forms.CharField(
         label="ИНН",
         max_length=12,
+        required=False,
         validators=[validate_inn],
         widget=forms.HiddenInput(),
     )
     short_name = forms.CharField(
         label="Краткое наименование",
         max_length=200,
+        required=False,
         widget=forms.HiddenInput(),
     )
     full_name = forms.CharField(
         label="Полное наименование",
         max_length=200,
+        required=False,
         widget=forms.HiddenInput(),
     )
     kpp = forms.CharField(
@@ -72,8 +75,25 @@ class AccountRegistrationForm(ErrorHighlightMixin, forms.Form):
 
         return email
 
+    def clean(self):
+        cleaned = super().clean()
+        inn = cleaned.get("inn", "").strip()
+        short_name = cleaned.get("short_name", "").strip()
+        full_name = cleaned.get("full_name", "").strip()
+
+        if not inn:
+            self.add_error("inn", "Укажите ИНН организации.")
+        if not short_name:
+            self.add_error("short_name", "Укажите наименование организации.")
+        if not full_name:
+            self.add_error("full_name", "Укажите наименование организации.")
+
+        return cleaned
+
     def clean_inn(self):
-        inn = self.cleaned_data["inn"].strip()
+        inn = self.cleaned_data.get("inn", "").strip()
+        if not inn:
+            return inn
 
         # Глобальная проверка бизнес-правила для own company
         if Organization.objects.filter(inn=inn, is_own_company=True).exists():

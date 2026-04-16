@@ -49,11 +49,12 @@
             <p class="section-label">О компании</p>
 
             <div class="field" id="org-search-field">
-                <label for="org-search">Организация</label>
+                <label for="org-search">Организация <span class="required-mark">*</span></label>
                 <div class="suggest-wrap">
                     <input type="text" id="org-search"
                            placeholder="Введите название или ИНН"
                            autocomplete="off"
+                           {% if form.inn.errors or form.short_name.errors %}class="is-invalid"{% endif %}
                            data-suggest-url="{% url 'organizations:api_party_suggest' %}">
                     <svg class="suggest-spinner" id="org-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <circle cx="8" cy="8" r="6" stroke="#e5e7eb" stroke-width="2"/>
@@ -99,11 +100,9 @@
             {{ form.kpp }}
             {{ form.ogrn }}
             {{ form.address }}
-            {% if form.inn.errors or form.short_name.errors or form.full_name.errors %}
+            {% if form.inn.errors or form.short_name.errors %}
                 <div class="org-field-errors">
                     {{ form.inn.errors }}
-                    {{ form.short_name.errors }}
-                    {{ form.full_name.errors }}
                 </div>
             {% endif %}
 

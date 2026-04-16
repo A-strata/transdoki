@@ -51,6 +51,9 @@
     color: var(--muted);
 }
 
+/* Звёздочка обязательного поля */
+.field label .required-mark { color: var(--danger, #dc2626); }
+
 /* Ошибки скрытых полей */
 .org-field-errors { margin-top: 4px; }
 
