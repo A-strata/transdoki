@@ -71,9 +71,9 @@
                         </a>
                     {% endif %}
                 {% else %}
-                    {% url 'billing:features' as features_url %}
-                    <a href="{{ features_url }}"
-                       class="nav-link {% if request.path == features_url %}active{% endif %}">
+                    {% url 'home' as home_url %}
+                    <a href="{{ home_url }}"
+                       class="nav-link {% if request.path == home_url %}active{% endif %}">
                         Возможности
                     </a>
                     {% url 'billing:pricing' as pricing_url %}

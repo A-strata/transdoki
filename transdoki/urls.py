@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import include, path, reverse_lazy
 from django.views import View
 from django.views.generic import TemplateView
@@ -12,7 +12,7 @@ class HomeView(View):
     def get(self, request):
         if request.user.is_authenticated:
             return redirect("trips:list")
-        return redirect("billing:pricing")
+        return render(request, "features.html")
 
 
 urlpatterns = [
