@@ -9,30 +9,580 @@
 {% block content %}
 
 <section class="features-hero">
-    <h1 class="features-hero-title">Меньше Excel. Меньше ручного ввода. Меньше ошибок.</h1>
-    <p class="features-hero-sub">Трансдоки автоматизирует рутину в грузоперевозках — от оформления заявки до закрывающих документов.</p>
-    <div class="features-hero-cta">
-        <a href="{% url 'accounts:register' %}" class="features-hero-btn-primary">Попробовать бесплатно</a>
-        <a href="{% url 'billing:pricing' %}" class="features-hero-btn-secondary">Посмотреть тарифы</a>
+    <div class="features-hero-inner">
+
+        <span class="features-hero-eyebrow">
+            <span class="features-hero-eyebrow-dot"></span>
+            Система управления перевозками
+        </span>
+
+        <h1 class="features-hero-title">
+            Все перевозки<br>в одном окне.
+        </h1>
+
+        <div class="features-hero-divider"></div>
+
+        <p class="features-hero-subtitle">
+            Никакого Excel и копировать/вставить.
+        </p>
+
+        <div class="features-hero-badges">
+            <span class="features-hero-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Заявка за 2 минуты
+            </span>
+            <span class="features-hero-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Накладная за 10 секунд
+            </span>
+            <span class="features-hero-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Работает без IT-специалиста
+            </span>
+        </div>
+
+        <div class="features-hero-ctas">
+            <a href="{% url 'accounts:register' %}" class="tms-btn tms-btn-primary">
+                Попробовать 14 дней бесплатно
+            </a>
+            <a href="#base" class="tms-btn tms-btn-secondary">
+                Смотреть возможности
+            </a>
+        </div>
+
     </div>
-    <div class="features-hero-badges">
-        <span class="features-hero-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            14 дней полного доступа
-        </span>
-        <span class="features-hero-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Карта не нужна
-        </span>
-        <span class="features-hero-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Данные хранятся в России
-        </span>
+</section>
+
+<div class="features-trust">
+    <div class="features-trust-inner">
+
+        <div class="features-trust-item">
+            <div class="features-trust-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.75"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="features-trust-title">Данные ФНС и ФИАС</div>
+                <div class="features-trust-desc">Реквизиты и адреса из официальных государственных реестров</div>
+            </div>
+        </div>
+
+        <div class="features-trust-item">
+            <div class="features-trust-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.75"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                    <line x1="6" y1="6" x2="6.01" y2="6"/>
+                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                </svg>
+            </div>
+            <div>
+                <div class="features-trust-title">Серверы в России</div>
+                <div class="features-trust-desc">Данные хранятся на российских серверах и не передаются третьим сторонам</div>
+            </div>
+        </div>
+
+        <div class="features-trust-item">
+            <div class="features-trust-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.75"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <div>
+                <div class="features-trust-title">Шифрование данных</div>
+                <div class="features-trust-desc">Чувствительные данные зашифрованы в базе — нечитаемы при утечке</div>
+            </div>
+        </div>
+
+        <div class="features-trust-item">
+            <div class="features-trust-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.75"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+            </div>
+            <div>
+                <div class="features-trust-title">Соответствие 152-ФЗ</div>
+                <div class="features-trust-desc">Обработка персональных данных в соответствии с российским законодательством</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<section class="features-ps">
+    <div class="features-ps-inner">
+
+        <div class="features-ps-header">
+            <span class="features-ps-tag">Узнаёте себя?</span>
+            <h2 class="features-ps-title">Звучит знакомо?</h2>
+            <p class="features-ps-sub">Если хотя бы один пункт слева про вас — Трансдоки для вас</p>
+        </div>
+
+        <div class="features-ps-grid">
+
+            <div class="features-ps-col">
+                <div class="features-ps-head features-ps-head--before">
+                    <div class="features-ps-head-icon features-ps-head-icon--before">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </div>
+                    <span class="features-ps-head-label features-ps-head-label--before">Как обычно бывает</span>
+                </div>
+                <div class="features-ps-body features-ps-body--before">
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--before">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">У каждого своя версия файла — на почте, на ПК, в общей папке. <strong>Непонятно где актуальное, непонятно кто последний правил</strong></p>
+                    </div>
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--before">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Новая накладная: открыть старый Word, перебить вручную. <strong>Один Ctrl+S — и старый документ потерян</strong></p>
+                    </div>
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--before">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Проверить оплату —  <strong>отвлечь бухгалтера</strong>, потерять время на выяснение</p>
+                    </div>
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--before">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Телефон водителя — <strong>звонок диспетчеру</strong> или поиск по переписке</p>
+                    </div>
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--before">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Найти нужную заявку — <strong>листать таблицу</strong> или помнить в какой строке что лежит</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="features-ps-col">
+                <div class="features-ps-head features-ps-head--after">
+                    <div class="features-ps-head-icon features-ps-head-icon--after">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5"
+                             stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <span class="features-ps-head-label features-ps-head-label--after">Как в Трансдоки</span>
+                </div>
+                <div class="features-ps-body features-ps-body--after">
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--after">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <p class="features-ps-row-text"><strong>Одна база в браузере для всей команды</strong> — все работают одновременно, видят одно и то же, файлы прикреплены к заявке, ничего не теряется</p>
+                    </div>
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--after">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Накладная формируется <strong>автоматически из данных рейса</strong> — никакого Word и копировать/вставить. Мгновенно.</p>
+                    </div>
+
+                    <div class="features-ps-row features-ps-row--highlight">
+                        <div class="features-ps-row-icon features-ps-row-icon--after">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Бухгалтер разнёс оплаты — <strong>логист видит это сразу</strong>. Без звонков и уточнений</p>
+                    </div>
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--after">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Телефон водителя и заказчика — <strong>в карточке рейса</strong>, копируется одним кликом</p>
+                    </div>
+
+                    <div class="features-ps-row">
+                        <div class="features-ps-row-icon features-ps-row-icon--after">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <p class="features-ps-row-text">Фильтр по контрагенту, водителю, номеру машины — <strong>нужная заявка за секунду</strong></p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="features-cf" id="base">
+    <div class="features-cf-wrap">
+
+        <div class="features-cf-block">
+
+            <div class="features-cf-text">
+                <span class="features-cf-tag">Базовый функционал</span>
+                <h2 class="features-cf-title">Не потеряете<br>ни одну заявку</h2>
+                <p class="features-cf-desc">
+                    Все перевозки в одном журнале — текущие, выполненные, отменённые.
+                    Найти, отфильтровать, скопировать или распечатать — секунды, не минуты.
+                </p>
+                <ul class="features-cf-bullets">
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Фильтр по контрагенту, водителю, <strong>номеру машины и прицепа</strong>
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Новая заявка <strong>копированием существующей</strong> — минимум ввода
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Статус оплаты, файлы и контакты — <strong>в одной карточке рейса</strong>
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Доступ для всей команды <strong>через браузер</strong>, без установки
+                    </li>
+                </ul>
+            </div>
+
+            <div class="features-cf-demo" aria-label="Демонстрация журнала заявок">
+                <div class="cf-demo-toolbar">
+                    <div class="cf-demo-search">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Поиск по заявкам...
+                    </div>
+                    <div class="cf-demo-filters">
+                        <span class="cf-demo-filter cf-demo-filter--active">Все</span>
+                        <span class="cf-demo-filter">В работе</span>
+                        <span class="cf-demo-filter">Выполнены</span>
+                    </div>
+                </div>
+                <div class="cf-demo-table-wrap">
+                    <table class="cf-demo-table">
+                        <thead>
+                            <tr>
+                                <th>&#8470;</th>
+                                <th>Заказчик</th>
+                                <th>Маршрут</th>
+                                <th>Статус</th>
+                                <th>Сумма</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="cf-demo-num">ТН-2851</td>
+                                <td><span class="cf-demo-client">ООО Ромашка</span></td>
+                                <td class="cf-demo-route">Москва &rarr; Казань</td>
+                                <td><span class="cf-demo-status cf-demo-status--work">В работе</span></td>
+                                <td><span class="cf-demo-amount">62 000 &#8381;</span></td>
+                            </tr>
+                            <tr>
+                                <td class="cf-demo-num">ТН-2850</td>
+                                <td><span class="cf-demo-client">ИП Петров С.В.</span></td>
+                                <td class="cf-demo-route">Екб &rarr; Тюмень</td>
+                                <td><span class="cf-demo-status cf-demo-status--new">Новая</span></td>
+                                <td><span class="cf-demo-amount">28 500 &#8381;</span></td>
+                            </tr>
+                            <tr>
+                                <td class="cf-demo-num">ТН-2849</td>
+                                <td><span class="cf-demo-client">АО Логистик</span></td>
+                                <td class="cf-demo-route">СПб &rarr; Москва</td>
+                                <td><span class="cf-demo-status cf-demo-status--done">Выполнен</span></td>
+                                <td><span class="cf-demo-amount">48 000 &#8381;</span></td>
+                            </tr>
+                            <tr>
+                                <td class="cf-demo-num">ТН-2848</td>
+                                <td><span class="cf-demo-client">ГК Магистраль</span></td>
+                                <td class="cf-demo-route">Москва &rarr; Воронеж</td>
+                                <td><span class="cf-demo-status cf-demo-status--done">Выполнен</span></td>
+                                <td><span class="cf-demo-amount">31 200 &#8381;</span></td>
+                            </tr>
+                            <tr>
+                                <td class="cf-demo-num">ТН-2847</td>
+                                <td><span class="cf-demo-client">ООО СибТранс</span></td>
+                                <td class="cf-demo-route">Нск &rarr; Красноярск</td>
+                                <td><span class="cf-demo-status cf-demo-status--work">В работе</span></td>
+                                <td><span class="cf-demo-amount">74 000 &#8381;</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cf-demo-footer">
+                    <span class="cf-demo-count">Показано 5 из 247 заявок</span>
+                    <button class="cf-demo-copy" type="button" disabled>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Копировать заявку
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="features-cf features-cf--alt">
+    <div class="features-cf-wrap">
+
+        <div class="features-cf-block features-cf-block--reverse">
+
+            <div class="features-cf-demo features-cf-demo--address"
+                 aria-label="Демонстрация подсказок адресов при вводе маршрута">
+
+                <div class="cf-addr-wrap">
+                    <div class="cf-addr-form-label">Новый рейс — маршрут</div>
+
+                    <div class="cf-addr-field" id="cf-addr-field-from">
+                        <div class="cf-addr-label">Адрес погрузки</div>
+                        <div class="cf-addr-input cf-addr-input--focused" id="cf-addr-input-from">
+                            <span id="cf-addr-text-from"></span><span class="cf-addr-cursor" id="cf-addr-cur-from"></span>
+                        </div>
+                        <div class="cf-addr-dropdown" id="cf-addr-dd">
+                            <div class="cf-addr-dd-item">
+                                <div class="cf-addr-dd-icon">
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                </div>
+                                <div>
+                                    <div class="cf-addr-dd-main"><span class="cf-addr-dd-match">Москва</span>, ул. Складская, д. 14</div>
+                                    <div class="cf-addr-dd-sub">Москва, СВАО</div>
+                                </div>
+                            </div>
+                            <div class="cf-addr-dd-item cf-addr-dd-item--selected">
+                                <div class="cf-addr-dd-icon">
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                </div>
+                                <div>
+                                    <div class="cf-addr-dd-main"><span class="cf-addr-dd-match">Москва</span>, Складской пр-д, д. 3с1</div>
+                                    <div class="cf-addr-dd-sub">Москва, ЦАО, индекс 101000</div>
+                                </div>
+                            </div>
+                            <div class="cf-addr-dd-item">
+                                <div class="cf-addr-dd-icon">
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                </div>
+                                <div>
+                                    <div class="cf-addr-dd-main"><span class="cf-addr-dd-match">Московская</span> обл., Подольск, ул. Складская</div>
+                                    <div class="cf-addr-dd-sub">Московская область</div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="cf-addr-confirmed" id="cf-addr-confirmed" hidden>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                            Адрес подтверждён
+                        </span>
+                    </div>
+
+                    <div class="cf-addr-field" id="cf-addr-field-to">
+                        <div class="cf-addr-label">Адрес выгрузки</div>
+                        <div class="cf-addr-input cf-addr-input--empty" id="cf-addr-input-to">Введите адрес...</div>
+                    </div>
+
+                    <button class="cf-addr-replay" id="cf-addr-replay" type="button" hidden>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                        Повторить
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="features-cf-text">
+                <span class="features-cf-tag">Базовый функционал</span>
+                <h2 class="features-cf-title">Водитель получит<br>правильный адрес</h2>
+                <p class="features-cf-desc">
+                    При вводе адресов погрузки и выгрузки система предлагает варианты
+                    из базы ФИАС. Опечатки и несуществующие адреса исключены физически.
+                </p>
+                <ul class="features-cf-bullets">
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Данные из <strong>официального реестра ФИАС</strong> — актуальные адреса по всей России
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Подсказки появляются <strong>с первых букв</strong> — не нужно вводить полный адрес
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        <strong>Индекс и район</strong> подставляются автоматически вместе с адресом
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        <strong>Меньше вопросов от водителя</strong> с уточнением «а куда именно ехать?»
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="features-cf">
+    <div class="features-cf-wrap">
+
+        <div class="features-cf-block">
+
+            <div class="features-cf-text">
+                <span class="features-cf-tag">Базовый функционал</span>
+                <h2 class="features-cf-title">Реквизиты контрагента<br>без ошибок с первого раза</h2>
+                <p class="features-cf-desc">
+                    Введите ИНН и нажмите «Заполнить по ИНН» — система получит все данные
+                    из реестра ФНС и заполнит карточку автоматически.
+                </p>
+                <ul class="features-cf-bullets">
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Название, адрес, КПП, ОГРН — <strong>из официального реестра ФНС</strong>
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        <strong>Ошибка в реквизитах</strong> в документах исключена физически
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Работает для <strong>ООО, АО, ИП</strong> — любые формы собственности
+                    </li>
+                    <li class="features-cf-bullet">
+                        <span class="features-cf-bullet-icon" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Новый контрагент добавляется <strong>за 10 секунд</strong> вместо нескольких минут ручного ввода
+                    </li>
+                </ul>
+            </div>
+
+            <div class="features-cf-demo features-cf-demo--inn"
+                 aria-label="Демонстрация автозаполнения карточки контрагента по ИНН">
+
+                <div class="cf-inn-wrap">
+                    <div class="cf-inn-form-label">Новый контрагент</div>
+
+                    <div class="cf-inn-row">
+                        <div class="cf-inn-field">
+                            <div class="cf-inn-label">ИНН</div>
+                            <div class="cf-inn-input cf-inn-input--focused" id="cf-inn-input">
+                                <span id="cf-inn-text"></span><span class="cf-inn-cursor" id="cf-inn-cur"></span>
+                            </div>
+                        </div>
+                        <button class="cf-inn-btn" id="cf-inn-btn" type="button" disabled
+                                aria-label="Заполнить карточку контрагента по ИНН">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Заполнить по ИНН
+                        </button>
+                    </div>
+
+                    <hr class="cf-inn-divider">
+
+                    <div class="cf-inn-fields">
+                        <div class="cf-inn-result-field cf-inn-result-field--full">
+                            <span class="cf-inn-result-label">Полное наименование</span>
+                            <span class="cf-inn-result-value" id="cf-inn-f-name">&mdash;</span>
+                        </div>
+                        <div class="cf-inn-result-field">
+                            <span class="cf-inn-result-label">КПП</span>
+                            <span class="cf-inn-result-value" id="cf-inn-f-kpp">&mdash;</span>
+                        </div>
+                        <div class="cf-inn-result-field">
+                            <span class="cf-inn-result-label">ОГРН</span>
+                            <span class="cf-inn-result-value" id="cf-inn-f-ogrn">&mdash;</span>
+                        </div>
+                        <div class="cf-inn-result-field cf-inn-result-field--full">
+                            <span class="cf-inn-result-label">Юридический адрес</span>
+                            <span class="cf-inn-result-value" id="cf-inn-f-addr">&mdash;</span>
+                        </div>
+                        <div class="cf-inn-result-field">
+                            <span class="cf-inn-result-label">ФИО руководителя</span>
+                            <span class="cf-inn-result-value" id="cf-inn-f-ceo">&mdash;</span>
+                        </div>
+                        <div class="cf-inn-result-field">
+                            <span class="cf-inn-result-label">Статус</span>
+                            <span class="cf-inn-result-value" id="cf-inn-f-status">&mdash;</span>
+                        </div>
+                    </div>
+
+                    <button class="cf-inn-replay" id="cf-inn-replay" type="button" hidden>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                        Повторить
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
     </div>
 </section>
 
 <div class="features-wrap">
 
+    {% comment %}
     <nav class="features-anchor-nav" aria-label="Разделы">
         <a href="#base" class="features-anchor is-active">Основа</a>
         <a href="#carrier" class="features-anchor">Перевозчик</a>
@@ -40,7 +590,7 @@
         <a href="#contracts" class="features-anchor">Договоры</a>
     </nav>
 
-    <section class="features-section" id="base">
+    <section class="features-section">
         <div class="features-section-header">
             <span class="features-tag is-base">Доступно на всех тарифах</span>
             <h2 class="features-section-title">Основа: управление перевозками</h2>
@@ -322,25 +872,7 @@
 
         </div>
     </section>
-
-    <div class="features-trust">
-        <div class="features-trust-item">
-            <div class="features-trust-num">2025</div>
-            <div class="features-trust-text">Работаем с 2025 года</div>
-        </div>
-        <div class="features-trust-item">
-            <div class="features-trust-num">14 дней</div>
-            <div class="features-trust-text">Полный доступ без оплаты</div>
-        </div>
-        <div class="features-trust-item">
-            <div class="features-trust-num">РФ</div>
-            <div class="features-trust-text">Серверы и данные в России</div>
-        </div>
-        <div class="features-trust-item">
-            <div class="features-trust-num">0 &#8381;</div>
-            <div class="features-trust-text">Бесплатный тариф навсегда</div>
-        </div>
-    </div>
+    {% endcomment %}
 
     <div class="features-cta-bottom">
         <h2>Попробуйте все возможности бесплатно</h2>
@@ -357,4 +889,6 @@
 
 {% block extra_js %}
 <script src="{% static 'js/features.js' %}" defer></script>
+<script src="{% static 'js/features_address_demo.js' %}" defer></script>
+<script src="{% static 'js/features_inn_demo.js' %}" defer></script>
 {% endblock %}
