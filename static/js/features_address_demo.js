@@ -3,7 +3,10 @@
 
     var QUERY = "Москва, Складской";
     var RESULT = "Москва, Складской пр-д, д. 3с1";
+    var LOOP_PAUSE = 3200;
     var timers = [];
+    var autoLoop = false;
+    var isPlaying = false;
 
     function clr() {
         timers.forEach(function (t) { clearTimeout(t); });
@@ -15,6 +18,7 @@
     }
 
     function run() {
+        isPlaying = true;
         clr();
 
         var textEl    = document.getElementById("cf-addr-text-from");
@@ -67,6 +71,10 @@
             }, 700);
             schedule(function () {
                 replay.hidden = false;
+                isPlaying = false;
+                if (autoLoop) {
+                    schedule(run, LOOP_PAUSE);
+                }
             }, 1200);
         }
     }
@@ -74,17 +82,23 @@
     document.addEventListener("DOMContentLoaded", function () {
         var btn = document.getElementById("cf-addr-replay");
         if (!btn) return;
-        btn.addEventListener("click", run);
+        btn.addEventListener("click", function () {
+            autoLoop = true;
+            run();
+        });
 
         var target = document.querySelector(".features-cf-demo--address");
         if (!target || typeof IntersectionObserver === "undefined") {
+            autoLoop = true;
             run();
             return;
         }
 
         // Скролл в проекте — внутри <main>, не window (ui-guide раздел 8).
         // threshold: 1.0 = запуск только когда блок-демо полностью виден.
-        // На случай, если демо крупнее viewport — ещё отслеживаем ratio >= 0.99.
+        // На случай, если демо крупнее viewport — ещё отслеживаем ratio близко к 1.
+        // Observer оставляем подключённым: при уходе блока — останавливаем цикл,
+        // при возврате — запускаем снова.
         var root = document.querySelector("main") || null;
         var observer = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
@@ -95,11 +109,17 @@
                     : entry.intersectionRect.height >= rootHeight - 4;
 
                 if (fullyVisible) {
-                    observer.disconnect();
-                    run();
+                    if (!autoLoop) {
+                        autoLoop = true;
+                        if (!isPlaying) run();
+                    }
+                } else {
+                    autoLoop = false;
+                    clr();
+                    isPlaying = false;
                 }
             });
-        }, { root: root, threshold: [1.0, 0.5, 0.9] });
+        }, { root: root, threshold: [0, 0.5, 0.9, 1.0] });
         observer.observe(target);
     });
 }());
