@@ -3,7 +3,7 @@
 
     /* ── Базовые цены (месячные) ── */
     var BASE = {
-        start: 790, biz: 1990, corp: 3990,
+        start: 1490, biz: 4490, corp: 11990,
         carrier: 990, fuel: 490, fin: 1490, contr: 490
     };
 
@@ -22,7 +22,7 @@
                 contr: ["neutral", "Для всех"]
             },
             note: function () {
-                return "Небольшому перевозчику (до 5 машин) достаточно Freemium + модуль \u00abПеревозчик\u00bb \u2014 итого <strong>" +
+                return "Небольшому перевозчику (до 5 машин) достаточно Free + модуль \u00abПеревозчик\u00bb \u2014 итого <strong>" +
                     fmt(price("carrier")) + "/мес</strong>. Топливные карты \u2014 по необходимости.";
             }
         },
@@ -79,18 +79,19 @@
         if (lblM) lblM.className = "billing-label" + (billing === "month" ? " is-active" : "");
         if (lblY) lblY.className = "billing-label" + (billing === "year" ? " is-active" : "");
 
-        /* Цены тарифов */
+        /* Цены тарифов. Корпоративный — префикс "от" (цена индивидуальная). */
         ["start", "biz", "corp"].forEach(function (k) {
             var shown = price(k);
             var orig = BASE[k];
+            var prefix = (k === "corp") ? "от " : "";
 
             var priceEl = document.querySelector("[data-price='" + k + "']");
-            if (priceEl) priceEl.textContent = fmt(shown);
+            if (priceEl) priceEl.textContent = prefix + fmt(shown);
 
             var origEl = document.querySelector("[data-orig='" + k + "']");
             if (origEl) {
                 origEl.style.display = disc ? "inline" : "none";
-                origEl.textContent = fmt(orig);
+                origEl.textContent = prefix + fmt(orig);
             }
 
             var periodEl = document.querySelector("[data-period='" + k + "']");
@@ -99,7 +100,7 @@
             }
 
             var afterEl = document.querySelector("[data-after='" + k + "']");
-            if (afterEl) afterEl.textContent = fmt(shown) + "/мес";
+            if (afterEl) afterEl.textContent = prefix + fmt(shown) + "/мес";
         });
 
         /* Цены модулей */

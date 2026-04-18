@@ -38,71 +38,63 @@
     <div class="plans-grid">
 
         <div class="plan-card">
-            <div class="plan-name">Freemium</div>
+            <div class="plan-name">Free</div>
             <div class="plan-price-area">
                 <div class="plan-price">0 &#8381;</div>
                 <div class="plan-period">бессрочно</div>
             </div>
             <a href="{% url 'accounts:register' %}" class="plan-cta">Начать бесплатно</a>
             <hr class="plan-divider">
-            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">30</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value">30</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value">2</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value">20</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value">1</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">10</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Цена за рейс</span><span class="plan-limit-value">&mdash;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Превышение лимита</span><span class="plan-limit-value">апгрейд</span></div>
             <div class="plan-note">После триала — бесплатно навсегда</div>
         </div>
 
         <div class="plan-card">
             <div class="plan-name">Старт</div>
             <div class="plan-price-area">
-                <span class="plan-price" data-price="start">790 &#8381;</span>
+                <span class="plan-price" data-price="start">1 490 &#8381;</span>
                 <span class="plan-price-orig" data-orig="start"></span>
                 <div class="plan-period" data-period="start">в месяц</div>
             </div>
             <a href="{% url 'accounts:register' %}" class="plan-cta">Попробовать 14 дней</a>
             <hr class="plan-divider">
-            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">300</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value">300</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value">5</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value">300</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value">3</span></div>
-            <div class="plan-note">После триала — <span data-after="start">790 &#8381;/мес</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">80</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Цена за рейс</span><span class="plan-limit-value">18,6 &#8381;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Превышение лимита</span><span class="plan-limit-value">22 &#8381;/рейс</span></div>
+            <div class="plan-note">После триала — <span data-after="start">1 490 &#8381;/мес</span></div>
         </div>
 
         <div class="plan-card is-featured">
             <span class="plan-badge">Популярный</span>
             <div class="plan-name">Бизнес</div>
             <div class="plan-price-area">
-                <span class="plan-price" data-price="biz">1 990 &#8381;</span>
+                <span class="plan-price" data-price="biz">4 490 &#8381;</span>
                 <span class="plan-price-orig" data-orig="biz"></span>
                 <div class="plan-period" data-period="biz">в месяц</div>
             </div>
             <a href="{% url 'accounts:register' %}" class="plan-cta is-primary">Попробовать 14 дней</a>
             <hr class="plan-divider">
-            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">1 000</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value">1 000</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value">15</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value">10</span></div>
-            <div class="plan-note">После триала — <span data-after="biz">1 990 &#8381;/мес</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">350</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Цена за рейс</span><span class="plan-limit-value">12,8 &#8381;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Превышение лимита</span><span class="plan-limit-value">16 &#8381;/рейс</span></div>
+            <div class="plan-note">После триала — <span data-after="biz">4 490 &#8381;/мес</span></div>
         </div>
 
         <div class="plan-card">
             <div class="plan-name">Корпоративный</div>
             <div class="plan-price-area">
-                <span class="plan-price" data-price="corp">3 990 &#8381;</span>
+                <span class="plan-price" data-price="corp">от 11 990 &#8381;</span>
                 <span class="plan-price-orig" data-orig="corp"></span>
                 <div class="plan-period" data-period="corp">в месяц</div>
             </div>
-            <a href="{% url 'accounts:register' %}" class="plan-cta">Попробовать 14 дней</a>
+            <a href="{% url 'accounts:register' %}" class="plan-cta">Связаться</a>
             <hr class="plan-divider">
-            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Путевые листы</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Пользователи</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Контрагенты</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
-            <div class="plan-limit"><span class="plan-limit-label">Организации</span><span class="plan-limit-value is-unlimited">&infin;</span></div>
-            <div class="plan-note">После триала — <span data-after="corp">3 990 &#8381;/мес</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Рейсы / мес</span><span class="plan-limit-value">от 1 200 / &infin;</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Цена за рейс</span><span class="plan-limit-value">индивидуально</span></div>
+            <div class="plan-limit"><span class="plan-limit-label">Превышение лимита</span><span class="plan-limit-value">&mdash;</span></div>
+            <div class="plan-note">Обсуждаем условия персонально</div>
         </div>
 
     </div>
@@ -179,7 +171,7 @@
             </button>
             <div class="faq-body">
                 <div class="faq-inner">
-                    В течение пробного периода вам доступны все функции системы и все платные модули без каких-либо ограничений. Карта не требуется. По окончании 14 дней вы выбираете тариф и подключаете нужные модули — либо остаётесь на Freemium бесплатно навсегда.
+                    В течение пробного периода вам доступны все функции системы и все платные модули без каких-либо ограничений. Карта не требуется. По окончании 14 дней вы выбираете тариф и подключаете нужные модули — либо остаётесь на тарифе Free бесплатно навсегда.
                 </div>
             </div>
         </div>
@@ -191,7 +183,7 @@
             </button>
             <div class="faq-body">
                 <div class="faq-inner">
-                    При достижении лимита создание новых рейсов приостанавливается до начала следующего расчётного месяца или до перехода на более высокий тариф. Все существующие данные сохраняются в полном объёме — ничего не удаляется.
+                    На тарифах Старт и Бизнес действует плата за рейсы сверх лимита — 22 &#8381; и 16 &#8381; за рейс соответственно. Работа не останавливается, дополнительные рейсы тарифицируются автоматически. На тарифе Free при достижении лимита нужно перейти на платный тариф или дождаться следующего расчётного месяца. Все существующие данные сохраняются в полном объёме.
                 </div>
             </div>
         </div>
@@ -215,7 +207,7 @@
             </button>
             <div class="faq-body">
                 <div class="faq-inner">
-                    Да, каждый модуль подключается независимо к любому тарифу, включая Freemium. Единственное исключение: модуль &laquo;Топливные карты&raquo; требует активного модуля &laquo;Перевозчик&raquo;, поскольку карты привязываются к транспортным средствам и водителям.
+                    Да, каждый модуль подключается независимо к любому тарифу, включая Free. Единственное исключение: модуль &laquo;Топливные карты&raquo; требует активного модуля &laquo;Перевозчик&raquo;, поскольку карты привязываются к транспортным средствам и водителям.
                 </div>
             </div>
         </div>
