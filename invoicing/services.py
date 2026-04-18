@@ -9,6 +9,7 @@ from django.utils.timezone import localdate
 
 from contracts.services import _org_context, amount_to_words
 from organizations.models import Organization
+from transdoki.branding import branding_context
 from trips.models import Trip, TripPoint
 from trips.services import BaseDocxGenerator
 
@@ -572,6 +573,7 @@ class InvoiceGenerator(BaseDocxGenerator):
         lines = list(invoice.lines.select_related("trip").all())
 
         ctx = {}
+        ctx.update(branding_context(invoice.account))
         ctx.update(_org_context(own_company, "own_company"))
         ctx.update(_org_context(customer, "contractor"))
 

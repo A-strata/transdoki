@@ -4,6 +4,8 @@ from pathlib import Path
 from django.http import FileResponse
 from docxtpl import DocxTemplate
 
+from transdoki.branding import branding_context
+
 from .models import ContractTemplate
 
 
@@ -228,6 +230,7 @@ def _fmt_date(d):
 def build_contract_context(contract):
     """Плейсхолдеры для шаблона договора."""
     ctx = {
+        **branding_context(contract.account),
         "contract_number": contract.number,
         "contract_date": _fmt_date(contract.date_signed),
         "contract_type": contract.get_contract_type_display(),

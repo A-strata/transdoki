@@ -8,6 +8,8 @@ from django.conf import settings
 from django.http import FileResponse
 from docxtpl import DocxTemplate
 
+from transdoki.branding import branding_context
+
 
 class DocGenerationError(Exception):
     """Ошибки генерации документов."""
@@ -100,6 +102,7 @@ class TNGenerator(BaseDocxGenerator):
         unload_p = trip.unload_point
 
         return {
+            **branding_context(trip.account),
             "date_of_trip": fmt_date(trip.date_of_trip, "%d.%m.%Y"),
             "num_of_trip": trip.num_of_trip or "—",
             "cargo": trip.cargo or "—",
