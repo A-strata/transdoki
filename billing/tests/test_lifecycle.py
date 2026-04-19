@@ -45,6 +45,52 @@ def _make_account_sub(name: str, plan_code: str = "start", balance: Decimal = De
 
 
 class PastDueTransitionTest(TestCase):
+    def test_past_due_at_exact_grace_boundary_stays(self):
+        """
+        Граница grace: past_due_since == cutoff (ровно 14 дней назад) —
+        НЕ suspended. Фильтр past_due_since__lt=cutoff строгое «<», не «≤».
+
+        Бизнес-правило: grace должен ИСТЕЧЬ (прошло более 14 дней), а не
+        «сравняться». Если кто-то заменит __lt на __lte — этот тест падёт.
+
+        Timezone замокан, чтобы исключить нестабильность от микросекундной
+        разницы между past_due_since и cutoff в реальном времени.
+        """
+        fixed_now = timezone.now().replace(microsecond=0)
+        account, sub = _make_account_sub("exact-boundary")
+        sub.status = Subscription.Status.PAST_DUE
+        sub.past_due_since = fixed_now - timedelta(days=PAST_DUE_GRACE_DAYS)
+        sub.save()
+
+        with patch("billing.services.lifecycle.timezone") as tz_mock:
+            tz_mock.now.return_value = fixed_now
+            report = process_past_due_accounts()
+
+        self.assertEqual(report["suspended"], 0)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.PAST_DUE)
+
+    def test_past_due_one_second_past_grace_becomes_suspended(self):
+        """
+        Парный кейс: past_due_since на 1 секунду раньше cutoff → suspended.
+        Вместе с предыдущим тестом фиксирует границу строгого неравенства.
+        """
+        fixed_now = timezone.now().replace(microsecond=0)
+        account, sub = _make_account_sub("just-past-boundary")
+        sub.status = Subscription.Status.PAST_DUE
+        sub.past_due_since = (
+            fixed_now - timedelta(days=PAST_DUE_GRACE_DAYS, seconds=1)
+        )
+        sub.save()
+
+        with patch("billing.services.lifecycle.timezone") as tz_mock:
+            tz_mock.now.return_value = fixed_now
+            report = process_past_due_accounts()
+
+        self.assertEqual(report["suspended"], 1)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, Subscription.Status.SUSPENDED)
+
     def test_past_due_under_grace_stays_past_due(self):
         """past_due_since=вчера → не suspended (grace не истёк)."""
         account, sub = _make_account_sub("young")

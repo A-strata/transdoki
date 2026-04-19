@@ -35,6 +35,12 @@ def auto_create_free_subscription(sender, instance: Account, created: bool, **kw
     if not created:
         return
 
+    # ВАЖНО: проверка hasattr + is not None работает ТОЛЬКО потому, что вызывается
+    # при created=True, когда подписки гарантированно не существует. Для OneToOne-
+    # relation hasattr может делать SQL-запрос и возвращать False даже при
+    # существующей записи. Если будущий код снимет условие `if not created: return`
+    # или добавит ветку для updated-событий — заменить на:
+    #     Subscription.objects.filter(account=instance).exists()
     if hasattr(instance, "subscription") and instance.subscription is not None:
         return
 

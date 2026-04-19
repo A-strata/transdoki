@@ -17,11 +17,7 @@ no-op без повторного списания.
 import logging
 from decimal import Decimal
 
-from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
-from django.shortcuts import redirect
-from django.urls import reverse
 from django.utils import timezone
 
 from billing.exceptions import InsufficientFunds, ModuleOperationError
@@ -149,43 +145,7 @@ def deactivate_module(account, module_code: str) -> dict:
     }
 
 
-class ModuleRequiredMixin:
-    """
-    Mixin для views, требующих активного модуля.
-
-    Отличается от существующего billing.mixins.ModuleRequiredMixin тем, что:
-    - Работает через новую модель AccountModule (FK на Module)
-    - Проверяет is_active, не expires_at (старое поле удалено в миграции 0006)
-    - Редиректит на страницу подписки (когда появится в итерации 5),
-      пока — на кабинет
-
-    Usage:
-        class EdoDocumentsView(ModuleRequiredMixin, LoginRequiredMixin, ListView):
-            required_module_code = "edo"
-    """
-
-    required_module_code: str | None = None
-    module_blocked_url_name = "accounts:cabinet"
-
-    def dispatch(self, request, *args, **kwargs):
-        if not self.required_module_code:
-            raise ImproperlyConfigured(
-                f"{type(self).__name__}.required_module_code не задан"
-            )
-
-        if request.user.is_authenticated:
-            from transdoki.tenancy import get_request_account
-            from billing.services.balance import account_has_module
-
-            account = get_request_account(request)
-            if not account_has_module(
-                account, self.required_module_code, request=request
-            ):
-                messages.info(
-                    request,
-                    "Этот раздел требует подключения модуля. "
-                    "Подключите его на странице подписки.",
-                )
-                return redirect(reverse(self.module_blocked_url_name))
-
-        return super().dispatch(request, *args, **kwargs)
+# ModuleRequiredMixin переехал в billing/mixins.py — там ожидаемое место
+# для Django-миксинов и туда импортирует contracts.views и другие.
+# Импортировать его здесь не требуется: весь API этого модуля —
+# activate_module / deactivate_module + исключения из billing.exceptions.
