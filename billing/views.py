@@ -141,6 +141,12 @@ class SubscriptionView(LoginRequiredMixin, TemplateView):
             .order_by("display_order")
         )
 
+        # Маппинг plan_code → plan.name для истории расчётных периодов.
+        # BillingPeriod хранит plan_code как snapshot (переименование тарифа
+        # в будущем не переписывает историю), но отображаем актуальное
+        # человеко-читаемое имя через Plan.name.
+        ctx["plan_names"] = {p.code: p.name for p in Plan.objects.all()}
+
         # Corporate: контактный email менеджера (для кнопки «Связаться»)
         # Вынесен в константу — меняется реже кода, чем логика.
         ctx["corporate_contact_email"] = "a.astakhin@gmail.com"

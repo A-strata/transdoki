@@ -195,6 +195,12 @@
     margin-left: 4px;
 }
 
+.sub-history-footnote {
+    margin-top: 12px;
+    font-size: var(--text-xs);
+    color: var(--muted);
+}
+
 /* ── Модалка смены тарифа ────────────────────────────────────────── */
 
 .sub-plans-list {

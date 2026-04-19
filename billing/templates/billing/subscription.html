@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static billing_filters %}
 
 {% block title %}Мой тариф — Трансдоки{% endblock %}
 
@@ -171,9 +171,9 @@
         </div>
     </div>
 
-    {# ─── Блок 4: история ──────────────────────────────────────────── #}
+    {# ─── Блок 4: расчётные периоды ────────────────────────────────── #}
     <div class="card sub-card">
-        <h2 class="sub-section-title">История списаний</h2>
+        <h2 class="sub-section-title">Расчётные периоды</h2>
 
         {% if billing_periods %}
             <table class="tms-table sub-history-table">
@@ -190,7 +190,7 @@
                     {% for bp in billing_periods %}
                         <tr>
                             <td>{{ bp.period_start|date:"j M Y" }} — {{ bp.period_end|date:"j M Y" }}</td>
-                            <td>{{ bp.plan_code }}</td>
+                            <td>{{ plan_names|dict_lookup:bp.plan_code|default:bp.plan_code }}</td>
                             <td>
                                 {{ bp.confirmed_trips }}
                                 {% if bp.trip_limit %}из {{ bp.trip_limit }}{% endif %}
@@ -208,9 +208,19 @@
                     {% endfor %}
                 </tbody>
             </table>
+            <p class="sub-history-footnote">
+                Все движения по счёту за месяц — в разделе
+                <a href="{% url 'billing:transactions' %}">Транзакции</a>.
+            </p>
         {% else %}
             <div class="empty-state">
-                <p>История списаний пока пуста. Первое появится после закрытия текущего периода.</p>
+                <p>
+                    Расчётных периодов пока нет — первый закроется
+                    <strong>{{ subscription.current_period_end|date:"j E Y" }}</strong>.
+                    Все движения по счёту (пополнения, апгрейды, списания)
+                    доступны в разделе
+                    <a href="{% url 'billing:transactions' %}">Транзакции</a>.
+                </p>
             </div>
         {% endif %}
     </div>
