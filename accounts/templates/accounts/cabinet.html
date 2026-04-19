@@ -31,7 +31,7 @@
     <div class="cabinet-card">
         <div class="cabinet-card-header">
             <h2 class="cabinet-card-title">Баланс и тариф</h2>
-            <a href="{% url 'billing:transactions' %}" class="history-link">История транзакций</a>
+            <a href="{% url 'billing:subscription' %}" class="history-link">Мой тариф</a>
         </div>
         <dl class="dl-grid">
             {% if account.is_billing_exempt %}
@@ -49,15 +49,18 @@
                     {% endif %}
                 </dd>
 
-                <dt class="dl-term">Кредитный лимит</dt>
-                <dd class="dl-desc dl-term">{{ account.credit_limit|floatformat:2 }} &#8381;</dd>
+                {% if account.subscription %}
+                    <dt class="dl-term">Тариф</dt>
+                    <dd class="dl-desc">
+                        <strong>{{ account.subscription.plan.name }}</strong>
+                        {% if account.subscription.plan.monthly_price > 0 %}
+                            &mdash; {{ account.subscription.effective_monthly_price|floatformat:0 }} &#8381;/мес
+                        {% endif %}
+                    </dd>
 
-                <dt class="dl-term">Бесплатно включено</dt>
-                <dd class="dl-desc dl-term">
-                    {{ account.free_orgs }} компани{{ account.free_orgs|pluralize:"я,и,й" }},
-                    {{ account.free_vehicles }} машин{{ account.free_vehicles|pluralize:"а,ы," }},
-                    {{ account.free_users }} пользовател{{ account.free_users|pluralize:"ь,я,ей" }}
-                </dd>
+                    <dt class="dl-term">Следующее списание</dt>
+                    <dd class="dl-desc dl-term">{{ account.subscription.current_period_end|date:"j E Y" }}</dd>
+                {% endif %}
             {% endif %}
         </dl>
     </div>

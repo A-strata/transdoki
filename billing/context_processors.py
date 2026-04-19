@@ -1,6 +1,11 @@
+from datetime import timedelta
 from decimal import Decimal
 
+from django.utils import timezone
+
 from billing import services as billing_services
+from billing.models import BillingPeriod, Subscription
+from billing.services.lifecycle import PAST_DUE_GRACE_DAYS
 from transdoki.tenancy import get_request_account
 
 
@@ -39,3 +44,60 @@ def billing_account(request):
             account, "contracts", request=request
         ),
     }
+
+
+def billing_banner(request):
+    """
+    Контекст для баннера past_due / suspended в base.html.
+
+    Возвращает только при релевантном статусе — в остальных случаях пусто,
+    чтобы base.html выводил баннер через `{% if billing_banner %}`.
+
+    Exempt-аккаунты и аккаунты без подписки баннер не видят.
+    """
+    if not request.user.is_authenticated:
+        return {}
+
+    try:
+        account = get_request_account(request)
+    except Exception:
+        return {}
+
+    if account.is_billing_exempt:
+        return {}
+
+    subscription = getattr(account, "subscription", None)
+    if not subscription:
+        return {}
+
+    if subscription.status == Subscription.Status.PAST_DUE and subscription.past_due_since:
+        days_passed = (timezone.now() - subscription.past_due_since).days
+        days_until_suspended = max(0, PAST_DUE_GRACE_DAYS - days_passed)
+
+        # Последний invoiced-период — сумма задолженности
+        last_invoiced = (
+            BillingPeriod.objects.filter(
+                account=account, status=BillingPeriod.Status.INVOICED
+            )
+            .order_by("-period_start")
+            .first()
+        )
+        debt_amount = last_invoiced.total if last_invoiced else Decimal("0")
+
+        return {
+            "billing_banner": {
+                "kind": "past_due",
+                "days_until_suspended": days_until_suspended,
+                "debt_amount": debt_amount,
+                "past_due_since": subscription.past_due_since,
+            }
+        }
+
+    if subscription.status == Subscription.Status.SUSPENDED:
+        return {
+            "billing_banner": {
+                "kind": "suspended",
+            }
+        }
+
+    return {}

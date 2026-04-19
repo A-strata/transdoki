@@ -1,0 +1,236 @@
+/* Страница «Мой тариф» /billing/subscription/ */
+
+.subscription-page {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 16px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.subscription-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    margin: 0 0 8px;
+}
+
+.sub-card {
+    padding: 24px;
+}
+
+.sub-section-title {
+    font-size: var(--text-base);
+    font-weight: 700;
+    margin: 0 0 16px;
+}
+
+/* ── Блок 1: текущий тариф ───────────────────────────────────────── */
+
+.sub-plan-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.sub-plan-name {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    margin: 0;
+}
+
+.sub-plan-price {
+    font-size: var(--text-base);
+    color: var(--muted);
+    margin: 4px 0 0;
+}
+
+.sub-plan-note {
+    font-size: var(--text-xs);
+    color: var(--muted);
+}
+
+.sub-next-charge {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    margin: 8px 0 0;
+}
+
+.sub-plan-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.sub-scheduled {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--info-bg);
+    border: 1px solid var(--info-border);
+    border-radius: var(--radius-sm);
+    color: var(--info-text);
+    font-size: var(--text-sm);
+}
+
+/* ── Блок 2: использование ───────────────────────────────────────── */
+
+.sub-usage-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 768px) {
+    .sub-usage-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sub-usage-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sub-usage-label {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.sub-usage-value {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text);
+}
+
+.sub-progress {
+    height: 8px;
+    background: var(--neutral-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.sub-progress-bar {
+    height: 100%;
+    width: 0;
+    background: var(--success-text);
+    transition: width 0.3s ease;
+}
+
+.sub-progress-bar.is-warn {
+    background: var(--warning-text);
+}
+
+.sub-progress-bar.is-overage {
+    width: 100% !important;
+    background: var(--error-text);
+}
+
+.sub-usage-hint {
+    font-size: var(--text-xs);
+    color: var(--muted);
+}
+
+.sub-usage-hint--warn {
+    color: var(--warning-text);
+    font-weight: 500;
+}
+
+.sub-usage-overage {
+    font-size: var(--text-sm);
+    color: var(--error-text);
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* ── Блок 3: баланс ──────────────────────────────────────────────── */
+
+.sub-balance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 768px) {
+    .sub-balance-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sub-balance-value {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    margin: 4px 0 12px;
+}
+
+.sub-forecast-breakdown {
+    font-size: var(--text-xs);
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.sub-forecast-warn {
+    font-size: var(--text-sm);
+    color: var(--warning-text);
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+/* ── Блок 4: история ─────────────────────────────────────────────── */
+
+.sub-history-table {
+    width: 100%;
+}
+
+.sub-history-overage {
+    color: var(--error-text);
+    font-size: var(--text-xs);
+    margin-left: 4px;
+}
+
+/* ── Модалка смены тарифа ────────────────────────────────────────── */
+
+.sub-plans-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.sub-plan-option {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: 0.15s ease;
+}
+
+.sub-plan-option:hover {
+    border-color: var(--border-interactive);
+    background: var(--hover);
+}
+
+.sub-plan-option-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.sub-plan-option-price {
+    margin-left: 8px;
+    color: var(--muted);
+    font-size: var(--text-sm);
+}
+
+.sub-plan-option-limits {
+    font-size: var(--text-xs);
+    color: var(--muted);
+}

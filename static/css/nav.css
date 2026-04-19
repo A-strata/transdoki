@@ -382,3 +382,34 @@
 .impersonate-bar-btn:hover {
     background: var(--warning-bg);
 }
+
+/* past_due / suspended баннер — по аналогии с impersonate-bar, но в error-тонах */
+.billing-alert-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 6px 16px;
+    background: var(--error-bg);
+    border-bottom: 1px solid var(--error-border);
+    color: var(--error-text);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.billing-alert-bar a {
+    padding: 3px 12px;
+    border: 1px solid var(--error-text);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--error-text);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.15s ease;
+}
+
+.billing-alert-bar a:hover {
+    background: var(--error-bg);
+}

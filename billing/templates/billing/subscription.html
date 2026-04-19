@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Мой тариф — Трансдоки{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'billing/css/subscription.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="subscription-page"
+         data-url-upgrade="{% url 'billing:subscription_upgrade' %}"
+         data-url-schedule-downgrade="{% url 'billing:subscription_schedule_downgrade' %}"
+         data-url-cancel-downgrade="{% url 'billing:subscription_cancel_downgrade' %}"
+         data-url-deposit="{% url 'billing:deposit' %}">
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% else %}
+
+    <h1 class="subscription-title">Мой тариф</h1>
+
+    {# ─── Блок 1: текущий тариф ─────────────────────────────────────── #}
+    <div class="card sub-card">
+        <div class="sub-plan-header">
+            <div>
+                <h2 class="sub-plan-name">{{ subscription.plan.name }}</h2>
+                <p class="sub-plan-price">
+                    {% if subscription.plan.is_custom %}
+                        {{ subscription.effective_monthly_price|floatformat:0 }} &#8381; / мес
+                        <span class="sub-plan-note">(индивидуальный тариф)</span>
+                    {% else %}
+                        {{ subscription.plan.monthly_price|floatformat:0 }} &#8381; / мес
+                    {% endif %}
+                </p>
+                <p class="sub-next-charge">
+                    Следующее списание: <strong>{{ subscription.current_period_end|date:"j E Y" }}</strong>
+                </p>
+            </div>
+            <div class="sub-plan-actions">
+                {% if subscription.plan.code == "corporate" %}
+                    <a href="mailto:{{ corporate_contact_email }}?subject=Корпоративный тариф — запрос"
+                       class="tms-btn tms-btn-secondary">Связаться с менеджером</a>
+                {% else %}
+                    <button type="button" class="tms-btn tms-btn-primary"
+                            data-modal-open="plan-change-modal">Сменить тариф</button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if subscription.scheduled_plan %}
+            <div class="sub-scheduled">
+                После {{ subscription.current_period_end|date:"j E Y" }} вы перейдёте на тариф
+                <strong>{{ subscription.scheduled_plan.name }}</strong>.
+                <button type="button" class="tms-btn tms-btn-light tms-btn-sm"
+                        data-cancel-downgrade>Отменить переход</button>
+            </div>
+        {% endif %}
+    </div>
+
+    {# ─── Блок 2: использование лимитов ─────────────────────────────── #}
+    <div class="card sub-card">
+        <h2 class="sub-section-title">Использование</h2>
+
+        <div class="sub-usage-grid">
+            {# Рейсы #}
+            <div class="sub-usage-item">
+                <div class="sub-usage-label">Рейсы в месяце</div>
+                {% if trip_usage.limit is None %}
+                    <div class="sub-usage-value">{{ trip_usage.total }} / &infin;</div>
+                {% else %}
+                    {% with percent=trip_usage.confirmed|default:0 %}
+                    <div class="sub-usage-value">{{ trip_usage.confirmed }} / {{ trip_usage.limit }}</div>
+                    <div class="sub-progress">
+                        <div class="sub-progress-bar
+                            {% if trip_usage.confirmed > trip_usage.limit %}is-overage
+                            {% elif trip_usage.confirmed|add:0 >= trip_usage.limit|add:0|floatformat:0 %}is-warn
+                            {% endif %}"
+                             data-current="{{ trip_usage.confirmed }}"
+                             data-limit="{{ trip_usage.limit }}"></div>
+                    </div>
+                    {% endwith %}
+                    {% if trip_usage.pending > 0 %}
+                        <div class="sub-usage-hint">
+                            &nbsp;+{{ trip_usage.pending }} в ожидании (24ч)
+                        </div>
+                    {% endif %}
+                    {% if overage_trips > 0 %}
+                        <div class="sub-usage-overage">
+                            Превышение: {{ overage_trips }} &times; {{ subscription.effective_overage_price|floatformat:0 }} &#8381;
+                            = <strong>{{ overage_fee|floatformat:2 }} &#8381;</strong>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            {# Организации #}
+            <div class="sub-usage-item">
+                <div class="sub-usage-label">Свои организации</div>
+                {% if org_usage.limit is None %}
+                    <div class="sub-usage-value">{{ org_usage.current }} / &infin;</div>
+                {% else %}
+                    <div class="sub-usage-value">{{ org_usage.current }} / {{ org_usage.limit }}</div>
+                    <div class="sub-progress">
+                        <div class="sub-progress-bar
+                            {% if org_usage.current > org_usage.limit %}is-overage{% endif %}"
+                             data-current="{{ org_usage.current }}"
+                             data-limit="{{ org_usage.limit }}"></div>
+                    </div>
+                    {% if org_usage.current > org_usage.limit %}
+                        <div class="sub-usage-hint sub-usage-hint--warn">
+                            Превышен лимит. Новые добавить нельзя.
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            {# Пользователи #}
+            <div class="sub-usage-item">
+                <div class="sub-usage-label">Пользователи</div>
+                {% if user_usage.limit is None %}
+                    <div class="sub-usage-value">{{ user_usage.current }} / &infin;</div>
+                {% else %}
+                    <div class="sub-usage-value">{{ user_usage.current }} / {{ user_usage.limit }}</div>
+                    <div class="sub-progress">
+                        <div class="sub-progress-bar
+                            {% if user_usage.current > user_usage.limit %}is-overage{% endif %}"
+                             data-current="{{ user_usage.current }}"
+                             data-limit="{{ user_usage.limit }}"></div>
+                    </div>
+                    {% if user_usage.current > user_usage.limit %}
+                        <div class="sub-usage-hint sub-usage-hint--warn">
+                            Превышен лимит. Новых добавить нельзя.
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ─── Блок 3: баланс + прогноз ─────────────────────────────────── #}
+    <div class="card sub-card">
+        <h2 class="sub-section-title">Баланс и прогноз списания</h2>
+
+        <div class="sub-balance-grid">
+            <div>
+                <div class="sub-usage-label">Текущий баланс</div>
+                <div class="sub-balance-value">{{ account.balance|floatformat:2 }} &#8381;</div>
+                <a href="{% url 'billing:deposit' %}" class="tms-btn tms-btn-primary tms-btn-add">
+                    + Пополнить баланс
+                </a>
+            </div>
+            <div>
+                <div class="sub-usage-label">Следующее списание ({{ subscription.current_period_end|date:"j E" }})</div>
+                <div class="sub-balance-value">{{ forecast_total|floatformat:2 }} &#8381;</div>
+                <div class="sub-forecast-breakdown">
+                    Тариф: {{ subscription.effective_monthly_price|floatformat:0 }} &#8381;
+                    {% if forecast_modules_fee > 0 %}
+                        &bull; Модули: {{ forecast_modules_fee|floatformat:0 }} &#8381;
+                    {% endif %}
+                    {% if overage_fee > 0 %}
+                        &bull; Overage: {{ overage_fee|floatformat:0 }} &#8381;
+                    {% endif %}
+                </div>
+                {% if balance_insufficient %}
+                    <div class="sub-forecast-warn">
+                        Баланса не хватит на следующее списание. Пополните баланс.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ─── Блок 4: история ──────────────────────────────────────────── #}
+    <div class="card sub-card">
+        <h2 class="sub-section-title">История списаний</h2>
+
+        {% if billing_periods %}
+            <table class="tms-table sub-history-table">
+                <thead>
+                    <tr>
+                        <th>Период</th>
+                        <th>Тариф</th>
+                        <th>Рейсов</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bp in billing_periods %}
+                        <tr>
+                            <td>{{ bp.period_start|date:"j M Y" }} — {{ bp.period_end|date:"j M Y" }}</td>
+                            <td>{{ bp.plan_code }}</td>
+                            <td>
+                                {{ bp.confirmed_trips }}
+                                {% if bp.trip_limit %}из {{ bp.trip_limit }}{% endif %}
+                                {% if bp.overage_trips > 0 %}
+                                    <span class="sub-history-overage">(+{{ bp.overage_trips }})</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ bp.total|floatformat:2 }} &#8381;</td>
+                            <td>
+                                <span class="status-badge status-badge--{% if bp.status == 'paid' %}success{% elif bp.status == 'invoiced' %}warning{% elif bp.status == 'written_off' %}error{% else %}neutral{% endif %}">
+                                    {{ bp.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state">
+                <p>История списаний пока пуста. Первое появится после закрытия текущего периода.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    {# ─── Модалка смены тарифа ─────────────────────────────────────── #}
+    <div class="modal-overlay" id="plan-change-modal" hidden>
+        <div class="modal-dialog modal-dialog--wide">
+            <h3 class="modal-title">Сменить тариф</h3>
+            <p class="modal-body">Выберите новый тариф. Апгрейд происходит сразу, даунгрейд — с начала следующего периода.</p>
+
+            <div class="sub-plans-list">
+                {% for plan in available_plans %}
+                    <div class="sub-plan-option"
+                         data-plan-code="{{ plan.code }}"
+                         data-plan-price="{{ plan.monthly_price }}"
+                         data-current-price="{{ subscription.effective_monthly_price }}"
+                         data-plan-trips="{{ plan.trip_limit|default_if_none:'' }}"
+                         data-plan-orgs="{{ plan.organization_limit|default_if_none:'' }}"
+                         data-plan-users="{{ plan.user_limit|default_if_none:'' }}">
+                        <div class="sub-plan-option-header">
+                            <div>
+                                <strong>{{ plan.name }}</strong>
+                                <span class="sub-plan-option-price">
+                                    {% if plan.is_custom %}от {% endif %}
+                                    {{ plan.monthly_price|floatformat:0 }} &#8381;/мес
+                                </span>
+                            </div>
+                            <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                                    data-select-plan="{{ plan.code }}">
+                                {% if plan.monthly_price > subscription.effective_monthly_price %}
+                                    Перейти (апгрейд)
+                                {% elif plan.monthly_price < subscription.effective_monthly_price %}
+                                    Перейти с {{ subscription.current_period_end|date:"j M" }}
+                                {% else %}
+                                    Перейти
+                                {% endif %}
+                            </button>
+                        </div>
+                        <div class="sub-plan-option-limits">
+                            {% if plan.trip_limit %}{{ plan.trip_limit }} рейсов{% else %}&infin; рейсов{% endif %} &bull;
+                            {% if plan.organization_limit %}{{ plan.organization_limit }} орг.{% else %}&infin; орг.{% endif %} &bull;
+                            {% if plan.user_limit %}{{ plan.user_limit }} польз.{% else %}&infin; польз.{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="modal-form-errors" id="plan-change-errors" hidden></div>
+
+            <div class="modal-actions">
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    {# ─── Модалка «недостаточно средств» ────────────────────────────── #}
+    <div class="modal-overlay" id="insufficient-funds-modal" hidden>
+        <div class="modal-dialog">
+            <h3 class="modal-title">Нужно пополнить баланс</h3>
+            <p class="modal-body">
+                Для перехода на тариф <strong id="ifm-plan-name">—</strong>
+                требуется <strong id="ifm-required">0</strong> &#8381;.<br>
+                На балансе: <strong id="ifm-balance">0</strong> &#8381;.
+            </p>
+            <div class="modal-actions">
+                <a href="#" class="tms-btn tms-btn-primary" id="ifm-deposit-link">Пополнить баланс</a>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'billing/js/subscription.js' %}" defer></script>
+{% endblock %}

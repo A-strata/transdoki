@@ -213,6 +213,27 @@
         </div>
     {% endif %}
 
+    {% if billing_banner %}
+        <div class="billing-alert-bar">
+            {% if billing_banner.kind == "past_due" %}
+                <span>
+                    Недостаточно средств для продления подписки. Задолженность
+                    <strong>{{ billing_banner.debt_amount|floatformat:2 }} ₽</strong>.
+                    Пополните баланс в течение
+                    <strong>{{ billing_banner.days_until_suspended }} дн.</strong>,
+                    иначе доступ будет ограничен.
+                </span>
+                <a href="{% url 'billing:deposit' %}">Пополнить баланс</a>
+            {% elif billing_banner.kind == "suspended" %}
+                <span>
+                    Доступ ограничен из-за неоплаченной подписки.
+                    Пополните баланс, чтобы восстановить работу.
+                </span>
+                <a href="{% url 'billing:deposit' %}">Пополнить баланс</a>
+            {% endif %}
+        </div>
+    {% endif %}
+
     <main>
         {% if messages %}
             <div class="flash-wrap">
