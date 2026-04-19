@@ -2,27 +2,36 @@
 
 ## Статус
 
-> **Посуточный биллинг (`charge_daily`) отключён с 2026-04-19** — в рамках
-> перехода на модель ежемесячной подписки (Billing v2, итерация 1).
+> **Посуточный биллинг (`charge_daily`) отключён на проде 2026-04-19** —
+> переход на модель ежемесячной подписки (Billing v2). Включать обратно
+> не планируется: модель посуточной тарификации выводится из продукта.
 >
-> Физическое удаление кода `charge_daily` и миграций данных посуточного
-> биллинга запланировано на итерацию 6 после прохождения staging-чеклиста.
-> До этого код остаётся в репозитории как страховка rollback.
+> Код команды, константы и поля `Account.cached_daily_cost / credit_limit /
+> free_orgs / free_vehicles / free_users` физически удаляются в итерации 6
+> после прохождения staging-чеклиста. До этого остаются в репозитории как
+> страховка на случай rollback.
 
-## Действия на сервере
+## Текущее состояние проды
 
-На деплой-сервере (crontab пользователя `deploy`) закомментировать или удалить
-строку:
+Crontab пользователя `deploy` на 2026-04-19:
 
 ```
-5 0 * * * cd /home/deploy/projects/transdoki && DJANGO_SETTINGS_MODULE=transdoki.settings .venv/bin/python manage.py charge_daily >> logs/charge_daily.log 2>&1
+# 2026-04-19 disabled: transition to monthly subscription billing. See docs/cron.md
+# 5 0 * * * cd /home/deploy/projects/transdoki && DJANGO_SETTINGS_MODULE=transdoki.settings .venv/bin/python manage.py charge_daily >> logs/charge_daily.log 2>&1
 ```
 
-Проверить:
+Строка закомментирована, не удалена — чтобы при форс-мажоре её было легко
+восстановить простым снятием `#`.
+
+Проверка:
 
 ```bash
 ssh deploy@<server> "crontab -l"
 ```
+
+Подтверждение отключения — отсутствие новой строки в
+`~/projects/transdoki/logs/charge_daily.log` на следующий день после 2026-04-19
+(последняя запись должна быть от 2026-04-18).
 
 ---
 
