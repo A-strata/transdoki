@@ -93,30 +93,22 @@ def account_has_module(account, module_code: str, request=None) -> bool:
     if request is not None:
         cache_attr = "_module_codes_cache"
         if not hasattr(request, cache_attr):
-            from django.utils import timezone
-
             from billing.models import AccountModule
 
-            qs = AccountModule.objects.filter(account=account).values_list(
-                "module", "expires_at"
+            request._module_codes_cache = set(
+                AccountModule.objects.filter(
+                    account=account, is_active=True
+                ).values_list("module__code", flat=True)
             )
-            now = timezone.now()
-            request._module_codes_cache = {
-                code for code, expires in qs if expires is None or expires > now
-            }
         return module_code in request._module_codes_cache
 
     # Без request — прямой запрос (management commands, signals)
-    from django.db.models import Q
-    from django.utils import timezone
-
     from billing.models import AccountModule
 
     return AccountModule.objects.filter(
         account=account,
-        module=module_code,
-    ).filter(
-        Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())
+        module__code=module_code,
+        is_active=True,
     ).exists()
 
 
