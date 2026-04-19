@@ -203,13 +203,24 @@ def _charge_one_subscription(subscription: Subscription, dry_run: bool = False) 
     total = subscription_fee + modules_fee + overage_fee
 
     if dry_run:
+        # Прогноз итогового состояния: заполняем тот же набор ключей, что и
+        # в реальном флоу, чтобы итоговый отчёт charge_monthly показал
+        # «что бы произошло».
+        if total == Decimal("0"):
+            outcome = {"charged": True}
+        elif account.balance >= total:
+            outcome = {"charged": True}
+        else:
+            outcome = {"past_due": True}
         logger.info(
             "[DRY-RUN] account_id=%s plan=%s confirmed=%d overage=%d "
-            "subscription=%s modules=%s overage_fee=%s total=%s",
+            "subscription=%s modules=%s overage_fee=%s total=%s outcome=%s",
             account.pk, subscription.plan.code, usage["confirmed"], overage_trips,
             subscription_fee, modules_fee, overage_fee, total,
+            "past_due" if outcome.get("past_due") else "charged",
         )
         return {
+            **outcome,
             "dry_run": True,
             "total": total,
             "subscription_fee": subscription_fee,
@@ -282,16 +293,16 @@ def _charge_one_subscription(subscription: Subscription, dry_run: bool = False) 
             _advance_period(subscription)
             return {"charged": True, "total": total}
 
-        # Нехватка баланса — past_due. BillingPeriod остаётся invoiced,
-        # сумма «висит» задолженностью. Баланс не трогаем (клиент пополнит
-        # → на следующем запуске charge_monthly повторно? Нет, advance_period
-        # мы уже сделали. Логика past_due: подписку двигаем вперёд, но статус
-        # past_due держит её в выборке charge_monthly на следующем запуске
-        # — и выставленный BillingPeriod обработает отдельная функция в
-        # итерации 4 (recover_past_due).
-        #
-        # Для текущей итерации 3 — просто помечаем invoiced и переводим
-        # в past_due. Восстановление баланса — отдельная задача.
+        # Нехватка баланса: BillingPeriod остаётся invoiced как «висящий долг».
+        # Погашение — отдельным действием клиента в ЛК (итерация 5 UI):
+        # клиент пополняет баланс и нажимает «оплатить задолженность».
+        # Автоматического списания после восстановления баланса НЕ делаем —
+        # это соответствует модели «клиент контролирует свой баланс».
+        # Следующий charge_monthly обработает уже следующий период как new;
+        # invoiced-периоды с прошлых месяцев остаются независимо.
+        # past_due_since выставляется только при ПЕРВОМ переходе в past_due;
+        # последующие неудачные прогонки его не переписывают — это база
+        # для расчёта 14-дневного grace в process_past_due (итерация 4-5).
         billing_period.status = BillingPeriod.Status.INVOICED
         billing_period.save(update_fields=["status"])
 
