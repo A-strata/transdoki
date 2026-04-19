@@ -77,17 +77,28 @@ class ChargeMonthlyBase(TestCase):
         custom_trip_limit=None,
         custom_overage_price=None,
     ) -> Subscription:
+        """
+        Создаёт или обновляет Subscription для account.
+
+        Сигнал billing.signals.auto_create_free_subscription создаёт Free-sub
+        при Account.save(created=True), поэтому к моменту вызова этого
+        хелпера Subscription уже может существовать. Используем
+        update_or_create для идемпотентности.
+        """
         plan = Plan.objects.get(code=plan_code)
-        sub = Subscription.objects.create(
+        sub, _ = Subscription.objects.update_or_create(
             account=account,
-            plan=plan,
-            started_at=period_start or self.period_start,
-            current_period_start=period_start or self.period_start,
-            current_period_end=period_end or self.period_end,
-            status=status,
-            custom_trip_limit=custom_trip_limit,
-            custom_overage_price=custom_overage_price,
+            defaults={
+                "plan": plan,
+                "started_at": period_start or self.period_start,
+                "current_period_start": period_start or self.period_start,
+                "current_period_end": period_end or self.period_end,
+                "status": status,
+                "custom_trip_limit": custom_trip_limit,
+                "custom_overage_price": custom_overage_price,
+            },
         )
+        account.refresh_from_db()
         return sub
 
     def _trip_fixtures(self, account, user):

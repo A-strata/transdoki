@@ -10,7 +10,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.generic import DetailView
 
-from billing.mixins import BillingProtectedMixin
 from organizations.models import Organization
 from transdoki.enums import VatRate
 from transdoki.tenancy import get_request_account
@@ -218,7 +217,7 @@ class InvoiceListView(UserOwnedListView):
 # Invoice create
 # ─────────────────────────────────────────────────────────────────────
 
-class InvoiceCreateView(BillingProtectedMixin, LoginRequiredMixin, View):
+class InvoiceCreateView(LoginRequiredMixin, View):
 
     template_name = "invoicing/invoice_form.html"
 

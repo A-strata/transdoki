@@ -10,7 +10,7 @@ from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, UpdateView
 
 from accounts.models import UserProfile
-from billing.mixins import BillingProtectedMixin, ModuleRequiredMixin
+from billing.mixins import ModuleRequiredMixin
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
 
@@ -165,7 +165,6 @@ class ContractDetailView(ContractsModuleMixin, LoginRequiredMixin, DetailView):
 class ContractCreateView(
     ContractsModuleMixin,
     EditPermissionMixin,
-    BillingProtectedMixin,
     LoginRequiredMixin,
     CreateView,
 ):

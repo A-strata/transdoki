@@ -12,7 +12,6 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from billing.mixins import BillingProtectedMixin
 from organizations.models import Organization
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
@@ -21,7 +20,7 @@ from .forms import VehicleForm, VehicleFormWithOwner
 from .models import Vehicle, VehicleType
 
 
-class VehicleCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
+class VehicleCreateView(LoginRequiredMixin, CreateView):
     model = Vehicle
     form_class = VehicleForm
     template_name = "vehicles/vehicle_form.html"
@@ -98,7 +97,7 @@ class VehicleDetailView(LoginRequiredMixin, DetailView):
         return Vehicle.objects.for_account(get_request_account(self.request))
 
 
-class VehicleCreateStandaloneView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
+class VehicleCreateStandaloneView(LoginRequiredMixin, CreateView):
     """Создание ТС со страницы «Мой парк» (owner = текущая организация)."""
 
     model = Vehicle

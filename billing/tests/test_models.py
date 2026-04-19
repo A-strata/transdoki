@@ -79,14 +79,16 @@ class SubscriptionEffectiveTest(TestCase):
         cls.start_plan = Plan.objects.get(code="start")
         cls.corporate_plan = Plan.objects.get(code="corporate")
         now = timezone.now()
-        # Subscription уже создана сигналом/миграцией? Нет — Account сам по себе
-        # не создаёт подписку, только миграция 0005 делала seed для существующих.
-        cls.subscription = Subscription.objects.create(
+        # Сигнал auto_create_free_subscription создаёт Free-Subscription
+        # при Account.save(). Переназначаем на Start через update_or_create.
+        cls.subscription, _ = Subscription.objects.update_or_create(
             account=cls.account,
-            plan=cls.start_plan,
-            started_at=now,
-            current_period_start=now,
-            current_period_end=now + timedelta(days=30),
+            defaults={
+                "plan": cls.start_plan,
+                "started_at": now,
+                "current_period_start": now,
+                "current_period_end": now + timedelta(days=30),
+            },
         )
 
     def test_effective_falls_back_to_plan(self):
@@ -128,12 +130,15 @@ class SubscriptionEffectiveTest(TestCase):
         """Corporate с trip_limit=None на плане и без custom — effective=None (безлимит)."""
         corp_account = Account.objects.create(name="Corp")
         now = timezone.now()
-        sub = Subscription.objects.create(
+        # Account.save() уже создал Free-sub через сигнал; переназначаем на Corporate.
+        sub, _ = Subscription.objects.update_or_create(
             account=corp_account,
-            plan=self.corporate_plan,
-            started_at=now,
-            current_period_start=now,
-            current_period_end=now + timedelta(days=30),
+            defaults={
+                "plan": self.corporate_plan,
+                "started_at": now,
+                "current_period_start": now,
+                "current_period_end": now + timedelta(days=30),
+            },
         )
         # Corporate.user_limit=None, organization_limit=None по seed-миграции
         self.assertIsNone(sub.effective_user_limit)
@@ -183,16 +188,17 @@ class UniqueConstraintTest(TestCase):
                 )
 
     def test_account_has_one_subscription(self):
-        """OneToOneField на account не даёт создать две подписки одному аккаунту."""
+        """
+        OneToOneField на account не даёт создать две подписки одному аккаунту.
+
+        Сигнал auto_create_free_subscription уже создал Free-sub при
+        Account.save() в setUpTestData — значит попытка создать ещё одну
+        Subscription.objects.create(account=...) должна упасть на unique.
+        """
+        self.assertTrue(Subscription.objects.filter(account=self.account).exists())
+
         now = timezone.now()
         plan = Plan.objects.get(code="free")
-        Subscription.objects.create(
-            account=self.account,
-            plan=plan,
-            started_at=now,
-            current_period_start=now,
-            current_period_end=now + timedelta(days=30),
-        )
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 Subscription.objects.create(

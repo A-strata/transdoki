@@ -9,7 +9,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
-from billing.mixins import BillingProtectedMixin
+from billing.services.limits import can_create_user
 from organizations.models import Organization
 from transdoki.tenancy import get_request_account
 
@@ -135,7 +135,7 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class AccountUserCreateView(LoginRequiredMixin, BillingProtectedMixin, FormView):
+class AccountUserCreateView(LoginRequiredMixin, FormView):
     template_name = "accounts/user_create.html"
     form_class = AccountUserCreateForm
     success_url = reverse_lazy("accounts:cabinet")
@@ -149,11 +149,18 @@ class AccountUserCreateView(LoginRequiredMixin, BillingProtectedMixin, FormView)
                 return JsonResponse({"ok": False, "errors": {"__all__": "Недостаточно прав."}}, status=403)
             raise PermissionDenied("Недостаточно прав для создания пользователей.")
 
-        # Перехватываем billing-блокировку для AJAX
-        response = super().dispatch(request, *args, **kwargs)
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest" and response.status_code == 302:
-            return JsonResponse({"ok": False, "errors": {"__all__": "Создание заблокировано: недостаточно средств на балансе."}}, status=402)
-        return response
+        # Проверка лимита пользователей тарифа. is_billing_exempt и статус
+        # подписки проверяются внутри can_create_user.
+        ok, msg = can_create_user(self.account)
+        if not ok:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse(
+                    {"ok": False, "errors": {"__all__": msg}}, status=402,
+                )
+            messages.error(request, msg)
+            return redirect(reverse_lazy("accounts:cabinet"))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         user, temp_password = form.save(account=self.account, created_by=self.request.user)

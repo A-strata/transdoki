@@ -18,7 +18,7 @@ from django.views.generic import (
     UpdateView,
 )
 
-from billing.mixins import BillingProtectedMixin
+from billing.services.limits import can_create_organization
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
 
@@ -27,7 +27,7 @@ from .models import Bank, Organization, OrganizationBank, OrganizationContact
 from .validators import validate_inn
 
 
-class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateView):
+class OrganizationCreateView(LoginRequiredMixin, CreateView):
     model = Organization
     form_class = OrganizationForm
     template_name = "organizations/organization_form.html"
@@ -35,6 +35,18 @@ class OrganizationCreateView(BillingProtectedMixin, LoginRequiredMixin, CreateVi
 
     def _is_own(self):
         return self.request.GET.get("own") == "1"
+
+    def dispatch(self, request, *args, **kwargs):
+        # Лимит собственных организаций применяется ТОЛЬКО к own-company.
+        # Контрагенты (is_own_company=False) — справочник, не лимитируются.
+        # is_billing_exempt обрабатывается внутри can_create_organization.
+        if request.user.is_authenticated and self._is_own():
+            account = get_request_account(request)
+            ok, msg = can_create_organization(account)
+            if not ok:
+                messages.error(request, msg)
+                return redirect(reverse_lazy("organizations:list"))
+        return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

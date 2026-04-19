@@ -41,13 +41,18 @@ def _make_account_with_subscription(name: str, plan_code: str, exempt: bool = Fa
 
     plan = Plan.objects.get(code=plan_code)
     now = timezone.now()
-    sub = Subscription.objects.create(
+    sub, _ = Subscription.objects.update_or_create(
         account=account,
-        plan=plan,
-        started_at=now,
-        current_period_start=now,
-        current_period_end=now + timedelta(days=30),
+        defaults={
+            "plan": plan,
+            "started_at": now,
+            "current_period_start": now,
+            "current_period_end": now + timedelta(days=30),
+        },
     )
+    # account.subscription мог закешировать старый Free-объект от сигнала.
+    # refresh_from_db очищает кеш related-поля.
+    account.refresh_from_db()
     return account, user, sub
 
 
@@ -139,6 +144,7 @@ class OrganizationLimitTest(TestCase):
         # Даунгрейд
         sub.plan = Plan.objects.get(code="start")
         sub.save()
+        account.refresh_from_db()  # очистить кеш account.subscription
         # Теперь 5 > 3 — создание новых запрещено, существующие не затронуты
         ok, msg = limits_service.can_create_organization(account)
         self.assertFalse(ok)

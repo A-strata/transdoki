@@ -20,6 +20,8 @@ from django.views.decorators.http import require_GET
 from django.views.generic import CreateView, DetailView, UpdateView
 from dotenv import load_dotenv
 
+from billing.mixins import LimitCheckMixin
+from billing.services.limits import can_create_trip
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
 
@@ -157,10 +159,14 @@ class RoutePointsMixin:
             point.save()
 
 
-class TripCreateView(RoutePointsMixin, LoginRequiredMixin, CreateView):
+class TripCreateView(LimitCheckMixin, RoutePointsMixin, LoginRequiredMixin, CreateView):
     model = Trip
     form_class = TripForm
     template_name = "trips/trip_form.html"
+    # Блокирует создание при past_due/suspended/cancelled подписке.
+    # Лимит рейсов мягкий (overage начисляется в charge_monthly) —
+    # can_create_trip не проверяет число рейсов в текущем периоде.
+    limit_check_callable = staticmethod(can_create_trip)
 
     COPY_EXCLUDE_FIELDS = {
         "created_by", "account", "created_at", "updated_at",

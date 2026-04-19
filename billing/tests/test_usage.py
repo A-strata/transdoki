@@ -40,12 +40,14 @@ class TripUsageTestBase(TestCase):
 
         plan_free = Plan.objects.get(code="free")
         now = timezone.now()
-        Subscription.objects.create(
+        Subscription.objects.update_or_create(
             account=cls.account,
-            plan=plan_free,
-            started_at=now,
-            current_period_start=now,
-            current_period_end=now + timedelta(days=30),
+            defaults={
+                "plan": plan_free,
+                "started_at": now,
+                "current_period_start": now,
+                "current_period_end": now + timedelta(days=30),
+            },
         )
 
         # Отдельный аккаунт для проверки tenant-изоляции
@@ -53,12 +55,14 @@ class TripUsageTestBase(TestCase):
         cls.other_account = Account.objects.create(name="A2", owner=cls.other_user)
         cls.other_user.profile.account = cls.other_account
         cls.other_user.profile.save()
-        Subscription.objects.create(
+        Subscription.objects.update_or_create(
             account=cls.other_account,
-            plan=plan_free,
-            started_at=now,
-            current_period_start=now,
-            current_period_end=now + timedelta(days=30),
+            defaults={
+                "plan": plan_free,
+                "started_at": now,
+                "current_period_start": now,
+                "current_period_end": now + timedelta(days=30),
+            },
         )
 
         # Общая фикстура сущностей для Trip

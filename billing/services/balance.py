@@ -112,17 +112,6 @@ def account_has_module(account, module_code: str, request=None) -> bool:
     ).exists()
 
 
-def can_create_entity(account) -> bool:
-    """
-    Проверяет, может ли аккаунт создавать новые сущности.
-    Блокировка наступает при balance <= credit_limit.
-    Аккаунты с is_billing_exempt всегда могут создавать сущности.
-    """
-    if account.is_billing_exempt:
-        return True
-    return account.balance > account.credit_limit
-
-
 def get_daily_cost(account) -> tuple[Decimal, dict]:
     """
     Считает стоимость владения ресурсами за сутки.

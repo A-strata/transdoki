@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Мои приложения
     "accounts",
-    "billing",
+    "billing.apps.BillingConfig",
     "organizations",
     "persons",
     "vehicles",
