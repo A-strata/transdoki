@@ -4,15 +4,40 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError, models, transaction
+from django.utils import timezone
 
 from organizations.models import Organization
 from persons.models import Person
 from persons.validators import validate_phone_number
 from transdoki.enums import VatRate
-from transdoki.models import UserOwnedModel
+from transdoki.models import TenantQuerySet, UserOwnedModel
 from vehicles.models import Vehicle
 
 from .validators import RussianMinValueValidator
+
+
+class TripQuerySet(TenantQuerySet):
+    """QuerySet с .for_account(), общий для живых и удалённых записей."""
+
+
+class TripManager(models.Manager.from_queryset(TripQuerySet)):
+    """
+    Дефолтный менеджер Trip: скрывает мягко удалённые записи.
+
+    Используется везде, кроме биллинга. Биллинговый код обязан использовать
+    Trip.all_objects — правило 24 часов требует видеть удалённые рейсы,
+    иначе удалённые позже 24ч не попадут в overage.
+    """
+
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
+class TripAllManager(models.Manager.from_queryset(TripQuerySet)):
+    """
+    Менеджер, видящий все записи, включая мягко удалённые.
+    Назначение — биллинг и админ-отчёты.
+    """
 
 CARGO_LENGTH = 20
 LOADING_TYPE_LENGTH = 20
@@ -236,6 +261,33 @@ class Trip(UserOwnedModel):
         blank=True,
         help_text="Дополнительная информация о рейсе",
     )
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Удалён",
+        help_text="Soft-delete: запись остаётся в БД для правил биллинга (24ч).",
+    )
+
+    objects = TripManager()
+    all_objects = TripAllManager()
+
+    def delete(self, using=None, keep_parents=False):
+        """
+        Soft delete: проставляет deleted_at, не удаляет запись физически.
+
+        Важно для биллинга: рейс, удалённый позже 24ч от created_at,
+        всё равно тарифицируется — это правило реализовано в get_trip_usage
+        через Trip.all_objects.
+        """
+        if self.deleted_at is None:
+            self.deleted_at = timezone.now()
+            self.save(update_fields=["deleted_at"])
+        return (0, {})
+
+    def hard_delete(self, using=None, keep_parents=False):
+        """Физическое удаление — только для админских сценариев."""
+        return super().delete(using=using, keep_parents=keep_parents)
 
     def _quantity_value(self, cost_unit, quantity_field):
         """Возвращает фактическое количество для расчёта исходя из единицы ставки."""
@@ -364,9 +416,11 @@ class Trip(UserOwnedModel):
             try:
                 # И вычисление номера, и save — в одной транзакции
                 with transaction.atomic():
-                    # Блокируем последнюю запись аккаунта до конца транзакции
+                    # Блокируем последнюю запись аккаунта до конца транзакции.
+                    # all_objects — чтобы учесть soft-deleted рейсы: их номера
+                    # остаются занятыми из-за UniqueConstraint.
                     last_trip = (
-                        Trip.objects.select_for_update()
+                        Trip.all_objects.select_for_update()
                         .filter(account_id=self.account_id)
                         .order_by("-num_of_trip")
                         .first()

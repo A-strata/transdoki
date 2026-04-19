@@ -1,24 +1,59 @@
 # Cron-задачи transdoki
 
-## Ежесуточное списание (charge_daily)
+## Статус
 
-Запускается в **00:05 по московскому времени** ежедневно.
+> **Посуточный биллинг (`charge_daily`) отключён на проде 2026-04-19** —
+> переход на модель ежемесячной подписки (Billing v2). Включать обратно
+> не планируется: модель посуточной тарификации выводится из продукта.
+>
+> Код команды, константы и поля `Account.cached_daily_cost / credit_limit /
+> free_orgs / free_vehicles / free_users` физически удаляются в итерации 6
+> после прохождения staging-чеклиста. До этого остаются в репозитории как
+> страховка на случай rollback.
 
-### Установленная задача (crontab пользователя deploy)
+## Текущее состояние проды
+
+Crontab пользователя `deploy` на 2026-04-19:
 
 ```
-5 0 * * * cd /home/deploy/projects/transdoki && DJANGO_SETTINGS_MODULE=transdoki.settings .venv/bin/python manage.py charge_daily >> logs/charge_daily.log 2>&1
+# 2026-04-19 disabled: transition to monthly subscription billing. See docs/cron.md
+# 5 0 * * * cd /home/deploy/projects/transdoki && DJANGO_SETTINGS_MODULE=transdoki.settings .venv/bin/python manage.py charge_daily >> logs/charge_daily.log 2>&1
 ```
 
-### Что делает
+Строка закомментирована, не удалена — чтобы при форс-мажоре её было легко
+восстановить простым снятием `#`.
 
-- Перебирает все активные аккаунты (`is_active=True`, `is_billing_exempt=False`)
-- Считает стоимость за сутки: организации + транспорт + пользователи сверх бесплатного уровня
-- Списывает через `billing.services.withdraw()` с детализацией в `metadata`
-- Логирует итог в `logs/django.log`, ошибки — в `logs/security.log`
-- Вывод команды пишется в `logs/charge_daily.log`
+Проверка:
 
-### Тарифы (billing/constants.py)
+```bash
+ssh deploy@<server> "crontab -l"
+```
+
+Подтверждение отключения — отсутствие новой строки в
+`~/projects/transdoki/logs/charge_daily.log` на следующий день после 2026-04-19
+(последняя запись должна быть от 2026-04-18).
+
+---
+
+## Будущие задачи (Billing v2)
+
+Будут добавлены в итерации 6:
+
+- `charge_monthly` — ежемесячное списание 2-го числа в 00:30 MSK.
+- `process_past_due` — ежедневный перевод просроченных подписок в suspended.
+- Уведомления за 3 дня до списания — ежедневно в 10:00 MSK.
+
+---
+
+## Архивная справка по посуточному биллингу
+
+> Блок ниже описывает старую модель для справки. После итерации 6 удалить.
+
+`charge_daily` запускался ежедневно в 00:05 MSK. Перебирал активные аккаунты,
+считал стоимость за сутки (организации + ТС + пользователи сверх бесплатного
+уровня) и списывал через `billing.services.withdraw()`.
+
+Тарифы были в `billing/constants.py`:
 
 | Сущность | Бесплатно | Цена за штуку/сутки |
 |----------|-----------|---------------------|
@@ -26,21 +61,6 @@
 | Транспортное средство | 2 | 10 ₽ |
 | Пользователь | 2 | 5 ₽ |
 
-### Проверка без списания
-
-```bash
-python manage.py charge_daily --dry-run
-```
-
-### Просмотр логов
-
-```bash
-tail -f logs/charge_daily.log
-tail -f logs/django.log | grep charge_daily
-```
-
-### Редактирование расписания
-
-```bash
-crontab -e   # под пользователем deploy
-```
+Поле `Account.cached_daily_cost` использовалось только для отображения в UI —
+после отключения cron значение застывает, но не мешает. UI-чтения переведены
+на `Subscription.effective_monthly_price`.

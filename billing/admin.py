@@ -1,15 +1,114 @@
 from django.contrib import admin
 
-from billing.constants import AVAILABLE_MODULES
+from .models import (
+    AccountModule,
+    BillingPeriod,
+    BillingTransaction,
+    Module,
+    PaymentOrder,
+    Plan,
+    Subscription,
+)
 
-from .models import AccountModule, BillingTransaction, PaymentOrder
+
+@admin.register(Plan)
+class PlanAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "monthly_price",
+        "trip_limit",
+        "organization_limit",
+        "user_limit",
+        "overage_price",
+        "is_custom",
+        "is_active",
+        "display_order",
+    )
+    list_filter = ("is_active", "is_custom")
+    search_fields = ("code", "name")
+    ordering = ("display_order", "id")
+
+
+@admin.register(Module)
+class ModuleAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "monthly_price", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("code", "name")
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = (
+        "account",
+        "plan",
+        "status",
+        "billing_cycle",
+        "current_period_start",
+        "current_period_end",
+        "scheduled_plan",
+    )
+    list_filter = ("status", "plan", "billing_cycle")
+    search_fields = ("account__name",)
+    autocomplete_fields = ("account", "plan", "scheduled_plan")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("account", "plan", "billing_cycle", "status")}),
+        ("Период", {"fields": ("started_at", "current_period_start", "current_period_end", "past_due_since")}),
+        ("Отложенная смена", {"fields": ("scheduled_plan",)}),
+        (
+            "Индивидуальные параметры (для Corporate)",
+            {
+                "fields": (
+                    "custom_monthly_price",
+                    "custom_trip_limit",
+                    "custom_user_limit",
+                    "custom_organization_limit",
+                    "custom_overage_price",
+                ),
+            },
+        ),
+        ("Метаданные", {"fields": ("created_at", "updated_at")}),
+    )
+
+
+@admin.register(BillingPeriod)
+class BillingPeriodAdmin(admin.ModelAdmin):
+    list_display = (
+        "account",
+        "period_start",
+        "period_end",
+        "plan_code",
+        "confirmed_trips",
+        "overage_trips",
+        "total",
+        "status",
+        "charged_at",
+    )
+    list_filter = ("status", "plan_code")
+    search_fields = ("account__name",)
+    readonly_fields = (
+        "account",
+        "period_start",
+        "period_end",
+        "plan_code",
+        "confirmed_trips",
+        "trip_limit",
+        "overage_trips",
+        "subscription_fee",
+        "modules_fee",
+        "overage_fee",
+        "total",
+        "modules_snapshot",
+        "status",
+        "charged_at",
+        "created_at",
+    )
+    ordering = ("-period_start",)
 
 
 @admin.register(PaymentOrder)
 class PaymentOrderAdmin(admin.ModelAdmin):
-    # Колонки в списке заказов.
-    # order_id (UUID) — для поиска по конкретному платежу.
-    # cp_transaction_id — чтобы сверяться с выпиской CloudPayments.
     list_display = (
         "order_id",
         "account",
@@ -21,8 +120,6 @@ class PaymentOrderAdmin(admin.ModelAdmin):
     )
     list_filter = ("status",)
     search_fields = ("order_id", "account__name", "cp_transaction_id")
-    # Все поля только для чтения: финансовые данные нельзя редактировать вручную.
-    # Изменение должно проходить только через сервисный слой.
     readonly_fields = (
         "order_id",
         "account",
@@ -39,39 +136,34 @@ class PaymentOrderAdmin(admin.ModelAdmin):
 
 @admin.register(BillingTransaction)
 class BillingTransactionAdmin(admin.ModelAdmin):
-    list_display = ("account", "kind", "amount", "balance_after", "description", "created_at")
+    list_display = (
+        "account",
+        "kind",
+        "amount",
+        "balance_after",
+        "billing_period",
+        "description",
+        "created_at",
+    )
     list_filter = ("kind",)
     search_fields = ("account__name", "description")
-    readonly_fields = ("account", "kind", "amount", "balance_after", "description", "metadata", "created_at")
+    readonly_fields = (
+        "account",
+        "kind",
+        "amount",
+        "balance_after",
+        "description",
+        "metadata",
+        "billing_period",
+        "created_at",
+    )
     ordering = ("-created_at",)
 
 
 @admin.register(AccountModule)
 class AccountModuleAdmin(admin.ModelAdmin):
-    list_display = ("account", "module_display", "enabled_by", "enabled_at", "expires_at")
-    list_filter = ("module",)
-    search_fields = ("account__name",)
-    readonly_fields = ("enabled_at",)
-    autocomplete_fields = ("account",)
-
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        choices = [("", "---------")] + [
-            (code, label) for code, label in AVAILABLE_MODULES.items()
-        ]
-        form.base_fields["module"].widget = admin.widgets.AdminTextInputWidget()
-        from django import forms as dj_forms
-
-        form.base_fields["module"] = dj_forms.ChoiceField(
-            choices=choices, label="Модуль"
-        )
-        return form
-
-    def save_model(self, request, obj, form, change):
-        if not obj.enabled_by_id:
-            obj.enabled_by = request.user
-        super().save_model(request, obj, form, change)
-
-    @admin.display(description="Модуль")
-    def module_display(self, obj):
-        return AVAILABLE_MODULES.get(obj.module, obj.module)
+    list_display = ("account", "module", "is_active", "started_at", "ended_at")
+    list_filter = ("is_active", "module")
+    search_fields = ("account__name", "module__code")
+    autocomplete_fields = ("account", "module")
+    readonly_fields = ("started_at",)

@@ -19,8 +19,10 @@ def validate_unique_trip_number_and_date(
     if not all([account_id, num_of_trip, date_of_trip]):
         return
 
-    # Базовый запрос для поиска дубликатов в рамках account
-    qs = Trip.objects.filter(
+    # Базовый запрос для поиска дубликатов в рамках account.
+    # all_objects — UniqueConstraint действует и на soft-deleted записи,
+    # поэтому дубликат надо ловить и среди удалённых.
+    qs = Trip.all_objects.filter(
         account_id=account_id,
         num_of_trip=num_of_trip,
         date_of_trip=date_of_trip,
