@@ -1,16 +1,17 @@
 import json
 import logging
-from datetime import timedelta
+from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.views.generic import ListView, TemplateView
+from django.views.generic import TemplateView
 
 from transdoki.tenancy import get_request_account
 
@@ -18,9 +19,15 @@ from . import cloudpayments as cp_service
 from .cloudpayments import CloudPaymentsError, PaymentOrderNotFound
 from .exceptions import InsufficientFunds, PlanChangeError
 from .forms import DepositForm
-from .models import BillingPeriod, BillingTransaction, Plan
+from .models import BillingTransaction, Module, Plan
 from .services import plan_change as plan_change_service
-from .services.limits import get_organization_usage, get_user_usage
+from .services.forecast import estimate_period_forecast
+from .services.history import build_history
+from .services.limits import (
+    get_organization_usage,
+    get_user_usage,
+    get_vehicle_usage,
+)
 from .services.usage import get_trip_usage
 
 logger = logging.getLogger(__name__)
@@ -43,20 +50,96 @@ class PricingView(View):
         return render(request, self.template_name)
 
 
-class TransactionListView(LoginRequiredMixin, ListView):
-    model = BillingTransaction
-    template_name = "billing/transaction_list.html"
-    context_object_name = "transactions"
-    paginate_by = 30
+class BillingHistoryView(LoginRequiredMixin, View):
+    """
+    Единая история биллинговых событий (/billing/).
 
-    def get_queryset(self):
-        account = get_request_account(self.request)
-        return BillingTransaction.objects.filter(account=account).select_related("account")
+    Объединяет BillingTransaction (движения денег) и BillingPeriod (месячные
+    агрегаты после charge_monthly) в один фильтруемый список. Детали объединения
+    — в billing.services.history.build_history.
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["account"] = get_request_account(self.request)
-        return context
+    URL-имя сохранено `billing:transactions` для обратной совместимости
+    (cabinet.html, старые ссылки).
+    """
+
+    template_name = "billing/history.html"
+    paginate_by = 50
+
+    def get(self, request):
+        account = get_request_account(request)
+
+        event_type = request.GET.get("type", "all")
+        period_status = request.GET.get("status") or None
+        date_from = _parse_date(request.GET.get("from"))
+        date_to = _parse_date(request.GET.get("to"))
+
+        events = build_history(
+            account,
+            event_type=event_type,
+            date_from=date_from,
+            date_to=date_to,
+            period_status=period_status,
+        )
+
+        paginator = Paginator(events, self.paginate_by)
+        page_obj = paginator.get_page(request.GET.get("page"))
+
+        # Кортеж фильтров для стабильного URL при пагинации
+        querystring = request.GET.copy()
+        querystring.pop("page", None)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "account": account,
+                "events": page_obj.object_list,
+                "page_obj": page_obj,
+                "is_paginated": page_obj.has_other_pages(),
+                "paginator": paginator,
+                "querystring": querystring.urlencode(),
+                "filters": {
+                    "type": event_type,
+                    "status": period_status or "",
+                    "from": request.GET.get("from", ""),
+                    "to": request.GET.get("to", ""),
+                },
+                # Опции фильтра типа — порядок важен для UI
+                "type_options": [
+                    ("all", "Все события"),
+                    ("credit", "Пополнения и возвраты"),
+                    ("debit", "Списания"),
+                    ("period", "Расчётные периоды"),
+                    ("deposit", "— Пополнение"),
+                    ("subscription", "— Подписка"),
+                    ("upgrade", "— Апгрейд тарифа"),
+                    ("overage", "— Overage"),
+                    ("module", "— Модуль"),
+                    ("refund", "— Возврат"),
+                    ("adjustment", "— Корректировка"),
+                ],
+                "status_options": [
+                    ("", "Любой статус"),
+                    ("paid", "Оплачено"),
+                    ("invoiced", "Задолженность"),
+                    ("written_off", "Списан"),
+                ],
+            },
+        )
+
+
+def _parse_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except (ValueError, TypeError):
+        return None
+
+
+# Alias для обратной совместимости с импортами в urls.py.
+# Оставлять до итерации 6 вместе с удалением legacy-шаблона.
+TransactionListView = BillingHistoryView
 
 
 class SubscriptionView(LoginRequiredMixin, TemplateView):
@@ -92,46 +175,24 @@ class SubscriptionView(LoginRequiredMixin, TemplateView):
         )
         org_usage = get_organization_usage(account)
         user_usage = get_user_usage(account)
+        vehicle_usage = get_vehicle_usage(account)
 
         ctx["trip_usage"] = trip_usage
         ctx["org_usage"] = org_usage
         ctx["user_usage"] = user_usage
+        ctx["vehicle_usage"] = vehicle_usage
 
-        # Overage-прогноз для UI (confirmed > limit)
-        if trip_usage["limit"] is not None and trip_usage["confirmed"] > trip_usage["limit"]:
-            overage = trip_usage["confirmed"] - trip_usage["limit"]
-            overage_price = subscription.effective_overage_price or Decimal("0")
-            ctx["overage_trips"] = overage
-            ctx["overage_fee"] = overage * overage_price
-        else:
-            ctx["overage_trips"] = 0
-            ctx["overage_fee"] = Decimal("0")
-
-        # Блок 3: прогноз следующего списания
-        forecast = subscription.effective_monthly_price + ctx["overage_fee"]
-        # Активные модули
-        modules_fee = sum(
-            (am.module.monthly_price for am in account.account_modules.filter(
-                is_active=True
-            ).select_related("module")),
-            Decimal("0"),
-        )
-        forecast += modules_fee
-        ctx["forecast_total"] = forecast
-        ctx["forecast_modules_fee"] = modules_fee
-
-        # Хватит ли баланса на прогноз; если нет — сколько дней до нехватки
-        if forecast > 0 and account.balance < forecast:
-            ctx["balance_insufficient"] = True
-        else:
-            ctx["balance_insufficient"] = False
-
-        # Блок 4: история за 12 месяцев
-        cutoff = timezone.now().date() - timedelta(days=365)
-        ctx["billing_periods"] = (
-            BillingPeriod.objects.filter(account=account, period_start__gte=cutoff)
-            .order_by("-period_start")[:12]
-        )
+        # Блок 3: прогноз следующего списания — собирается сервисом
+        # billing.services.forecast.estimate_period_forecast, чтобы ту же
+        # структуру можно было отдать и в cabinet-view без дублирования.
+        forecast = estimate_period_forecast(account, subscription)
+        ctx["forecast"] = forecast
+        # Плоские поля для обратной совместимости с существующим шаблоном.
+        ctx["overage_trips"] = forecast["overage_trips"]
+        ctx["overage_fee"] = forecast["overage_fee"]
+        ctx["forecast_total"] = forecast["total"]
+        ctx["forecast_modules_fee"] = forecast["modules_fee"]
+        ctx["balance_insufficient"] = forecast["balance_insufficient"]
 
         # Список доступных планов для смены тарифа.
         # Текущий план исключаем; неактивные планы — тоже.
@@ -141,11 +202,25 @@ class SubscriptionView(LoginRequiredMixin, TemplateView):
             .order_by("display_order")
         )
 
-        # Маппинг plan_code → plan.name для истории расчётных периодов.
-        # BillingPeriod хранит plan_code как snapshot (переименование тарифа
-        # в будущем не переписывает историю), но отображаем актуальное
-        # человеко-читаемое имя через Plan.name.
-        ctx["plan_names"] = {p.code: p.name for p in Plan.objects.all()}
+        # Полный список активных планов для сетки сравнения — включая текущий
+        # (подсветка lk-plan--current идёт по pk). Отдельное поле, чтобы не
+        # ломать семантику available_plans, которая используется в модалке.
+        ctx["all_plans"] = Plan.objects.filter(is_active=True).order_by("display_order")
+
+        # Каталог модулей и уже подключённые к аккаунту — для блока «Подключённые
+        # модули». Тоггл подключения/отключения пока заглушка (UI-only), поэтому
+        # достаточно отдать список Module + set кодов активных модулей аккаунта.
+        ctx["modules_catalog"] = Module.objects.filter(is_active=True).order_by("id")
+        ctx["active_module_codes"] = set(
+            account.account_modules.filter(is_active=True).values_list(
+                "module__code", flat=True,
+            )
+        )
+
+        # Последние 5 транзакций — для блока «История операций».
+        ctx["recent_transactions"] = list(
+            BillingTransaction.objects.filter(account=account).order_by("-created_at")[:5]
+        )
 
         # Corporate: контактный email менеджера (для кнопки «Связаться»)
         # Вынесен в константу — меняется реже кода, чем логика.

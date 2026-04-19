@@ -9,9 +9,17 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
-from billing.services.limits import can_create_user
+from billing.services.forecast import estimate_period_forecast
+from billing.services.limits import (
+    can_create_user,
+    get_organization_usage,
+    get_user_usage,
+    get_vehicle_usage,
+)
+from billing.services.usage import get_trip_usage
 from organizations.models import Organization
 from transdoki.tenancy import get_request_account
+from waybills.models import Waybill
 
 from .forms import AccountRegistrationForm, AccountUserCreateForm
 from .models import UserProfile
@@ -123,6 +131,37 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
 
         own_companies = Organization.objects.own_for(account)
 
+        # Billing-контекст (баланс, прогноз, KPI). Не фейлимся, если у аккаунта
+        # нет подписки — сигнал auto_create_free_subscription создаёт Free,
+        # но защита нужна на случай сломанного инварианта.
+        subscription = getattr(account, "subscription", None)
+        forecast = estimate_period_forecast(account, subscription)
+
+        if subscription is not None:
+            trip_usage = get_trip_usage(
+                account,
+                subscription.current_period_start,
+                subscription.current_period_end,
+            )
+            waybills_count = (
+                Waybill.objects.for_account(account)
+                .filter(
+                    created_at__gte=subscription.current_period_start,
+                    created_at__lt=subscription.current_period_end,
+                )
+                .count()
+            )
+        else:
+            trip_usage = {"confirmed": 0, "pending": 0, "total": 0, "limit": None}
+            waybills_count = 0
+
+        cabinet_kpi = {
+            "trips_period": trip_usage["confirmed"],
+            "trips_limit": trip_usage["limit"],
+            "waybills_period": waybills_count,
+            "active_vehicles": get_vehicle_usage(account)["current"],
+        }
+
         context.update(
             {
                 "account": account,
@@ -130,6 +169,11 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
                 "users_in_account": users_in_account,
                 "can_manage_users": can_manage_users,
                 "own_companies": own_companies,
+                "subscription": subscription,
+                "forecast": forecast,
+                "cabinet_kpi": cabinet_kpi,
+                "org_usage": get_organization_usage(account),
+                "user_usage": get_user_usage(account),
             }
         )
         return context

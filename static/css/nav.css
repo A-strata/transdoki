@@ -413,3 +413,53 @@
 .billing-alert-bar a:hover {
     background: var(--error-bg);
 }
+
+/* ── Иконки-кнопки в навбаре (уведомления, помощь) ── */
+.nav-icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    color: var(--muted);
+    background: transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.nav-icon-btn:hover {
+    background: var(--neutral-bg);
+    color: var(--text);
+    border-color: var(--border-interactive);
+}
+
+.nav-icon-btn[aria-expanded="true"] {
+    background: var(--neutral-bg);
+    color: var(--text);
+}
+
+.nav-icon-btn .nav-icon-dot {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--danger);
+    box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Обёртка для иконки-кнопки с дропдауном — прикрепление справа */
+.nav-icon-wrap {
+    display: inline-flex;
+}
+
+.nav-icon-dropdown {
+    left: auto;
+    right: 0;
+    min-width: 240px;
+}

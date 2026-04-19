@@ -1,231 +1,464 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block title %}Личный кабинет — Трансдоки{% endblock %}
+
 {% block head %}
+<link rel="stylesheet" href="{% static 'css/lk-tokens.css' %}">
 <link rel="stylesheet" href="{% static 'accounts/css/cabinet.css' %}">
 {% endblock %}
 
-
 {% block content %}
 <section class="cabinet-page">
-    <h1 class="cabinet-title">Личный кабинет аккаунта</h1>
 
-    <div class="cabinet-card">
-        <h2 class="cabinet-card-title">Аккаунт</h2>
-        <dl class="dl-grid">
-            <dt class="dl-term">Название</dt>
-            <dd class="dl-desc">{{ account.name }}</dd>
-
-            <dt class="dl-term">Владелец</dt>
-            <dd class="dl-desc">
-                {% if account.owner %}{{ account.owner.username }}{% else %}—{% endif %}
-            </dd>
-
-            <dt class="dl-term">Статус</dt>
-            <dd class="dl-desc">
-                {% if account.is_active %}Активен{% else %}Неактивен{% endif %}
-            </dd>
-        </dl>
-    </div>
-
-    <div class="cabinet-card">
-        <div class="cabinet-card-header">
-            <h2 class="cabinet-card-title">Баланс и тариф</h2>
-            <a href="{% url 'billing:subscription' %}" class="history-link">Мой тариф</a>
-        </div>
-        <dl class="dl-grid">
-            {% if account.is_billing_exempt %}
-                <dt class="dl-term">Тариф</dt>
-                <dd class="dl-desc dl-term">Без ограничений (привилегированный аккаунт)</dd>
-            {% else %}
-                <dt class="dl-term">Баланс</dt>
-                <dd class="dl-desc">
-                    {% if account.balance > 0 %}
-                        <strong class="balance-positive">{{ account.balance|floatformat:2 }} &#8381;</strong>
-                    {% elif account.balance >= 0 %}
-                        <strong class="balance-zero">{{ account.balance|floatformat:2 }} &#8381;</strong>
-                    {% else %}
-                        <strong class="balance-negative">{{ account.balance|floatformat:2 }} &#8381;</strong>
-                    {% endif %}
-                </dd>
-
-                {% if account.subscription %}
-                    <dt class="dl-term">Тариф</dt>
-                    <dd class="dl-desc">
-                        <strong>{{ account.subscription.plan.name }}</strong>
-                        {% if account.subscription.plan.monthly_price > 0 %}
-                            &mdash; {{ account.subscription.effective_monthly_price|floatformat:0 }} &#8381;/мес
-                        {% endif %}
-                    </dd>
-
-                    <dt class="dl-term">Следующее списание</dt>
-                    <dd class="dl-desc dl-term">{{ account.subscription.current_period_end|date:"j E Y" }}</dd>
-                {% endif %}
-            {% endif %}
-        </dl>
-    </div>
-
-    <div class="cabinet-card">
-        <div class="cabinet-card-header">
-            <h2 class="cabinet-card-title">Мой доступ</h2>
-            <a href="{% url 'password_change' %}" class="change-pwd-link">Сменить пароль</a>
-        </div>
-        <dl class="dl-grid">
-            <dt class="dl-term">Пользователь</dt>
-            <dd class="dl-desc">{{ request.user.username }}</dd>
-
-            <dt class="dl-term">Роль</dt>
-            <dd class="dl-desc">{{ profile.get_role_display }}</dd>
-        </dl>
-    </div>
-
-    <div class="cabinet-card">
-        <div class="cabinet-card-header">
-            <h2 class="cabinet-card-title">Мои организации</h2>
-            <a href="{% url 'organizations:own_list' %}" class="history-link">Управлять</a>
-        </div>
-
-        {% if own_companies %}
-            <div class="cab-table-wrap">
-                <table class="cab-table">
-                    <thead>
-                        <tr>
-                            <th>Название</th>
-                            <th>ИНН</th>
-                            <th>ОГРН</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for org in own_companies %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'organizations:detail' org.pk %}"
-                                   class="cab-link">{{ org.short_name }}</a>
-                            </td>
-                            <td>{{ org.inn }}</td>
-                            <td>{{ org.ogrn|default:"—" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p class="cab-empty-text">
-                Нет собственных компаний.
-                <a href="{% url 'organizations:create' %}?own=1" class="cab-link">Добавить</a>
+    {# ── Заголовок страницы ─────────────────────────────────────────── #}
+    <div class="lk-page-head">
+        <div>
+            <h1 class="lk-page-title">Личный кабинет</h1>
+            <p class="lk-page-sub">
+                Баланс, команда, безопасность аккаунта. Управление тарифом —
+                в разделе <a href="{% url 'billing:subscription' %}">Мой тариф</a>.
             </p>
-        {% endif %}
+        </div>
+        <div class="lk-page-actions">
+            <button class="tms-btn tms-btn-secondary" type="button"
+                    data-stub-toast="Генерация счёта-акта готовится. Следите за обновлениями."
+                    title="Генерация счёта-акта готовится">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>
+                </svg>
+                Скачать счёт-акт
+                <span class="lk-soon">скоро</span>
+            </button>
+            <a class="tms-btn tms-btn-primary" href="{% url 'billing:deposit' %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Пополнить баланс
+            </a>
+        </div>
     </div>
 
-    <div class="cabinet-card">
-        <div class="cabinet-card-header">
-            <h2 class="cabinet-card-title">Пользователи аккаунта</h2>
+    {# ── Алерт низкого баланса (past_due/suspended — в base.html) ── #}
+    {% if not account.is_billing_exempt and account.balance >= 0 and account.balance < billing_warn_threshold %}
+        <div class="lk-alert lk-alert--warn">
+            <span class="lk-alert-ico" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 8v5M12 16h.01"/>
+                </svg>
+            </span>
+            <div>
+                <div class="lk-alert-title">Низкий баланс</div>
+                Баланс ниже порога безопасного авто-продления. Пополните, чтобы
+                не рисковать приостановкой подписки. Точный расчёт даты
+                окончания средств появится отдельно.
+            </div>
+            <div class="lk-alert-actions">
+                <a href="{% url 'billing:deposit' %}" class="tms-btn tms-btn-secondary tms-btn-sm">
+                    Пополнить
+                </a>
+            </div>
+        </div>
+    {% endif %}
 
-            {% if can_manage_users %}
-                <button type="button" class="cab-add-btn"
-                        data-modal-open="add-user-overlay">
-                    + Добавить пользователя
+    {# ── Hero: баланс + прогноз ─────────────────────────────────────── #}
+    {% if not account.is_billing_exempt %}
+    <div class="lk-hero">
+        <div>
+            <div class="lk-hero-label">Баланс аккаунта</div>
+            <div class="lk-hero-balance">
+                {{ account.balance|floatformat:2 }}<span class="lk-hero-balance-currency">₽</span>
+            </div>
+            <div class="lk-hero-note">
+                Ежемесячное списание · подписка продлевается автоматически
+            </div>
+            <div class="lk-hero-actions">
+                <a class="tms-btn tms-btn-primary" href="{% url 'billing:deposit' %}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Пополнить
+                </a>
+                <button class="tms-btn tms-btn-secondary" type="button"
+                        data-stub-toast="Автоплатёж готовится — скоро можно будет привязать карту.">
+                    Автоплатёж
+                    <span class="lk-soon">скоро</span>
                 </button>
+                <a class="tms-btn tms-btn-secondary" href="{% url 'billing:transactions' %}">
+                    История операций
+                </a>
+            </div>
+        </div>
+
+        {% if subscription %}
+        <div class="lk-forecast">
+            <div class="lk-forecast-label">Прогноз следующего списания</div>
+            <div class="lk-forecast-row">
+                <span>Тариф «{{ subscription.plan.name }}»</span>
+                <b>{{ forecast.plan_fee|floatformat:2 }} ₽</b>
+            </div>
+            <div class="lk-forecast-row">
+                <span>Модули</span>
+                <b>{{ forecast.modules_fee|floatformat:2 }} ₽</b>
+            </div>
+            <div class="lk-forecast-row">
+                <span>Сверх лимита по рейсам</span>
+                <b>
+                    {% if forecast.overage_fee > 0 %}
+                        {{ forecast.overage_fee|floatformat:2 }} ₽
+                    {% else %}
+                        —
+                    {% endif %}
+                </b>
+            </div>
+            <div class="lk-forecast-row lk-forecast-row--total">
+                <span>Итого к списанию</span>
+                <b>{{ forecast.total|floatformat:2 }} ₽</b>
+            </div>
+            <div class="lk-forecast-row lk-forecast-row--meta">
+                <span>Дата списания</span>
+                <b>{{ forecast.period_end|date:"j E Y" }}</b>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# ── KPI ────────────────────────────────────────────────────────── #}
+    <div class="lk-grid lk-grid-4">
+        <div class="lk-card lk-card--tight lk-kpi">
+            <span class="lk-kpi-label">Рейсы в текущем периоде</span>
+            <span class="lk-kpi-value">{{ cabinet_kpi.trips_period }}</span>
+            <span class="lk-kpi-hint">
+                {% if cabinet_kpi.trips_limit %}
+                    Из лимита {{ cabinet_kpi.trips_limit }} по тарифу
+                {% else %}
+                    Без лимита по тарифу
+                {% endif %}
+            </span>
+        </div>
+        <div class="lk-card lk-card--tight lk-kpi">
+            <span class="lk-kpi-label">Путевые листы</span>
+            <span class="lk-kpi-value">{{ cabinet_kpi.waybills_period }}</span>
+            <span class="lk-kpi-hint">Сгенерировано за период</span>
+        </div>
+        <div class="lk-card lk-card--tight lk-kpi">
+            <span class="lk-kpi-label">Активных ТС</span>
+            <span class="lk-kpi-value">{{ cabinet_kpi.active_vehicles }}</span>
+            <span class="lk-kpi-hint">Лимит ТС в плане появится позже</span>
+        </div>
+        <div class="lk-card lk-card--tight lk-kpi is-stub">
+            <span class="lk-kpi-label">Средний чек рейса</span>
+            <span class="lk-kpi-value">—</span>
+            <span class="lk-kpi-hint">
+                <span class="lk-soon">скоро</span>
+                После накопления данных за период
+            </span>
+        </div>
+    </div>
+
+    {# ── Профиль и команда + Свои организации ───────────────────────── #}
+    <div class="lk-grid lk-grid-2">
+
+        <div class="lk-card">
+            <div class="lk-card-head">
+                <h3>Профиль и команда</h3>
+                {% if can_manage_users %}
+                    <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
+                            data-modal-open="add-user-overlay">+ Пригласить</button>
+                {% endif %}
+            </div>
+
+            <div class="lk-profile">
+                <div class="lk-profile-avatar" aria-hidden="true">
+                    {% with fn=request.user.first_name|default:request.user.username ln=request.user.last_name %}
+                        {{ fn|slice:":1"|upper }}{{ ln|slice:":1"|upper }}
+                    {% endwith %}
+                </div>
+                <div>
+                    <div class="lk-profile-name">
+                        {% if request.user.get_full_name %}
+                            {{ request.user.get_full_name }}
+                        {% else %}
+                            {{ request.user.username }}
+                        {% endif %}
+                        <span class="lk-chip lk-chip--brand">{{ profile.get_role_display }}</span>
+                    </div>
+                    <div class="lk-profile-meta">
+                        {{ request.user.email|default:request.user.username }} · ID аккаунта {{ account.pk }}
+                    </div>
+                </div>
+            </div>
+
+            {% if users_in_account %}
+                <div class="cab-table-wrap">
+                    <table class="cab-table">
+                        <thead>
+                            <tr>
+                                <th>Email / Логин</th>
+                                <th>Фамилия</th>
+                                <th>Имя</th>
+                                <th>Статус</th>
+                                <th class="col-actions">Роль и действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in users_in_account %}
+                                <tr id="user-{{ p.id }}" class="user-row-anchor">
+                                    <td>{{ p.user.username }}</td>
+                                    <td class="col-last-name">
+                                        <span class="name-display">{{ p.user.last_name|default:"—" }}</span>
+                                        <input class="name-edit" type="text" value="{{ p.user.last_name }}" hidden placeholder="Фамилия">
+                                    </td>
+                                    <td class="col-first-name">
+                                        <span class="name-display">{{ p.user.first_name|default:"—" }}</span>
+                                        <input class="name-edit" type="text" value="{{ p.user.first_name }}" hidden placeholder="Имя">
+                                    </td>
+                                    <td>
+                                        {% if p.user.is_active %}
+                                            <span class="lk-chip lk-chip--ok">активен</span>
+                                        {% else %}
+                                            <span class="lk-chip">отключён</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="col-actions">
+                                        {% if can_manage_users and p.user_id == request.user.id %}
+                                            <form method="post"
+                                                  action=""
+                                                  data-update-url="{% url 'accounts:user_update' p.id %}"
+                                                  data-names-only="1"
+                                                  class="role-form">
+                                                {% csrf_token %}
+                                                <div class="role-actions">
+                                                    <select class="role-select"
+                                                            data-initial="{{ p.role }}"
+                                                            disabled>
+                                                        <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
+                                                        <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
+                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
+                                                        <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
+                                                    </select>
+                                                    <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
+                                                    <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
+                                                </div>
+                                            </form>
+                                        {% elif can_manage_users and p.role != "owner" %}
+                                            <form method="post"
+                                                  action="{% url 'accounts:user_role_update' p.id %}"
+                                                  data-update-url="{% url 'accounts:user_update' p.id %}"
+                                                  class="role-form">
+                                                {% csrf_token %}
+                                                <div class="role-actions">
+                                                    <select name="role"
+                                                            class="role-select"
+                                                            data-initial="{{ p.role }}"
+                                                            disabled>
+                                                        <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
+                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
+                                                        <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
+                                                    </select>
+                                                    <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
+                                                    <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
+                                                    <button type="button"
+                                                            class="role-btn role-btn-warning reset-pwd-btn"
+                                                            data-profile-id="{{ p.id }}"
+                                                            data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
+                                                            title="Сбросить пароль пользователя">
+                                                        Сбросить пароль
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        {% else %}
+                                            <select disabled class="role-select-readonly">
+                                                <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
+                                                <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
+                                                <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
+                                                <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
+                                            </select>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>В аккаунте пока нет пользователей.</p>
+                </div>
+            {% endif %}
+
+            {% if user_usage.limit %}
+                <p class="lk-small lk-muted" style="margin:14px 0 0">
+                    {{ user_usage.current }} из {{ user_usage.limit }} пользователей по тарифу
+                    «{{ subscription.plan.name }}».
+                </p>
             {% endif %}
         </div>
 
-        {% if users_in_account %}
-            <div class="cab-table-wrap">
-                <table class="cab-table">
-                    <thead>
-                        <tr>
-                            <th>Email / Логин</th>
-                            <th>Фамилия</th>
-                            <th>Имя</th>
-                            <th>Статус</th>
-                            <th class="col-actions">Роли</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for p in users_in_account %}
-                            <tr id="user-{{ p.id }}" class="user-row-anchor">
-                                <td>{{ p.user.username }}</td>
-                                <td class="col-last-name">
-                                    <span class="name-display">{{ p.user.last_name|default:"—" }}</span>
-                                    <input class="name-edit" type="text" value="{{ p.user.last_name }}" hidden placeholder="Фамилия">
-                                </td>
-                                <td class="col-first-name">
-                                    <span class="name-display">{{ p.user.first_name|default:"—" }}</span>
-                                    <input class="name-edit" type="text" value="{{ p.user.first_name }}" hidden placeholder="Имя">
-                                </td>
-                                <td>
-                                    {% if p.user.is_active %}Активен{% else %}Отключён{% endif %}
-                                </td>
-                                <td class="col-actions">
-                                    {% if can_manage_users and p.user_id == request.user.id %}
-                                        <form method="post"
-                                              action=""
-                                              data-update-url="{% url 'accounts:user_update' p.id %}"
-                                              data-names-only="1"
-                                              class="role-form">
-                                            {% csrf_token %}
-                                            <div class="role-actions">
-                                                <select class="role-select"
-                                                        data-initial="{{ p.role }}"
-                                                        disabled>
-                                                    <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
-                                                    <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
-                                                    <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
-                                                    <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
-                                                </select>
-                                                <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
-                                                <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
-                                            </div>
-                                        </form>
-                                    {% elif can_manage_users and p.role != "owner" %}
-                                        <form method="post"
-                                              action="{% url 'accounts:user_role_update' p.id %}"
-                                              data-update-url="{% url 'accounts:user_update' p.id %}"
-                                              class="role-form">
-                                            {% csrf_token %}
-                                            <div class="role-actions">
-                                                <select name="role"
-                                                        class="role-select"
-                                                        data-initial="{{ p.role }}"
-                                                        disabled>
-                                                    <option value="admin" {% if p.role == "admin" %}selected{% endif %}>Администратор</option>
-                                                    <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
-                                                    <option value="logist" {% if p.role == "logist" %}selected{% endif %}>Логист</option>
-                                                </select>
+        <div class="lk-card">
+            <div class="lk-card-head">
+                <h3>Свои организации</h3>
+                <a href="{% url 'organizations:create' %}?own=1"
+                   class="tms-btn tms-btn-secondary tms-btn-sm">+ Добавить компанию</a>
+            </div>
 
-                                                <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
-                                                <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
-                                                <button type="button"
-                                                        class="role-btn role-btn-warning reset-pwd-btn"
-                                                        data-profile-id="{{ p.id }}"
-                                                        data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
-                                                        title="Сбросить пароль пользователя">
-                                                    Сбросить пароль
-                                                </button>
-                                            </div>
-                                        </form>
-                                    {% else %}
-                                        <select disabled class="role-select-readonly">
-                                            <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
-                                            <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
-                                            <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
-                                            <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
-                                        </select>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <p>В аккаунте пока нет пользователей.</p>
-            </div>
-        {% endif %}
+            {% if own_companies %}
+                {% for org in own_companies %}
+                    <div class="lk-row">
+                        <div class="lk-avatar lk-avatar--org" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 21V7l8-4v18"/>
+                                <path d="M11 21V11l8-4v14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="lk-row-name">
+                                <a href="{% url 'organizations:detail' org.pk %}" class="cab-link">
+                                    {{ org.short_name|default:org.full_name }}
+                                </a>
+                            </div>
+                            <div class="lk-row-desc">
+                                ИНН {{ org.inn|default:"—" }}{% if org.kpp %} / КПП {{ org.kpp }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="lk-row-actions">
+                            <a href="{% url 'organizations:detail' org.pk %}"
+                               class="tms-btn tms-btn-light tms-btn-sm">Открыть</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="cab-empty-text">
+                    Нет собственных компаний.
+                    <a href="{% url 'organizations:create' %}?own=1" class="cab-link">Добавить</a>
+                </p>
+            {% endif %}
+
+            {% if org_usage.limit %}
+                <p class="lk-small lk-muted" style="margin:10px 0 0">
+                    {{ org_usage.current }} из {{ org_usage.limit }} своих организаций
+                    по тарифу «{{ subscription.plan.name }}».
+                </p>
+            {% endif %}
+        </div>
     </div>
+
+    {# ── Безопасность ──────────────────────────────────────────────── #}
+    <div class="lk-grid lk-grid-2">
+
+        <div class="lk-card">
+            <div class="lk-card-head">
+                <h3>Безопасность аккаунта</h3>
+                <span class="lk-chip lk-chip--ok">Пароль задан</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <div class="lk-settings-row">
+                    <div>
+                        <div class="lk-settings-name">
+                            Двухфакторная авторизация <span class="lk-soon">скоро</span>
+                        </div>
+                        <div class="lk-settings-desc">Через приложение-аутентификатор (TOTP)</div>
+                    </div>
+                    <label class="lk-switch" title="Раздел в разработке">
+                        <input type="checkbox" disabled aria-label="2FA (раздел в разработке)">
+                        <span class="lk-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="lk-settings-row">
+                    <div>
+                        <div class="lk-settings-name">
+                            Уведомления о входе на почту <span class="lk-soon">скоро</span>
+                        </div>
+                        <div class="lk-settings-desc">
+                            {{ request.user.email|default:request.user.username }}
+                        </div>
+                    </div>
+                    <label class="lk-switch" title="Раздел в разработке">
+                        <input type="checkbox" disabled aria-label="Уведомления о входе (раздел в разработке)">
+                        <span class="lk-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="lk-settings-row">
+                    <div>
+                        <div class="lk-settings-name">
+                            IP-ограничения <span class="lk-soon">скоро</span>
+                        </div>
+                        <div class="lk-settings-desc">Разрешённые подсети для входа в аккаунт</div>
+                    </div>
+                    <button class="tms-btn tms-btn-secondary tms-btn-sm" type="button" disabled>
+                        Настроить
+                    </button>
+                </div>
+
+                <div class="lk-settings-row">
+                    <div>
+                        <div class="lk-settings-name">Сменить пароль</div>
+                        <div class="lk-settings-desc">Управление текущим паролем вашей учётной записи</div>
+                    </div>
+                    <a href="{% url 'password_change' %}" class="tms-btn tms-btn-light tms-btn-sm">
+                        Открыть форму
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="lk-card">
+            <div class="lk-card-head">
+                <h3>Активные сессии <span class="lk-chip">1 из 3</span></h3>
+                <span class="lk-small lk-muted">Управление сессиями — готовится</span>
+            </div>
+
+            <div class="lk-row">
+                <div class="lk-avatar lk-avatar--device" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="12" rx="2"/>
+                        <path d="M8 20h8M12 16v4"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="lk-row-name">
+                        Текущий браузер
+                        <span class="lk-chip lk-chip--ok">эта сессия</span>
+                    </div>
+                    <div class="lk-row-desc">Активна сейчас</div>
+                </div>
+                <button type="button"
+                        class="tms-btn tms-btn-light tms-btn-sm"
+                        style="color:var(--danger)"
+                        disabled
+                        title="Управление сессиями — отдельная задача">
+                    Завершить
+                </button>
+            </div>
+
+            <p class="lk-small lk-muted" style="margin:8px 0 0">
+                Лимит 3 сессии на пользователя. Превышение логируется как
+                <em>suspicious_activity</em>. Управление списком активных сессий
+                (аудит, завершение чужих) появится в следующем обновлении.
+            </p>
+        </div>
+    </div>
+
 </section>
 
+{# ── Модалка добавления пользователя — структура совместима с cabinet.js ── #}
 <div id="add-user-overlay" class="modal-overlay" hidden>
     <div class="modal-dialog">
         <h3 class="modal-title">Добавить пользователя</h3>

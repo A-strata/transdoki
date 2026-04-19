@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}История — Трансдоки{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'billing/css/history.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="list-page history-page">
+
+    <div class="history-toolbar">
+        <div class="history-toolbar-left">
+            <h1>История</h1>
+            <p class="list-subtitle">Все движения по счёту и расчётные периоды аккаунта.</p>
+        </div>
+        <div class="history-toolbar-right">
+            {% if not account.is_billing_exempt %}
+                <div class="history-balance-wrap">
+                    <span class="history-balance-label">Баланс:</span>
+                    {% if account.balance > 0 %}
+                        <strong class="balance-positive">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                    {% elif account.balance == 0 %}
+                        <strong class="balance-zero">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                    {% else %}
+                        <strong class="balance-negative">{{ account.balance|floatformat:2 }} &#8381;</strong>
+                    {% endif %}
+                </div>
+                <a href="{% url 'billing:deposit' %}" class="tms-btn tms-btn-primary tms-btn-add">
+                    + Пополнить баланс
+                </a>
+            {% else %}
+                <span class="history-exempt-badge">Аккаунт без ограничений</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="get" class="history-filters">
+        <div class="history-filter">
+            <label for="hf-type">Тип события</label>
+            <select name="type" id="hf-type">
+                {% for value, label in type_options %}
+                    <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="history-filter">
+            <label for="hf-status">Статус периода</label>
+            <select name="status" id="hf-status">
+                {% for value, label in status_options %}
+                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="history-filter">
+            <label for="hf-from">С</label>
+            <input type="date" name="from" id="hf-from" value="{{ filters.from }}">
+        </div>
+        <div class="history-filter">
+            <label for="hf-to">По</label>
+            <input type="date" name="to" id="hf-to" value="{{ filters.to }}">
+        </div>
+        <div class="history-filter history-filter-actions">
+            <button type="submit" class="tms-btn tms-btn-secondary">Применить</button>
+            <a href="{% url 'billing:transactions' %}" class="tms-btn tms-btn-light">Сбросить</a>
+        </div>
+    </form>
+
+    <div class="table-card">
+        {% if events %}
+            <div class="table-wrap">
+                <table class="tms-table history-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Описание</th>
+                            <th class="history-amount-col">Сумма</th>
+                            <th class="history-balance-col">Баланс после</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ev in events %}
+                            <tr class="history-row history-row--{{ ev.direction }}">
+                                <td class="history-date">{{ ev.date|date:"d M Y, H:i" }}</td>
+                                <td>
+                                    <span class="history-kind history-kind--{{ ev.direction }}">
+                                        {% if ev.direction == "credit" %}&#8593;{% elif ev.direction == "debit" %}&#8595;{% endif %}
+                                        {{ ev.label }}
+                                    </span>
+                                    {% if ev.status_label %}
+                                        <span class="status-badge status-badge--{% if ev.status == 'paid' %}success{% elif ev.status == 'invoiced' %}warning{% elif ev.status == 'written_off' %}error{% else %}neutral{% endif %}">
+                                            {{ ev.status_label }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="history-desc">{{ ev.description|default:"—" }}</td>
+                                <td class="history-amount-col">
+                                    {% if ev.direction == "credit" %}
+                                        <span class="history-amount-credit">+{{ ev.amount|floatformat:2 }} &#8381;</span>
+                                    {% elif ev.direction == "debit" %}
+                                        <span class="history-amount-debit">&#8722;{{ ev.amount|floatformat:2 }} &#8381;</span>
+                                    {% else %}
+                                        <span class="history-amount-nominal">{{ ev.amount|floatformat:2 }} &#8381;</span>
+                                    {% endif %}
+                                </td>
+                                <td class="history-balance-col">
+                                    {% if ev.balance_after is not None %}
+                                        {{ ev.balance_after|floatformat:2 }} &#8381;
+                                    {% else %}
+                                        &mdash;
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>
+                    Событий по выбранным фильтрам нет.
+                    {% if filters.type != "all" or filters.from or filters.to or filters.status %}
+                        <a href="{% url 'billing:transactions' %}">Сбросить фильтры</a>.
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if is_paginated %}
+        <div class="pagination-footer">
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page=1" class="page-btn">&laquo;</a>
+                    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="page-btn">&lsaquo;</a>
+                {% else %}
+                    <span class="page-btn disabled">&laquo;</span>
+                    <span class="page-btn disabled">&lsaquo;</span>
+                {% endif %}
+
+                <span class="page-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+                {% if page_obj.has_next %}
+                    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="page-btn">&rsaquo;</a>
+                    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="page-btn">&raquo;</a>
+                {% else %}
+                    <span class="page-btn disabled">&rsaquo;</span>
+                    <span class="page-btn disabled">&raquo;</span>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+</section>
+{% endblock %}

@@ -3,7 +3,10 @@
  *
  * Все операции — AJAX через CSRF token. При InsufficientFunds (HTTP 402)
  * открывается модалка с призывом пополнить баланс на нужную сумму, а не
- * сырая ошибка (см. ТЗ §7.6).
+ * сырая ошибка.
+ *
+ * Логика смены тарифа не трогалась — только селекторы и триггеры переведены
+ * на новый UI (.lk-plans + .sub-plans-list в модалке).
  */
 (function () {
     "use strict";
@@ -16,30 +19,27 @@
     var urlCancelDowngrade = page.dataset.urlCancelDowngrade;
     var urlDeposit = page.dataset.urlDeposit;
 
-    // ── Прогресс-бары: width в процентах, но не больше 100% ─────────
-    document.querySelectorAll(".sub-progress-bar[data-current][data-limit]").forEach(function (bar) {
-        var current = parseFloat(bar.dataset.current) || 0;
-        var limit = parseFloat(bar.dataset.limit) || 0;
+    // ── Прогресс-бары (.lk-progress > span) ─────────────────────────
+    document.querySelectorAll(".lk-progress > span[data-current][data-limit]").forEach(function (fill) {
+        var current = parseFloat(fill.dataset.current) || 0;
+        var limit = parseFloat(fill.dataset.limit) || 0;
         if (limit <= 0) return;
-        if (bar.classList.contains("is-overage")) {
-            bar.style.width = "100%";
-            return;
-        }
         var pct = Math.min(100, (current / limit) * 100);
-        bar.style.width = pct + "%";
-        // 70% — жёлтый, ближе к 100 — без изменений (стиль уже может быть overage)
-        if (pct >= 70 && !bar.classList.contains("is-warn")) {
+        fill.style.width = pct + "%";
+        var bar = fill.parentElement;
+        if (current > limit) {
+            bar.classList.add("is-danger");
+        } else if (pct >= 80 && !bar.classList.contains("is-danger")) {
             bar.classList.add("is-warn");
         }
     });
 
-    // ── Утилита: CSRF из cookie ─────────────────────────────────────
+    // ── CSRF + fetch helpers ────────────────────────────────────────
     function getCsrf() {
         var m = document.cookie.match(/csrftoken=([^;]+)/);
         return m ? m[1] : "";
     }
 
-    // ── Утилита: отправка POST с CSRF ───────────────────────────────
     function postJson(url, data) {
         var body = new URLSearchParams(data);
         return fetch(url, {
@@ -57,25 +57,40 @@
         });
     }
 
-    // ── Выбор плана в модалке смены тарифа ──────────────────────────
+    // ── Выбор плана (1) из модалки и (2) из сетки планов ───────────
+    // Оба триггера приводят к общему обработчику handlePlanSelection.
     document.querySelectorAll("[data-select-plan]").forEach(function (btn) {
         btn.addEventListener("click", function () {
             var option = btn.closest(".sub-plan-option");
-            var planCode = option.dataset.planCode;
-            var newPrice = parseFloat(option.dataset.planPrice) || 0;
-            var currentPrice = parseFloat(option.dataset.currentPrice) || 0;
-            var planName = option.querySelector("strong").textContent;
-
-            if (newPrice > currentPrice) {
-                handleUpgrade(planCode, planName);
-            } else if (newPrice < currentPrice) {
-                handleScheduleDowngrade(planCode, planName);
-            } else {
-                // Цены равны — теоретически невозможно, план ведь не тот же
-                showError("Нельзя перейти на план с той же ценой.");
-            }
+            handlePlanSelection({
+                planCode: option.dataset.planCode,
+                planName: option.dataset.planName || option.querySelector("strong").textContent,
+                newPrice: parseFloat(option.dataset.planPrice) || 0,
+                currentPrice: parseFloat(option.dataset.currentPrice) || 0,
+            });
         });
     });
+
+    document.querySelectorAll("[data-plan-select]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            handlePlanSelection({
+                planCode: btn.dataset.planSelect,
+                planName: btn.dataset.planName || "",
+                newPrice: parseFloat(btn.dataset.planPrice) || 0,
+                currentPrice: parseFloat(btn.dataset.currentPrice) || 0,
+            });
+        });
+    });
+
+    function handlePlanSelection(opts) {
+        if (opts.newPrice > opts.currentPrice) {
+            handleUpgrade(opts.planCode, opts.planName);
+        } else if (opts.newPrice < opts.currentPrice) {
+            handleScheduleDowngrade(opts.planCode, opts.planName);
+        } else {
+            showError("Нельзя перейти на план с той же ценой.");
+        }
+    }
 
     // ── Апгрейд ─────────────────────────────────────────────────────
     function handleUpgrade(planCode, planName) {
@@ -89,7 +104,6 @@
                 return;
             }
             if (result.status === 402) {
-                // Недостаточно средств — модалка с предложением пополнить
                 showInsufficientFunds(planName, result.body);
                 return;
             }
@@ -139,34 +153,26 @@
 
     // ── Модалка «недостаточно средств» ──────────────────────────────
     function showInsufficientFunds(planName, body) {
-        var planNameEl = document.getElementById("ifm-plan-name");
-        var requiredEl = document.getElementById("ifm-required");
-        var balanceEl = document.getElementById("ifm-balance");
-        var depositLink = document.getElementById("ifm-deposit-link");
         var modal = document.getElementById("insufficient-funds-modal");
-
         if (!modal) return;
 
-        planNameEl.textContent = planName;
-        requiredEl.textContent = body.required || "—";
-        balanceEl.textContent = body.balance || "0";
+        document.getElementById("ifm-plan-name").textContent = planName;
+        document.getElementById("ifm-required").textContent = body.required || "—";
+        document.getElementById("ifm-balance").textContent = body.balance || "0";
 
-        // Ссылка на пополнение с предзаполненной суммой (если known required)
+        var depositLink = document.getElementById("ifm-deposit-link");
         if (body.required) {
-            // Округлим вверх до целого для UX удобства
             var amount = Math.ceil(parseFloat(body.required));
             depositLink.href = urlDeposit + "?amount=" + amount;
         } else {
             depositLink.href = urlDeposit;
         }
 
-        // Закрываем модалку смены тарифа, открываем эту
         var planModal = document.getElementById("plan-change-modal");
         if (planModal) planModal.hidden = true;
         modal.hidden = false;
     }
 
-    // ── Показать ошибку в модалке смены тарифа ──────────────────────
     function showError(msg) {
         var errBox = document.getElementById("plan-change-errors");
         if (errBox) {
@@ -175,5 +181,76 @@
         } else {
             alert(msg);
         }
+    }
+
+    // ── Копирование реквизитов ─────────────────────────────────────
+    var copyBtn = document.querySelector("[data-copy-requisites]");
+    if (copyBtn) {
+        copyBtn.addEventListener("click", function () {
+            var box = document.querySelector("[data-req-box]");
+            if (!box) return;
+            var pairs = [];
+            var keys = box.querySelectorAll(".lk-req-key");
+            keys.forEach(function (key) {
+                var value = key.nextElementSibling;
+                var keyText = (key.textContent || "").trim();
+                var valueText = (value ? value.textContent : "").trim();
+                if (keyText && valueText) {
+                    pairs.push(keyText + ": " + valueText);
+                }
+            });
+            var text = pairs.join("\n");
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function () {
+                    flashCopied(copyBtn);
+                }).catch(function () {
+                    flashCopied(copyBtn, "Не удалось скопировать");
+                });
+            } else {
+                flashCopied(copyBtn, "Буфер обмена недоступен");
+            }
+        });
+    }
+
+    function flashCopied(btn, message) {
+        var original = btn.dataset.originalHtml;
+        if (!original) {
+            btn.dataset.originalHtml = btn.innerHTML;
+            original = btn.innerHTML;
+        }
+        btn.textContent = message || "Скопировано";
+        setTimeout(function () {
+            btn.innerHTML = original;
+        }, 1600);
+    }
+
+    // ── Stub-toasts для кнопок «скоро» ─────────────────────────────
+    document.querySelectorAll("[data-stub-toast]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            showStubToast(btn.dataset.stubToast);
+        });
+    });
+
+    function showStubToast(text) {
+        var wrap = document.querySelector(".flash-wrap");
+        if (!wrap) {
+            wrap = document.createElement("div");
+            wrap.className = "flash-wrap";
+            document.body.appendChild(wrap);
+        }
+        var flash = document.createElement("div");
+        flash.className = "flash flash-info";
+        flash.setAttribute("data-autohide", "1");
+        flash.textContent = text;
+        var close = document.createElement("button");
+        close.type = "button";
+        close.className = "flash-close";
+        close.setAttribute("aria-label", "Закрыть");
+        close.textContent = "×";
+        close.addEventListener("click", function () { flash.remove(); });
+        flash.appendChild(close);
+        wrap.appendChild(flash);
+        setTimeout(function () { flash.remove(); }, 4000);
     }
 })();

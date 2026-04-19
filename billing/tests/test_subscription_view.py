@@ -43,7 +43,9 @@ class SubscriptionViewGetTest(TestCase):
         content = r.content.decode()
         self.assertIn("plan-change-modal", content)
         self.assertIn("insufficient-funds-modal", content)
-        self.assertIn("sub-progress-bar", content)
+        # Редизайн: прогресс-бары лимитов используют класс .lk-progress
+        # (общий компонент из lk-tokens.css).
+        self.assertIn("lk-progress", content)
         # Текущий Free
         self.assertIn("Free", content)
 

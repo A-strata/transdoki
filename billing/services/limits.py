@@ -52,6 +52,21 @@ def get_organization_usage(account) -> dict:
     return {"current": current, "limit": limit}
 
 
+def get_vehicle_usage(account) -> dict:
+    """
+    Текущее число ТС аккаунта vs лимит.
+
+    Сейчас лимит ТС в тарифах не задан — всегда возвращается limit=None.
+    Когда в Plan появится vehicle_limit (отдельная задача), достаточно
+    будет использовать subscription.effective_vehicle_limit по аналогии
+    с другими usage-функциями.
+    """
+    from vehicles.models import Vehicle
+
+    current = Vehicle.objects.for_account(account).count()
+    return {"current": current, "limit": None}
+
+
 def get_user_usage(account) -> dict:
     """
     Текущее число активных пользователей аккаунта vs лимит.

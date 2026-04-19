@@ -8,6 +8,36 @@ document.addEventListener("DOMContentLoaded", function () {
         return "";
     }
 
+    /* ── Stub-toasts для «скоро»-кнопок ─────────────────────────────── */
+    document.querySelectorAll("[data-stub-toast]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            showStubToast(btn.dataset.stubToast);
+        });
+    });
+
+    function showStubToast(text) {
+        var wrap = document.querySelector(".flash-wrap");
+        if (!wrap) {
+            wrap = document.createElement("div");
+            wrap.className = "flash-wrap";
+            document.body.appendChild(wrap);
+        }
+        var flash = document.createElement("div");
+        flash.className = "flash flash-info";
+        flash.setAttribute("data-autohide", "1");
+        flash.textContent = text;
+        var close = document.createElement("button");
+        close.type = "button";
+        close.className = "flash-close";
+        close.setAttribute("aria-label", "Закрыть");
+        close.textContent = "×";
+        close.addEventListener("click", function () { flash.remove(); });
+        flash.appendChild(close);
+        wrap.appendChild(flash);
+        setTimeout(function () { flash.remove(); }, 4000);
+    }
+
     /* ── Модалка добавления пользователя ── */
     var overlay     = document.getElementById("add-user-overlay");
     var submitBtn   = document.getElementById("add-user-submit");
