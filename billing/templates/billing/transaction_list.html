@@ -56,12 +56,24 @@
                                 <td>
                                     {% if tx.kind == 'deposit' %}
                                         <span class="tx-kind tx-deposit">&#8593; Пополнение</span>
+                                    {% elif tx.kind == 'refund' %}
+                                        <span class="tx-kind tx-deposit">&#8593; Возврат</span>
+                                    {% elif tx.kind == 'subscription' %}
+                                        <span class="tx-kind tx-charge">&#8595; Подписка</span>
+                                    {% elif tx.kind == 'overage' %}
+                                        <span class="tx-kind tx-charge">&#8595; Overage</span>
+                                    {% elif tx.kind == 'module' %}
+                                        <span class="tx-kind tx-charge">&#8595; Модуль</span>
+                                    {% elif tx.kind == 'upgrade' %}
+                                        <span class="tx-kind tx-charge">&#8595; Апгрейд тарифа</span>
+                                    {% elif tx.kind == 'adjustment' %}
+                                        <span class="tx-kind tx-charge">Корректировка</span>
                                     {% else %}
                                         <span class="tx-kind tx-charge">&#8595; Списание</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if tx.kind == 'deposit' %}
+                                    {% if tx.kind == 'deposit' or tx.kind == 'refund' %}
                                         <span class="tx-amount-deposit">+{{ tx.amount|floatformat:2 }} &#8381;</span>
                                     {% else %}
                                         <span class="tx-amount-charge">&#8722;{{ tx.amount|floatformat:2 }} &#8381;</span>
