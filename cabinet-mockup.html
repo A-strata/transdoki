@@ -465,47 +465,46 @@ main{max-width:var(--container);margin:0 auto;padding:24px 16px 64px;width:100%}
 .page{display:none}
 .page.is-active{display:flex;flex-direction:column;gap:20px}
 
-/* ─────────── Профиль и команда: новая логика ─────────── */
+/* ─────────── Профиль и команда: единый список ─────────── */
 
-/* «Мой профиль» — блок сверху карточки */
-.lk-self{
-  display:flex;flex-direction:column;gap:8px;
-  padding:14px;margin-bottom:18px;
-  background:linear-gradient(135deg,var(--lk-brand-50),var(--surface));
-  border:1px solid var(--lk-brand-100);
-  border-radius:var(--radius);
-}
-.lk-self-head{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
-.lk-avatar--lg{width:48px;height:48px;font-size:var(--text-sm)}
-.lk-self-name{font-weight:700;font-size:var(--text-base);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.lk-self-email{font-size:var(--text-xs);color:var(--muted);margin-top:2px}
-.lk-self-actions{display:flex;gap:6px;flex-wrap:wrap}
-.lk-self-sub{font-size:var(--text-xs);color:var(--muted);padding-left:60px}
-
-.lk-team-head{
-  display:flex;align-items:baseline;justify-content:space-between;
-  margin:0 0 10px;gap:12px;
-}
-.lk-team-head h4{
-  margin:0;font-size:var(--text-xs);font-weight:700;
-  text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
-}
-
-.lk-team-list{display:flex;flex-direction:column}
+.lk-team-list{display:flex;flex-direction:column;margin-top:4px}
 
 .lk-team-row{
   display:grid;
-  grid-template-columns:32px minmax(0,1fr) auto auto auto;
-  gap:10px;align-items:center;
+  grid-template-columns:32px minmax(0,1fr) auto;
+  gap:12px;align-items:center;
   padding:10px 0;border-bottom:1px solid var(--border);
 }
 .lk-team-row:last-child{border-bottom:0}
-.lk-team-row.is-self{background:var(--lk-bg-elev);margin:0 -8px;padding:10px 8px;border-radius:8px;border-bottom:0}
-.lk-team-row.is-self + .lk-team-row{border-top:1px solid var(--border)}
+
+/* Свой профиль — первая строка. Выделяется аватаром + жирным ФИО + толстой
+   чертой снизу (border-top у следующей строки). Без фона-подложки,
+   без чипа «это вы», без подстрочника. */
+.lk-team-row.is-self{padding:12px 0;border-bottom:0}
+.lk-team-row.is-self + .lk-team-row{border-top:2px solid var(--border);padding-top:14px}
+.lk-team-row.is-self .lk-team-name{font-weight:700;font-size:var(--text-base)}
+.lk-team-row.is-self .lk-avatar{width:40px;height:40px;font-size:14px;grid-row:span 1}
+
 .lk-team-meta{min-width:0}
-.lk-team-name{font-weight:600;font-size:var(--text-sm);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.lk-team-name{font-weight:600;font-size:var(--text-sm);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .lk-team-info{font-size:var(--text-xs);color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lk-team-status{min-width:120px}
+
+/* Статус и роль внутри мета-строки — словами, не чипами.
+   Подсветка только для не-активных состояний. */
+.lk-meta-warn{color:var(--warning-text);font-weight:600}
+.lk-meta-off{color:var(--muted);font-weight:600}
+
+/* Брендовый чип роли — только для self-row рядом с ФИО.
+   У обычных сотрудников роль пишется словом в мета-строке. */
+.lk-role-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:999px;
+  background:var(--neutral-bg);color:var(--muted);
+  font-size:var(--text-xs);font-weight:600;
+  border:1px solid var(--border);
+  white-space:nowrap;
+}
+.lk-role-chip--owner{background:var(--lk-brand-50);color:var(--primary);border-color:var(--lk-brand-100)}
 
 .lk-status{
   display:inline-flex;align-items:center;gap:6px;
@@ -516,30 +515,8 @@ main{max-width:var(--container);margin:0 auto;padding:24px 16px 64px;width:100%}
 .lk-status--pending{color:var(--info-text)}
 .lk-status--off{color:var(--muted)}
 
-/* Role select — без рамки, как chip */
-.lk-role-cell{min-width:160px}
-.lk-role-select{
-  font-family:inherit;font-size:var(--text-sm);font-weight:600;
-  padding:6px 28px 6px 10px;
-  border:1px solid var(--border);background:var(--surface);
-  border-radius:8px;color:var(--text);
-  -webkit-appearance:none;appearance:none;cursor:pointer;
-  background-image:url("data:image/svg+xml,%3Csvg width='12' height='12' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='4 6 8 10 12 6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 8px center;
-}
-.lk-role-select:hover{border-color:var(--border-interactive);background-color:var(--hover)}
-.lk-role-select:focus{outline:2px solid var(--primary-ring);outline-offset:1px;border-color:var(--primary)}
-.lk-role-select.is-saving{opacity:.7;pointer-events:none}
-.lk-role-select.is-saved{border-color:var(--success-border);background-color:var(--success-bg)}
-
-.lk-role-pill{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:6px 10px;border-radius:8px;
-  background:var(--neutral-bg);color:var(--muted);
-  font-size:var(--text-sm);font-weight:600;
-  border:1px solid var(--border);cursor:not-allowed;
-}
-.lk-role-pill.is-locked{color:var(--muted)}
+/* (бывшие .lk-role-cell / .lk-role-select / .lk-role-pill удалены — роль теперь
+   inline-чип рядом с именем, изменение роли — в модалке) */
 
 /* Kebab menu */
 .lk-actions-cell{position:relative;min-width:36px;display:flex;justify-content:flex-end}
@@ -563,6 +540,7 @@ main{max-width:var(--container);margin:0 auto;padding:24px 16px 64px;width:100%}
   padding:8px 10px;border-radius:6px;
   font-size:var(--text-sm);color:var(--text);
   background:transparent;cursor:pointer;
+  text-decoration:none;
 }
 .lk-kebab-item:hover:not([disabled]){background:var(--hover)}
 .lk-kebab-item.is-warn{color:var(--danger)}
@@ -675,9 +653,8 @@ select.lk-field-input{
 .lk-toast-undo:hover{background:rgba(255,255,255,.1);color:#fff}
 
 @media (max-width:560px){
-  .lk-team-row{grid-template-columns:32px 1fr auto;gap:8px}
-  .lk-team-status,.lk-role-cell{grid-column:2/-1;min-width:0}
-  .lk-self-sub{padding-left:0}
+  .lk-team-row{gap:8px}
+  .lk-team-row.is-self .lk-avatar{width:36px;height:36px;font-size:13px}
 }
 
 /* Mobile */
@@ -839,137 +816,89 @@ select.lk-field-input{
         <div class="lk-card">
           <div class="lk-card-head">
             <h3>Профиль и команда</h3>
-            <button class="tms-btn tms-btn-secondary tms-btn-sm" type="button" data-modal-open="invite-modal">
+            <button class="tms-btn tms-btn-secondary tms-btn-sm" type="button" data-lk-modal-open="invite-modal">
               + Пригласить
             </button>
           </div>
 
-          <!-- ── Мой профиль (свой) ── -->
-          <div class="lk-self">
-            <div class="lk-self-head">
-              <div class="lk-avatar lk-avatar--lg">АА</div>
-              <div class="lk-self-meta">
-                <div class="lk-self-name">
-                  Андрей Астахин
-                  <span class="lk-chip lk-chip--brand">Владелец</span>
-                </div>
-                <div class="lk-self-email">a.astakhin@gmail.com</div>
-              </div>
-              <div class="lk-self-actions">
-                <button class="tms-btn tms-btn-light tms-btn-sm" type="button" data-modal-open="edit-self-modal">
-                  Изменить
-                </button>
-                <button class="tms-btn tms-btn-light tms-btn-sm" type="button">
-                  Сменить пароль
-                </button>
-              </div>
-            </div>
-            <div class="lk-self-sub">Это ваш профиль — действия с владельцем доступны только вам</div>
-          </div>
-
-          <!-- ── Команда ── -->
-          <div class="lk-team-head">
-            <h4>Команда</h4>
-            <span class="lk-small lk-muted">4 из 15 · сверх лимита 5 ₽/сутки за человека</span>
-          </div>
-
           <div class="lk-team-list">
 
-            <!-- Self-row in team list -->
+            <!-- Свой профиль: первая строка, kebab для единообразия с сотрудниками.
+                 «Редактировать профиль…» открывает edit-self-modal, «Сменить пароль» — <a> на встроенный Django-view. -->
             <div class="lk-team-row is-self">
               <div class="lk-avatar">АА</div>
               <div class="lk-team-meta">
-                <div class="lk-team-name">Андрей Астахин <span class="lk-chip">это вы</span></div>
-                <div class="lk-team-info">a.astakhin@gmail.com</div>
+                <div class="lk-team-name">
+                  Андрей Астахин
+                  <span class="lk-role-chip lk-role-chip--owner">Владелец</span>
+                </div>
+                <div class="lk-team-info">a.astakhin@gmail.com · последний вход 19 апр, 11:42</div>
               </div>
-              <div class="lk-team-status"><span class="lk-status lk-status--ok"><span class="dot"></span>активен</span></div>
-              <div class="lk-role-cell">
-                <span class="lk-role-pill is-locked" title="Роль владельца меняется только в админке">
-                  Владелец
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-                </span>
+              <div class="lk-actions-cell">
+                <button class="lk-kebab" type="button" aria-label="Действия" data-kebab-toggle>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                </button>
+                <div class="lk-kebab-menu" hidden>
+                  <button type="button" class="lk-kebab-item" data-lk-modal-open="edit-self-modal">Редактировать профиль…</button>
+                  <a class="lk-kebab-item" href="#">Сменить пароль</a>
+                </div>
               </div>
-              <div class="lk-actions-cell"><span class="lk-small lk-muted">—</span></div>
             </div>
 
-            <!-- Admin -->
+            <!-- Сотрудник: Admin, активен -->
             <div class="lk-team-row">
               <div class="lk-avatar">ОК</div>
               <div class="lk-team-meta">
                 <div class="lk-team-name">Ольга Кузьмина</div>
-                <div class="lk-team-info">olga@log-trans.ru · вход 19 апр, 11:42</div>
-              </div>
-              <div class="lk-team-status"><span class="lk-status lk-status--ok"><span class="dot"></span>активен</span></div>
-              <div class="lk-role-cell">
-                <select class="lk-role-select" data-instant-save aria-label="Роль">
-                  <option value="admin" selected>Администратор</option>
-                  <option value="dispatcher">Диспетчер</option>
-                  <option value="logist">Логист</option>
-                </select>
+                <div class="lk-team-info">olga@log-trans.ru · администратор · активен</div>
               </div>
               <div class="lk-actions-cell">
                 <button class="lk-kebab" type="button" aria-label="Действия" data-kebab-toggle>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
                 <div class="lk-kebab-menu" hidden>
-                  <button type="button" class="lk-kebab-item" data-modal-open="edit-name-modal">Изменить ФИО</button>
-                  <button type="button" class="lk-kebab-item is-warn" data-modal-open="reset-confirm-modal">Сбросить пароль</button>
+                  <button type="button" class="lk-kebab-item" data-lk-modal-open="edit-user-modal">Редактировать…</button>
+                  <button type="button" class="lk-kebab-item is-warn" data-lk-modal-open="reset-confirm-modal">Сбросить пароль</button>
                   <div class="lk-kebab-divider"></div>
                   <button type="button" class="lk-kebab-item" disabled title="Скоро">Отключить пользователя <span class="lk-soon">скоро</span></button>
                 </div>
               </div>
             </div>
 
-            <!-- Dispatcher -->
+            <!-- Сотрудник: Dispatcher, активен -->
             <div class="lk-team-row">
               <div class="lk-avatar">МС</div>
               <div class="lk-team-meta">
                 <div class="lk-team-name">Мария Смирнова</div>
-                <div class="lk-team-info">maria@log-trans.ru · вход 19 апр, 09:14</div>
-              </div>
-              <div class="lk-team-status"><span class="lk-status lk-status--ok"><span class="dot"></span>активен</span></div>
-              <div class="lk-role-cell">
-                <select class="lk-role-select" data-instant-save aria-label="Роль">
-                  <option value="admin">Администратор</option>
-                  <option value="dispatcher" selected>Диспетчер</option>
-                  <option value="logist">Логист</option>
-                </select>
+                <div class="lk-team-info">maria@log-trans.ru · диспетчер · активен</div>
               </div>
               <div class="lk-actions-cell">
                 <button class="lk-kebab" type="button" aria-label="Действия" data-kebab-toggle>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
                 <div class="lk-kebab-menu" hidden>
-                  <button type="button" class="lk-kebab-item" data-modal-open="edit-name-modal">Изменить ФИО</button>
-                  <button type="button" class="lk-kebab-item is-warn" data-modal-open="reset-confirm-modal">Сбросить пароль</button>
+                  <button type="button" class="lk-kebab-item" data-lk-modal-open="edit-user-modal">Редактировать…</button>
+                  <button type="button" class="lk-kebab-item is-warn" data-lk-modal-open="reset-confirm-modal">Сбросить пароль</button>
                   <div class="lk-kebab-divider"></div>
                   <button type="button" class="lk-kebab-item" disabled title="Скоро">Отключить пользователя <span class="lk-soon">скоро</span></button>
                 </div>
               </div>
             </div>
 
-            <!-- Logist, ожидает первого входа -->
+            <!-- Сотрудник: Logist, ожидает первого входа (подсвечивается только это слово) -->
             <div class="lk-team-row">
               <div class="lk-avatar">ИП</div>
               <div class="lk-team-meta">
                 <div class="lk-team-name">Иван Петров</div>
-                <div class="lk-team-info">ivan.petrov.4821 · создан 18 апр</div>
-              </div>
-              <div class="lk-team-status"><span class="lk-status lk-status--pending"><span class="dot"></span>ожидает входа</span></div>
-              <div class="lk-role-cell">
-                <select class="lk-role-select" data-instant-save aria-label="Роль">
-                  <option value="admin">Администратор</option>
-                  <option value="dispatcher">Диспетчер</option>
-                  <option value="logist" selected>Логист</option>
-                </select>
+                <div class="lk-team-info">ivan.petrov.4821 · логист · <span class="lk-meta-warn">ожидает входа</span></div>
               </div>
               <div class="lk-actions-cell">
                 <button class="lk-kebab" type="button" aria-label="Действия" data-kebab-toggle>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
                 <div class="lk-kebab-menu" hidden>
-                  <button type="button" class="lk-kebab-item" data-modal-open="edit-name-modal">Изменить ФИО</button>
-                  <button type="button" class="lk-kebab-item is-warn" data-modal-open="reset-confirm-modal">Сбросить пароль</button>
+                  <button type="button" class="lk-kebab-item" data-lk-modal-open="edit-user-modal">Редактировать…</button>
+                  <button type="button" class="lk-kebab-item is-warn" data-lk-modal-open="reset-confirm-modal">Сбросить пароль</button>
                   <div class="lk-kebab-divider"></div>
                   <button type="button" class="lk-kebab-item" disabled title="Скоро">Отключить пользователя <span class="lk-soon">скоро</span></button>
                 </div>
@@ -979,7 +908,7 @@ select.lk-field-input{
           </div>
 
           <p class="lk-small lk-muted" style="margin:14px 0 0">
-            Изменения роли сохраняются автоматически. Сброс пароля показывает временный пароль один раз — нужно сразу передать сотруднику.
+            4 из 15 пользователей по тарифу «Бизнес». Сверх лимита — 5 ₽/сутки за пользователя.
           </p>
         </div>
 
@@ -1442,7 +1371,7 @@ select.lk-field-input{
     <div data-modal-step="form">
       <div class="lk-modal-head">
         <h3 class="lk-modal-title" id="invite-title">Пригласить сотрудника</h3>
-        <button type="button" class="lk-modal-close" data-modal-close aria-label="Закрыть">
+        <button type="button" class="lk-modal-close" data-lk-modal-close aria-label="Закрыть">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18L18 6"/></svg>
         </button>
       </div>
@@ -1473,7 +1402,7 @@ select.lk-field-input{
         </div>
       </div>
       <div class="lk-modal-actions">
-        <button type="button" class="tms-btn tms-btn-light" data-modal-close>Отмена</button>
+        <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
         <button type="button" class="tms-btn tms-btn-primary" data-demo-invite-next>Создать сотрудника</button>
       </div>
     </div>
@@ -1505,7 +1434,7 @@ select.lk-field-input{
       </div>
 
       <div class="lk-modal-actions">
-        <button type="button" class="tms-btn tms-btn-primary" data-modal-close>Готово</button>
+        <button type="button" class="tms-btn tms-btn-primary" data-lk-modal-close>Готово</button>
       </div>
     </div>
   </div>
@@ -1516,7 +1445,7 @@ select.lk-field-input{
   <div class="lk-modal">
     <div class="lk-modal-head">
       <h3 class="lk-modal-title" id="edit-self-title">Изменить данные профиля</h3>
-      <button type="button" class="lk-modal-close" data-modal-close aria-label="Закрыть">
+      <button type="button" class="lk-modal-close" data-lk-modal-close aria-label="Закрыть">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18L18 6"/></svg>
       </button>
     </div>
@@ -1539,41 +1468,47 @@ select.lk-field-input{
       <div class="lk-field">
         <label class="lk-field-label">Роль</label>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 0">
-          <span class="lk-role-pill is-locked">
-            Владелец
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-          </span>
+          <span class="lk-role-chip lk-role-chip--owner">Владелец</span>
           <span class="lk-field-hint">Меняется только через поддержку</span>
         </div>
       </div>
     </div>
     <div class="lk-modal-actions">
-      <button type="button" class="tms-btn tms-btn-light" data-modal-close>Отмена</button>
+      <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
       <button type="button" class="tms-btn tms-btn-primary" data-demo-toast="Профиль обновлён">Сохранить</button>
     </div>
   </div>
 </div>
 
-<!-- ▸ Редактирование ФИО сотрудника -->
-<div class="lk-modal-overlay" id="edit-name-modal" role="dialog" aria-modal="true" aria-labelledby="edit-name-title">
+<!-- ▸ Редактирование сотрудника: ФИО + роль в одной модалке -->
+<div class="lk-modal-overlay" id="edit-user-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
   <div class="lk-modal">
     <div class="lk-modal-head">
-      <h3 class="lk-modal-title" id="edit-name-title">Изменить ФИО сотрудника</h3>
-      <button type="button" class="lk-modal-close" data-modal-close aria-label="Закрыть">
+      <h3 class="lk-modal-title" id="edit-user-title">Редактировать пользователя</h3>
+      <button type="button" class="lk-modal-close" data-lk-modal-close aria-label="Закрыть">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18L18 6"/></svg>
       </button>
     </div>
     <div class="lk-modal-body">
-      <p class="lk-small lk-muted" style="margin:0">Логин и роль не меняются здесь — логин фиксирован, роль правится прямо в строке.</p>
+      <p class="lk-small lk-muted" style="margin:0">Логин изменить нельзя. Роль сохраняется вместе с ФИО — одним подтверждением.</p>
       <div class="lk-field-row">
         <div class="lk-field">
-          <label class="lk-field-label" for="edit-fn">Имя</label>
-          <input class="lk-field-input" id="edit-fn" value="Ольга" autocomplete="off">
+          <label class="lk-field-label" for="edit-user-fn">Имя</label>
+          <input class="lk-field-input" id="edit-user-fn" value="Ольга" autocomplete="off">
         </div>
         <div class="lk-field">
-          <label class="lk-field-label" for="edit-ln">Фамилия</label>
-          <input class="lk-field-input" id="edit-ln" value="Кузьмина" autocomplete="off">
+          <label class="lk-field-label" for="edit-user-ln">Фамилия</label>
+          <input class="lk-field-input" id="edit-user-ln" value="Кузьмина" autocomplete="off">
         </div>
+      </div>
+      <div class="lk-field">
+        <label class="lk-field-label" for="edit-user-role">Роль</label>
+        <select class="lk-field-input" id="edit-user-role">
+          <option value="admin" selected>Администратор</option>
+          <option value="dispatcher">Диспетчер</option>
+          <option value="logist">Логист</option>
+        </select>
+        <p class="lk-small lk-muted" style="margin:6px 0 0">Владелец меняется только через поддержку.</p>
       </div>
       <div class="lk-field">
         <label class="lk-field-label">Логин</label>
@@ -1581,8 +1516,8 @@ select.lk-field-input{
       </div>
     </div>
     <div class="lk-modal-actions">
-      <button type="button" class="tms-btn tms-btn-light" data-modal-close>Отмена</button>
-      <button type="button" class="tms-btn tms-btn-primary" data-demo-toast="ФИО обновлены">Сохранить</button>
+      <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
+      <button type="button" class="tms-btn tms-btn-primary" data-demo-toast="Пользователь обновлён">Сохранить изменения</button>
     </div>
   </div>
 </div>
@@ -1592,7 +1527,7 @@ select.lk-field-input{
   <div class="lk-modal">
     <div class="lk-modal-head">
       <h3 class="lk-modal-title" id="reset-confirm-title">Сбросить пароль?</h3>
-      <button type="button" class="lk-modal-close" data-modal-close aria-label="Закрыть">
+      <button type="button" class="lk-modal-close" data-lk-modal-close aria-label="Закрыть">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18L18 6"/></svg>
       </button>
     </div>
@@ -1604,7 +1539,7 @@ select.lk-field-input{
       </div>
     </div>
     <div class="lk-modal-actions">
-      <button type="button" class="tms-btn tms-btn-light" data-modal-close>Отмена</button>
+      <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
       <button type="button" class="tms-btn tms-btn-primary" data-demo-reset-confirm>Сбросить пароль</button>
     </div>
   </div>
@@ -1638,7 +1573,7 @@ select.lk-field-input{
     </div>
 
     <div class="lk-modal-actions">
-      <button type="button" class="tms-btn tms-btn-primary" data-modal-close>Готово</button>
+      <button type="button" class="tms-btn tms-btn-primary" data-lk-modal-close>Готово</button>
     </div>
   </div>
 </div>
@@ -1680,14 +1615,14 @@ function closeAllModals(){
 }
 
 document.addEventListener('click', function(e){
-  const opener = e.target.closest('[data-modal-open]');
+  const opener = e.target.closest('[data-lk-modal-open]');
   if(opener){
     e.preventDefault();
     closeKebabs();
-    openModal(opener.getAttribute('data-modal-open'));
+    openModal(opener.getAttribute('data-lk-modal-open'));
     return;
   }
-  const closer = e.target.closest('[data-modal-close]');
+  const closer = e.target.closest('[data-lk-modal-close]');
   if(closer){
     e.preventDefault();
     closeModal(closer.closest('.lk-modal-overlay'));
@@ -1777,23 +1712,8 @@ document.addEventListener('click', function(e){
   showToast(msg);
 });
 
-// ───── Instant role save (с undo) ─────
-document.addEventListener('change', function(e){
-  const sel = e.target.closest('.lk-role-select[data-instant-save]');
-  if(!sel) return;
-  const prev = sel.dataset.prev || sel.querySelector('option[selected]')?.value || '';
-  const now = sel.value;
-  if(prev === now) return;
-  const labelNow = sel.options[sel.selectedIndex].text.split(' — ')[0];
-  sel.dataset.prev = now;
-  showToast('Роль изменена на «' + labelNow + '»', {
-    undo: ()=>{
-      sel.value = prev;
-      sel.dataset.prev = prev;
-      showToast('Изменение отменено');
-    }
-  });
-});
+// (instant-save для ролей удалён: роль меняется в модалке edit-user-modal,
+//  сохраняется одной транзакцией вместе с ФИО)
 
 // ───── Copy-to-clipboard ─────
 document.addEventListener('click', function(e){

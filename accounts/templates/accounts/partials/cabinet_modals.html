@@ -1,0 +1,367 @@
+{% comment %}
+Модалки блока «Профиль и команда» v1.3.
+Подключаются из accounts/cabinet.html через {% include %}.
+Логика — в static/accounts/js/cabinet.js.
+
+Атрибуты открытия/закрытия — префиксированные data-lk-modal-*:
+  data-lk-modal-open="<id>"  открывает модалку по id
+  data-lk-modal-close         закрывает ближайшую .lk-modal-overlay
+
+Префикс lk- обязателен — голый data-modal-open занят в base.js и
+завязан на .modal-overlay + hidden, что сломало бы close-flow.
+
+Шаги в многошаговых модалках (invite):
+  data-lk-modal-step="form"    видно по умолчанию
+  data-lk-modal-step="success" скрыто, показывается через showStep()
+{% endcomment %}
+
+{# ── 1. Invite modal ────────────────────────────────────── #}
+<div class="lk-modal-overlay" id="invite-modal"
+     role="dialog" aria-modal="true" aria-labelledby="invite-title" aria-hidden="true">
+    <div class="lk-modal lk-modal--wide">
+
+        <div data-lk-modal-step="form">
+            <div class="lk-modal-head">
+                <h3 class="lk-modal-title" id="invite-title">Пригласить сотрудника</h3>
+                <button type="button" class="lk-modal-close" data-lk-modal-close
+                        aria-label="Закрыть">
+                    <svg width="16" height="16" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M6 6l12 12M6 18L18 6"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="invite-form" class="lk-modal-body"
+                  data-url="{% url 'accounts:user_create' %}"
+                  novalidate>
+                {% csrf_token %}
+                <p class="lk-small lk-muted lk-modal-tight">
+                    После создания мы покажем логин и временный пароль — передайте
+                    их сотруднику, при первом входе он его поменяет.
+                </p>
+
+                <div class="lk-form-errors" role="alert"></div>
+
+                <div class="lk-field-row">
+                    <div class="lk-field">
+                        <label class="lk-field-label" for="invite-first-name">Имя</label>
+                        <input class="lk-field-input" id="invite-first-name"
+                               type="text" name="first_name" autocomplete="off" required>
+                        <div class="lk-field-error" data-for="first_name"></div>
+                    </div>
+                    <div class="lk-field">
+                        <label class="lk-field-label" for="invite-last-name">Фамилия</label>
+                        <input class="lk-field-input" id="invite-last-name"
+                               type="text" name="last_name" autocomplete="off" required>
+                        <div class="lk-field-error" data-for="last_name"></div>
+                    </div>
+                </div>
+
+                <div class="lk-field">
+                    <label class="lk-field-label" for="invite-role">Роль</label>
+                    <select class="lk-field-input" id="invite-role" name="role" required>
+                        <option value="admin">Администратор — управление пользователями и тарифом</option>
+                        <option value="dispatcher" selected>Диспетчер — рейсы и путевые листы</option>
+                        <option value="logist">Логист — работа с рейсами</option>
+                    </select>
+                    <span class="lk-field-hint">
+                        Роль «Владелец» назначается один раз при регистрации аккаунта и меняется только через админа.
+                    </span>
+                    <div class="lk-field-error" data-for="role"></div>
+                </div>
+
+                {% if user_limit %}
+                    <div class="lk-info-banner{% if user_count_current|add:1 == user_limit %} is-warn{% endif %}">
+                        <svg width="14" height="14" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 8v4M12 16h.01"/>
+                        </svg>
+                        <span>
+                            На тарифе <strong>{{ subscription.plan.name }}</strong> ваш лимит
+                            — {{ user_limit }} пользователей. Сейчас активны {{ user_count_current }},
+                            после приглашения будет {{ user_count_current|add:1 }} из {{ user_limit }}.
+                        </span>
+                    </div>
+                {% endif %}
+
+                <div class="lk-modal-actions">
+                    <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
+                    <button type="submit" class="tms-btn tms-btn-primary"
+                            data-loading-text="Создание…">Создать сотрудника</button>
+                </div>
+            </form>
+        </div>
+
+        <div data-lk-modal-step="success" hidden>
+            <div class="lk-success-ico" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="4 12 10 18 20 6"/>
+                </svg>
+            </div>
+            <h3 class="lk-modal-title lk-modal-title--center">Сотрудник создан</h3>
+            <p class="lk-small lk-muted lk-modal-subtitle--center">
+                <span data-success-name></span> · <span data-success-role></span>
+            </p>
+
+            <div class="lk-cred lk-cred--spaced">
+                <div class="lk-cred-row">
+                    <span class="k">Логин</span>
+                    <span class="v" data-cred-value="login"></span>
+                    <button type="button" class="lk-copy-btn"
+                            data-copy="[data-cred-value='login']">Копировать</button>
+                </div>
+                <div class="lk-cred-row">
+                    <span class="k">Пароль</span>
+                    <span class="v is-pwd" data-cred-value="password"></span>
+                    <button type="button" class="lk-copy-btn"
+                            data-copy="[data-cred-value='password']">Копировать</button>
+                </div>
+            </div>
+
+            <div class="lk-warn-banner lk-warn-banner--spaced">
+                <svg width="14" height="14" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M10.3 3.9l-7.9 13.6A2 2 0 004.1 20h15.8a2 2 0 001.7-2.5L13.7 3.9a2 2 0 00-3.4 0z"/>
+                    <path d="M12 9v4M12 17h.01"/>
+                </svg>
+                <span>
+                    <strong>Пароль показан только один раз.</strong> Передайте его сотруднику —
+                    после закрытия окна восстановить можно будет только через сброс.
+                </span>
+            </div>
+
+            <div class="lk-modal-actions">
+                <button type="button" class="tms-btn tms-btn-primary" id="invite-done">Готово</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── 2. Edit-self modal ─────────────────────────────────── #}
+<div class="lk-modal-overlay" id="edit-self-modal"
+     role="dialog" aria-modal="true" aria-labelledby="edit-self-title" aria-hidden="true">
+    <div class="lk-modal">
+        <div class="lk-modal-head">
+            <h3 class="lk-modal-title" id="edit-self-title">Изменить данные профиля</h3>
+            <button type="button" class="lk-modal-close" data-lk-modal-close
+                    aria-label="Закрыть">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M6 6l12 12M6 18L18 6"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="edit-self-form" class="lk-modal-body"
+              data-url="{% url 'accounts:user_update' profile.id %}"
+              data-fallback-name="{{ request.user.username }}"
+              novalidate>
+            {% csrf_token %}
+            <div class="lk-form-errors" role="alert"></div>
+
+            <div class="lk-field-row">
+                <div class="lk-field">
+                    <label class="lk-field-label" for="self-first-name">Имя</label>
+                    <input class="lk-field-input" id="self-first-name"
+                           type="text" name="first_name" autocomplete="off"
+                           value="{{ request.user.first_name }}" required>
+                    <div class="lk-field-error" data-for="first_name"></div>
+                </div>
+                <div class="lk-field">
+                    <label class="lk-field-label" for="self-last-name">Фамилия</label>
+                    <input class="lk-field-input" id="self-last-name"
+                           type="text" name="last_name" autocomplete="off"
+                           value="{{ request.user.last_name }}" required>
+                    <div class="lk-field-error" data-for="last_name"></div>
+                </div>
+            </div>
+
+            <div class="lk-field">
+                <label class="lk-field-label" for="self-email">Email</label>
+                <input class="lk-field-input" id="self-email"
+                       type="email" value="{{ request.user.email|default:request.user.username }}"
+                       disabled>
+                <span class="lk-field-hint">
+                    Email — логин для входа. Для смены обратитесь в поддержку.
+                </span>
+            </div>
+
+            <div class="lk-field">
+                <label class="lk-field-label">Роль</label>
+                <div class="lk-field-hint--inline">
+                    <span class="lk-role-chip{% if profile.role == 'owner' %} lk-role-chip--owner{% endif %}">
+                        {{ profile.get_role_display }}
+                    </span>
+                    <span class="lk-field-hint">Меняется только через поддержку</span>
+                </div>
+            </div>
+
+            <div class="lk-modal-actions">
+                <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
+                <button type="submit" class="tms-btn tms-btn-primary"
+                        data-loading-text="Сохранение…">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── 3. Edit-user modal (ФИО + роль одним POST'ом) ──────── #}
+<div class="lk-modal-overlay" id="edit-user-modal"
+     role="dialog" aria-modal="true" aria-labelledby="edit-user-title" aria-hidden="true">
+    <div class="lk-modal">
+        <div class="lk-modal-head">
+            <h3 class="lk-modal-title" id="edit-user-title">Редактировать пользователя</h3>
+            <button type="button" class="lk-modal-close" data-lk-modal-close
+                    aria-label="Закрыть">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M6 6l12 12M6 18L18 6"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="edit-user-form" class="lk-modal-body" novalidate>
+            {% csrf_token %}
+            <p class="lk-small lk-muted lk-modal-tight">
+                Логин изменить нельзя. Роль сохраняется вместе с ФИО — одним подтверждением.
+            </p>
+
+            <div class="lk-form-errors" role="alert"></div>
+
+            <div class="lk-field-row">
+                <div class="lk-field">
+                    <label class="lk-field-label" for="edit-user-fn">Имя</label>
+                    <input class="lk-field-input" id="edit-user-fn"
+                           type="text" name="first_name" autocomplete="off" required>
+                    <div class="lk-field-error" data-for="first_name"></div>
+                </div>
+                <div class="lk-field">
+                    <label class="lk-field-label" for="edit-user-ln">Фамилия</label>
+                    <input class="lk-field-input" id="edit-user-ln"
+                           type="text" name="last_name" autocomplete="off" required>
+                    <div class="lk-field-error" data-for="last_name"></div>
+                </div>
+            </div>
+
+            <div class="lk-field">
+                <label class="lk-field-label" for="edit-user-role">Роль</label>
+                <select class="lk-field-input" id="edit-user-role" name="role" required>
+                    <option value="admin">Администратор</option>
+                    <option value="dispatcher">Диспетчер</option>
+                    <option value="logist">Логист</option>
+                </select>
+                <span class="lk-field-hint">Владелец меняется только через поддержку.</span>
+                <div class="lk-field-error" data-for="role"></div>
+            </div>
+
+            <div class="lk-field">
+                <label class="lk-field-label" for="edit-user-login">Логин</label>
+                <input class="lk-field-input" id="edit-user-login"
+                       type="text" name="login_display" disabled>
+            </div>
+
+            <div class="lk-modal-actions">
+                <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
+                <button type="submit" class="tms-btn tms-btn-primary"
+                        data-loading-text="Сохранение…">Сохранить изменения</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── 4. Reset-confirm modal ─────────────────────────────── #}
+<div class="lk-modal-overlay" id="reset-confirm-modal"
+     role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title" aria-hidden="true">
+    <div class="lk-modal">
+        <div class="lk-modal-head">
+            <h3 class="lk-modal-title" id="reset-confirm-title">Сбросить пароль?</h3>
+            <button type="button" class="lk-modal-close" data-lk-modal-close
+                    aria-label="Закрыть">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M6 6l12 12M6 18L18 6"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="reset-confirm-form" class="lk-modal-body" novalidate>
+            {% csrf_token %}
+            <div class="lk-form-errors" role="alert"></div>
+
+            <p class="lk-modal-tight">
+                Будет сгенерирован новый временный пароль для
+                <strong data-reset-name></strong>. Текущий пароль сразу перестанет
+                работать — все открытые сессии пользователя завершатся.
+            </p>
+
+            <div class="lk-warn-banner">
+                <svg width="14" height="14" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M10.3 3.9l-7.9 13.6A2 2 0 004.1 20h15.8a2 2 0 001.7-2.5L13.7 3.9a2 2 0 00-3.4 0z"/>
+                    <path d="M12 9v4M12 17h.01"/>
+                </svg>
+                <span>
+                    Новый пароль будет показан один раз — после закрытия окна
+                    восстановить его нельзя, только сбросить снова.
+                </span>
+            </div>
+
+            <div class="lk-modal-actions">
+                <button type="button" class="tms-btn tms-btn-light" data-lk-modal-close>Отмена</button>
+                <button type="submit" class="tms-btn tms-btn-primary"
+                        data-loading-text="Сброс…">Сбросить пароль</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── 5. Reset-success modal ─────────────────────────────── #}
+<div class="lk-modal-overlay" id="reset-success-modal"
+     role="dialog" aria-modal="true" aria-labelledby="reset-success-title" aria-hidden="true">
+    <div class="lk-modal">
+        <div class="lk-success-ico" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 12 10 18 20 6"/>
+            </svg>
+        </div>
+        <h3 class="lk-modal-title lk-modal-title--center" id="reset-success-title">Пароль сброшен</h3>
+        <p class="lk-small lk-muted lk-modal-subtitle--center">
+            <span data-success-name></span> · <span data-success-role></span>
+        </p>
+
+        <div class="lk-cred lk-cred--spaced">
+            <div class="lk-cred-row">
+                <span class="k">Логин</span>
+                <span class="v" data-cred-value="login"></span>
+                <button type="button" class="lk-copy-btn"
+                        data-copy="[data-cred-value='login']">Копировать</button>
+            </div>
+            <div class="lk-cred-row">
+                <span class="k">Новый пароль</span>
+                <span class="v is-pwd" data-cred-value="password"></span>
+                <button type="button" class="lk-copy-btn"
+                        data-copy="[data-cred-value='password']">Копировать</button>
+            </div>
+        </div>
+
+        <div class="lk-warn-banner lk-warn-banner--spaced">
+            <svg width="14" height="14" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M10.3 3.9l-7.9 13.6A2 2 0 004.1 20h15.8a2 2 0 001.7-2.5L13.7 3.9a2 2 0 00-3.4 0z"/>
+                <path d="M12 9v4M12 17h.01"/>
+            </svg>
+            <span>
+                <strong>Передайте пароль сотруднику любым защищённым способом.</strong>
+                После закрытия окна восстановить его нельзя — только сбросить снова.
+            </span>
+        </div>
+
+        <div class="lk-modal-actions">
+            <button type="button" class="tms-btn tms-btn-primary" data-lk-modal-close>Готово</button>
+        </div>
+    </div>
+</div>

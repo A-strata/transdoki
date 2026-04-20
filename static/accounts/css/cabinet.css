@@ -1,9 +1,11 @@
 /* ─────────────────────────────────────────────────────
    Страница «Личный кабинет» (/accounts/cabinet/).
-   Общие компоненты — в lk-tokens.css (.lk-*).
-   Здесь — только page-обёртка и стили блоков управления
-   командой (роли, имена, credentials-экран модалки),
-   которые привязаны к существующему JS (cabinet.js).
+   Блок «Профиль и команда» v1.3 — единый lk-team-list
+   с self-row первой строкой + 5 модалок + toast.
+
+   Общие токены — в static/css/lk-tokens.css (.lk-avatar,
+   .lk-chip, .lk-kpi, .lk-hero, .lk-settings-row и т.п.).
+   Здесь — только классы, специфичные для блока команды.
 ───────────────────────────────────────────────────── */
 
 .cabinet-page {
@@ -16,226 +18,627 @@
     width: 100%;
 }
 
-/* ── Таблица пользователей и редактор ролей ──────────────────────── */
+/* ─────────── Профиль и команда: единый список ─────────── */
 
-.user-row-anchor {
-    scroll-margin-top: 90px;
+.lk-team-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 4px;
 }
 
-.cab-table-wrap {
-    overflow-x: auto;
-}
-
-.cab-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--text-sm);
-}
-
-.cab-table th {
-    text-align: left;
+.lk-team-row {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0;
     border-bottom: 1px solid var(--border);
-    padding: 8px 10px;
-    font-size: var(--text-xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--muted);
 }
 
-.cab-table td {
-    border-bottom: 1px solid var(--border);
-    padding: 10px;
-    vertical-align: middle;
-}
-
-.cab-table tr:last-child td {
+.lk-team-row:last-child {
     border-bottom: 0;
 }
 
-.cab-table td.col-actions {
-    width: 380px;
+/* Локальный размер аватара в team-row (перекрывает 36px из lk-tokens). */
+.lk-team-row .lk-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: var(--text-xs);
 }
 
-.cab-table td.col-last-name,
-.cab-table th:nth-child(2) {
-    min-width: 130px;
-    width: 130px;
+/* Self-row: структурный эмфаз без подложки и чипа «это вы».
+   Выделяется аватаром 40×40, жирным ФИО и толстой линией снизу. */
+.lk-team-row.is-self {
+    padding: 12px 0;
+    border-bottom: 0;
 }
 
-.cab-table td.col-first-name,
-.cab-table th:nth-child(3) {
-    min-width: 110px;
-    width: 110px;
+.lk-team-row.is-self + .lk-team-row {
+    border-top: 2px solid var(--border);
+    padding-top: 14px;
 }
 
-.cab-link {
-    color: var(--primary);
+.lk-team-row.is-self .lk-team-name {
+    font-weight: 700;
+    font-size: var(--text-base);
 }
 
-.cab-empty-text {
-    color: var(--muted);
-    margin: 0;
+.lk-team-row.is-self .lk-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
 }
 
-.name-edit {
-    width: 100%;
-    border: 1px solid var(--border-input);
-    border-radius: 6px;
-    padding: 3px 6px;
+.lk-team-meta {
+    min-width: 0;
+}
+
+.lk-team-name {
+    font-weight: 600;
     font-size: var(--text-sm);
-    background: var(--hover);
-    box-sizing: border-box;
-}
-
-.name-edit:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px var(--primary-ring);
-}
-
-.role-actions {
     display: flex;
-    align-items: center;
     gap: 8px;
-    min-width: 360px;
-    white-space: nowrap;
+    align-items: center;
     flex-wrap: wrap;
 }
 
-.role-form select,
-.role-select-readonly {
-    width: 140px;
-    min-height: 32px;
-    border-radius: 8px;
-    border: 1px solid var(--border-input);
-    padding: 4px 8px;
-    background: var(--hover);
-    font-size: var(--text-sm);
-}
-
-.role-form select:disabled {
-    color: var(--muted);
-    opacity: 1;
-    cursor: not-allowed;
-}
-
-.role-select-readonly {
-    border-color: var(--border);
-    color: var(--muted);
-}
-
-.role-btn {
-    min-height: 32px;
-    border-radius: 8px;
-    border: 1px solid var(--border-interactive);
-    background: var(--hover);
-    padding: 0 10px;
-    cursor: pointer;
-    font-size: var(--text-sm);
-}
-
-.role-btn:hover {
-    background: var(--border);
-}
-
-.role-toggle-btn {
-    width: 110px;
-}
-
-.role-btn-primary {
-    width: 96px;
-    border-color: var(--primary);
-    background: var(--primary);
-    color: var(--surface);
-}
-
-.role-btn-primary:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
-}
-
-.role-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-}
-
-.role-btn-warning {
-    border-color: var(--warning-text);
-    color: var(--warning-text);
-    background: var(--warning-bg);
-}
-
-.role-save-btn {
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
-}
-
-.role-save-btn.is-visible {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-}
-
-/* ── Credentials-экран модалки добавления пользователя ────────────── */
-
-.cred-box {
-    background: var(--success-bg);
-    border: 1px solid var(--success-border);
-    border-radius: var(--radius-sm);
-    padding: 14px;
-    margin-bottom: 14px;
-}
-
-.cred-box-title {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--success-text);
-    margin-bottom: 10px;
-}
-
-.cred-box-desc {
+.lk-team-info {
     font-size: var(--text-xs);
-    color: var(--text);
-    margin-bottom: 8px;
+    color: var(--muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.cred-rows {
+/* Статус и роль — словами в мета-строке.
+   Подсветка только для не-активных состояний. */
+.lk-meta-warn {
+    color: var(--warning-text);
+    font-weight: 600;
+}
+
+.lk-meta-off {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* Брендовый чип роли — только в self-row рядом с ФИО.
+   У обычных сотрудников роль пишется словом в мета-строке. */
+.lk-role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--neutral-bg);
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.lk-role-chip--owner {
+    background: var(--lk-brand-50);
+    color: var(--primary);
+    border-color: var(--lk-brand-100);
+}
+
+/* ─────────── Пустое состояние ─────────── */
+
+.lk-team-empty {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    padding: 16px 0;
+}
+
+.lk-team-footnote {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    margin: 14px 0 0;
+}
+
+/* ─────────── Kebab ─────────── */
+
+.lk-actions-cell {
+    position: relative;
+    min-width: 36px;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    justify-content: flex-end;
 }
 
-.cred-row {
+.lk-kebab {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lk-kebab:hover:not([disabled]) {
+    background: var(--neutral-bg);
+    color: var(--text);
+}
+
+.lk-kebab[aria-expanded="true"] {
+    background: var(--neutral-bg);
+    color: var(--text);
+}
+
+.lk-kebab[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.lk-kebab-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 220px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 4px;
+    /* Ниже --z-modal (1000) — чтобы модалки всегда были выше меню. */
+    z-index: 100;
+}
+
+.lk-kebab-menu[hidden] {
+    display: none;
+}
+
+/* text-decoration:none; color:inherit — чтобы <a class="lk-kebab-item">
+   для пункта «Сменить пароль» выглядел идентично <button>-пунктам. */
+.lk-kebab-item {
     display: flex;
     align-items: center;
     gap: 8px;
+    justify-content: space-between;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 0;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+    text-decoration: none;
 }
 
-.cred-label {
+.lk-kebab-item:hover:not([disabled]) {
+    background: var(--hover);
+}
+
+.lk-kebab-item.is-warn {
+    color: var(--danger);
+}
+
+.lk-kebab-item.is-warn:hover {
+    background: var(--error-bg);
+}
+
+.lk-kebab-item[disabled] {
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+.lk-kebab-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+
+/* ─────────── Модалки ─────────── */
+
+.lk-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    background: var(--modal-overlay);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+    overflow-y: auto;
+}
+
+.lk-modal-overlay.is-open {
+    display: flex;
+}
+
+.lk-modal {
+    background: var(--surface);
+    border-radius: var(--lk-radius-lg);
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2);
+    width: 100%;
+    max-width: 460px;
+    padding: 24px;
+    animation: lk-modal-in 0.2s ease-out;
+}
+
+.lk-modal--wide {
+    max-width: 520px;
+}
+
+@keyframes lk-modal-in {
+    from { transform: translateY(-12px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+
+.lk-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.lk-modal-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.lk-modal-subtitle {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    margin: 4px 0 0;
+}
+
+.lk-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.lk-modal-close:hover {
+    background: var(--neutral-bg);
+    color: var(--text);
+}
+
+.lk-modal-body {
+    font-size: var(--text-sm);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.lk-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.lk-modal-step[hidden] {
+    display: none;
+}
+
+.lk-modal-title--center {
+    text-align: center;
+}
+
+.lk-modal-subtitle--center {
+    text-align: center;
+    margin: 4px 0 0;
+}
+
+.lk-modal-tight {
+    margin: 0;
+}
+
+.lk-cred--spaced {
+    margin-top: 18px;
+}
+
+.lk-warn-banner--spaced {
+    margin-top: 14px;
+}
+
+.lk-field-hint--inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+/* ─────────── Поля форм внутри модалок ─────────── */
+
+.lk-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lk-field-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.lk-field-input {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--border-input);
+    background: var(--surface);
+    border-radius: 8px;
+    font-size: var(--text-sm);
+    font-family: inherit;
+    color: var(--text);
+    transition: border-color 0.15s ease;
+}
+
+.lk-field-input:hover {
+    border-color: var(--border-input-hover);
+}
+
+.lk-field-input:focus {
+    outline: 3px solid var(--primary-ring);
+    outline-offset: 0;
+    border-color: var(--primary);
+}
+
+.lk-field-input:disabled {
+    background: var(--neutral-bg);
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+.lk-field-input.is-invalid {
+    border-color: var(--danger);
+}
+
+select.lk-field-input {
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='4 6 8 10 12 6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.lk-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 560px) {
+    .lk-field-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.lk-field-hint {
     font-size: var(--text-xs);
     color: var(--muted);
-    min-width: 80px;
 }
 
-.cred-value {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border-input);
-    border-radius: 6px;
-    padding: 5px 8px;
-    font-size: var(--text-sm);
-    font-family: monospace;
+.lk-field-hint.is-warn {
+    color: var(--warning-text);
 }
 
-.cred-copy-btn {
-    padding: 4px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--border-interactive);
-    background: var(--surface);
-    cursor: pointer;
+.lk-field-error {
     font-size: var(--text-xs);
+    color: var(--danger);
+}
+
+.lk-field-error:empty {
+    display: none;
+}
+
+.lk-form-errors {
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    font-size: var(--text-sm);
+}
+
+.lk-form-errors:empty {
+    display: none;
+}
+
+/* ─────────── Info-баннер и warn-баннер ─────────── */
+
+.lk-info-banner {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--info-bg);
+    border: 1px solid var(--info-border);
+    color: var(--info-text);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+}
+
+.lk-info-banner.is-warn {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: #78350f;
+}
+
+.lk-warn-banner {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: #78350f;
+    font-size: var(--text-xs);
+    line-height: 1.5;
+}
+
+/* ─────────── Credential card ─────────── */
+
+.lk-cred {
+    background: var(--lk-bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.lk-cred-row {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    font-size: var(--text-sm);
+}
+
+.lk-cred-row .k {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.lk-cred-row .v {
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    word-break: break-all;
+    min-width: 0;
+}
+
+.lk-cred-row .v.is-pwd {
+    letter-spacing: 0.1em;
+}
+
+.lk-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     white-space: nowrap;
+}
+
+.lk-copy-btn:hover {
+    background: var(--hover);
+    border-color: var(--border-interactive);
+}
+
+.lk-copy-btn.is-copied {
+    color: var(--success-text);
+    border-color: var(--success-border);
+    background: var(--success-bg);
+}
+
+.lk-success-ico {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--success-bg);
+    color: var(--success-text);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 8px;
+    animation: lk-success-pop 0.3s cubic-bezier(0.17, 0.67, 0.38, 1.5);
+}
+
+@keyframes lk-success-pop {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ─────────── Toast ─────────── */
+
+.lk-toast-wrap {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    align-items: center;
+    width: min(520px, calc(100vw - 32px));
+}
+
+.lk-toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--text);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: var(--text-sm);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+    animation: lk-toast-in 0.2s ease-out;
+    pointer-events: auto;
+    max-width: 100%;
+}
+
+.lk-toast.is-hiding {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.lk-toast--error {
+    background: var(--danger);
+}
+
+.lk-toast--success {
+    background: var(--success-text);
+}
+
+@keyframes lk-toast-in {
+    from { transform: translateY(12px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ─────────── Адаптив ─────────── */
+
+@media (max-width: 560px) {
+    .lk-team-row {
+        gap: 8px;
+    }
+
+    .lk-team-row.is-self .lk-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 13px;
+    }
 }

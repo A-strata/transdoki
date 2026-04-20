@@ -3,6 +3,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.db.models import Max
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -118,10 +119,16 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
         account = get_request_account(self.request)
         profile = self.request.user.profile
 
+        # Команда — все профили аккаунта, кроме текущего пользователя:
+        # сам пользователь рендерится отдельно в self-card. last_activity —
+        # максимум по его UserSession (бывает NULL, если ни разу не входил
+        # после создания — статус «ожидает входа»).
         users_in_account = (
-            UserProfile.objects.select_related("user")
-            .filter(account=account)
-            .order_by("user__username")
+            UserProfile.objects.filter(account=account)
+            .exclude(user=self.request.user)
+            .select_related("user")
+            .annotate(last_activity=Max("user__sessions__last_activity"))
+            .order_by("user__last_name", "user__first_name", "user__username")
         )
 
         can_manage_users = profile.role in {
@@ -129,12 +136,24 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
             UserProfile.Role.ADMIN,
         }
 
+        # Лимит и счётчик пользователей для «+ Пригласить».
+        # user_count_current = команда + 1 (сам пользователь).
+        subscription = getattr(account, "subscription", None)
+        user_limit = (
+            subscription.effective_user_limit
+            if subscription is not None
+            else None
+        )
+        user_count_current = users_in_account.count() + 1
+        can_invite = can_manage_users and (
+            user_limit is None or user_count_current < user_limit
+        )
+
         own_companies = Organization.objects.own_for(account)
 
         # Billing-контекст (баланс, прогноз, KPI). Не фейлимся, если у аккаунта
         # нет подписки — сигнал auto_create_free_subscription создаёт Free,
         # но защита нужна на случай сломанного инварианта.
-        subscription = getattr(account, "subscription", None)
         forecast = estimate_period_forecast(account, subscription)
 
         if subscription is not None:
@@ -174,6 +193,9 @@ class AccountCabinetView(LoginRequiredMixin, TemplateView):
                 "cabinet_kpi": cabinet_kpi,
                 "org_usage": get_organization_usage(account),
                 "user_usage": get_user_usage(account),
+                "user_limit": user_limit,
+                "user_count_current": user_count_current,
+                "can_invite": can_invite,
             }
         )
         return context
@@ -263,7 +285,20 @@ class AccountUserPasswordResetView(LoginRequiredMixin, View):
 
 
 class AccountUserUpdateView(LoginRequiredMixin, View):
-    """AJAX-endpoint: обновляет имя, фамилию и роль пользователя аккаунта."""
+    """
+    AJAX-endpoint: обновляет имя, фамилию и роль пользователя аккаунта.
+
+    Права (важно, легко испортить при рефакторинге):
+    - Свой профиль: любая роль аккаунта может править собственное ФИО.
+      Роль в self-case игнорируется ниже в коде (ветка ``if not is_own_profile``)
+      — смена своей роли через UI запрещена по продуктовому правилу.
+    - Чужой профиль: только owner и admin. Владельца никто редактировать
+      не может даже как actor=owner сам-себя-owner — это self-case.
+
+    Такое распределение зафиксировано в ТЗ «Редизайн блока Профиль и команда»
+    §4 (матрица прав). Если гейт прав переносится выше is_own_profile,
+    диспетчер/логист теряет право на смену собственного ФИО и это ломает UX.
+    """
 
     allowed_roles = {
         UserProfile.Role.ADMIN,
@@ -278,15 +313,18 @@ class AccountUserUpdateView(LoginRequiredMixin, View):
         account = get_request_account(request)
         actor_profile = request.user.profile
 
-        if actor_profile.role not in {UserProfile.Role.OWNER, UserProfile.Role.ADMIN}:
-            return JsonResponse({"ok": False, "error": "Недостаточно прав."}, status=403)
-
         target_profile = get_object_or_404(
             UserProfile.objects.select_related("user").filter(account=account),
             pk=profile_id,
         )
 
         is_own_profile = target_profile.user_id == request.user.id
+
+        if not is_own_profile and actor_profile.role not in {
+            UserProfile.Role.OWNER,
+            UserProfile.Role.ADMIN,
+        }:
+            return JsonResponse({"ok": False, "error": "Недостаточно прав."}, status=403)
 
         if not is_own_profile and target_profile.role == UserProfile.Role.OWNER:
             return JsonResponse({"ok": False, "error": "Нельзя редактировать владельца аккаунта."}, status=400)

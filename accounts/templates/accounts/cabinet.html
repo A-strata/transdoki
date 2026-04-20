@@ -172,137 +172,141 @@
         <div class="lk-card">
             <div class="lk-card-head">
                 <h3>Профиль и команда</h3>
-                {% if can_manage_users %}
+                {% if can_invite %}
                     <button type="button" class="tms-btn tms-btn-secondary tms-btn-sm"
-                            data-modal-open="add-user-overlay">+ Пригласить</button>
+                            data-lk-modal-open="invite-modal">+ Пригласить</button>
+                {% elif can_manage_users and user_limit %}
+                    <a href="{% url 'billing:subscription' %}"
+                       class="tms-btn tms-btn-secondary tms-btn-sm"
+                       title="Лимит пользователей по тарифу исчерпан">Увеличить лимит</a>
                 {% endif %}
             </div>
 
-            <div class="lk-profile">
-                <div class="lk-profile-avatar" aria-hidden="true">
-                    {% with fn=request.user.first_name|default:request.user.username ln=request.user.last_name %}
-                        {{ fn|slice:":1"|upper }}{{ ln|slice:":1"|upper }}
-                    {% endwith %}
-                </div>
-                <div>
-                    <div class="lk-profile-name">
-                        {% if request.user.get_full_name %}
-                            {{ request.user.get_full_name }}
-                        {% else %}
-                            {{ request.user.username }}
-                        {% endif %}
-                        <span class="lk-chip lk-chip--brand">{{ profile.get_role_display }}</span>
+            {# ── Единый список команды: self-row первой строкой, далее — цикл ── #}
+            <div class="lk-team-list">
+
+                {# Self-row — первая строка с is-self (см. spec v1.3 §3.1.2) #}
+                <div class="lk-team-row is-self" data-profile-id="{{ profile.id }}">
+                    <div class="lk-avatar" aria-hidden="true">
+                        {% with fn=request.user.first_name ln=request.user.last_name un=request.user.username %}
+                            {% if fn or ln %}{{ fn|slice:":1"|upper }}{{ ln|slice:":1"|upper }}{% else %}{{ un|slice:":2"|upper }}{% endif %}
+                        {% endwith %}
                     </div>
-                    <div class="lk-profile-meta">
-                        {{ request.user.email|default:request.user.username }} · ID аккаунта {{ account.pk }}
+                    <div class="lk-team-meta">
+                        <div class="lk-team-name">
+                            {{ request.user.get_full_name|default:request.user.username }}
+                            <span class="lk-role-chip{% if profile.role == 'owner' %} lk-role-chip--owner{% endif %}">
+                                {{ profile.get_role_display }}
+                            </span>
+                        </div>
+                        <div class="lk-team-info">
+                            {{ request.user.email|default:request.user.username }}{% if request.user.last_login %} · последний вход {{ request.user.last_login|date:"j M, H:i" }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="lk-actions-cell">
+                        <button class="lk-kebab" type="button"
+                                aria-haspopup="true" aria-expanded="false"
+                                aria-label="Действия с профилем">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <circle cx="12" cy="5" r="1.5"/>
+                                <circle cx="12" cy="12" r="1.5"/>
+                                <circle cx="12" cy="19" r="1.5"/>
+                            </svg>
+                        </button>
+                        <div class="lk-kebab-menu" role="menu" hidden>
+                            <button type="button" class="lk-kebab-item" role="menuitem"
+                                    data-lk-modal-open="edit-self-modal">Редактировать профиль…</button>
+                            <a class="lk-kebab-item" role="menuitem"
+                               href="{% url 'password_change' %}">Сменить пароль</a>
+                        </div>
                     </div>
                 </div>
+
+                {# Остальные сотрудники — цикл #}
+                {% for p in users_in_account %}
+                    <div class="lk-team-row"
+                         id="user-{{ p.id }}"
+                         data-profile-id="{{ p.id }}"
+                         data-role="{{ p.role }}">
+                        <div class="lk-avatar" aria-hidden="true">
+                            {% with fn=p.user.first_name ln=p.user.last_name un=p.user.username %}
+                                {% if fn or ln %}{{ fn|slice:":1"|upper }}{{ ln|slice:":1"|upper }}{% else %}{{ un|slice:":2"|upper }}{% endif %}
+                            {% endwith %}
+                        </div>
+                        <div class="lk-team-meta">
+                            <div class="lk-team-name">
+                                {{ p.user.get_full_name|default:p.user.username }}
+                            </div>
+                            {% with email=p.user.email|default:p.user.username role_word=p.get_role_display|lower %}
+                            <div class="lk-team-info"
+                                 data-email="{{ email }}"
+                                 data-status-html="{% if not p.user.is_active %}<span class=&quot;lk-meta-off&quot;>отключён</span>{% elif p.last_activity %}активен{% else %}<span class=&quot;lk-meta-warn&quot;>ожидает входа</span>{% endif %}">
+                                {{ email }} · {{ role_word }} ·
+                                {% if not p.user.is_active %}
+                                    <span class="lk-meta-off">отключён</span>
+                                {% elif p.last_activity %}
+                                    активен
+                                {% else %}
+                                    <span class="lk-meta-warn">ожидает входа</span>
+                                {% endif %}
+                            </div>
+                            {% endwith %}
+                        </div>
+                        <div class="lk-actions-cell">
+                            {% if can_manage_users and p.role != "owner" and p.user_id != request.user.id %}
+                                <button class="lk-kebab" type="button"
+                                        aria-haspopup="true" aria-expanded="false"
+                                        aria-label="Действия с пользователем {{ p.user.get_full_name|default:p.user.username }}">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                        <circle cx="12" cy="5" r="1.5"/>
+                                        <circle cx="12" cy="12" r="1.5"/>
+                                        <circle cx="12" cy="19" r="1.5"/>
+                                    </svg>
+                                </button>
+                                <div class="lk-kebab-menu" role="menu" hidden>
+                                    <button type="button" class="lk-kebab-item" role="menuitem"
+                                            data-lk-modal-open="edit-user-modal"
+                                            data-profile-id="{{ p.id }}"
+                                            data-update-url="{% url 'accounts:user_update' p.id %}"
+                                            data-first-name="{{ p.user.first_name }}"
+                                            data-last-name="{{ p.user.last_name }}"
+                                            data-full-name="{{ p.user.get_full_name|default:p.user.username }}"
+                                            data-login="{{ p.user.email|default:p.user.username }}"
+                                            data-role="{{ p.role }}">Редактировать…</button>
+                                    <button type="button" class="lk-kebab-item is-warn" role="menuitem"
+                                            data-lk-modal-open="reset-confirm-modal"
+                                            data-profile-id="{{ p.id }}"
+                                            data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
+                                            data-full-name="{{ p.user.get_full_name|default:p.user.username }}"
+                                            data-login="{{ p.user.email|default:p.user.username }}"
+                                            data-role-display="{{ p.get_role_display }}">Сбросить пароль</button>
+                                    <div class="lk-kebab-divider"></div>
+                                    <button type="button" class="lk-kebab-item" role="menuitem"
+                                            disabled title="Готовится">
+                                        Отключить пользователя
+                                        <span class="lk-soon">скоро</span>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+
             </div>
 
-            {% if users_in_account %}
-                <div class="cab-table-wrap">
-                    <table class="cab-table">
-                        <thead>
-                            <tr>
-                                <th>Email / Логин</th>
-                                <th>Фамилия</th>
-                                <th>Имя</th>
-                                <th>Статус</th>
-                                <th class="col-actions">Роль и действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in users_in_account %}
-                                <tr id="user-{{ p.id }}" class="user-row-anchor">
-                                    <td>{{ p.user.username }}</td>
-                                    <td class="col-last-name">
-                                        <span class="name-display">{{ p.user.last_name|default:"—" }}</span>
-                                        <input class="name-edit" type="text" value="{{ p.user.last_name }}" hidden placeholder="Фамилия">
-                                    </td>
-                                    <td class="col-first-name">
-                                        <span class="name-display">{{ p.user.first_name|default:"—" }}</span>
-                                        <input class="name-edit" type="text" value="{{ p.user.first_name }}" hidden placeholder="Имя">
-                                    </td>
-                                    <td>
-                                        {% if p.user.is_active %}
-                                            <span class="lk-chip lk-chip--ok">активен</span>
-                                        {% else %}
-                                            <span class="lk-chip">отключён</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="col-actions">
-                                        {% if can_manage_users and p.user_id == request.user.id %}
-                                            <form method="post"
-                                                  action=""
-                                                  data-update-url="{% url 'accounts:user_update' p.id %}"
-                                                  data-names-only="1"
-                                                  class="role-form">
-                                                {% csrf_token %}
-                                                <div class="role-actions">
-                                                    <select class="role-select"
-                                                            data-initial="{{ p.role }}"
-                                                            disabled>
-                                                        <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
-                                                        <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
-                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
-                                                        <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
-                                                    </select>
-                                                    <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
-                                                    <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
-                                                </div>
-                                            </form>
-                                        {% elif can_manage_users and p.role != "owner" %}
-                                            <form method="post"
-                                                  action="{% url 'accounts:user_role_update' p.id %}"
-                                                  data-update-url="{% url 'accounts:user_update' p.id %}"
-                                                  class="role-form">
-                                                {% csrf_token %}
-                                                <div class="role-actions">
-                                                    <select name="role"
-                                                            class="role-select"
-                                                            data-initial="{{ p.role }}"
-                                                            disabled>
-                                                        <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
-                                                        <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
-                                                        <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
-                                                    </select>
-                                                    <button type="button" class="role-btn role-toggle-btn">Редактировать</button>
-                                                    <button type="submit" class="role-btn role-btn-primary role-save-btn" disabled>Сохранить</button>
-                                                    <button type="button"
-                                                            class="role-btn role-btn-warning reset-pwd-btn"
-                                                            data-profile-id="{{ p.id }}"
-                                                            data-reset-url="{% url 'accounts:user_reset_password' p.id %}"
-                                                            title="Сбросить пароль пользователя">
-                                                        Сбросить пароль
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        {% else %}
-                                            <select disabled class="role-select-readonly">
-                                                <option value="owner"      {% if p.role == "owner"      %}selected{% endif %}>Владелец</option>
-                                                <option value="admin"      {% if p.role == "admin"      %}selected{% endif %}>Администратор</option>
-                                                <option value="dispatcher" {% if p.role == "dispatcher" %}selected{% endif %}>Диспетчер</option>
-                                                <option value="logist"     {% if p.role == "logist"     %}selected{% endif %}>Логист</option>
-                                            </select>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="empty-state">
-                    <p>В аккаунте пока нет пользователей.</p>
-                </div>
-            {% endif %}
-
-            {% if user_usage.limit %}
-                <p class="lk-small lk-muted" style="margin:14px 0 0">
-                    {{ user_usage.current }} из {{ user_usage.limit }} пользователей по тарифу
-                    «{{ subscription.plan.name }}».
-                </p>
-            {% endif %}
+            {% comment %}
+              Футер: квота/тариф. Overage по пользователям в Billing v2 не начисляется —
+              при достижении лимита создание блокируется (can_invite=False +
+              BillingProtectedMixin). См. spec v1.3 §3.2.
+            {% endcomment %}
+            <p class="lk-team-footnote">
+                {% if user_limit %}
+                    {{ user_count_current }} из {{ user_limit }} пользователей{% if subscription %} по тарифу «{{ subscription.plan.name }}»{% endif %}.
+                    При превышении лимита создание новых сотрудников блокируется — увеличьте лимит в тарифе.
+                {% else %}
+                    {{ user_count_current }} пользователей в команде.{% if subscription %} На вашем тарифе «{{ subscription.plan.name }}» ограничения нет.{% endif %}
+                {% endif %}
+            </p>
         </div>
 
         <div class="lk-card">
@@ -458,70 +462,7 @@
 
 </section>
 
-{# ── Модалка добавления пользователя — структура совместима с cabinet.js ── #}
-<div id="add-user-overlay" class="modal-overlay" hidden>
-    <div class="modal-dialog">
-        <h3 class="modal-title">Добавить пользователя</h3>
-
-        <div id="au-form-body">
-            <div id="add-user-error" class="modal-form-errors" hidden></div>
-
-            <div class="modal-fields">
-                <div class="modal-field">
-                    <label>Фамилия</label>
-                    <input type="text" name="last_name" required>
-                    {# display управляется JS cabinet.js, не через ModalHelpers #}
-                    <span class="modal-field-error" data-err="last_name" style="display:none"></span>
-                </div>
-                <div class="modal-field">
-                    <label>Имя</label>
-                    <input type="text" name="first_name" required>
-                    <span class="modal-field-error" data-err="first_name" style="display:none"></span>
-                </div>
-                <div class="modal-field modal-field--full">
-                    <label>Роль</label>
-                    <select name="role" required>
-                        <option value="admin">Администратор</option>
-                        <option value="dispatcher">Диспетчер</option>
-                        <option value="logist">Логист</option>
-                    </select>
-                    <span class="modal-field-error" data-err="role" style="display:none"></span>
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button type="button" id="add-user-submit" class="tms-btn tms-btn-primary"
-                        data-create-url="{% url 'accounts:user_create' %}"
-                        data-loading-text="Сохраняем...">Создать</button>
-                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
-            </div>
-        </div>
-
-        <div id="au-credentials" hidden>
-            <div class="cred-box">
-                <div class="cred-box-title">Пользователь создан</div>
-                <div class="cred-box-desc">
-                    Передайте сотруднику логин и временный пароль. Он сможет сменить пароль после входа.
-                </div>
-                <div class="cred-rows">
-                    <div class="cred-row">
-                        <span class="cred-label">Логин</span>
-                        <code id="cred-login" class="cred-value"></code>
-                        <button type="button" class="copy-btn cred-copy-btn" data-target="cred-login">Копировать</button>
-                    </div>
-                    <div class="cred-row">
-                        <span class="cred-label">Пароль</span>
-                        <code id="cred-pass" class="cred-value"></code>
-                        <button type="button" class="copy-btn cred-copy-btn" data-target="cred-pass">Копировать</button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button type="button" id="au-cred-close" class="tms-btn tms-btn-primary">Готово</button>
-            </div>
-        </div>
-    </div>
-</div>
+{% include "accounts/partials/cabinet_modals.html" %}
 
 {% endblock %}
 
