@@ -71,3 +71,47 @@
     color: var(--info-text);
     font-size: var(--text-sm);
 }
+
+/* ── Success-иконка в модалках апгрейда/даунгрейда ─────────────── */
+
+.subscription-page .lk-success-ico {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--success-bg);
+    color: var(--success-text);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 12px;
+}
+
+.subscription-page .modal-title--center {
+    text-align: center;
+}
+
+.subscription-page .modal-body--center {
+    text-align: center;
+}
+
+.subscription-page .modal-actions--center {
+    justify-content: center;
+}
+
+/* ── Warnings-блок внутри модалки планирования даунгрейда ──────── */
+
+.sub-downgrade-warnings {
+    margin: 0 0 16px;
+}
+
+.sub-downgrade-warnings p {
+    margin: 0 0 6px;
+}
+
+.sub-downgrade-warnings ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.sub-downgrade-warnings li + li {
+    margin-top: 4px;
+}

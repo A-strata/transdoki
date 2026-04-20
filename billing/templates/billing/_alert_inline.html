@@ -1,0 +1,84 @@
+{% if alert.code == "upcoming" %}
+    <div class="lk-alert lk-alert--info">
+        <span class="lk-alert-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v5M12 16h.01"/>
+            </svg>
+        </span>
+        <div>
+            <div class="lk-alert-title">Следующее списание — {{ alert.next_charge_date|date:"j E" }}</div>
+            Спишется <b>{{ alert.next_charge_amount|floatformat:0 }} ₽</b>. На балансе будет {{ alert.balance|floatformat:0 }} ₽ — хватит на одно списание, на следующее уже нет.
+        </div>
+    </div>
+{% elif alert.code == "urgent" %}
+    <div class="lk-alert lk-alert--warn">
+        <span class="lk-alert-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v5M12 16h.01"/>
+            </svg>
+        </span>
+        <div>
+            <div class="lk-alert-title">Баланса не хватит на списание {{ alert.next_charge_date|date:"j E" }}</div>
+            Нужно <b>{{ alert.next_charge_amount|floatformat:0 }} ₽</b>, на балансе {{ alert.balance|floatformat:0 }} ₽. Пополните минимум на {{ alert.amount_to_topup|floatformat:0 }} ₽, иначе тариф уйдёт в просрочку.
+        </div>
+        <div class="lk-alert-actions">
+            <a href="{% url 'billing:deposit' %}?amount={{ alert.amount_to_topup|floatformat:0 }}" class="tms-btn tms-btn-secondary tms-btn-sm">
+                Пополнить на {{ alert.amount_to_topup|floatformat:0 }} ₽
+            </a>
+        </div>
+    </div>
+{% elif alert.code == "past_due" %}
+    <div class="lk-alert lk-alert--danger">
+        <span class="lk-alert-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v5M12 16h.01"/>
+            </svg>
+        </span>
+        <div>
+            <div class="lk-alert-title">Оплата подписки не прошла{% if alert.failed_at %} {{ alert.failed_at|date:"j E" }}{% endif %}</div>
+            {% if alert.suspended_at %}
+                Тариф будет приостановлен <b>{{ alert.suspended_at|date:"j E" }}</b> ({{ alert.days_until_suspended }} дн.), если не пополнить{% if alert.amount_to_topup %} на <b>{{ alert.amount_to_topup|floatformat:0 }} ₽</b>{% endif %}.
+            {% else %}
+                Пополните баланс{% if alert.amount_to_topup %} на <b>{{ alert.amount_to_topup|floatformat:0 }} ₽</b>{% endif %}, чтобы восстановить списание.
+            {% endif %}
+        </div>
+        {% if alert.amount_to_topup %}
+            <div class="lk-alert-actions">
+                <a href="{% url 'billing:deposit' %}?amount={{ alert.amount_to_topup|floatformat:0 }}" class="tms-btn tms-btn-secondary tms-btn-sm">
+                    Пополнить на {{ alert.amount_to_topup|floatformat:0 }} ₽
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% elif alert.code == "suspended" %}
+    <div class="lk-alert lk-alert--danger">
+        <span class="lk-alert-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v5M12 16h.01"/>
+            </svg>
+        </span>
+        <div>
+            <div class="lk-alert-title">Тариф приостановлен</div>
+            Создание новых рейсов, путевых листов и сотрудников заблокировано. Пополните{% if alert.amount_to_topup %} на <b>{{ alert.amount_to_topup|floatformat:0 }} ₽</b>{% endif %}, чтобы возобновить работу.
+        </div>
+        {% if alert.amount_to_topup %}
+            <div class="lk-alert-actions">
+                <a href="{% url 'billing:deposit' %}?amount={{ alert.amount_to_topup|floatformat:0 }}" class="tms-btn tms-btn-secondary tms-btn-sm">
+                    Пополнить на {{ alert.amount_to_topup|floatformat:0 }} ₽
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}

@@ -343,6 +343,26 @@ def subscription_cancel_downgrade(request):
     return JsonResponse({"ok": True, **result})
 
 
+def _parse_deposit_amount_hint(raw: str | None) -> Decimal | None:
+    """
+    Парсит ?amount= из GET для предзаполнения формы пополнения.
+
+    Принимает только положительный Decimal в пределах [MIN, MAX], определённых
+    в cloudpayments.py. Любые ошибки парсинга или выход за границы → None
+    (форма просто остаётся пустой). Нет смысла валидировать здесь как форму:
+    значение только подставляется в поле, реальная валидация — на POST.
+    """
+    if not raw:
+        return None
+    try:
+        value = Decimal(raw)
+    except (ArithmeticError, ValueError, TypeError):
+        return None
+    if value < cp_service.MIN_DEPOSIT_AMOUNT or value > cp_service.MAX_DEPOSIT_AMOUNT:
+        return None
+    return value.quantize(Decimal("1"))
+
+
 class DepositView(LoginRequiredMixin, View):
     """
     Страница пополнения баланса через CloudPayments.
@@ -362,9 +382,11 @@ class DepositView(LoginRequiredMixin, View):
 
     def get(self, request):
         account = get_request_account(request)
+        initial_amount = _parse_deposit_amount_hint(request.GET.get("amount"))
         return render(request, self.template_name, {
             "form": DepositForm(),
             "account": account,
+            "initial_amount": initial_amount,
         })
 
     def post(self, request):

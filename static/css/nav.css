@@ -188,6 +188,12 @@
     border-color: var(--warning-border);
 }
 
+.balance-info {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border-color: var(--info-border);
+}
+
 .balance-danger {
     background: var(--error-bg);
     color: var(--danger);

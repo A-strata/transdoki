@@ -13,11 +13,14 @@
          data-url-upgrade="{% url 'billing:subscription_upgrade' %}"
          data-url-schedule-downgrade="{% url 'billing:subscription_schedule_downgrade' %}"
          data-url-cancel-downgrade="{% url 'billing:subscription_cancel_downgrade' %}"
-         data-url-deposit="{% url 'billing:deposit' %}">
+         data-url-deposit="{% url 'billing:deposit' %}"
+         data-current-period-end="{{ subscription.current_period_end|date:'j E Y' }}">
 
     {% if error %}
         <div class="alert alert-error">{{ error }}</div>
     {% else %}
+
+    {% include "billing/_alert_inline.html" with alert=billing_alert %}
 
     {# ── Заголовок страницы ─────────────────────────────────────────── #}
     <div class="lk-page-head">
@@ -616,6 +619,111 @@
             <div class="modal-actions">
                 <a href="#" class="tms-btn tms-btn-primary" id="ifm-deposit-link">Пополнить баланс</a>
                 <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── Подтверждение апгрейда ────────────────────────────────────── #}
+    <div class="modal-overlay" id="upgrade-confirm-modal" hidden>
+        <div class="modal-dialog">
+            <h3 class="modal-title">Перейти на тариф «<span data-plan-name>—</span>»?</h3>
+            <p class="modal-body">
+                Сейчас спишется pro&nbsp;rata-разница за оставшиеся дни текущего
+                периода. Если на балансе не хватит — мы покажем, сколько нужно
+                пополнить, тариф не сменится.
+            </p>
+            <div class="modal-actions">
+                <button type="button" class="tms-btn tms-btn-primary"
+                        data-confirm-upgrade>Перейти</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── Успех апгрейда ────────────────────────────────────────────── #}
+    <div class="modal-overlay" id="upgrade-success-modal" hidden>
+        <div class="modal-dialog">
+            <div class="lk-success-ico" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="3"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="4 12 10 18 20 6"/>
+                </svg>
+            </div>
+            <h3 class="modal-title modal-title--center">Тариф изменён</h3>
+            <p class="modal-body modal-body--center">
+                Вы перешли на «<span data-plan-name>—</span>». Списано:
+                <strong><span data-charged>0</span> ₽</strong>
+                (pro&nbsp;rata за оставшиеся дни периода).
+            </p>
+            <div class="modal-actions modal-actions--center">
+                <button type="button" class="tms-btn tms-btn-primary"
+                        data-reload-on-close>Готово</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── Подтверждение планирования даунгрейда ─────────────────────── #}
+    <div class="modal-overlay" id="downgrade-schedule-confirm-modal" hidden>
+        <div class="modal-dialog">
+            <h3 class="modal-title">Запланировать переход на «<span data-plan-name>—</span>»?</h3>
+            <p class="modal-body">
+                Текущий тариф продолжит действовать до
+                <strong><span data-current-period-end>—</span></strong>, после
+                чего автоматически переключится на «<span data-plan-name>—</span>».
+                До конца периода ничего не списывается.
+            </p>
+            <p class="modal-body">
+                На новом тарифе будут действовать его лимиты — если у вас уже
+                создано больше сущностей, чем он разрешает, часть функций будет
+                недоступна до увеличения лимита.
+            </p>
+            <div class="modal-actions">
+                <button type="button" class="tms-btn tms-btn-primary"
+                        data-confirm-schedule-downgrade>Запланировать переход</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── Успех планирования даунгрейда ─────────────────────────────── #}
+    <div class="modal-overlay" id="downgrade-schedule-success-modal" hidden>
+        <div class="modal-dialog">
+            <div class="lk-success-ico" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="3"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="4 12 10 18 20 6"/>
+                </svg>
+            </div>
+            <h3 class="modal-title modal-title--center">Переход запланирован</h3>
+            <p class="modal-body modal-body--center">
+                С&nbsp;<strong><span data-effective-at>—</span></strong>
+                ваш тариф автоматически сменится на «<span data-plan-name>—</span>».
+            </p>
+            <div class="alert alert-warning sub-downgrade-warnings" hidden>
+                <p><strong>Перед переходом обратите внимание:</strong></p>
+                <ul data-warnings-list></ul>
+            </div>
+            <div class="modal-actions modal-actions--center">
+                <button type="button" class="tms-btn tms-btn-primary"
+                        data-reload-on-close>Понятно</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── Подтверждение отмены запланированного даунгрейда ──────────── #}
+    <div class="modal-overlay" id="cancel-downgrade-confirm-modal" hidden>
+        <div class="modal-dialog">
+            <h3 class="modal-title">Отменить запланированный переход?</h3>
+            <p class="modal-body">
+                Текущий тариф останется активным после конца периода.
+                Запланированная смена будет отменена.
+            </p>
+            <div class="modal-actions">
+                <button type="button" class="tms-btn tms-btn-primary"
+                        data-confirm-cancel-downgrade>Отменить переход</button>
+                <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Не отменять</button>
             </div>
         </div>
     </div>

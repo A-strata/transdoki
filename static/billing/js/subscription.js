@@ -1,12 +1,9 @@
 /**
  * Страница «Мой тариф»: апгрейд/даунгрейд/отмена даунгрейда.
  *
- * Все операции — AJAX через CSRF token. При InsufficientFunds (HTTP 402)
- * открывается модалка с призывом пополнить баланс на нужную сумму, а не
- * сырая ошибка.
- *
- * Логика смены тарифа не трогалась — только селекторы и триггеры переведены
- * на новый UI (.lk-plans + .sub-plans-list в модалке).
+ * Все операции — AJAX через CSRF token. Подтверждения и результаты — через
+ * стилизованные модалки (паттерн .modal-overlay + data-modal-* из base.js).
+ * Нативные confirm()/alert() не используются — ui-guide §4.
  */
 (function () {
     "use strict";
@@ -18,6 +15,7 @@
     var urlScheduleDowngrade = page.dataset.urlScheduleDowngrade;
     var urlCancelDowngrade = page.dataset.urlCancelDowngrade;
     var urlDeposit = page.dataset.urlDeposit;
+    var currentPeriodEnd = page.dataset.currentPeriodEnd || "";
 
     // ── Прогресс-бары (.lk-progress > span) ─────────────────────────
     document.querySelectorAll(".lk-progress > span[data-current][data-limit]").forEach(function (fill) {
@@ -57,6 +55,52 @@
         });
     }
 
+    // ── Работа с модалками ──────────────────────────────────────────
+    function openModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.hidden = false;
+        return modal;
+    }
+
+    function closeModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.hidden = true;
+    }
+
+    function setText(modal, selector, text) {
+        modal.querySelectorAll(selector).forEach(function (el) {
+            el.textContent = text;
+        });
+    }
+
+    function setButtonLoading(btn, isLoading) {
+        if (!btn) return;
+        if (isLoading) {
+            if (!btn.dataset.originalText) {
+                btn.dataset.originalText = btn.textContent;
+            }
+            btn.disabled = true;
+            btn.textContent = btn.dataset.loadingText || "Подождите…";
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.originalText) {
+                btn.textContent = btn.dataset.originalText;
+                delete btn.dataset.originalText;
+            }
+        }
+    }
+
+    // Сброс disabled на всех confirm-кнопках при закрытии модалки
+    document.querySelectorAll(".modal-overlay").forEach(function (modal) {
+        new MutationObserver(function () {
+            if (modal.hidden) {
+                modal.querySelectorAll("button[data-confirm-upgrade], button[data-confirm-schedule-downgrade], button[data-confirm-cancel-downgrade]").forEach(function (btn) {
+                    setButtonLoading(btn, false);
+                });
+            }
+        }).observe(modal, { attributes: true, attributeFilter: ["hidden"] });
+    });
+
     // ── Выбор плана (1) из модалки и (2) из сетки планов ───────────
     // Оба триггера приводят к общему обработчику handlePlanSelection.
     document.querySelectorAll("[data-select-plan]").forEach(function (btn) {
@@ -84,23 +128,36 @@
 
     function handlePlanSelection(opts) {
         if (opts.newPrice > opts.currentPrice) {
-            handleUpgrade(opts.planCode, opts.planName);
+            openUpgradeConfirm(opts.planCode, opts.planName);
         } else if (opts.newPrice < opts.currentPrice) {
-            handleScheduleDowngrade(opts.planCode, opts.planName);
+            openDowngradeConfirm(opts.planCode, opts.planName);
         } else {
             showError("Нельзя перейти на план с той же ценой.");
         }
     }
 
-    // ── Апгрейд ─────────────────────────────────────────────────────
-    function handleUpgrade(planCode, planName) {
-        if (!confirm("Перейти на тариф «" + planName + "»? Спишется pro rata-разница за оставшиеся дни.")) {
-            return;
-        }
+    // ── Апгрейд: открытие модалки подтверждения ─────────────────────
+    function openUpgradeConfirm(planCode, planName) {
+        var modal = openModal("upgrade-confirm-modal");
+        if (!modal) return;
+        setText(modal, "[data-plan-name]", planName);
+        var confirmBtn = modal.querySelector("[data-confirm-upgrade]");
+        confirmBtn.dataset.planCode = planCode;
+        confirmBtn.dataset.planName = planName;
+    }
+
+    document.querySelectorAll("[data-confirm-upgrade]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            submitUpgrade(btn.dataset.planCode, btn.dataset.planName, btn);
+        });
+    });
+
+    function submitUpgrade(planCode, planName, btn) {
+        setButtonLoading(btn, true);
         postJson(urlUpgrade, { plan_code: planCode }).then(function (result) {
+            closeModal("upgrade-confirm-modal");
             if (result.ok && result.body.ok) {
-                alert("Тариф изменён. Списано: " + result.body.charged + " ₽.");
-                window.location.reload();
+                showUpgradeSuccess(planName, result.body.charged);
                 return;
             }
             if (result.status === 402) {
@@ -109,47 +166,103 @@
             }
             showError(result.body.error || "Ошибка смены тарифа");
         }).catch(function () {
+            closeModal("upgrade-confirm-modal");
             showError("Сетевая ошибка. Попробуйте ещё раз.");
         });
     }
 
-    // ── Даунгрейд ───────────────────────────────────────────────────
-    function handleScheduleDowngrade(planCode, planName) {
-        if (!confirm("Запланировать переход на тариф «" + planName + "»? Смена произойдёт в конце текущего периода.")) {
-            return;
-        }
+    function showUpgradeSuccess(planName, charged) {
+        var modal = openModal("upgrade-success-modal");
+        if (!modal) return;
+        setText(modal, "[data-plan-name]", planName);
+        setText(modal, "[data-charged]", formatMoney(charged));
+    }
+
+    // ── Даунгрейд: открытие модалки подтверждения ───────────────────
+    function openDowngradeConfirm(planCode, planName) {
+        var modal = openModal("downgrade-schedule-confirm-modal");
+        if (!modal) return;
+        setText(modal, "[data-plan-name]", planName);
+        setText(modal, "[data-current-period-end]", currentPeriodEnd || "конца текущего периода");
+        var confirmBtn = modal.querySelector("[data-confirm-schedule-downgrade]");
+        confirmBtn.dataset.planCode = planCode;
+        confirmBtn.dataset.planName = planName;
+    }
+
+    document.querySelectorAll("[data-confirm-schedule-downgrade]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            submitScheduleDowngrade(btn.dataset.planCode, btn.dataset.planName, btn);
+        });
+    });
+
+    function submitScheduleDowngrade(planCode, planName, btn) {
+        setButtonLoading(btn, true);
         postJson(urlScheduleDowngrade, { plan_code: planCode }).then(function (result) {
+            closeModal("downgrade-schedule-confirm-modal");
             if (result.ok && result.body.ok) {
-                var msg = "Переход на «" + planName + "» запланирован.";
-                if (result.body.warnings && result.body.warnings.length) {
-                    msg += "\n\nВажно:\n- " + result.body.warnings.join("\n- ");
-                }
-                alert(msg);
-                window.location.reload();
+                showDowngradeSuccess(planName, result.body);
                 return;
             }
             showError(result.body.error || "Ошибка планирования даунгрейда");
         }).catch(function () {
+            closeModal("downgrade-schedule-confirm-modal");
             showError("Сетевая ошибка. Попробуйте ещё раз.");
         });
+    }
+
+    function showDowngradeSuccess(planName, body) {
+        var modal = openModal("downgrade-schedule-success-modal");
+        if (!modal) return;
+        setText(modal, "[data-plan-name]", planName);
+        setText(modal, "[data-effective-at]", formatIsoDate(body.effective_at));
+
+        var warningsBox = modal.querySelector(".sub-downgrade-warnings");
+        var warningsList = modal.querySelector("[data-warnings-list]");
+        warningsList.innerHTML = "";
+        var warnings = body.warnings;
+        if (Array.isArray(warnings) && warnings.length) {
+            warnings.forEach(function (w) {
+                var li = document.createElement("li");
+                li.textContent = w;
+                warningsList.appendChild(li);
+            });
+            warningsBox.hidden = false;
+        } else {
+            warningsBox.hidden = true;
+        }
     }
 
     // ── Отмена запланированного даунгрейда ──────────────────────────
     var cancelBtn = document.querySelector("[data-cancel-downgrade]");
     if (cancelBtn) {
         cancelBtn.addEventListener("click", function () {
-            if (!confirm("Отменить запланированный переход на другой тариф?")) return;
+            openModal("cancel-downgrade-confirm-modal");
+        });
+    }
+
+    document.querySelectorAll("[data-confirm-cancel-downgrade]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            setButtonLoading(btn, true);
             postJson(urlCancelDowngrade, {}).then(function (result) {
+                closeModal("cancel-downgrade-confirm-modal");
                 if (result.ok && result.body.ok) {
                     window.location.reload();
                     return;
                 }
                 showError(result.body.error || "Не удалось отменить переход");
             }).catch(function () {
+                closeModal("cancel-downgrade-confirm-modal");
                 showError("Сетевая ошибка. Попробуйте ещё раз.");
             });
         });
-    }
+    });
+
+    // ── Reload по клику на кнопку «Готово / Понятно» success-модалок
+    document.querySelectorAll("[data-reload-on-close]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            window.location.reload();
+        });
+    });
 
     // ── Модалка «недостаточно средств» ──────────────────────────────
     function showInsufficientFunds(planName, body) {
@@ -179,8 +292,30 @@
             errBox.textContent = msg;
             errBox.hidden = false;
         } else {
-            alert(msg);
+            showToast(msg);
         }
+    }
+
+    // ── Форматеры ───────────────────────────────────────────────────
+    function formatMoney(value) {
+        if (value === undefined || value === null || value === "") return "0";
+        var num = parseFloat(value);
+        if (isNaN(num)) return String(value);
+        return num.toLocaleString("ru-RU", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    }
+
+    function formatIsoDate(iso) {
+        if (!iso) return "—";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso);
+        return d.toLocaleDateString("ru-RU", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        });
     }
 
     // ── Копирование реквизитов ─────────────────────────────────────
@@ -228,11 +363,11 @@
     document.querySelectorAll("[data-stub-toast]").forEach(function (btn) {
         btn.addEventListener("click", function (e) {
             e.preventDefault();
-            showStubToast(btn.dataset.stubToast);
+            showToast(btn.dataset.stubToast);
         });
     });
 
-    function showStubToast(text) {
+    function showToast(text) {
         var wrap = document.querySelector(".flash-wrap");
         if (!wrap) {
             wrap = document.createElement("div");

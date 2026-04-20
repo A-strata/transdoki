@@ -223,10 +223,12 @@
                                 <a href="{{ billing_url }}" class="balance-badge balance-free">Бесплатно</a>
                             {% else %}
                                 {% with b=billing_account.balance %}
-                                    {% if b < 0 %}
+                                    {% if billing_alert_code == "past_due" or billing_alert_code == "suspended" %}
                                         <a href="{{ billing_url }}" class="balance-badge balance-danger">&#9888; {{ b|floatformat:2 }} &#8381;</a>
-                                    {% elif b < billing_warn_threshold %}
+                                    {% elif billing_alert_code == "urgent" %}
                                         <a href="{{ billing_url }}" class="balance-badge balance-warn">{{ b|floatformat:2 }} &#8381;</a>
+                                    {% elif billing_alert_code == "upcoming" %}
+                                        <a href="{{ billing_url }}" class="balance-badge balance-info">{{ b|floatformat:2 }} &#8381;</a>
                                     {% else %}
                                         <a href="{{ billing_url }}" class="balance-badge balance-ok">{{ b|floatformat:2 }} &#8381;</a>
                                     {% endif %}
@@ -258,25 +260,8 @@
         </div>
     {% endif %}
 
-    {% if billing_banner %}
-        <div class="billing-alert-bar">
-            {% if billing_banner.kind == "past_due" %}
-                <span>
-                    Недостаточно средств для продления подписки. Задолженность
-                    <strong>{{ billing_banner.debt_amount|floatformat:2 }} ₽</strong>.
-                    Пополните баланс в течение
-                    <strong>{{ billing_banner.days_until_suspended }} дн.</strong>,
-                    иначе доступ будет ограничен.
-                </span>
-                <a href="{% url 'billing:deposit' %}">Пополнить баланс</a>
-            {% elif billing_banner.kind == "suspended" %}
-                <span>
-                    Доступ ограничен из-за неоплаченной подписки.
-                    Пополните баланс, чтобы восстановить работу.
-                </span>
-                <a href="{% url 'billing:deposit' %}">Пополнить баланс</a>
-            {% endif %}
-        </div>
+    {% if billing_alert_code == "past_due" or billing_alert_code == "suspended" %}
+        {% include "billing/_alert_banner.html" with alert=billing_alert %}
     {% endif %}
 
     <main>

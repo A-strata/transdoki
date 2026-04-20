@@ -43,30 +43,7 @@
         </div>
     </div>
 
-    {# ── Алерт низкого баланса (past_due/suspended — в base.html) ── #}
-    {% if not account.is_billing_exempt and account.balance >= 0 and account.balance < billing_warn_threshold %}
-        <div class="lk-alert lk-alert--warn">
-            <span class="lk-alert-ico" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 8v5M12 16h.01"/>
-                </svg>
-            </span>
-            <div>
-                <div class="lk-alert-title">Низкий баланс</div>
-                Баланс ниже порога безопасного авто-продления. Пополните, чтобы
-                не рисковать приостановкой подписки. Точный расчёт даты
-                окончания средств появится отдельно.
-            </div>
-            <div class="lk-alert-actions">
-                <a href="{% url 'billing:deposit' %}" class="tms-btn tms-btn-secondary tms-btn-sm">
-                    Пополнить
-                </a>
-            </div>
-        </div>
-    {% endif %}
+    {% include "billing/_alert_inline.html" with alert=billing_alert %}
 
     {# ── Hero: баланс + прогноз ─────────────────────────────────────── #}
     {% if not account.is_billing_exempt %}

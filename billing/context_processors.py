@@ -1,18 +1,12 @@
-from datetime import timedelta
-from decimal import Decimal
-
-from django.utils import timezone
-
 from billing import services as billing_services
-from billing.models import BillingPeriod, Subscription
-from billing.services.lifecycle import PAST_DUE_GRACE_DAYS
+from billing.services.balance_state import get_balance_state
 from billing.services.limits import can_create_organization
 from transdoki.tenancy import get_request_account
 
 
 def billing_account(request):
     """
-    Инжектирует данные биллинга в контекст всех шаблонов.
+    Инжектирует базовые данные биллинга в контекст всех шаблонов.
     Один запрос к БД — только если пользователь авторизован.
     """
     if not request.user.is_authenticated:
@@ -23,38 +17,25 @@ def billing_account(request):
     except Exception:
         return {}
 
-    # billing_is_free: True если у аккаунта Free-подписка. После перехода на
-    # v2 «бесплатно» означает подписку free (не «нулевой баланс»), независимо
-    # от того, пополнял ли аккаунт баланс.
     subscription = getattr(account, "subscription", None)
     is_free_plan = bool(subscription and subscription.plan_id and subscription.plan.code == "free")
-
-    # billing_warn_threshold: порог, ниже которого баланс подсвечивается в навбаре.
-    # До реализации месячного биллинга (итерация 3) — ориентируемся на effective
-    # цену подписки × 3 (запас на 3 месяца). Для free — 0, варнинг не сработает.
-    if subscription and subscription.plan_id:
-        warn_threshold = subscription.effective_monthly_price * Decimal("3")
-    else:
-        warn_threshold = Decimal("0")
 
     return {
         "billing_account": account,
         "billing_is_free": is_free_plan,
-        "billing_warn_threshold": warn_threshold,
         "has_contracts_module": billing_services.account_has_module(
             account, "contracts", request=request
         ),
     }
 
 
-def billing_banner(request):
+def billing_alert(request):
     """
-    Контекст для баннера past_due / suspended в base.html.
+    Единый source-of-truth для алертов о балансе.
 
-    Возвращает только при релевантном статусе — в остальных случаях пусто,
-    чтобы base.html выводил баннер через `{% if billing_banner %}`.
-
-    Exempt-аккаунты и аккаунты без подписки баннер не видят.
+    Три канала оповещения (бейдж в навбаре, inline-алерт в ЛК, глобальный
+    баннер) читают один и тот же BalanceState — это гарантирует, что они
+    показывают согласованную информацию.
     """
     if not request.user.is_authenticated:
         return {}
@@ -64,44 +45,11 @@ def billing_banner(request):
     except Exception:
         return {}
 
-    if account.is_billing_exempt:
-        return {}
-
-    subscription = getattr(account, "subscription", None)
-    if not subscription:
-        return {}
-
-    if subscription.status == Subscription.Status.PAST_DUE and subscription.past_due_since:
-        days_passed = (timezone.now() - subscription.past_due_since).days
-        days_until_suspended = max(0, PAST_DUE_GRACE_DAYS - days_passed)
-
-        # Последний invoiced-период — сумма задолженности
-        last_invoiced = (
-            BillingPeriod.objects.filter(
-                account=account, status=BillingPeriod.Status.INVOICED
-            )
-            .order_by("-period_start")
-            .first()
-        )
-        debt_amount = last_invoiced.total if last_invoiced else Decimal("0")
-
-        return {
-            "billing_banner": {
-                "kind": "past_due",
-                "days_until_suspended": days_until_suspended,
-                "debt_amount": debt_amount,
-                "past_due_since": subscription.past_due_since,
-            }
-        }
-
-    if subscription.status == Subscription.Status.SUSPENDED:
-        return {
-            "billing_banner": {
-                "kind": "suspended",
-            }
-        }
-
-    return {}
+    state = get_balance_state(account)
+    return {
+        "billing_alert": state,
+        "billing_alert_code": state.code,
+    }
 
 
 def org_limits(request):

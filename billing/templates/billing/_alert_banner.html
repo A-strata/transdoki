@@ -1,0 +1,25 @@
+{% if alert.code == "past_due" %}
+    <div class="billing-alert-bar">
+        <span>
+            Оплата подписки не прошла{% if alert.failed_at %} {{ alert.failed_at|date:"j E" }}{% endif %}.
+            {% if alert.suspended_at %}
+                Тариф будет приостановлен <strong>{{ alert.suspended_at|date:"j E" }}</strong>
+                (осталось <strong>{{ alert.days_until_suspended }} дн.</strong>){% if alert.amount_to_topup %}, если не пополнить на <strong>{{ alert.amount_to_topup|floatformat:0 }} ₽</strong>{% endif %}.
+            {% else %}
+                Пополните баланс{% if alert.amount_to_topup %} на <strong>{{ alert.amount_to_topup|floatformat:0 }} ₽</strong>{% endif %}.
+            {% endif %}
+        </span>
+        <a href="{% url 'billing:deposit' %}{% if alert.amount_to_topup %}?amount={{ alert.amount_to_topup|floatformat:0 }}{% endif %}">
+            {% if alert.amount_to_topup %}Пополнить на {{ alert.amount_to_topup|floatformat:0 }} ₽{% else %}Пополнить баланс{% endif %}
+        </a>
+    </div>
+{% elif alert.code == "suspended" %}
+    <div class="billing-alert-bar">
+        <span>
+            Доступ ограничен из-за неоплаченной подписки. Пополните{% if alert.amount_to_topup %} на <strong>{{ alert.amount_to_topup|floatformat:0 }} ₽</strong>{% endif %}, чтобы восстановить работу.
+        </span>
+        <a href="{% url 'billing:deposit' %}{% if alert.amount_to_topup %}?amount={{ alert.amount_to_topup|floatformat:0 }}{% endif %}">
+            {% if alert.amount_to_topup %}Пополнить на {{ alert.amount_to_topup|floatformat:0 }} ₽{% else %}Пополнить баланс{% endif %}
+        </a>
+    </div>
+{% endif %}

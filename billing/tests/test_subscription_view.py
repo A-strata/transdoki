@@ -6,11 +6,10 @@
 - POST upgrade: успех, InsufficientFunds → 402 с required/balance
 - POST schedule_downgrade: успех с warnings
 - POST cancel_downgrade: успех
-- context_processor billing_banner: past_due, suspended, active
+- context_processor billing_alert: past_due, suspended, active
 """
 from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
@@ -19,7 +18,6 @@ from django.utils import timezone
 
 from accounts.models import Account
 from billing.models import BillingPeriod, Plan, Subscription
-
 
 User = get_user_model()
 
@@ -173,7 +171,7 @@ class SubscriptionScheduleDowngradeTest(TestCase):
 
 @override_settings(ALLOWED_HOSTS=["*"])
 class BillingBannerTest(TestCase):
-    """context_processor billing_banner: past_due, suspended, active."""
+    """context_processor billing_alert: past_due, suspended, active."""
 
     def setUp(self):
         self.user = User.objects.create_user(username="bn-u", password="x")
