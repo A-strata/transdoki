@@ -211,6 +211,38 @@ class CabinetPageRenderTests(TestCase):
         # Кнопка «+ Пригласить» скрыта (can_manage_users=False).
         self.assertNotIn("data-lk-modal-open=\"invite-modal\"", content)
 
+    def test_cabinet_own_orgs_upgrade_cta_when_limit_reached(self):
+        """
+        В блоке «Свои организации» кабинета при исчерпанном лимите
+        тарифа primary-кнопка заменяется на «Увеличить лимит →» —
+        симметрично блоку «Профиль и команда». Регрессия ловится, если
+        шаблон ЛК снова будет рендерить безусловную кнопку создания.
+        """
+        from organizations.models import Organization
+
+        user = User.objects.create_user(username="own-limit-cab", password="x")
+        account = Account.objects.create(name="OwnAcc", owner=user)
+        user.profile.account = account
+        user.profile.save(update_fields=["account"])
+        # Free-план: лимит 1 своя компания. Создаём одну → лимит исчерпан.
+        Organization.objects.create(
+            account=account,
+            full_name="Own LLC",
+            short_name="Own",
+            inn="7707083893",
+            is_own_company=True,
+        )
+
+        client = Client()
+        client.force_login(user)
+        resp = client.get(reverse("accounts:cabinet"))
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode()
+        self.assertFalse(resp.context["can_create_own_org"])
+        # CTA апгрейда появился; кнопка создания в ЛК исчезла.
+        self.assertIn("Увеличить лимит", content)
+        self.assertNotIn("+ Добавить компанию", content)
+
 
 @override_settings(ALLOWED_HOSTS=["*"])
 class AccountUserUpdateViewPermissionTests(TestCase):

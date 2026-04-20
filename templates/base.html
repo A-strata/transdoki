@@ -176,11 +176,20 @@
                                         </button>
                                     </form>
                                 {% endfor %}
-                                <a href="{% url 'organizations:create' %}?own=1"
-                                   class="org-dropdown-item is-add"
-                                   role="menuitem">
-                                    + Добавить компанию
-                                </a>
+                                {% if can_create_own_org %}
+                                    <a href="{% url 'organizations:create' %}?own=1"
+                                       class="org-dropdown-item is-add"
+                                       role="menuitem">
+                                        + Добавить компанию
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'billing:subscription' %}"
+                                       class="org-dropdown-item is-add"
+                                       role="menuitem"
+                                       title="Лимит собственных организаций исчерпан">
+                                        Увеличить лимит →
+                                    </a>
+                                {% endif %}
                             </div>
 
                             <div class="org-dropdown-divider"></div>

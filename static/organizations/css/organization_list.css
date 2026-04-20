@@ -24,6 +24,12 @@
     letter-spacing: -0.01em;
 }
 
+.list-toolbar-meta {
+    margin: 4px 0 0;
+    font-size: var(--text-xs);
+    color: var(--muted);
+}
+
 /* Контейнер таблицы + пагинации */
 [data-list-content] {
     display: flex;

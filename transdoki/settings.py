@@ -86,6 +86,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "billing.context_processors.billing_account",
                 "billing.context_processors.billing_banner",
+                "billing.context_processors.org_limits",
                 "accounts.context_processors.current_org_context",
             ],
         },

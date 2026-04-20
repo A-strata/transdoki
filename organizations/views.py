@@ -45,7 +45,14 @@ class OrganizationCreateView(LoginRequiredMixin, CreateView):
             ok, msg = can_create_organization(account)
             if not ok:
                 messages.error(request, msg)
-                return redirect(reverse_lazy("organizations:list"))
+                # Возвращаем пользователя в контекст, откуда он пришёл
+                # (ЛК / trip_form / список своих компаний), а не на
+                # «Контрагентов» (organizations:list без ?own=1 рендерит
+                # именно их и не принимает ?own=1). Фолбэк — own_list.
+                referer = request.META.get("HTTP_REFERER")
+                if referer:
+                    return redirect(referer)
+                return redirect(reverse_lazy("organizations:own_list"))
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -197,6 +204,33 @@ class OrganizationListMixin:
         return context
 
 
+def _own_org_limits_context(account):
+    """
+    Контекст own-лимита для list-views и context-processor.
+
+    can_create_organization уже обрабатывает is_billing_exempt,
+    отсутствующую подписку и free-tier — повторно не валидируем.
+    effective_organization_limit — свойство Subscription (None = ∞).
+    """
+    ok, _ = can_create_organization(account)
+    subscription = getattr(account, "subscription", None)
+    limit = (
+        subscription.effective_organization_limit
+        if subscription is not None
+        else None
+    )
+    current = (
+        Organization.objects.for_account(account)
+        .filter(is_own_company=True)
+        .count()
+    )
+    return {
+        "can_create_own_org": ok,
+        "org_limit": limit,
+        "org_count_current": current,
+    }
+
+
 class OrganizationListView(OrganizationListMixin, UserOwnedListView):
     def get_queryset(self):
         qs = super().get_queryset().filter(is_own_company=False)
@@ -206,6 +240,7 @@ class OrganizationListView(OrganizationListMixin, UserOwnedListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["is_own"] = False
+        context.update(_own_org_limits_context(get_request_account(self.request)))
         return self._get_org_list_context(context)
 
 
@@ -217,6 +252,7 @@ class OwnCompanyListView(OrganizationListMixin, UserOwnedListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["is_own"] = True
+        context.update(_own_org_limits_context(get_request_account(self.request)))
         return self._get_org_list_context(context)
 
 

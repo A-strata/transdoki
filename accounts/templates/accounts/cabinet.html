@@ -312,8 +312,14 @@
         <div class="lk-card">
             <div class="lk-card-head">
                 <h3>Свои организации</h3>
-                <a href="{% url 'organizations:create' %}?own=1"
-                   class="tms-btn tms-btn-secondary tms-btn-sm">+ Добавить компанию</a>
+                {% if can_create_own_org %}
+                    <a href="{% url 'organizations:create' %}?own=1"
+                       class="tms-btn tms-btn-secondary tms-btn-sm">+ Добавить компанию</a>
+                {% else %}
+                    <a href="{% url 'billing:subscription' %}"
+                       class="tms-btn tms-btn-secondary tms-btn-sm"
+                       title="Лимит собственных организаций исчерпан">Увеличить лимит</a>
+                {% endif %}
             </div>
 
             {% if own_companies %}
@@ -346,7 +352,9 @@
             {% else %}
                 <p class="cab-empty-text">
                     Нет собственных компаний.
-                    <a href="{% url 'organizations:create' %}?own=1" class="cab-link">Добавить</a>
+                    {% if can_create_own_org %}
+                        <a href="{% url 'organizations:create' %}?own=1" class="cab-link">Добавить</a>
+                    {% endif %}
                 </p>
             {% endif %}
 

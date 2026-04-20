@@ -6,6 +6,7 @@ from django.utils import timezone
 from billing import services as billing_services
 from billing.models import BillingPeriod, Subscription
 from billing.services.lifecycle import PAST_DUE_GRACE_DAYS
+from billing.services.limits import can_create_organization
 from transdoki.tenancy import get_request_account
 
 
@@ -101,3 +102,47 @@ def billing_banner(request):
         }
 
     return {}
+
+
+def org_limits(request):
+    """
+    Контекст own-лимита для сайдбара и других мест вне list-views.
+
+    Считает текущее число собственных организаций и сверяет с лимитом
+    тарифа. Использует can_create_organization — та же функция, что в
+    dispatch и list-views, гарантирует единообразное поведение для
+    exempt-аккаунтов, отсутствующей подписки и free-tier.
+
+    Инжектируется один раз на запрос; внутри list-views те же поля
+    перекрываются локальным контекстом (значения совпадают).
+    """
+    if not request.user.is_authenticated:
+        return {}
+
+    try:
+        account = get_request_account(request)
+    except Exception:
+        return {}
+
+    # Импорт здесь, а не на уровне модуля — чтобы billing не имел жёсткой
+    # зависимости от organizations (который может не быть в INSTALLED_APPS
+    # на время миграций или отдельных management-команд).
+    from organizations.models import Organization
+
+    ok, _ = can_create_organization(account)
+    subscription = getattr(account, "subscription", None)
+    limit = (
+        subscription.effective_organization_limit
+        if subscription is not None
+        else None
+    )
+    current = (
+        Organization.objects.for_account(account)
+        .filter(is_own_company=True)
+        .count()
+    )
+    return {
+        "can_create_own_org": ok,
+        "org_limit": limit,
+        "org_count_current": current,
+    }

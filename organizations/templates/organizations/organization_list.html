@@ -12,6 +12,15 @@
     <div class="list-toolbar">
         <div class="list-toolbar-left">
             <h1>{% if is_own %}Мои компании{% else %}Контрагенты{% endif %}</h1>
+            {% if is_own %}
+                <p class="list-toolbar-meta">
+                    {% if org_limit %}
+                        {{ org_count_current }} из {{ org_limit }} собственных организаций по тарифу.
+                    {% else %}
+                        {{ org_count_current }} собственных организаций. Без ограничений по тарифу.
+                    {% endif %}
+                </p>
+            {% endif %}
         </div>
         <div class="list-toolbar-right">
             <div class="search-field-wrap{% if filters.q %} is-filtered{% endif %}">
@@ -29,7 +38,19 @@
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
             </div>
-            <a href="{% url 'organizations:create' %}{% if is_own %}?own=1{% endif %}" class="tms-btn tms-btn-primary tms-btn-add">{% if is_own %}+ Добавить компанию{% else %}+ Добавить контрагента{% endif %}</a>
+            {% if is_own %}
+                {% if can_create_own_org %}
+                    <a href="{% url 'organizations:create' %}?own=1"
+                       class="tms-btn tms-btn-primary tms-btn-add">+ Добавить компанию</a>
+                {% else %}
+                    <a href="{% url 'billing:subscription' %}"
+                       class="tms-btn tms-btn-secondary"
+                       title="Лимит собственных организаций исчерпан">Увеличить лимит →</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'organizations:create' %}"
+                   class="tms-btn tms-btn-primary tms-btn-add">+ Добавить контрагента</a>
+            {% endif %}
         </div>
     </div>
 
