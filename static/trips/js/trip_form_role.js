@@ -249,18 +249,43 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Реакция на пользовательские изменения селектов участников ──
-    // Единственный триггер — событие change. Input-спам на автокомплите
-    // НЕ слушаем: autocomplete.js сам инвалидирует select.value и
-    // диспатчит change, когда текст перестаёт совпадать с выбранной
-    // опцией. Это снимает тот самый баг: ввод в поле «Заказчик» больше
-    // не сбрасывает финансовый блок в «оба столбца» посреди набора.
+    //
+    // Роль должна быть «липкой» во время редактирования и обновляться
+    // только на момент КОММИТА значения:
+    //   - выбор из dropdown (selectItem → select.value = id),
+    //   - клик по кнопке × (clearBtn → select.value = ''),
+    //   - form.reset(),
+    //   - blur поля без валидного выбора (ниже отдельный слушатель).
+    //
+    // autocomplete.js во время набора текста сбрасывает select.value и
+    // диспатчит change, если текст перестал совпадать с выбранной опцией.
+    // Это ТРАНЗИТНАЯ инвалидация — пользователь ещё печатает. Помечается
+    // `select.dataset.acInvalidating='1'` на время диспатча. Такие change
+    // игнорируем: иначе финансовый блок флипал бы в «оба столбца» на
+    // каждое нажатие backspace в поле «Заказчик».
     Object.keys(ROLE_TO_SELECT).forEach(function (role) {
         var select = document.getElementById(ROLE_TO_SELECT[role]);
         if (!select) return;
         select.addEventListener('change', function () {
             if (_batchDepth > 0) return; // внутри batch — тихо
+            if (select.dataset.acInvalidating === '1') return; // транзитная инвалидация
             syncFromState(null);
         });
+
+        // Blur: страховка от edge-case «пользователь набрал мусор и ушёл».
+        // autocomplete.js в своём blur-хендлере даёт 200ms на auto-select;
+        // если он сработает, change уже обновит UI. Если не сработает —
+        // синкнемся сами, чтобы UI отразил финальное (пустое) состояние.
+        var container = select.closest('.autocomplete-container');
+        var input = container && container.querySelector('.autocomplete-input');
+        if (input) {
+            input.addEventListener('blur', function () {
+                setTimeout(function () {
+                    if (_batchDepth > 0) return;
+                    syncFromState(null);
+                }, 250);
+            });
+        }
     });
 
     // ────────────────────────────────────────────────────────────────────

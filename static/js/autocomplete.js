@@ -303,9 +303,18 @@ function initAutocomplete(selectId) {
                 var selectedOpt = select.options[select.selectedIndex];
                 if (!selectedOpt || selectedOpt.text !== q) {
                     _inputInvalidating = true;
+                    // Помечаем select на время диспатча change-события:
+                    // это транзитная инвалидация, не «коммит» нового значения.
+                    // Слушатели, которым важно различать «пользователь закоммитил
+                    // пустое значение» vs «пользователь ещё печатает» (например,
+                    // trip_form_role.js), читают этот флаг и игнорируют
+                    // транзитные события. Остальные продолжают работать как
+                    // раньше — data-атрибут исчезает сразу после dispatch.
+                    select.dataset.acInvalidating = '1';
                     select.value = '';
                     updateClearBtn();
                     select.dispatchEvent(new Event('change', { bubbles: true }));
+                    delete select.dataset.acInvalidating;
                     _inputInvalidating = false;
                 }
             }
