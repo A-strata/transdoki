@@ -203,20 +203,6 @@
     line-height: 1.3;
 }
 
-/* ── Active-role поле: visual cue + запрет очистки ──
-   Поле, соответствующее выбранной карточке роли (client или carrier),
-   — это «я в этой роли». Внутри: autocomplete ограничен ?own=1 (только
-   наши фирмы), значение всегда одна из них, кнопка × скрыта, чтобы
-   пользователь не мог оставить поле пустым. Рамка подкрашена, чтобы
-   визуально отметить «это поле твоей фирмы». */
-.field.is-role-locked .autocomplete-container input {
-    border-color: var(--primary);
-    background: var(--hover-active);
-}
-
-.field.is-role-locked .autocomplete-clear {
-    display: none !important;
-}
 
 /* ── Анимация переключения роли ── */
 @keyframes slideIn {
