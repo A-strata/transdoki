@@ -99,29 +99,78 @@ document.addEventListener('DOMContentLoaded', function () {
         return ownOrgIds.indexOf(String(val)) !== -1;
     }
 
-    // Переключить endpoint autocomplete-поиска у селекта на ?own=1 или
-    // вернуть на базовый. Autocomplete.js читает dataset.searchUrl
-    // динамически при каждом запросе, так что апдейт срабатывает сразу.
-    // Вместе с этим выставляется/снимается openOnFocusAlways='1': у поля
-    // активной роли дропдаун со списком наших фирм должен вываливаться
-    // сразу при фокусе, а не ждать ввода двух символов.
-    function setOwnSearch(inputId, ownOnly) {
+    // Флаги параметров поиска, управляемые ролью + выбором активного поля.
+    // Перестраиваются в dataset.searchUrl через rebuildSearchUrl(). Хранить
+    // их отдельно нужно, чтобы setOwnSearch и setExclude могли независимо
+    // менять свои куски без необходимости парсить URL.
+    //   ownOnly   — autocomplete ищет только среди наших фирм (?own=1).
+    //   excludePk — эту организацию исключаем из дропдауна (?exclude=<pk>).
+    var searchFlags = {
+        id_client: { ownOnly: false, excludePk: '' },
+        id_carrier: { ownOnly: false, excludePk: '' },
+        id_forwarder: { ownOnly: false, excludePk: '' },
+    };
+
+    function rebuildSearchUrl(inputId) {
         var el = document.getElementById(inputId);
         if (!el) return;
         var base = baseSearchUrl[inputId] || '';
         if (!base) return;
-        if (ownOnly) {
-            // Если ?own=1 уже в базовом URL (как у forwarder на уровне
-            // формы — см. trips/forms.py), не дублируем параметр.
-            if (base.indexOf('own=1') !== -1) {
-                el.dataset.searchUrl = base;
-            } else {
-                el.dataset.searchUrl = base + (base.indexOf('?') === -1 ? '?' : '&') + 'own=1';
+        var flags = searchFlags[inputId] || {};
+        var params = [];
+        // own=1 может уже быть в базовом URL (forwarder, см. trips/forms.py)
+        // — не дублируем.
+        if (flags.ownOnly && base.indexOf('own=1') === -1) {
+            params.push('own=1');
+        }
+        if (flags.excludePk) {
+            params.push('exclude=' + encodeURIComponent(flags.excludePk));
+        }
+        var url = base;
+        if (params.length) {
+            url += (base.indexOf('?') === -1 ? '?' : '&') + params.join('&');
+        }
+        // Autocomplete.js читает dataset.searchUrl динамически при каждом
+        // запросе, так что апдейт срабатывает сразу.
+        el.dataset.searchUrl = url;
+    }
+
+    // У поля активной роли дропдаун со списком наших фирм должен
+    // вываливаться сразу при фокусе, а не ждать ввода двух символов.
+    function setOwnSearch(inputId, ownOnly) {
+        var flags = searchFlags[inputId];
+        if (!flags) return;
+        flags.ownOnly = !!ownOnly;
+        var el = document.getElementById(inputId);
+        if (el) {
+            if (ownOnly) el.dataset.openOnFocusAlways = '1';
+            else delete el.dataset.openOnFocusAlways;
+        }
+        rebuildSearchUrl(inputId);
+    }
+
+    function setExclude(inputId, pk) {
+        var flags = searchFlags[inputId];
+        if (!flags) return;
+        flags.excludePk = pk ? String(pk) : '';
+        rebuildSearchUrl(inputId);
+    }
+
+    // Правило исключений (Client → Carrier):
+    // Когда активна роль «Заказчик» и в поле Заказчик выбрана наша фирма,
+    // эта фирма не должна появляться в дропдауне поля «Перевозчик» —
+    // заказчик и перевозчик не могут совпадать (validate_client_cannot_be_carrier).
+    // Во всех прочих комбинациях exclude очищаем, чтобы не ограничивать
+    // пользователя без повода.
+    function syncExclusions() {
+        setExclude('id_client', '');
+        setExclude('id_carrier', '');
+        setExclude('id_forwarder', '');
+        if (activeRole === 'client') {
+            var clientEl = document.getElementById('id_client');
+            if (clientEl && clientEl.value) {
+                setExclude('id_carrier', clientEl.value);
             }
-            el.dataset.openOnFocusAlways = '1';
-        } else {
-            el.dataset.searchUrl = base;
-            delete el.dataset.openOnFocusAlways;
         }
     }
 
@@ -203,10 +252,23 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        syncExclusions();
         syncForwarderCol(newRole);
         updateCards(newRole);
         dispatchRoleChange(newRole);
     }
+
+    // Пересчёт exclude при изменении значения в поле Заказчика.
+    // autocomplete.js диспатчит 'change' на SELECT при выборе из дропдауна
+    // или очистке через ×. Ребилд отрабатывает сразу — следующий запрос
+    // в поле Перевозчика уже пойдёт с обновлённым ?exclude.
+    (function bindClientChangeForExclusions() {
+        var el = document.getElementById('id_client');
+        if (!el) return;
+        el.addEventListener('change', function () {
+            if (activeRole === 'client') syncExclusions();
+        });
+    })();
 
     // ── Клик по карточке ──
     //   Роль всегда выбрана, поэтому повторный клик по активной — no-op.

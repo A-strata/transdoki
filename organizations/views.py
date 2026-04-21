@@ -333,10 +333,23 @@ def organization_search(request):
     qs = Organization.objects.for_account(account)
     if request.GET.get("own") == "1":
         qs = qs.filter(is_own_company=True)
+
+    # exclude — CSV из pk организаций, которые клиент хочет скрыть
+    # (например, в форме рейса поле «Перевозчик» исключает уже выбранного
+    # заказчика, чтобы не показывать его в дропдауне). Невалидные значения
+    # игнорируем молча — endpoint терпим к «мусору» на стороне клиента.
+    exclude_raw = request.GET.get("exclude", "")
+    if exclude_raw:
+        exclude_pks = []
+        for part in exclude_raw.split(","):
+            part = part.strip()
+            if part.isdigit():
+                exclude_pks.append(int(part))
+        if exclude_pks:
+            qs = qs.exclude(pk__in=exclude_pks)
+
     if q:
-        qs = qs.filter(short_name__icontains=q) | Organization.objects.for_account(
-            account
-        ).filter(inn__icontains=q)
+        qs = qs.filter(Q(short_name__icontains=q) | Q(inn__icontains=q))
     results = [
         {"id": o.pk, "text": o.short_name}
         for o in qs.order_by("short_name")[:25]

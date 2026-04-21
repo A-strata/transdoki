@@ -142,3 +142,96 @@ class OrganizationListContextTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.context["can_create_own_org"])
         self.assertIn("+ Добавить компанию", resp.content.decode())
+
+
+@override_settings(ALLOWED_HOSTS=["*"])
+class OrganizationSearchTests(TestCase):
+    """
+    Тесты endpoint-а organizations:search — AJAX-поиск для autocomplete-полей
+    (форма рейса, путевого листа, счёта). Поддерживает:
+      - ?q=<текст> — поиск по short_name / inn;
+      - ?own=1 — только свои фирмы (is_own_company=True);
+      - ?exclude=<pk,pk,...> — исключить указанные pk из выдачи
+        (используется формой рейса: в дропдауне «Перевозчик» не должно
+        быть организации, уже выбранной в «Заказчик»).
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="search-user", password="x")
+        self.account = Account.objects.create(name="SearchAcc", owner=self.user)
+        self.user.profile.account = self.account
+        self.user.profile.save(update_fields=["account"])
+
+        # Реальные публичные ИНН, проходящие валидацию контрольной суммы.
+        self.own1 = Organization.objects.create(
+            account=self.account, full_name="Наша Первая", short_name="НашаПервая",
+            inn="7707083893", is_own_company=True,
+        )
+        self.own2 = Organization.objects.create(
+            account=self.account, full_name="Наша Вторая", short_name="НашаВторая",
+            inn="7728168971", is_own_company=True,
+        )
+        self.ext = Organization.objects.create(
+            account=self.account, full_name="Внешний Контрагент", short_name="Внешний",
+            inn="7736050003",
+        )
+
+        self.c = Client()
+        self.c.force_login(self.user)
+
+    def _search(self, **params):
+        from urllib.parse import urlencode
+        url = reverse("organizations:search")
+        if params:
+            url += "?" + urlencode(params)
+        resp = self.c.get(url)
+        self.assertEqual(resp.status_code, 200)
+        return [r["id"] for r in resp.json()["results"]]
+
+    def test_search_returns_all_orgs_of_account_by_default(self):
+        ids = self._search()
+        self.assertIn(self.own1.pk, ids)
+        self.assertIn(self.own2.pk, ids)
+        self.assertIn(self.ext.pk, ids)
+
+    def test_search_own_filter(self):
+        ids = self._search(own="1")
+        self.assertIn(self.own1.pk, ids)
+        self.assertIn(self.own2.pk, ids)
+        self.assertNotIn(self.ext.pk, ids)
+
+    def test_search_exclude_single_pk(self):
+        """exclude=<pk> убирает эту организацию из выдачи."""
+        ids = self._search(exclude=str(self.own1.pk))
+        self.assertNotIn(self.own1.pk, ids)
+        self.assertIn(self.own2.pk, ids)
+        self.assertIn(self.ext.pk, ids)
+
+    def test_search_exclude_multiple_pks(self):
+        """exclude=<pk,pk> — CSV-список, все перечисленные исключаются."""
+        ids = self._search(exclude=f"{self.own1.pk},{self.ext.pk}")
+        self.assertNotIn(self.own1.pk, ids)
+        self.assertNotIn(self.ext.pk, ids)
+        self.assertIn(self.own2.pk, ids)
+
+    def test_search_exclude_combines_with_own(self):
+        """own=1 + exclude работают вместе: из наших исключаем указанную."""
+        ids = self._search(own="1", exclude=str(self.own1.pk))
+        self.assertNotIn(self.own1.pk, ids)
+        self.assertIn(self.own2.pk, ids)
+        self.assertNotIn(self.ext.pk, ids)
+
+    def test_search_exclude_ignores_garbage(self):
+        """Невалидные токены в exclude молча игнорируются (endpoint терпим)."""
+        ids = self._search(exclude="abc,,-1,42x")
+        # Все три организации должны остаться — никакой валидной pk не передан.
+        self.assertIn(self.own1.pk, ids)
+        self.assertIn(self.own2.pk, ids)
+        self.assertIn(self.ext.pk, ids)
+
+    def test_search_exclude_applies_with_query(self):
+        """exclude действует и когда задан q — исключение поверх фильтра q."""
+        # q="наша" должен вернуть own1 + own2; exclude убирает own1.
+        ids = self._search(q="Наша", exclude=str(self.own1.pk))
+        self.assertNotIn(self.own1.pk, ids)
+        self.assertIn(self.own2.pk, ids)
