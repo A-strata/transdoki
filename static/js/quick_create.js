@@ -55,9 +55,30 @@
         }
     }
 
+    // ── Phone normalization ─────────────────────────────────────────────────
+    // Переводим все [data-phone-mask]-поля в E.164 ('79991234567') ДО чтения
+    // значений в payload. Делаем явно тут, чтобы не зависеть от порядка
+    // подключения/регистрации submit-хендлеров phone_mask.js и quick_create.js.
+    // Серверная нормализация (PersonQuickForm.clean_phone) это продублирует,
+    // но на фронте мы хотим единообразное представление в payload.
+    function normalizePhoneFields(form) {
+        form.querySelectorAll('[data-phone-mask]').forEach(function (el) {
+            var mask = el._phoneMask;
+            if (!mask) return;
+            var raw = mask.unmaskedValue;
+            if (raw.length === 10) {
+                el.value = '7' + raw;
+            } else if (raw.length === 0) {
+                el.value = '';
+            }
+            // иначе оставляем как есть — сервер вернёт осмысленную ошибку
+        });
+    }
+
     // ── Submit ──────────────────────────────────────────────────────────────
     function submitForm(form, url, modal) {
         clearErrors(form);
+        normalizePhoneFields(form);
 
         var submitBtn = form.querySelector('button[type="submit"]');
         var originalText = submitBtn.textContent;

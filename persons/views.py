@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db.models import ProtectedError, Q
 from django.http import JsonResponse
@@ -21,9 +20,8 @@ from transdoki.views import UserOwnedListView
 
 from organizations.models import Organization
 
-from .forms import PersonForm
+from .forms import PersonForm, PersonQuickForm
 from .models import Person
-from .validators import validate_phone_number
 
 
 class PersonCreateView(LoginRequiredMixin, CreateView):
@@ -200,53 +198,51 @@ def person_search(request):
 @login_required
 @require_POST
 def person_quick_create(request):
+    """Быстрое создание водителя из модалок (form рейса и карточка организации).
+
+    Валидацию и нормализацию (в т.ч. телефона) отдаём в PersonQuickForm —
+    единая точка истины с PersonForm.
+
+    Контракт с клиентом:
+      * входной параметр employer приходит под именем `employer_id`
+        (исторически; оба шаблона шлют именно так) → перекладываем в `employer`
+        перед биндингом формы;
+      * ошибки мапятся обратно на `employer_id`, чтобы data-err="employer_id"
+        в шаблоне отрисовал сообщение у правильного поля.
+    """
     account = get_request_account(request)
-    surname = request.POST.get("surname", "").strip()
-    name = request.POST.get("name", "").strip()
-    patronymic = request.POST.get("patronymic", "").strip()
-    phone = request.POST.get("phone", "").strip()
 
-    employer_id = request.POST.get("employer_id", "").strip()
+    post = request.POST.copy()
+    if not post.get("employer"):
+        post["employer"] = post.get("employer_id", "")
 
-    errors = {}
-    if not surname:
-        errors["surname"] = "Обязательное поле"
-    if not name:
-        errors["name"] = "Обязательное поле"
-    if not employer_id:
-        errors["employer_id"] = "Обязательное поле"
-    elif not employer_id.isdigit():
-        errors["employer_id"] = "Некорректное значение"
-    if phone:
-        try:
-            validate_phone_number(phone)
-        except ValidationError as e:
-            errors["phone"] = e.messages[0]
+    form = PersonQuickForm(post)
+    # Tenant-изоляция: запрет выбрать чужую организацию как работодателя.
+    form.fields["employer"].queryset = Organization.objects.for_account(account)
+    form.fields["employer"].required = True
+    form.fields["employer"].error_messages = {
+        "required": "Обязательное поле",
+        "invalid_choice": "Организация не найдена",
+    }
+    form.fields["surname"].error_messages = {"required": "Обязательное поле"}
+    form.fields["name"].error_messages = {"required": "Обязательное поле"}
 
-    if errors:
+    if not form.is_valid():
+        errors = {}
+        for field, errs in form.errors.items():
+            key = "employer_id" if field == "employer" else field
+            errors[key] = errs[0]
         return JsonResponse({"errors": errors}, status=400)
 
-    employer = Organization.objects.for_account(account).filter(pk=int(employer_id)).first()
-    if not employer:
-        return JsonResponse(
-            {"errors": {"employer_id": "Организация не найдена"}}, status=400
-        )
-
     try:
-        person = Person(
-            surname=surname,
-            name=name,
-            patronymic=patronymic,
-            phone=phone,
-            created_by=request.user,
-            account=account,
-            employer=employer,
-        )
+        person = form.save(commit=False)
+        person.account = account
+        person.created_by = request.user
         person.save()
     except IntegrityError:
         return JsonResponse(
-            {"errors": {"surname": "Водитель с таким ФИО уже существует"}}, status=400
+            {"errors": {"surname": "Водитель с таким ФИО уже существует"}},
+            status=400,
         )
 
-    full_name = " ".join(filter(None, [surname, name, patronymic]))
-    return JsonResponse({"id": person.pk, "text": full_name})
+    return JsonResponse({"id": person.pk, "text": str(person)})
