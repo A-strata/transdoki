@@ -1,45 +1,56 @@
 /**
  * Роль навбар-фирмы в рейсе: JS-контроллер формы.
  *
- * Задача модуля
- * -------------
- * Держать визуальное состояние формы рейса (активная карточка роли,
- * подсветка «подставлено автоматически», видимость колонки «Экспедитор»
- * в блоке участников) в согласии с одним-единственным правилом:
+ * Архитектура (Phase 1.5 — one-way flow: карточка → поля)
+ * -------------------------------------------------------
+ * Единственный источник истины — activeRole. Менять его могут только:
+ *   1) Автодетект при загрузке (bootstrap из серверных значений).
+ *   2) Клик пользователя по карточке роли.
  *
- *     role = f(client_id, carrier_id, forwarder_id, viewer_org_id)
+ * Поля участников («моя фирма» для client/carrier/forwarder) — ВЫХОД
+ * относительно роли, а не вход. Пока роль активна, соответствующее
+ * поле заблокировано: на его месте выводится имя «моей фирмы», а
+ * автокомплит (input + кнопка добавления + селект) скрыт. Пользователь
+ * не может ни стереть это значение, ни ввести другое — сменить свою
+ * фирму можно только через смену карточки роли.
  *
- * Это правило реализовано на сервере как
- * trips.roles.compute_trip_role и используется из Trip.perspective().
- * Здесь живёт ЕГО ЗЕРКАЛО: computeTripRole(...). Поведение обязано
- * совпадать бит-в-бит; любое изменение серверной функции требует
- * правки и тестов в обоих местах.
+ * Почему так, а не как было
+ * -------------------------
+ * Прежняя реализация слушала change/blur на селектах участников и
+ * пересчитывала роль «по факту значения поля». Это породило два
+ * класса багов:
  *
- * Почему пере-вычисление, а не stateful activeRole
- * ------------------------------------------------
- * Предыдущая версия хранила активную роль в локальной переменной
- * activeRole и слушала input-событие автокомплита, сбрасывая роль в null
- * при каждом нажатии клавиши. Это порождало баг:
+ *   1) Во время набора текста в автокомплите hidden select кратко
+ *      очищался — computeTripRole возвращал observer — финансовый
+ *      блок флипал в «оба столбца» посреди набора.
+ *   2) После полного стирания поля форма застревала в «observer при
+ *      визуально активной карточке» и лечилась только перекликом по
+ *      карточке.
  *
- *     Навбар = SL (own, client), ИП Астахин = own carrier.
- *     Редактирую заказчика → в процессе набора селект автокомплита
- *     кратко очищается → activeRole становится null → финансовый блок
- *     уходит в режим «оба столбца» (как если бы я был экспедитором).
+ * Новая схема убивает оба: поле нельзя стереть, карточка независима
+ * от состояния автокомплита. Reverse-flow (change/blur listeners)
+ * полностью удалены.
  *
- * Корень проблемы — дублирующий источник истины (activeRole + значения
- * полей формы). Теперь источник истины только один: сами значения полей.
- * На любое изменение селектов участников мы пере-вычисляем роль чистой
- * функцией и синхронизируем UI. Никаких input-слушателей на
- * автокомплитах — select меняет value сам (через autocomplete.js,
- * selectItem/clearBtn/invalidation), и этого достаточно.
+ * Зеркало серверной функции
+ * -------------------------
+ * computeTripRole(...) дублирует trips.roles.compute_trip_role и
+ * используется ТОЛЬКО на старте — автодетект роли из значений,
+ * пришедших с сервера (initial в create / instance в update). Любое
+ * изменение серверной функции требует правки здесь + tests_roles.py.
  *
- * События
+ * Предзаполнение
+ * --------------
+ * При активации роли целевое поле получает orgId (pk навбар-фирмы).
+ * По контракту мультитенантности navbar-фирма всегда принадлежит
+ * текущему account-у, поэтому «одна наша фирма» и «несколько, выбрана
+ * такая-то в навбаре» сводятся к одному правилу: prefill = orgId.
+ *
+ * Событие
  * -------
  * Диспатчится CustomEvent('trip-role-change', { detail: { role } }) на
- * document. role — одна из { 'client', 'carrier', 'forwarder', null }.
- * null соответствует TripRole.OBSERVER — финансовый блок в этом режиме
- * показывает оба столбца (backward-compat). Слушатель — в
- * trip_form_finance_role.js.
+ * document. role ∈ { 'client', 'carrier', 'forwarder', null }.
+ * null — observer / роль не выбрана — финансовый блок показывает оба
+ * столбца (backward-compat). Слушатель в trip_form_finance_role.js.
  */
 document.addEventListener('DOMContentLoaded', function () {
     var config = document.getElementById('role-config');
@@ -48,25 +59,21 @@ document.addEventListener('DOMContentLoaded', function () {
     var orgId = config.dataset.orgId;
     var orgName = config.dataset.orgName;
     var hasVehicles = config.dataset.hasVehicles === 'true';
-    // own_org_ids доступны через config.dataset.ownOrgIds (CSV). Phase 1
-    // их не использует; Phase 2 будет фильтровать дропдауны.
+    // own_org_ids (CSV) доступны через config.dataset.ownOrgIds. Phase 2
+    // будет использовать их для фильтрации дропдауна при смене моей фирмы
+    // из нескольких. Phase 1.5 завязан на orgId (навбар), поэтому не читает.
 
     var cards = document.querySelectorAll('.role-card');
-    var ROLE_TO_SELECT = {
+    var ROLE_TO_INPUT = {
         client: 'id_client',
         carrier: 'id_carrier',
         forwarder: 'id_forwarder',
     };
 
-    var clientSelect = document.getElementById('id_client');
-    var carrierSelect = document.getElementById('id_carrier');
-    var forwarderInput = document.getElementById('id_forwarder');
-
     // ────────────────────────────────────────────────────────────────────
     // Pure function — зеркало trips.roles.compute_trip_role.
-    // Любое изменение серверной функции → правка здесь + tests_roles.py.
-    // Принимает строки/числа, нормализует к String сравнению.
-    // Возвращает 'client' | 'carrier' | 'forwarder' | 'observer'.
+    // Используется только на bootstrap. Любое изменение серверной
+    // функции → правка здесь + tests_roles.py.
     // ────────────────────────────────────────────────────────────────────
     function computeTripRole(clientId, carrierId, forwarderId, viewerOrgId) {
         if (viewerOrgId == null || viewerOrgId === '') return 'observer';
@@ -77,39 +84,112 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'observer';
     }
 
-    function readFormState() {
-        return {
-            clientId: clientSelect ? clientSelect.value : '',
-            carrierId: carrierSelect ? carrierSelect.value : '',
-            forwarderId: forwarderInput ? forwarderInput.value : '',
-        };
-    }
+    // ── Единственное состояние ──
+    var activeRole = null;  // 'client' | 'carrier' | 'forwarder' | null
 
-    // ── Вспомогательные: визуальная подсказка «подставлено автоматически» ──
-    function getField(selectId) {
-        var select = document.getElementById(selectId);
-        if (!select) return null;
-        return select.closest('.field');
-    }
-
-    function addPrefilledHint(selectId) {
-        var field = getField(selectId);
-        if (!field) return;
-        field.classList.add('is-prefilled');
-        if (!field.querySelector('.prefilled-hint')) {
-            var hint = document.createElement('span');
-            hint.className = 'prefilled-hint';
-            hint.textContent = 'Подставлено автоматически';
-            field.appendChild(hint);
+    // ────────────────────────────────────────────────────────────────────
+    // Работа с селектом/инпутом «моей фирмы».
+    // client/carrier — <select> внутри autocomplete-виджета.
+    // forwarder — <input type="hidden"> (без autocomplete).
+    // ────────────────────────────────────────────────────────────────────
+    function ensureOrgOption(select) {
+        if (!select || select.tagName !== 'SELECT') return;
+        var exists = Array.from(select.options).some(function (o) {
+            return String(o.value) === String(orgId);
+        });
+        if (!exists) {
+            select.add(new Option(orgName, orgId));
         }
     }
 
-    function removePrefilledHint(selectId) {
-        var field = getField(selectId);
+    function setInputToOrg(inputId) {
+        var el = document.getElementById(inputId);
+        if (!el) return;
+        if (el.tagName === 'SELECT') {
+            ensureOrgOption(el);
+            el.value = orgId;
+            // Синхронизировать видимый input автокомплита и clear-btn.
+            // Даже если контейнер сейчас скрыт (роль активна) — делаем
+            // это сразу, чтобы при последующей разблокировке пользователь
+            // увидел корректное значение, а не пустое поле.
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            // hidden input (forwarder) — просто пишем pk.
+            el.value = orgId;
+        }
+    }
+
+    function clearInput(inputId) {
+        var el = document.getElementById(inputId);
+        if (!el) return;
+        if (el.value === '') return;
+        el.value = '';
+        if (el.tagName === 'SELECT') {
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Блокировка/разблокировка поля «моей фирмы».
+    //
+    // client/carrier: в .field прячем .field-add-row (там autocomplete +
+    //   кнопка «+») и вставляем <p data-role-lock> с именем моей фирмы.
+    // forwarder: в template уже статическая <p> в колонке
+    //   parties-forwarder-col — вся «блокировка» сводится к управлению
+    //   видимостью колонки через syncForwarderCol().
+    // ────────────────────────────────────────────────────────────────────
+    function getField(inputId) {
+        var el = document.getElementById(inputId);
+        if (!el) return null;
+        return el.closest('.field');
+    }
+
+    function lockField(inputId) {
+        var field = getField(inputId);
         if (!field) return;
+        var row = field.querySelector('.field-add-row');
+        if (row) row.hidden = true;
+        var locked = field.querySelector('[data-role-lock]');
+        if (!locked) {
+            locked = document.createElement('p');
+            locked.className = 'parties-forwarder-name';
+            locked.setAttribute('data-role-lock', '1');
+            locked.textContent = orgName;
+            if (row && row.parentNode) {
+                row.parentNode.insertBefore(locked, row);
+            } else {
+                field.appendChild(locked);
+            }
+        } else {
+            locked.textContent = orgName;
+            locked.hidden = false;
+        }
+        field.classList.add('is-role-locked');
+        // Почистить наследие старой «prefilled»-подсветки, если осталась
+        // с прошлых сессий рендера.
         field.classList.remove('is-prefilled');
         var hint = field.querySelector('.prefilled-hint');
         if (hint) hint.remove();
+    }
+
+    function unlockField(inputId) {
+        var field = getField(inputId);
+        if (!field) return;
+        var row = field.querySelector('.field-add-row');
+        if (row) row.hidden = false;
+        var locked = field.querySelector('[data-role-lock]');
+        if (locked) locked.remove();
+        field.classList.remove('is-role-locked');
+    }
+
+    var partiesGrid = document.getElementById('parties-grid');
+    var forwarderCol = document.getElementById('parties-forwarder-col');
+
+    function syncForwarderCol(role) {
+        if (!partiesGrid || !forwarderCol) return;
+        var isForwarder = role === 'forwarder';
+        forwarderCol.hidden = !isForwarder;
+        partiesGrid.classList.toggle('parties-grid--with-forwarder', isForwarder);
     }
 
     function updateCards(role) {
@@ -118,188 +198,102 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    var partiesGrid = document.getElementById('parties-grid');
-    var forwarderCol = document.getElementById('parties-forwarder-col');
-
-    function syncForwarderCard(role) {
-        if (!partiesGrid || !forwarderCol) return;
-        var isForwarder = role === 'forwarder';
-        forwarderCol.hidden = !isForwarder;
-        partiesGrid.classList.toggle('parties-grid--with-forwarder', isForwarder);
-    }
-
     function dispatchRoleChange(role) {
-        syncForwarderCard(role);
         document.dispatchEvent(new CustomEvent('trip-role-change', { detail: { role: role } }));
     }
 
     // ────────────────────────────────────────────────────────────────────
-    // Единственный путь обновления UI. Читает состояние формы, вычисляет
-    // роль, применяет к DOM.
-    //
-    //   prefillHintRole — роль, для которой оставить подсветку «подставлено
-    //   автоматически». Используется только при ручной активации карточки;
-    //   при автодетекте и реакции на пользовательские изменения селектов
-    //   должна быть null (без подсказок — пользователь сам выбрал значение).
+    // Главный мутатор состояния.
+    //   - target-поле получает orgId и блокируется (client/carrier).
+    //   - остальные поля: если там лежала orgId — очищаем (чтобы не было
+    //     двух «моих фирм» одновременно, это ломает computeTripRole и
+    //     вводит в заблуждение same-org валидаторы). Любое другое
+    //     значение (внешний контрагент) не трогаем.
+    //   - остальные client/carrier — разблокируются.
+    //   - колонка forwarder синхронизируется отдельно.
+    //   - карточки подсвечиваются, событие диспатчится.
     // ────────────────────────────────────────────────────────────────────
-    function syncFromState(prefillHintRole) {
-        var s = readFormState();
-        var role = computeTripRole(s.clientId, s.carrierId, s.forwarderId, orgId);
-        // observer → null для совместимости с trip_form_finance_role.js:
-        // null там означает «показать оба столбца» (как раньше при отсутствии
-        // активной роли). Семантически это наблюдатель.
-        var uiRole = (role === 'observer') ? null : role;
+    function applyRole(newRole) {
+        activeRole = newRole;
 
-        updateCards(uiRole);
-
-        Object.keys(ROLE_TO_SELECT).forEach(function (r) {
-            if (r === prefillHintRole) {
-                addPrefilledHint(ROLE_TO_SELECT[r]);
+        Object.keys(ROLE_TO_INPUT).forEach(function (r) {
+            var inputId = ROLE_TO_INPUT[r];
+            if (r === newRole) {
+                setInputToOrg(inputId);
+                if (r !== 'forwarder') lockField(inputId);
             } else {
-                removePrefilledHint(ROLE_TO_SELECT[r]);
-            }
-        });
-
-        dispatchRoleChange(uiRole);
-    }
-
-    // ── Помощники для программного изменения селекта ──
-    function setSelectToOrg(selectId) {
-        var select = document.getElementById(selectId);
-        if (!select) return;
-        if (select.tagName === 'SELECT') {
-            var opt = Array.from(select.options).find(function (o) {
-                return String(o.value) === String(orgId);
-            });
-            if (!opt) {
-                opt = new Option(orgName, orgId);
-                select.add(opt);
-            }
-        }
-        select.value = orgId;
-        // autocomplete.js подписан на change: обновит видимый input и кнопку
-        // очистки. Наш собственный listener на change защищён _batchDepth,
-        // чтобы не вызвать syncFromState посреди батча.
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    function clearSelect(selectId) {
-        var select = document.getElementById(selectId);
-        if (!select) return;
-        select.value = '';
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    // ────────────────────────────────────────────────────────────────────
-    // Батчинг: клик по карточке может менять до двух селектов подряд
-    // (снять конкурирующий prefill + выставить целевой). Каждый из них
-    // дёрнет change, но мы хотим ровно ОДИН syncFromState в конце — иначе
-    // финансовый блок дважды проиграет анимацию смены роли.
-    // ────────────────────────────────────────────────────────────────────
-    var _batchDepth = 0;
-    var _pendingHintRole = null;
-
-    function batch(fn) {
-        _batchDepth++;
-        try {
-            fn();
-        } finally {
-            _batchDepth--;
-            if (_batchDepth === 0) {
-                syncFromState(_pendingHintRole);
-                _pendingHintRole = null;
-            }
-        }
-    }
-
-    // ── Клик по карточке роли ──
-    function activateRoleFromCard(role) {
-        batch(function () {
-            var s = readFormState();
-            var currentRole = computeTripRole(s.clientId, s.carrierId, s.forwarderId, orgId);
-
-            // Повторный клик по активной карточке — снять роль.
-            if (currentRole === role) {
-                clearSelect(ROLE_TO_SELECT[role]);
-                // _pendingHintRole остаётся null → без подсказок.
-                return;
-            }
-
-            // Освободить другие роли от нашей org (чтобы не было двух
-            // подставленных одновременно — это ломает computeTripRole из-за
-            // приоритета forwarder > client > carrier и вводит в заблуждение
-            // валидаторы same-org).
-            Object.keys(ROLE_TO_SELECT).forEach(function (r) {
-                if (r === role) return;
-                var sel = document.getElementById(ROLE_TO_SELECT[r]);
-                if (sel && String(sel.value) === String(orgId)) {
-                    clearSelect(ROLE_TO_SELECT[r]);
+                var el = document.getElementById(inputId);
+                if (el && String(el.value) === String(orgId)) {
+                    clearInput(inputId);
                 }
-            });
-
-            setSelectToOrg(ROLE_TO_SELECT[role]);
-            _pendingHintRole = role;
+                if (r !== 'forwarder') unlockField(inputId);
+            }
         });
+
+        syncForwarderCol(newRole);
+        updateCards(newRole);
+        dispatchRoleChange(newRole);
     }
 
+    function deactivate() {
+        activeRole = null;
+
+        Object.keys(ROLE_TO_INPUT).forEach(function (r) {
+            var inputId = ROLE_TO_INPUT[r];
+            var el = document.getElementById(inputId);
+            if (el && String(el.value) === String(orgId)) {
+                clearInput(inputId);
+            }
+            if (r !== 'forwarder') unlockField(inputId);
+        });
+
+        syncForwarderCol(null);
+        updateCards(null);
+        dispatchRoleChange(null);
+    }
+
+    // ── Клик по карточке ──
+    //   Повторный клик по активной — деактивация; иначе — переход.
     cards.forEach(function (card) {
         card.addEventListener('click', function () {
-            activateRoleFromCard(card.dataset.role);
+            var role = card.dataset.role;
+            if (activeRole === role) {
+                deactivate();
+            } else {
+                applyRole(role);
+            }
         });
     });
 
-    // ── Реакция на пользовательские изменения селектов участников ──
-    //
-    // Роль должна быть «липкой» во время редактирования и обновляться
-    // только на момент КОММИТА значения:
-    //   - выбор из dropdown (selectItem → select.value = id),
-    //   - клик по кнопке × (clearBtn → select.value = ''),
-    //   - form.reset(),
-    //   - blur поля без валидного выбора (ниже отдельный слушатель).
-    //
-    // autocomplete.js во время набора текста сбрасывает select.value и
-    // диспатчит change, если текст перестал совпадать с выбранной опцией.
-    // Это ТРАНЗИТНАЯ инвалидация — пользователь ещё печатает. Помечается
-    // `select.dataset.acInvalidating='1'` на время диспатча. Такие change
-    // игнорируем: иначе финансовый блок флипал бы в «оба столбца» на
-    // каждое нажатие backspace в поле «Заказчик».
-    Object.keys(ROLE_TO_SELECT).forEach(function (role) {
-        var select = document.getElementById(ROLE_TO_SELECT[role]);
-        if (!select) return;
-        select.addEventListener('change', function () {
-            if (_batchDepth > 0) return; // внутри batch — тихо
-            if (select.dataset.acInvalidating === '1') return; // транзитная инвалидация
-            syncFromState(null);
-        });
-
-        // Blur: страховка от edge-case «пользователь набрал мусор и ушёл».
-        // autocomplete.js в своём blur-хендлере даёт 200ms на auto-select;
-        // если он сработает, change уже обновит UI. Если не сработает —
-        // синкнемся сами, чтобы UI отразил финальное (пустое) состояние.
-        var container = select.closest('.autocomplete-container');
-        var input = container && container.querySelector('.autocomplete-input');
-        if (input) {
-            input.addEventListener('blur', function () {
-                setTimeout(function () {
-                    if (_batchDepth > 0) return;
-                    syncFromState(null);
-                }, 250);
-            });
-        }
-    });
-
     // ────────────────────────────────────────────────────────────────────
-    // Автодетекция при загрузке.
-    // - Полностью пустая форма + есть ТС → предзаполнить как carrier
-    //   (как и раньше — UX для автопарков).
-    // - Иначе — просто пере-вычислить роль из того, что пришло с сервера
-    //   (initial в create, instance в update). computeTripRole разрулит.
+    // Bootstrap: автодетект роли из серверных значений.
+    //   - Пустая форма + есть ТС → carrier (UX для автопарков).
+    //   - Пустая форма без ТС → observer (роль не выбрана).
+    //   - Непустая форма → computeTripRole; совпадение → эта роль;
+    //     observer → не участник (остаёмся без роли; полноценный
+    //     read-only режим появится в Task #6).
     // ────────────────────────────────────────────────────────────────────
-    var initialState = readFormState();
-    var isEmptyForm = !initialState.clientId && !initialState.carrierId && !initialState.forwarderId;
+    var clientEl = document.getElementById('id_client');
+    var carrierEl = document.getElementById('id_carrier');
+    var forwarderEl = document.getElementById('id_forwarder');
+
+    var initialClient = clientEl ? clientEl.value : '';
+    var initialCarrier = carrierEl ? carrierEl.value : '';
+    var initialForwarder = forwarderEl ? forwarderEl.value : '';
+    var isEmptyForm = !initialClient && !initialCarrier && !initialForwarder;
+
     if (isEmptyForm && hasVehicles) {
-        activateRoleFromCard('carrier');
+        applyRole('carrier');
+    } else if (isEmptyForm) {
+        deactivate();
     } else {
-        syncFromState(null);
+        var detected = computeTripRole(initialClient, initialCarrier, initialForwarder, orgId);
+        if (detected === 'observer') {
+            deactivate();
+        } else {
+            applyRole(detected);
+        }
     }
 });
+
+// EOF
