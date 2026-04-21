@@ -14,13 +14,18 @@
  *     активная роль → ?own=1 (в дропдауне только наши фирмы);
  *     остальные     → базовый поиск (все организации, в т.ч. внешние
  *     контрагенты).
+ *   - поведение дропдауна на фокус: у активного поля дропдаун с нашими
+ *     фирмами вываливается сразу при фокусе (флаг openOnFocusAlways).
+ *     Наших фирм обычно немного — выбор быстрее, чем набор.
  *
  * Поле-autocomplete в остальном ведёт себя как обычно: пользователь
- * свободно печатает, выбирает, очищает кнопкой ×, в том числе в поле
- * активной роли. Единственное, где роль касается значения поля — это
- * момент активации карточки: в этот момент, если в целевом поле нет
- * нашей фирмы, оно предзаполняется навбар-фирмой (orgId). После этого
- * контроллер в поля не вмешивается — никаких listener'ов на change/blur.
+ * свободно печатает и выбирает. Две тонкости, вытекающие из того, что
+ * роль задана и значение обязательно:
+ *   1) При активации карточки, если в целевом поле ещё нет нашей фирмы,
+ *      оно предзаполняется навбар-фирмой (orgId).
+ *   2) После blur'а поле активной роли не может остаться пустым либо
+ *      с чужой фирмой — если так случилось (× при незагрузившемся
+ *      дропдауне, несовпавший ввод) — возвращаем orgId.
  *
  * Финансовый блок зависит ТОЛЬКО от активной роли, а не от того, какую
  * именно фирму (из нескольких наших) пользователь выбрал в поле.
@@ -92,6 +97,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Переключить endpoint autocomplete-поиска у селекта на ?own=1 или
     // вернуть на базовый. Autocomplete.js читает dataset.searchUrl
     // динамически при каждом запросе, так что апдейт срабатывает сразу.
+    // Вместе с этим выставляется/снимается openOnFocusAlways='1': у поля
+    // активной роли дропдаун со списком наших фирм должен вываливаться
+    // сразу при фокусе, а не ждать ввода двух символов.
     function setOwnSearch(inputId, ownOnly) {
         var el = document.getElementById(inputId);
         if (!el) return;
@@ -99,8 +107,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!base) return;
         if (ownOnly) {
             el.dataset.searchUrl = base + (base.indexOf('?') === -1 ? '?' : '&') + 'own=1';
+            el.dataset.openOnFocusAlways = '1';
         } else {
             el.dataset.searchUrl = base;
+            delete el.dataset.openOnFocusAlways;
         }
     }
 
@@ -187,6 +197,34 @@ document.addEventListener('DOMContentLoaded', function () {
         card.addEventListener('click', function () {
             var role = card.dataset.role;
             if (activeRole !== role) applyRole(role);
+        });
+    });
+
+    // ── Страховка: поле активной роли не должно остаться пустым ──
+    //
+    // Когда выбрана карточка роли, соответствующее поле обязано содержать
+    // одну из наших фирм. Пользователь может случайно очистить его (× или
+    // стереть ввод и уйти, не выбрав из дропдауна). autocomplete.js
+    // в своём blur даёт 200ms на авто-select; мы проверяем ПОСЛЕ этого
+    // окна и, если поле всё ещё пустое или в нём не наша фирма, возвращаем
+    // orgId (навбар-фирму). Это НЕ reverse-flow: роль не меняется, мы
+    // лишь восстанавливаем контракт «поле активной роли — наша фирма».
+    ['id_client', 'id_carrier'].forEach(function (id) {
+        var select = document.getElementById(id);
+        if (!select) return;
+        var container = select.closest('.autocomplete-container');
+        var input = container && container.querySelector('.autocomplete-input');
+        if (!input) return;
+        input.addEventListener('blur', function () {
+            setTimeout(function () {
+                if (!activeRole) return;
+                if (ROLE_TO_INPUT[activeRole] !== id) return;
+                if (!isOwnOrg(select.value)) {
+                    ensureOrgOption(select);
+                    select.value = orgId;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }, 300);
         });
     });
 

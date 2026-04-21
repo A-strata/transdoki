@@ -293,7 +293,15 @@ function initAutocomplete(selectId) {
         }
 
         input.addEventListener('focus', function () {
-            if (select.dataset.openOnFocus === '1' && !input.value.trim()) fetchResults('');
+            // openOnFocusAlways='1' — открывать дропдаун на фокус всегда,
+            // даже если поле уже заполнено (для полей с коротким списком
+            // вариантов, например «моя фирма» при активной карточке роли).
+            // openOnFocus='1' — только если поле пустое (старая семантика).
+            if (select.dataset.openOnFocusAlways === '1') {
+                fetchResults('');
+            } else if (select.dataset.openOnFocus === '1' && !input.value.trim()) {
+                fetchResults('');
+            }
         });
 
         input.addEventListener('input', function () {
