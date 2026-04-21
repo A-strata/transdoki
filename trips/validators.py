@@ -75,8 +75,15 @@ def validate_forwarder(forwarder, client, carrier, current_org=None):
     """
     Экспедитор, если задан:
     - должен быть own-фирмой аккаунта (is_own_company=True);
-    - должен совпадать с текущей фирмой в навбаре (если передана);
     - не должен совпадать с заказчиком или перевозчиком.
+
+    Исторически здесь было ограничение «forwarder должен совпадать с
+    текущей фирмой в навбаре» — оно имело смысл, пока поле было
+    статическим (рендерилось как current_org без возможности смены).
+    С Phase 1.5 UI (role-driven autocomplete) пользователь может выбрать
+    в качестве экспедитора ЛЮБУЮ из своих фирм; ограничение стало
+    некорректным и снято. Параметр current_org оставлен для обратной
+    совместимости сигнатуры.
     """
     if forwarder is None:
         return
@@ -84,16 +91,6 @@ def validate_forwarder(forwarder, client, carrier, current_org=None):
     if not forwarder.is_own_company:
         raise ValidationError(
             {"forwarder": "Экспедитором может быть только ваша фирма."}
-        )
-
-    if current_org is not None and forwarder.pk != current_org.pk:
-        raise ValidationError(
-            {
-                "forwarder": (
-                    "Экспедитором может быть только текущая выбранная "
-                    "в навбаре фирма."
-                )
-            }
         )
 
     if client and forwarder.pk == client.pk:

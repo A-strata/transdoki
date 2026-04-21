@@ -157,7 +157,7 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
         }
 
     # FK-поля, переводимые в AjaxModelChoiceField
-    _AJAX_FIELDS = ["client", "carrier", "driver", "truck", "trailer"]
+    _AJAX_FIELDS = ["client", "carrier", "driver", "truck", "trailer", "forwarder"]
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
@@ -222,25 +222,16 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
         self._setup_ajax_field("truck", full_truck, vehicle_search_url, search_type="truck")
         self._setup_ajax_field("trailer", full_trailer, vehicle_search_url, search_type="trailer")
 
-        # Экспедитор: только own-фирмы аккаунта. Для редактирования —
-        # существующее значение; для создания — только current_org
-        # (по требованию UX: единственный допустимый выбор).
-        # Поле скрытое — управляется через карточки ролей в trip_form_role.js.
+        # Экспедитор: такой же autocomplete, как client/carrier, но
+        # поиск всегда ограничен нашими фирмами (?own=1). Видимость поля
+        # (колонка parties-forwarder-col) и значение управляются через
+        # карточки ролей в trip_form_role.js — поле показывается только
+        # при активной роли «Экспедитор» и обнуляется при переключении
+        # на другую роль.
         if "forwarder" in self.fields:
-            forwarder_field = self.fields["forwarder"]
-            forwarder_field.required = False
-            forwarder_field.widget = forms.HiddenInput()
             own_orgs = Organization.objects.own_for(account_id)
-            forwarder_field._validation_qs = own_orgs
-
-            current = getattr(self.instance, "forwarder", None)
-            current_pk = current.pk if (current and current.pk) else None
-            if current_pk:
-                forwarder_field.queryset = own_orgs.filter(pk=current_pk)
-            elif self.current_org is not None:
-                forwarder_field.queryset = own_orgs.filter(pk=self.current_org.pk)
-            else:
-                forwarder_field.queryset = own_orgs.none()
+            self._setup_ajax_field("forwarder", own_orgs, org_search_url + "?own=1")
+            self.fields["forwarder"].required = False
 
     def _setup_ajax_field(self, fname, full_qs, search_url, search_type=""):
         """Устанавливает validation queryset, display queryset (текущее значение)

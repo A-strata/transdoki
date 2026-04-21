@@ -756,8 +756,13 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn(trip, list(resp.context["trips"]))
 
-    def test_form_rejects_foreign_forwarder(self):
-        """forwarder должен быть = current_org, иначе валидация падает."""
+    def test_form_rejects_external_forwarder(self):
+        """Экспедитором может быть только наша фирма — внешняя отклоняется.
+
+        Исторически здесь проверялось ограничение «forwarder = current_org».
+        С Phase 1.5 (role-driven autocomplete) ограничение снято: экспедитором
+        может быть ЛЮБАЯ из наших фирм аккаунта. Проверка is_own_company
+        осталась и проверяется этим тестом."""
         from trips.forms import TripForm
         form = TripForm(
             data={
@@ -767,13 +772,37 @@ class ForwarderFieldTests(RouteBuilderTestBase):
                 "driver": self.driver.pk,
                 "truck": self.truck.pk,
                 "cargo": "Груз",
+                "forwarder": self.external_org.pk,  # не наша фирма
+            },
+            user=self.user,
+            current_org=self.our_org2,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("forwarder", form.errors)
+
+    def test_form_accepts_own_forwarder_not_equal_to_current_org(self):
+        """Экспедитор — не обязательно совпадает с current_org; достаточно
+        is_own_company. Форма должна принимать любую нашу фирму аккаунта
+        в качестве экспедитора, даже если в навбаре выбрана другая."""
+        from trips.forms import TripForm
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.external_org.pk,
+                "carrier": self.external_org.pk,
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "client_cost": "50000",
+                "client_cost_unit": "rub",
+                "carrier_cost": "40000",
+                "carrier_cost_unit": "rub",
                 "forwarder": self.our_org.pk,  # наша, но НЕ current_org
             },
             user=self.user,
             current_org=self.our_org2,  # current_org — вторая
         )
-        self.assertFalse(form.is_valid())
-        self.assertIn("forwarder", form.errors)
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_form_accepts_forwarder_equal_to_current_org(self):
         from trips.forms import TripForm

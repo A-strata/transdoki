@@ -94,8 +94,6 @@
 
         <div class="section" id="section-participants">
             <h2 class="section-title">Участники перевозки</h2>
-            {{ form.forwarder }}
-            {{ form.forwarder.errors }}
             <div class="parties-grid" id="parties-grid">
                 <div class="parties-col">
                     <h3 class="parties-col-title">Заказчик</h3>
@@ -113,9 +111,10 @@
                 <div class="parties-col parties-col--forwarder" id="parties-forwarder-col" hidden>
                     <h3 class="parties-col-title">Экспедитор</h3>
                     <div class="field">
-                        <label>Организация</label>
-                        <p class="parties-forwarder-name">{{ role_org.name }}</p>
-                        <p class="helptext">Ваша текущая фирма выступает посредником между заказчиком и перевозчиком.</p>
+                        <label for="{{ form.forwarder.id_for_label }}">Организация</label>
+                        {{ form.forwarder }}
+                        <p class="helptext">Ваша фирма выступает посредником между заказчиком и перевозчиком.</p>
+                        {{ form.forwarder.errors }}
                     </div>
                 </div>
                 {% endif %}
@@ -409,7 +408,7 @@
 <script src="{% static 'trips/js/trip_form_finance.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    ['id_client', 'id_carrier', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {
+    ['id_client', 'id_carrier', 'id_forwarder', 'id_driver', 'id_truck', 'id_trailer'].forEach(function (id) {
         initAutocomplete(id);
     });
 });

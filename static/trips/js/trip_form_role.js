@@ -71,9 +71,14 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // Базовые search-URL селектов до наших модификаций. Нужны, чтобы
-    // неактивную роль возвращать на полный поиск без ?own=1.
+    // на неактивную роль возвращать базовый поиск.
+    // Для client/carrier base — полный org-поиск (внешние контрагенты
+    // разрешены, ?own=1 добавляется только когда роль активна).
+    // Для forwarder base уже содержит ?own=1 (экспедитор всегда только
+    // из наших фирм на уровне формы — см. trips/forms.py); setOwnSearch
+    // не дублирует параметр.
     var baseSearchUrl = {};
-    ['id_client', 'id_carrier'].forEach(function (id) {
+    ['id_client', 'id_carrier', 'id_forwarder'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) baseSearchUrl[id] = el.dataset.searchUrl || '';
     });
@@ -106,7 +111,13 @@ document.addEventListener('DOMContentLoaded', function () {
         var base = baseSearchUrl[inputId] || '';
         if (!base) return;
         if (ownOnly) {
-            el.dataset.searchUrl = base + (base.indexOf('?') === -1 ? '?' : '&') + 'own=1';
+            // Если ?own=1 уже в базовом URL (как у forwarder на уровне
+            // формы — см. trips/forms.py), не дублируем параметр.
+            if (base.indexOf('own=1') !== -1) {
+                el.dataset.searchUrl = base;
+            } else {
+                el.dataset.searchUrl = base + (base.indexOf('?') === -1 ? '?' : '&') + 'own=1';
+            }
             el.dataset.openOnFocusAlways = '1';
         } else {
             el.dataset.searchUrl = base;
@@ -136,7 +147,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // change → autocomplete.js синхронизирует видимый input и ×.
             el.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-            // hidden input (forwarder)
+            // Фолбэк на случай не-SELECT (не должен срабатывать в текущей
+            // конфигурации — все три поля рендерятся как autocomplete).
             el.value = orgId;
         }
     }
@@ -164,27 +176,32 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Главный мутатор ──
     //   active role поле: search URL → ?own=1, предзаполнить нашей фирмой
     //                     (если ещё не наша).
-    //   другие роли поля: search URL → базовый, значение не трогаем.
-    //   forwarder (hidden input без autocomplete): orgId при активной,
-    //                     пусто при любой другой.
+    //   client/carrier неактивной роли: search URL → базовый,
+    //                     значение не трогаем (может быть внешний контрагент).
+    //   forwarder неактивной роли: значение очищаем. Экспедитор — всегда
+    //                     наша фирма и поле показывается только при
+    //                     активной роли «Экспедитор»; не сбрасывая значение,
+    //                     мы могли бы сохранить в БД «призрак» предыдущей
+    //                     попытки выбора.
     function applyRole(newRole) {
         activeRole = newRole;
 
-        ['client', 'carrier'].forEach(function (r) {
+        ['client', 'carrier', 'forwarder'].forEach(function (r) {
             var inputId = ROLE_TO_INPUT[r];
             var active = (r === newRole);
             setOwnSearch(inputId, active);
-            if (active) prefillIfNeeded(inputId);
-        });
-
-        var fwd = document.getElementById('id_forwarder');
-        if (fwd) {
-            if (newRole === 'forwarder') {
-                if (!isOwnOrg(fwd.value)) fwd.value = orgId;
-            } else {
-                fwd.value = '';
+            if (active) {
+                prefillIfNeeded(inputId);
+            } else if (r === 'forwarder') {
+                var el = document.getElementById(inputId);
+                if (el && el.value) {
+                    el.value = '';
+                    if (el.tagName === 'SELECT') {
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
             }
-        }
+        });
 
         syncForwarderCol(newRole);
         updateCards(newRole);
@@ -209,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // окна и, если поле всё ещё пустое или в нём не наша фирма, возвращаем
     // orgId (навбар-фирму). Это НЕ reverse-flow: роль не меняется, мы
     // лишь восстанавливаем контракт «поле активной роли — наша фирма».
-    ['id_client', 'id_carrier'].forEach(function (id) {
+    ['id_client', 'id_carrier', 'id_forwarder'].forEach(function (id) {
         var select = document.getElementById(id);
         if (!select) return;
         var container = select.closest('.autocomplete-container');
