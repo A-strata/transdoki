@@ -156,12 +156,14 @@ document.addEventListener('DOMContentLoaded', function () {
         rebuildSearchUrl(inputId);
     }
 
-    // Правило исключений (Client → Carrier):
-    // Когда активна роль «Заказчик» и в поле Заказчик выбрана наша фирма,
-    // эта фирма не должна появляться в дропдауне поля «Перевозчик» —
-    // заказчик и перевозчик не могут совпадать (validate_client_cannot_be_carrier).
-    // Во всех прочих комбинациях exclude очищаем, чтобы не ограничивать
-    // пользователя без повода.
+    // Правило исключений (симметричное для client ↔ carrier):
+    //   activeRole === 'client'  → значение id_client исключаем из id_carrier;
+    //   activeRole === 'carrier' → значение id_carrier исключаем из id_client.
+    // Заказчик и перевозчик не могут совпадать (validate_client_cannot_be_carrier).
+    // Активная роль гарантирует, что в «своём» поле стоит одна из наших фирм
+    // (prefillIfNeeded + blur-страховка); исключение этой фирмы из поля-пары
+    // предотвращает ситуацию «выбрал ту же организацию → ошибка валидации
+    // на сабмите». Во всех прочих комбинациях exclude очищаем.
     function syncExclusions() {
         setExclude('id_client', '');
         setExclude('id_carrier', '');
@@ -170,6 +172,11 @@ document.addEventListener('DOMContentLoaded', function () {
             var clientEl = document.getElementById('id_client');
             if (clientEl && clientEl.value) {
                 setExclude('id_carrier', clientEl.value);
+            }
+        } else if (activeRole === 'carrier') {
+            var carrierEl = document.getElementById('id_carrier');
+            if (carrierEl && carrierEl.value) {
+                setExclude('id_client', carrierEl.value);
             }
         }
     }
@@ -258,16 +265,25 @@ document.addEventListener('DOMContentLoaded', function () {
         dispatchRoleChange(newRole);
     }
 
-    // Пересчёт exclude при изменении значения в поле Заказчика.
+    // Пересчёт exclude при изменении значения в поле активной роли.
     // autocomplete.js диспатчит 'change' на SELECT при выборе из дропдауна
     // или очистке через ×. Ребилд отрабатывает сразу — следующий запрос
-    // в поле Перевозчика уже пойдёт с обновлённым ?exclude.
-    (function bindClientChangeForExclusions() {
-        var el = document.getElementById('id_client');
-        if (!el) return;
-        el.addEventListener('change', function () {
-            if (activeRole === 'client') syncExclusions();
-        });
+    // в парном поле уже пойдёт с обновлённым ?exclude.
+    //   activeRole=client:  change в id_client  → пересчёт exclude для id_carrier;
+    //   activeRole=carrier: change в id_carrier → пересчёт exclude для id_client.
+    (function bindChangeForExclusions() {
+        var clientEl = document.getElementById('id_client');
+        if (clientEl) {
+            clientEl.addEventListener('change', function () {
+                if (activeRole === 'client') syncExclusions();
+            });
+        }
+        var carrierEl = document.getElementById('id_carrier');
+        if (carrierEl) {
+            carrierEl.addEventListener('change', function () {
+                if (activeRole === 'carrier') syncExclusions();
+            });
+        }
     })();
 
     // ── Клик по карточке ──

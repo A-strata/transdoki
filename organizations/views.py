@@ -331,8 +331,17 @@ def organization_search(request):
     account = get_request_account(request)
     q = request.GET.get("q", "").strip()
     qs = Organization.objects.for_account(account)
+    # own и external — взаимоисключающие фильтры по типу организации.
+    # own=1 → только наши фирмы (is_own_company=True), используется для
+    # поля активной роли и для forwarder.
+    # external=1 → только контрагенты (is_own_company=False), используется
+    # в форме рейса при активной роли «Экспедитор» для полей client/carrier:
+    # если мы посредник, то клиент и перевозчик — чужие стороны.
+    # Если переданы оба — выигрывает own (порядок фильтров).
     if request.GET.get("own") == "1":
         qs = qs.filter(is_own_company=True)
+    elif request.GET.get("external") == "1":
+        qs = qs.filter(is_own_company=False)
 
     # exclude — CSV из pk организаций, которые клиент хочет скрыть
     # (например, в форме рейса поле «Перевозчик» исключает уже выбранного
