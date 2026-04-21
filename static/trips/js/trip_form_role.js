@@ -1,56 +1,59 @@
 /**
  * Роль навбар-фирмы в рейсе: JS-контроллер формы.
  *
- * Архитектура (Phase 1.5 — one-way flow: карточка → поля)
- * -------------------------------------------------------
+ * Архитектура (Phase 1.5 — role-driven UI)
+ * ----------------------------------------
  * Единственный источник истины — activeRole. Менять его могут только:
  *   1) Автодетект при загрузке (bootstrap из серверных значений).
  *   2) Клик пользователя по карточке роли.
  *
- * Поля участников («моя фирма» для client/carrier/forwarder) — ВЫХОД
- * относительно роли, а не вход. Пока роль активна, соответствующее
- * поле заблокировано: на его месте выводится имя «моей фирмы», а
- * автокомплит (input + кнопка добавления + селект) скрыт. Пользователь
- * не может ни стереть это значение, ни ввести другое — сменить свою
- * фирму можно только через смену карточки роли.
+ * Карточка роли определяет, в каком из полей участников сидит «моя фирма»,
+ * и что показывает финансовый блок. Поле участника — обычный autocomplete,
+ * таким же, как было. Отличия только у того поля, которое соответствует
+ * активной роли:
+ *
+ *   • Дропдаун ограничен нашими фирмами (?own=1). Пользователь может
+ *     выбрать другую нашу фирму (если их несколько), но не внешнего
+ *     контрагента.
+ *   • Значение никогда не пустое: если выбрана роль — поле ВСЕГДА
+ *     содержит одну из наших фирм. При переключении карточки, а также
+ *     в качестве страховки после blur-инвалидации — перезаливается в
+ *     orgId (pk навбар-фирмы).
+ *   • Кнопка × скрыта через CSS (.is-role-locked .autocomplete-clear),
+ *     чтобы пользователь не мог оставить поле пустым.
+ *
+ * Неактивные поля участников — обычный поиск по всем организациям
+ * (внешние контрагенты). Их значения мы не трогаем.
+ *
+ * Финансовый блок
+ * ---------------
+ * trip_form_finance_role.js слушает CustomEvent('trip-role-change') на
+ * document и перерисовывается ИСКЛЮЧИТЕЛЬНО по роли, независимо от того,
+ * какую именно нашу фирму пользователь выбрал в активном поле.
+ *
+ * Роль всегда выбрана
+ * -------------------
+ * При создании: default = client; если у аккаунта есть хоть одно ТС —
+ * default = carrier. При редактировании: Trip.perspective (= компьют роли
+ * из полей) — если совпало, берём эту роль. Если viewer не участник
+ * (observer) — фолбэк на роль по умолчанию по тем же правилам что и для
+ * create. Полноценный read-only режим для observer — Task #6.
  *
  * Почему так, а не как было
  * -------------------------
- * Прежняя реализация слушала change/blur на селектах участников и
- * пересчитывала роль «по факту значения поля». Это породило два
- * класса багов:
- *
- *   1) Во время набора текста в автокомплите hidden select кратко
- *      очищался — computeTripRole возвращал observer — финансовый
- *      блок флипал в «оба столбца» посреди набора.
- *   2) После полного стирания поля форма застревала в «observer при
- *      визуально активной карточке» и лечилась только перекликом по
- *      карточке.
- *
- * Новая схема убивает оба: поле нельзя стереть, карточка независима
- * от состояния автокомплита. Reverse-flow (change/blur listeners)
- * полностью удалены.
+ * Прежняя реализация слушала change/blur на полях участников и
+ * пересчитывала роль «по факту значения». Это породило два класса
+ * багов: во время набора текста hidden select кратко пустел → роль
+ * считалась observer → финансовый блок флипал; и после полного
+ * стирания поля форма застревала в «observer при визуально активной
+ * карточке». Обе проблемы исчезают, когда поток становится
+ * одностороным: роль → поля + ограничения, а не наоборот.
  *
  * Зеркало серверной функции
  * -------------------------
  * computeTripRole(...) дублирует trips.roles.compute_trip_role и
- * используется ТОЛЬКО на старте — автодетект роли из значений,
- * пришедших с сервера (initial в create / instance в update). Любое
- * изменение серверной функции требует правки здесь + tests_roles.py.
- *
- * Предзаполнение
- * --------------
- * При активации роли целевое поле получает orgId (pk навбар-фирмы).
- * По контракту мультитенантности navbar-фирма всегда принадлежит
- * текущему account-у, поэтому «одна наша фирма» и «несколько, выбрана
- * такая-то в навбаре» сводятся к одному правилу: prefill = orgId.
- *
- * Событие
- * -------
- * Диспатчится CustomEvent('trip-role-change', { detail: { role } }) на
- * document. role ∈ { 'client', 'carrier', 'forwarder', null }.
- * null — observer / роль не выбрана — финансовый блок показывает оба
- * столбца (backward-compat). Слушатель в trip_form_finance_role.js.
+ * используется только на bootstrap. Любое изменение серверной функции
+ * требует правки здесь + tests_roles.py.
  */
 document.addEventListener('DOMContentLoaded', function () {
     var config = document.getElementById('role-config');
@@ -59,9 +62,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var orgId = config.dataset.orgId;
     var orgName = config.dataset.orgName;
     var hasVehicles = config.dataset.hasVehicles === 'true';
-    // own_org_ids (CSV) доступны через config.dataset.ownOrgIds. Phase 2
-    // будет использовать их для фильтрации дропдауна при смене моей фирмы
-    // из нескольких. Phase 1.5 завязан на orgId (навбар), поэтому не читает.
+    var ownOrgIds = (config.dataset.ownOrgIds || '')
+        .split(',')
+        .map(function (s) { return s.trim(); })
+        .filter(Boolean);
 
     var cards = document.querySelectorAll('.role-card');
     var ROLE_TO_INPUT = {
@@ -70,11 +74,15 @@ document.addEventListener('DOMContentLoaded', function () {
         forwarder: 'id_forwarder',
     };
 
-    // ────────────────────────────────────────────────────────────────────
-    // Pure function — зеркало trips.roles.compute_trip_role.
-    // Используется только на bootstrap. Любое изменение серверной
-    // функции → правка здесь + tests_roles.py.
-    // ────────────────────────────────────────────────────────────────────
+    // Базовые search-URL селектов до наших модификаций. Нужны, чтобы на
+    // неактивную роль возвращать полный поиск без ?own=1.
+    var baseSearchUrl = {};
+    ['id_client', 'id_carrier'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) baseSearchUrl[id] = el.dataset.searchUrl || '';
+    });
+
+    // ── Pure function — зеркало trips.roles.compute_trip_role ──
     function computeTripRole(clientId, carrierId, forwarderId, viewerOrgId) {
         if (viewerOrgId == null || viewerOrgId === '') return 'observer';
         var v = String(viewerOrgId);
@@ -84,102 +92,58 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'observer';
     }
 
-    // ── Единственное состояние ──
-    var activeRole = null;  // 'client' | 'carrier' | 'forwarder' | null
+    // activeRole всегда одна из 'client' | 'carrier' | 'forwarder'.
+    // null бывает только до первого applyRole на этапе инициализации.
+    var activeRole = null;
 
-    // ────────────────────────────────────────────────────────────────────
-    // Работа с селектом/инпутом «моей фирмы».
-    // client/carrier — <select> внутри autocomplete-виджета.
-    // forwarder — <input type="hidden"> (без autocomplete).
-    // ────────────────────────────────────────────────────────────────────
+    function isOwnOrg(val) {
+        if (!val) return false;
+        var s = String(val);
+        return ownOrgIds.indexOf(s) !== -1;
+    }
+
+    function getField(inputId) {
+        var el = document.getElementById(inputId);
+        return el ? el.closest('.field') : null;
+    }
+
+    // Переключить endpoint поиска у селекта на own=1 (или снять ограничение).
+    function setOwnSearch(inputId, ownOnly) {
+        var el = document.getElementById(inputId);
+        if (!el) return;
+        var base = baseSearchUrl[inputId] || '';
+        if (!base) return;
+        if (ownOnly) {
+            el.dataset.searchUrl = base + (base.indexOf('?') === -1 ? '?' : '&') + 'own=1';
+        } else {
+            el.dataset.searchUrl = base;
+        }
+    }
+
+    // Гарантировать, что в <select>/hidden input лежит одна из наших фирм.
+    // Если уже лежит какая-то наша — оставляем (пользователь мог выбрать
+    // другую из своих). Если пусто или чужая — выставляем orgId (навбар).
     function ensureOrgOption(select) {
         if (!select || select.tagName !== 'SELECT') return;
         var exists = Array.from(select.options).some(function (o) {
             return String(o.value) === String(orgId);
         });
-        if (!exists) {
-            select.add(new Option(orgName, orgId));
-        }
+        if (!exists) select.add(new Option(orgName, orgId));
     }
 
-    function setInputToOrg(inputId) {
+    function enforceOwnFirm(inputId) {
         var el = document.getElementById(inputId);
         if (!el) return;
+        if (isOwnOrg(el.value)) return;
         if (el.tagName === 'SELECT') {
             ensureOrgOption(el);
             el.value = orgId;
-            // Синхронизировать видимый input автокомплита и clear-btn.
-            // Даже если контейнер сейчас скрыт (роль активна) — делаем
-            // это сразу, чтобы при последующей разблокировке пользователь
-            // увидел корректное значение, а не пустое поле.
+            // change → autocomplete.js синхронизирует видимый input и ×.
             el.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-            // hidden input (forwarder) — просто пишем pk.
+            // hidden input (forwarder).
             el.value = orgId;
         }
-    }
-
-    function clearInput(inputId) {
-        var el = document.getElementById(inputId);
-        if (!el) return;
-        if (el.value === '') return;
-        el.value = '';
-        if (el.tagName === 'SELECT') {
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-    }
-
-    // ────────────────────────────────────────────────────────────────────
-    // Блокировка/разблокировка поля «моей фирмы».
-    //
-    // client/carrier: в .field прячем .field-add-row (там autocomplete +
-    //   кнопка «+») и вставляем <p data-role-lock> с именем моей фирмы.
-    // forwarder: в template уже статическая <p> в колонке
-    //   parties-forwarder-col — вся «блокировка» сводится к управлению
-    //   видимостью колонки через syncForwarderCol().
-    // ────────────────────────────────────────────────────────────────────
-    function getField(inputId) {
-        var el = document.getElementById(inputId);
-        if (!el) return null;
-        return el.closest('.field');
-    }
-
-    function lockField(inputId) {
-        var field = getField(inputId);
-        if (!field) return;
-        var row = field.querySelector('.field-add-row');
-        if (row) row.hidden = true;
-        var locked = field.querySelector('[data-role-lock]');
-        if (!locked) {
-            locked = document.createElement('p');
-            locked.className = 'parties-forwarder-name';
-            locked.setAttribute('data-role-lock', '1');
-            locked.textContent = orgName;
-            if (row && row.parentNode) {
-                row.parentNode.insertBefore(locked, row);
-            } else {
-                field.appendChild(locked);
-            }
-        } else {
-            locked.textContent = orgName;
-            locked.hidden = false;
-        }
-        field.classList.add('is-role-locked');
-        // Почистить наследие старой «prefilled»-подсветки, если осталась
-        // с прошлых сессий рендера.
-        field.classList.remove('is-prefilled');
-        var hint = field.querySelector('.prefilled-hint');
-        if (hint) hint.remove();
-    }
-
-    function unlockField(inputId) {
-        var field = getField(inputId);
-        if (!field) return;
-        var row = field.querySelector('.field-add-row');
-        if (row) row.hidden = false;
-        var locked = field.querySelector('[data-role-lock]');
-        if (locked) locked.remove();
-        field.classList.remove('is-role-locked');
     }
 
     var partiesGrid = document.getElementById('parties-grid');
@@ -194,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateCards(role) {
         cards.forEach(function (c) {
-            c.classList.toggle('is-active', role !== null && c.dataset.role === role);
+            c.classList.toggle('is-active', c.dataset.role === role);
         });
     }
 
@@ -202,77 +166,84 @@ document.addEventListener('DOMContentLoaded', function () {
         document.dispatchEvent(new CustomEvent('trip-role-change', { detail: { role: role } }));
     }
 
-    // ────────────────────────────────────────────────────────────────────
-    // Главный мутатор состояния.
-    //   - target-поле получает orgId и блокируется (client/carrier).
-    //   - остальные поля: если там лежала orgId — очищаем (чтобы не было
-    //     двух «моих фирм» одновременно, это ломает computeTripRole и
-    //     вводит в заблуждение same-org валидаторы). Любое другое
-    //     значение (внешний контрагент) не трогаем.
-    //   - остальные client/carrier — разблокируются.
-    //   - колонка forwarder синхронизируется отдельно.
-    //   - карточки подсвечиваются, событие диспатчится.
-    // ────────────────────────────────────────────────────────────────────
+    // ── Главный мутатор ──
+    // Для client/carrier:
+    //   активная роль  → ?own=1, is-role-locked, enforceOwnFirm
+    //   другая роль    → базовый search, без лока, значение не трогаем
+    // Для forwarder (hidden input без autocomplete):
+    //   активная роль  → hidden input = orgId (если ещё не наша)
+    //   другая роль    → hidden input = ''
     function applyRole(newRole) {
         activeRole = newRole;
 
-        Object.keys(ROLE_TO_INPUT).forEach(function (r) {
+        ['client', 'carrier'].forEach(function (r) {
             var inputId = ROLE_TO_INPUT[r];
-            if (r === newRole) {
-                setInputToOrg(inputId);
-                if (r !== 'forwarder') lockField(inputId);
-            } else {
-                var el = document.getElementById(inputId);
-                if (el && String(el.value) === String(orgId)) {
-                    clearInput(inputId);
-                }
-                if (r !== 'forwarder') unlockField(inputId);
-            }
+            var field = getField(inputId);
+            var active = (r === newRole);
+            setOwnSearch(inputId, active);
+            if (field) field.classList.toggle('is-role-locked', active);
+            if (active) enforceOwnFirm(inputId);
         });
+
+        var fwd = document.getElementById('id_forwarder');
+        if (fwd) {
+            if (newRole === 'forwarder') {
+                if (!isOwnOrg(fwd.value)) fwd.value = orgId;
+            } else {
+                fwd.value = '';
+            }
+        }
 
         syncForwarderCol(newRole);
         updateCards(newRole);
         dispatchRoleChange(newRole);
     }
 
-    function deactivate() {
-        activeRole = null;
-
-        Object.keys(ROLE_TO_INPUT).forEach(function (r) {
-            var inputId = ROLE_TO_INPUT[r];
-            var el = document.getElementById(inputId);
-            if (el && String(el.value) === String(orgId)) {
-                clearInput(inputId);
-            }
-            if (r !== 'forwarder') unlockField(inputId);
-        });
-
-        syncForwarderCol(null);
-        updateCards(null);
-        dispatchRoleChange(null);
-    }
-
     // ── Клик по карточке ──
-    //   Повторный клик по активной — деактивация; иначе — переход.
+    //   Повторный клик по активной — no-op (роль нельзя «снять»:
+    //   требование UX «роль всегда выбрана»).
     cards.forEach(function (card) {
         card.addEventListener('click', function () {
             var role = card.dataset.role;
-            if (activeRole === role) {
-                deactivate();
-            } else {
-                applyRole(role);
-            }
+            if (activeRole !== role) applyRole(role);
         });
     });
 
-    // ────────────────────────────────────────────────────────────────────
-    // Bootstrap: автодетект роли из серверных значений.
-    //   - Пустая форма + есть ТС → carrier (UX для автопарков).
-    //   - Пустая форма без ТС → observer (роль не выбрана).
-    //   - Непустая форма → computeTripRole; совпадение → эта роль;
-    //     observer → не участник (остаёмся без роли; полноценный
-    //     read-only режим появится в Task #6).
-    // ────────────────────────────────────────────────────────────────────
+    // ── Страховка: поле активной роли не должно остаться пустым после
+    // blur'а с невалидным текстом ──
+    //
+    // autocomplete.js во время набора кратко очищает select.value. Если
+    // пользователь уходит с поля, не выбрав ничего из дропдауна (и
+    // 200ms-авто-select не сработал — например, он специально стёр всё),
+    // select остаётся пустым. Роль при этом активна, и контракт «поле
+    // активной роли — одна из наших фирм» ломается. Здесь мы его
+    // восстанавливаем: через небольшой таймаут после blur проверяем поле
+    // активной роли и если оно невалидно — перезаливаем в orgId.
+    //
+    // Важно: это НЕ reverse-flow. Мы не меняем activeRole на основании
+    // значения поля; мы, наоборот, приводим поле в соответствие с ролью.
+    ['id_client', 'id_carrier'].forEach(function (id) {
+        var select = document.getElementById(id);
+        if (!select) return;
+        var container = select.closest('.autocomplete-container');
+        var input = container && container.querySelector('.autocomplete-input');
+        if (!input) return;
+        input.addEventListener('blur', function () {
+            setTimeout(function () {
+                if (!activeRole) return;
+                if (ROLE_TO_INPUT[activeRole] !== id) return;
+                if (!isOwnOrg(select.value)) {
+                    ensureOrgOption(select);
+                    select.value = orgId;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }, 300);
+        });
+    });
+
+    // ── Bootstrap ──
+    //   Edit-mode с данными: computeTripRole; если observer — фолбэк.
+    //   Create-mode (форма пустая): hasVehicles ? carrier : client.
     var clientEl = document.getElementById('id_client');
     var carrierEl = document.getElementById('id_carrier');
     var forwarderEl = document.getElementById('id_forwarder');
@@ -282,18 +253,19 @@ document.addEventListener('DOMContentLoaded', function () {
     var initialForwarder = forwarderEl ? forwarderEl.value : '';
     var isEmptyForm = !initialClient && !initialCarrier && !initialForwarder;
 
-    if (isEmptyForm && hasVehicles) {
-        applyRole('carrier');
-    } else if (isEmptyForm) {
-        deactivate();
+    function defaultRole() {
+        return hasVehicles ? 'carrier' : 'client';
+    }
+
+    var startRole;
+    if (isEmptyForm) {
+        startRole = defaultRole();
     } else {
         var detected = computeTripRole(initialClient, initialCarrier, initialForwarder, orgId);
-        if (detected === 'observer') {
-            deactivate();
-        } else {
-            applyRole(detected);
-        }
+        // Observer edit-mode (viewer не участник) — выбираем default.
+        // Полноценный read-only режим появится в Task #6; до тех пор
+        // это фолбэк, не оставляющий интерфейс без активной карточки.
+        startRole = (detected === 'observer') ? defaultRole() : detected;
     }
+    applyRole(startRole);
 });
-
-// EOF
