@@ -25,6 +25,7 @@ from billing.services.limits import can_create_trip
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
 
+from organizations.models import Organization
 from vehicles.models import PropertyType, VehicleType
 
 from .forms import TripAttachmentUploadForm, TripForm, TripPointForm
@@ -184,10 +185,21 @@ class TripCreateView(LimitCheckMixin, RoutePointsMixin, LoginRequiredMixin, Crea
         ctx["property_types"] = PropertyType.choices
         org = getattr(self.request, "current_org", None)
         if org:
+            own_org_ids = list(
+                Organization.objects.own_for(
+                    get_request_account(self.request)
+                ).values_list("pk", flat=True)
+            )
             ctx["role_org"] = {
                 "id": org.id,
                 "name": str(org),
                 "has_vehicles": org.vehicle_set.exists(),
+                # Список pk всех «моих» фирм account-а. Нужен JS-у для Phase 2
+                # (фильтрация дропдаунов по роли: forwarder → client/carrier из
+                # чужих; client/carrier own → второй участник тоже может быть own
+                # для internal-рейса). Сейчас передаём на будущее — data-атрибут
+                # создаётся в шаблоне, но Phase 1 JS его не читает.
+                "own_org_ids": own_org_ids,
             }
         return ctx
 
@@ -279,10 +291,16 @@ class TripUpdateView(RoutePointsMixin, LoginRequiredMixin, UpdateView):
         ctx["property_types"] = PropertyType.choices
         org = getattr(self.request, "current_org", None)
         if org:
+            own_org_ids = list(
+                Organization.objects.own_for(
+                    get_request_account(self.request)
+                ).values_list("pk", flat=True)
+            )
             ctx["role_org"] = {
                 "id": org.id,
                 "name": str(org),
                 "has_vehicles": org.vehicle_set.exists(),
+                "own_org_ids": own_org_ids,
             }
         return ctx
 

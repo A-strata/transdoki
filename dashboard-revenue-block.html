@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Доходный блок · две колонки · Трансдоки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7fb;
+  --surface:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --muted-2:#9ca3af;
+  --border:#e5e7eb;
+  --border-interactive:#b0b7c3;
+  --hover:#f8fafc;
+  --hover-active:#eef6ff;
+  --primary:#2563eb;
+  --primary-hover:#1d4ed8;
+  --primary-ring:rgba(37,99,235,.3);
+  --danger:#dc2626;
+
+  --success-text:#16a34a;
+  --success-bg:#f0fdf4;
+  --success-border:#bbf7d0;
+  --warning-text:#d97706;
+  --warning-bg:#fffbeb;
+  --warning-border:#fde68a;
+  --error-text:#dc2626;
+  --error-bg:#fef2f2;
+  --error-border:#fecaca;
+  --info-text:#0e7490;
+  --info-bg:#ecfeff;
+  --info-border:#a5f3fc;
+  --neutral-bg:#f3f4f6;
+
+  --text-xs:.75rem;
+  --text-sm:.875rem;
+  --text-base:1rem;
+  --text-lg:1.25rem;
+  --text-xl:1.5rem;
+  --text-2xl:1.875rem;
+
+  --radius:12px;
+  --radius-sm:10px;
+  --lk-radius-lg:16px;
+  --lk-radius-xl:18px;
+
+  --lk-shadow-sm:0 1px 2px rgba(17,24,39,.04);
+  --lk-bg-elev:#fafbfc;
+  --lk-brand-50:#eef6ff;
+  --lk-brand-100:#dbe7ff;
+
+  /* Aging-корзины 0 / 1-6 / 7-14 / 15-30 / 30+ */
+  --ag-0:#22c55e;
+  --ag-1:#fde047;
+  --ag-2:#f59e0b;
+  --ag-3:#f97316;
+  --ag-4:#ef4444;
+
+  --container:1200px;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:var(--text-sm);line-height:1.5;color:var(--text);background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--primary);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:0;background:transparent}
+svg{display:block}
+
+/* ========== Topbar ========== */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:14px}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.02em}
+.logo-dot{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--primary),#7ea6ff);display:grid;place-items:center;color:#fff;font-size:12px;box-shadow:0 6px 14px rgba(37,99,235,.25)}
+.crumb{display:flex;align-items:center;gap:6px;font-size:var(--text-xs);color:var(--muted)}
+.crumb a{color:var(--muted)}
+.crumb a:hover{color:var(--text)}
+.crumb .sep{color:var(--muted-2)}
+.crumb .cur{color:var(--text);font-weight:600}
+
+.page{max-width:var(--container);margin:0 auto;padding:20px 24px}
+
+/* ========== Section head ========== */
+.section-head{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:14px;flex-wrap:wrap;margin-bottom:14px;
+}
+.section-head h1{margin:0;font-size:var(--text-xl);font-weight:800;letter-spacing:-0.02em;line-height:1.1}
+.section-head .h-sub{color:var(--muted);font-size:12px;margin-top:3px}
+.section-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+
+.segmented{display:inline-flex;background:var(--neutral-bg);padding:2px;border-radius:8px;border:1px solid var(--border);gap:1px}
+.segmented button{padding:5px 10px;font-size:11px;font-weight:600;border-radius:6px;color:var(--muted)}
+.segmented button.is-active{background:var(--surface);color:var(--text);box-shadow:var(--lk-shadow-sm)}
+.segmented button:hover:not(.is-active){color:var(--text)}
+
+.btn-ghost{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;font-size:11px;color:var(--muted);border-radius:7px;font-weight:600}
+.btn-ghost:hover{background:var(--hover);color:var(--text)}
+
+/* ========== Двухколоночная сетка ========== */
+.grid-2{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  align-items:stretch;
+}
+@media (max-width: 960px){
+  .grid-2{grid-template-columns:1fr}
+}
+
+/* ========== Band (колонка) ========== */
+.band{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--lk-radius-xl);
+  box-shadow:var(--lk-shadow-sm);padding:16px 18px;position:relative;
+  display:flex;flex-direction:column;min-width:0;
+}
+.band--accrual{border-left:3px solid var(--primary);background:linear-gradient(180deg, rgba(238,246,255,.45) 0%, var(--surface) 70%)}
+.band--snapshot{border-left:3px solid var(--warning-text);background:linear-gradient(180deg, rgba(255,251,235,.45) 0%, var(--surface) 70%)}
+
+.band-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.band-title{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
+.band-title h2{margin:0;font-size:var(--text-base);font-weight:700;letter-spacing:-0.01em}
+.band-kind{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:1px 7px;border-radius:99px;background:var(--neutral-bg);border:1px solid var(--border)}
+.band-period{font-size:11px;color:var(--muted);font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.band-period .live-dot{width:5px;height:5px;border-radius:99px;background:var(--success-text)}
+
+/* ========== KPI-строки ========== */
+.k-stack{display:flex;flex-direction:column;gap:10px;padding:6px 2px 12px;border-bottom:1px dashed var(--border);margin-bottom:12px}
+.k-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.k{display:inline-flex;align-items:baseline;gap:6px;min-width:0}
+.k-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;white-space:nowrap}
+.k-value{font-size:19px;font-weight:800;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.k-value small{font-weight:500;color:var(--muted);font-size:12px;margin-left:2px}
+.k-value.is-danger{color:var(--danger)}
+
+.delta{
+  display:inline-flex;align-items:center;gap:2px;
+  font-size:10px;font-weight:700;padding:2px 5px;border-radius:99px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.delta.is-up{background:var(--success-bg);color:var(--success-text)}
+.delta.is-down{background:var(--error-bg);color:var(--danger)}
+.delta.is-flat{background:var(--neutral-bg);color:var(--muted)}
+
+.k-aux{font-size:11px;color:var(--muted);font-weight:500}
+.k-aux b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ========== Подсекция в банде ========== */
+.mini + .mini{padding-top:12px;margin-top:12px;border-top:1px dashed var(--border)}
+.mini-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.mini-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted)}
+.mini-title b{color:var(--text);font-weight:700;text-transform:none;letter-spacing:0;font-size:var(--text-sm)}
+.mini-aside{font-size:11px;color:var(--muted)}
+.mini-aside b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ========== Aging compact ========== */
+.aging-stack{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--neutral-bg);border:1px solid var(--border)}
+.aging-stack > span{display:block;height:100%}
+.aging-stack .seg-0{background:var(--ag-0)}
+.aging-stack .seg-1{background:var(--ag-1)}
+.aging-stack .seg-2{background:var(--ag-2)}
+.aging-stack .seg-3{background:var(--ag-3)}
+.aging-stack .seg-4{background:var(--ag-4)}
+
+.aging-inline{
+  display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;
+  font-size:11px;color:var(--muted);
+}
+.aging-inline .it{display:inline-flex;align-items:center;gap:5px}
+.aging-inline .sw{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.aging-inline .nm{font-weight:600}
+.aging-inline .vl{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text)}
+.aging-inline .vl .pct{color:var(--muted);font-weight:500;margin-left:2px}
+
+/* ========== Списки-скроллы ========== */
+.list-wrap{position:relative;flex:1;min-height:0}
+.list-scroll{
+  max-height:320px;overflow-y:auto;overflow-x:hidden;
+  padding-right:6px;margin-right:-6px;
+  scrollbar-width:thin;scrollbar-color:#d1d5db transparent;
+}
+.list-scroll::-webkit-scrollbar{width:6px}
+.list-scroll::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+.list-scroll::-webkit-scrollbar-track{background:transparent}
+.list-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--muted);padding-top:8px;margin-top:4px;
+  border-top:1px dashed var(--border);
+}
+.list-foot a{font-weight:600}
+
+/* ========== Строки заказчиков ========== */
+.c-row{
+  display:grid;grid-template-columns:auto 1fr auto;
+  gap:10px;align-items:center;padding:7px 0;
+  border-bottom:1px solid var(--border);
+}
+.c-row:last-child{border-bottom:0}
+.c-row:hover{background:var(--hover);margin:0 -10px;padding-left:10px;padding-right:10px;border-radius:8px;border-bottom-color:transparent}
+.c-rank{
+  width:22px;height:22px;border-radius:6px;background:var(--lk-brand-50);color:var(--primary);
+  display:grid;place-items:center;font-weight:800;font-size:11px;flex-shrink:0;
+  font-variant-numeric:tabular-nums;
+}
+.c-rank.is-warn{background:var(--warning-bg);color:var(--warning-text)}
+.c-info{min-width:0;display:flex;flex-direction:column;gap:3px}
+.c-name{font-weight:600;font-size:var(--text-sm);line-height:1.2;display:flex;align-items:center;gap:6px;flex-wrap:wrap;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-bar-wrap{display:flex;align-items:center;gap:6px}
+.c-bar{
+  flex:1;min-width:40px;height:5px;border-radius:3px;background:var(--neutral-bg);
+  position:relative;overflow:hidden;
+}
+.c-bar > span{display:block;height:100%;border-radius:3px;background:var(--primary)}
+.c-bar > span.s-debt{background:var(--warning-text)}
+.c-bar > span.s-rest{background:var(--muted-2)}
+.c-meta{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.c-val{
+  font-variant-numeric:tabular-nums;font-weight:800;font-size:var(--text-sm);
+  letter-spacing:-0.01em;text-align:right;min-width:90px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;
+}
+.c-val small{font-size:10px;font-weight:500;color:var(--muted)}
+
+/* ========== Строки должников ========== */
+.d-row{
+  display:grid;grid-template-columns:28px 1fr auto auto;
+  gap:10px;align-items:center;padding:7px 0;
+  border-bottom:1px solid var(--border);
+}
+.d-row:last-child{border-bottom:0}
+.d-row:hover{background:var(--hover);margin:0 -10px;padding-left:10px;padding-right:10px;border-radius:8px;border-bottom-color:transparent}
+.d-av{
+  width:28px;height:28px;border-radius:7px;display:grid;place-items:center;
+  background:var(--lk-brand-50);color:var(--primary);font-weight:700;font-size:10px;flex-shrink:0;
+}
+.d-av.is-overdue{background:var(--error-bg);color:var(--danger)}
+.d-av.is-warn{background:var(--warning-bg);color:var(--warning-text)}
+.d-info{min-width:0;display:flex;flex-direction:column;gap:1px}
+.d-name{font-weight:600;font-size:var(--text-sm);line-height:1.2;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.d-meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.d-meta .sep{width:3px;height:3px;border-radius:99px;background:var(--muted-2)}
+.d-bucket{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:99px;
+  font-size:10px;font-weight:700;letter-spacing:.02em;white-space:nowrap;
+  border:1px solid var(--border);background:var(--neutral-bg);color:var(--muted);
+}
+.d-bucket .sw{width:5px;height:5px;border-radius:99px}
+.d-bucket.b-0{background:var(--success-bg);color:var(--success-text);border-color:var(--success-border)}
+.d-bucket.b-0 .sw{background:var(--ag-0)}
+.d-bucket.b-1{background:#fefce8;color:#854d0e;border-color:#fde047}
+.d-bucket.b-1 .sw{background:var(--ag-1)}
+.d-bucket.b-2{background:var(--warning-bg);color:var(--warning-text);border-color:var(--warning-border)}
+.d-bucket.b-2 .sw{background:var(--ag-2)}
+.d-bucket.b-3{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+.d-bucket.b-3 .sw{background:var(--ag-3)}
+.d-bucket.b-4{background:var(--error-bg);color:var(--danger);border-color:var(--error-border)}
+.d-bucket.b-4 .sw{background:var(--ag-4)}
+.d-val{font-variant-numeric:tabular-nums;font-weight:800;font-size:var(--text-sm);letter-spacing:-0.01em;min-width:82px;text-align:right}
+.d-val.is-overdue{color:var(--danger)}
+.d-val.is-warn{color:var(--warning-text)}
+
+/* ========== Infotip ========== */
+.tip{position:relative;display:inline-flex}
+.tip-ico{
+  width:11px;height:11px;border-radius:99px;
+  display:grid;place-items:center;color:var(--warning-text);
+  background:var(--warning-bg);border:1px solid var(--warning-border);
+  font-size:8px;font-weight:800;cursor:help;
+}
+.tip-body{
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--text);color:#fff;padding:6px 9px;border-radius:7px;font-size:11px;line-height:1.4;
+  white-space:normal;width:max-content;max-width:230px;
+  box-shadow:0 10px 24px rgba(17,24,39,.18);
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:5;
+}
+.tip:hover .tip-body{opacity:1}
+
+.ref-footer{text-align:center;color:var(--muted);font-size:var(--text-xs);padding:14px 0 24px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    <span class="logo-dot">Т</span>
+    Трансдоки
+  </div>
+  <nav class="crumb">
+    <a href="#">Обзор</a>
+    <span class="sep">/</span>
+    <a href="#">Финансы</a>
+    <span class="sep">/</span>
+    <span class="cur">Доходы</span>
+  </nav>
+</div>
+
+<main class="page">
+
+  <!-- ========== Section head ========== -->
+  <div class="section-head">
+    <div>
+      <h1>Доходы</h1>
+      <div class="h-sub">Слева — что заработали по рейсам периода. Справа — где деньги сейчас.</div>
+    </div>
+    <div class="section-actions">
+      <div class="segmented" role="tablist">
+        <button>Сегодня</button>
+        <button>Неделя</button>
+        <button class="is-active">Месяц</button>
+        <button>Квартал</button>
+        <button>Период…</button>
+      </div>
+      <button class="btn-ghost">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Экспорт
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!--                   ДВУХКОЛОНОЧНАЯ СЕТКА                    -->
+  <!-- ========================================================= -->
+  <div class="grid-2">
+
+    <!-- ============== КОЛОНКА 1 · НАЧИСЛЕНО ============== -->
+    <section class="band band--accrual">
+      <div class="band-head">
+        <div class="band-title">
+          <h2>Доход</h2>
+          <span class="band-kind">начислено · за период</span>
+        </div>
+        <div class="band-period">Апрель 2026 · 1–20.04</div>
+      </div>
+
+      <div class="k-stack">
+        <div class="k-row">
+          <div class="k">
+            <span class="k-label">Рейсов</span>
+            <span class="k-value">98</span>
+            <span class="delta is-up">+12%</span>
+          </div>
+          <div class="k">
+            <span class="k-label">На сумму</span>
+            <span class="k-value">1 842 500 <small>₽</small></span>
+            <span class="delta is-up">+14%</span>
+          </div>
+        </div>
+        <div class="k-aux">заказчиков: <b>23</b> · ср. чек: <b>18 801 ₽</b></div>
+      </div>
+
+      <div class="mini">
+        <div class="mini-head">
+          <div class="mini-title"><b>Заказчики периода</b> · по доходу</div>
+          <div class="mini-aside">топ-5: <b>80,8%</b></div>
+        </div>
+
+        <div class="list-wrap">
+          <div class="list-scroll">
+
+            <div class="c-row">
+              <div class="c-rank">1</div>
+              <div class="c-info">
+                <div class="c-name">Альфа Логистика</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:100%"></span></div>
+                  <span class="c-meta">28 р.</span>
+                </div>
+              </div>
+              <div class="c-val">528 000 ₽ <small>28,7%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">2</div>
+              <div class="c-info">
+                <div class="c-name">БетонСтрой</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:62.9%"></span></div>
+                  <span class="c-meta">16 р.</span>
+                </div>
+              </div>
+              <div class="c-val">332 000 ₽ <small>18,0%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">3</div>
+              <div class="c-info">
+                <div class="c-name">Сибирь-Ритейл</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:50.9%"></span></div>
+                  <span class="c-meta">12 р.</span>
+                </div>
+              </div>
+              <div class="c-val">268 500 ₽ <small>14,6%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank is-warn">4</div>
+              <div class="c-info">
+                <div class="c-name">
+                  Торг-М
+                  <span class="tip">
+                    <span class="tip-ico">!</span>
+                    <span class="tip-body">Есть задолженность: 105 200 ₽, макс. просрочка 24 дн.</span>
+                  </span>
+                </div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span class="s-debt" style="width:40.7%"></span></div>
+                  <span class="c-meta">10 р.</span>
+                </div>
+              </div>
+              <div class="c-val">215 000 ₽ <small>11,7%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank is-warn">5</div>
+              <div class="c-info">
+                <div class="c-name">
+                  Смирнова М.В.
+                  <span class="tip">
+                    <span class="tip-ico">!</span>
+                    <span class="tip-body">Есть задолженность: 64 800 ₽, макс. просрочка 12 дн.</span>
+                  </span>
+                </div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span class="s-debt" style="width:27.0%"></span></div>
+                  <span class="c-meta">8 р.</span>
+                </div>
+              </div>
+              <div class="c-val">142 800 ₽ <small>7,8%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">6</div>
+              <div class="c-info">
+                <div class="c-name">ТрансЭкспорт</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:19.2%"></span></div>
+                  <span class="c-meta">5 р.</span>
+                </div>
+              </div>
+              <div class="c-val">101 500 ₽ <small>5,5%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">7</div>
+              <div class="c-info">
+                <div class="c-name">Стройкомплект</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:15.5%"></span></div>
+                  <span class="c-meta">4 р.</span>
+                </div>
+              </div>
+              <div class="c-val">82 000 ₽ <small>4,5%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">8</div>
+              <div class="c-info">
+                <div class="c-name">МеталлТорг</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:12.2%"></span></div>
+                  <span class="c-meta">3 р.</span>
+                </div>
+              </div>
+              <div class="c-val">64 500 ₽ <small>3,5%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">9</div>
+              <div class="c-info">
+                <div class="c-name">АгроТранзит</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:10.0%"></span></div>
+                  <span class="c-meta">3 р.</span>
+                </div>
+              </div>
+              <div class="c-val">52 700 ₽ <small>2,9%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">10</div>
+              <div class="c-info">
+                <div class="c-name">ПромСнаб</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:7.9%"></span></div>
+                  <span class="c-meta">2 р.</span>
+                </div>
+              </div>
+              <div class="c-val">41 800 ₽ <small>2,3%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">11</div>
+              <div class="c-info">
+                <div class="c-name">ИП Козлов А.В.</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:5.7%"></span></div>
+                  <span class="c-meta">2 р.</span>
+                </div>
+              </div>
+              <div class="c-val">29 900 ₽ <small>1,6%</small></div>
+            </div>
+
+            <div class="c-row">
+              <div class="c-rank">12</div>
+              <div class="c-info">
+                <div class="c-name">ТехноЛогистик</div>
+                <div class="c-bar-wrap">
+                  <div class="c-bar"><span style="width:4.7%"></span></div>
+                  <span class="c-meta">1 р.</span>
+                </div>
+              </div>
+              <div class="c-val">24 800 ₽ <small>1,3%</small></div>
+            </div>
+
+          </div>
+
+          <div class="list-foot">
+            <span>показано <b>12</b> из <b>23</b></span>
+            <a class="btn-ghost" href="#" style="padding:0 4px">Все заказчики →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== КОЛОНКА 2 · КАССА И ДЕБИТОРКА ============== -->
+    <section class="band band--snapshot">
+      <div class="band-head">
+        <div class="band-title">
+          <h2>Касса и дебиторка</h2>
+          <span class="band-kind">факт · на сегодня</span>
+        </div>
+        <div class="band-period">
+          <span class="live-dot"></span>
+          20.04.2026 · 11:42
+        </div>
+      </div>
+
+      <div class="k-stack">
+        <div class="k-row">
+          <div class="k">
+            <span class="k-label">Поступило</span>
+            <span class="k-value">1 456 200 <small>₽</small></span>
+            <span class="delta is-up">+8%</span>
+          </div>
+        </div>
+        <div class="k-row">
+          <div class="k">
+            <span class="k-label">Не оплачено</span>
+            <span class="k-value">1 248 500 <small>₽</small></span>
+            <span class="delta is-flat">−3% к 01.04</span>
+          </div>
+          <div class="k">
+            <span class="k-label">Просрочено</span>
+            <span class="k-value is-danger">212 400 <small>₽</small></span>
+            <span class="delta is-down">17,0%</span>
+          </div>
+        </div>
+        <div class="k-aux">поступило — за период · не оплачено/просрочено — по <b>58</b> рейсам от <b>18</b> контрагентов (в т.ч. <b>5</b> с просрочкой)</div>
+      </div>
+
+      <!-- Aging bar под KPI -->
+      <div class="mini">
+        <div class="mini-head">
+          <div class="mini-title">Долг по срокам</div>
+          <div class="segmented" style="transform:scale(.85);transform-origin:right center">
+            <button class="is-active">Сумма</button>
+            <button>Рейсы</button>
+          </div>
+        </div>
+        <div class="aging-stack" title="Распределение дебиторки по корзинам просрочки">
+          <span class="seg-0" style="flex:83.0"></span>
+          <span class="seg-1" style="flex:7.1"></span>
+          <span class="seg-2" style="flex:5.0"></span>
+          <span class="seg-3" style="flex:3.9"></span>
+          <span class="seg-4" style="flex:1.1"></span>
+        </div>
+        <div class="aging-inline">
+          <span class="it"><span class="sw" style="background:var(--ag-0)"></span><span class="nm">в срок</span><span class="vl">1 036 100 ₽ <span class="pct">· 83,0%</span></span></span>
+          <span class="it"><span class="sw" style="background:var(--ag-1)"></span><span class="nm">1–6 дн.</span><span class="vl">88 200 ₽ <span class="pct">· 7,1%</span></span></span>
+          <span class="it"><span class="sw" style="background:var(--ag-2)"></span><span class="nm">7–14 дн.</span><span class="vl">62 500 ₽ <span class="pct">· 5,0%</span></span></span>
+          <span class="it"><span class="sw" style="background:var(--ag-3)"></span><span class="nm">15–30 дн.</span><span class="vl">48 200 ₽ <span class="pct">· 3,9%</span></span></span>
+          <span class="it"><span class="sw" style="background:var(--ag-4)"></span><span class="nm">30+ дн.</span><span class="vl">13 500 ₽ <span class="pct">· 1,1%</span></span></span>
+        </div>
+      </div>
+
+      <!-- Должники -->
+      <div class="mini">
+        <div class="mini-head">
+          <div class="mini-title"><b>Должники</b> · по просроченной сумме</div>
+          <div class="mini-aside"><a class="btn-ghost" href="#" style="padding:0 4px">Претензии →</a></div>
+        </div>
+
+        <div class="list-wrap">
+          <div class="list-scroll">
+
+            <div class="d-row">
+              <div class="d-av is-overdue">ТМ</div>
+              <div class="d-info">
+                <div class="d-name">ООО «Торг-М»</div>
+                <div class="d-meta"><span>5 рейсов</span><span class="sep"></span><span>макс. 24 дн.</span></div>
+              </div>
+              <span class="d-bucket b-3"><span class="sw"></span> 15–30</span>
+              <div class="d-val is-overdue">105 200 ₽</div>
+            </div>
+
+            <div class="d-row">
+              <div class="d-av is-warn">СМ</div>
+              <div class="d-info">
+                <div class="d-name">
+                  ИП Смирнова М.В.
+                  <span class="tip">
+                    <span class="tip-ico">!</span>
+                    <span class="tip-body">По 1 рейсу условия оплаты не заполнены — срок взят по дате выгрузки</span>
+                  </span>
+                </div>
+                <div class="d-meta"><span>3 рейса</span><span class="sep"></span><span>макс. 12 дн.</span></div>
+              </div>
+              <span class="d-bucket b-2"><span class="sw"></span> 7–14</span>
+              <div class="d-val is-warn">64 800 ₽</div>
+            </div>
+
+            <div class="d-row">
+              <div class="d-av is-warn">ТЭ</div>
+              <div class="d-info">
+                <div class="d-name">ООО «ТрансЭкспорт»</div>
+                <div class="d-meta"><span>2 рейса</span><span class="sep"></span><span>макс. 8 дн.</span></div>
+              </div>
+              <span class="d-bucket b-2"><span class="sw"></span> 7–14</span>
+              <div class="d-val is-warn">42 400 ₽</div>
+            </div>
+
+            <div class="d-row">
+              <div class="d-av">СК</div>
+              <div class="d-info">
+                <div class="d-name">ОАО «Стройкомплект»</div>
+                <div class="d-meta"><span>2 рейса</span><span class="sep"></span><span>макс. 5 дн.</span></div>
+              </div>
+              <span class="d-bucket b-1"><span class="sw"></span> 1–6</span>
+              <div class="d-val">28 500 ₽</div>
+            </div>
+
+            <div class="d-row">
+              <div class="d-av is-overdue">КА</div>
+              <div class="d-info">
+                <div class="d-name">
+                  ИП Козлов А.В.
+                  <span class="tip">
+                    <span class="tip-ico">!</span>
+                    <span class="tip-body">Условия оплаты по рейсу не указаны — срок считается по дате выгрузки</span>
+                  </span>
+                </div>
+                <div class="d-meta"><span>1 рейс</span><span class="sep"></span><span>просрочка 38 дн.</span></div>
+              </div>
+              <span class="d-bucket b-4"><span class="sw"></span> 30+</span>
+              <div class="d-val is-overdue">13 500 ₽</div>
+            </div>
+
+            <div class="d-row">
+              <div class="d-av">МТ</div>
+              <div class="d-info">
+                <div class="d-name">ООО «МеталлТорг»</div>
+                <div class="d-meta"><span>2 рейса</span><span class="sep"></span><span>срок не наступил</span></div>
+              </div>
+              <span class="d-bucket b-0"><span class="sw"></span> в срок</span>
+              <div class="d-val">54 300 ₽</div>
+            </div>
+
+            <div class="d-row">
+              <div class="d-av">АТ</div>
+              <div class="d-info">
+                <div class="d-name">АгроТранзит</div>
+                <div class="d-meta"><span>1 рейс</span><span class="sep"></span><span>срок не наступил</span></div>
+              </div>
+              <span class="d-bucket b-0"><span class="sw"></span> в срок</span>
+              <div class="d-val">38 900 ₽</div>
+            </div>
+
+            <div class="d-row">
+              <div class="d-av">ПС</div>
+              <div class="d-info">
+                <div class="d-name">ООО «ПромСнаб»</div>
+                <div class="d-meta"><span>1 рейс</span><span class="sep"></span><span>срок не наступил</span></div>
+              </div>
+              <span class="d-bucket b-0"><span class="sw"></span> в срок</span>
+              <div class="d-val">24 800 ₽</div>
+            </div>
+
+          </div>
+
+          <div class="list-foot">
+            <span>показано <b>8</b> из <b>18</b> · просрочено <b>5</b></span>
+            <a class="btn-ghost" href="#" style="padding:0 4px">Все должники →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="ref-footer">
+    Доходный блок · две колонки · <code style="background:var(--neutral-bg);padding:1px 6px;border-radius:5px;font-size:11px">dashboard-revenue-block.html</code>
+  </div>
+
+</main>
+
+</body>
+</html>

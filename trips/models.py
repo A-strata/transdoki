@@ -334,52 +334,62 @@ class Trip(UserOwnedModel):
             'carrier'   — org является перевозчиком (получает)
             'forwarder' — org является экспедитором-посредником (маржа)
             'observer'  — org не участвует в рейсе
+
+        Роль вычисляется единым доменным правилом — trips.roles.compute_trip_role.
+        Здесь только обогащаем её финансовыми полями, специфичными для каждой
+        роли (income/expense/margin/counterparty). Если добавляете новую роль —
+        добавьте её в compute_trip_role и сюда.
         """
-        if org is None:
-            return {
-                "role": "observer",
-                "income_total": None,
-                "expense_total": None,
-                "margin": None,
-                "counterparty": None,
-            }
+        # Локальный импорт — избегаем циклической зависимости на момент
+        # загрузки модуля моделей.
+        from .roles import TripRole, compute_trip_role
 
-        org_id = getattr(org, "id", None) or getattr(org, "pk", None)
+        viewer_id = None
+        if org is not None:
+            viewer_id = getattr(org, "id", None) or getattr(org, "pk", None)
 
-        if self.forwarder_id and org_id == self.forwarder_id:
+        role = compute_trip_role(
+            client_id=self.client_id,
+            carrier_id=self.carrier_id,
+            forwarder_id=self.forwarder_id,
+            viewer_org_id=viewer_id,
+        )
+
+        if role == TripRole.FORWARDER:
             income = self.client_total
             expense = self.carrier_total
             margin = None
             if income is not None and expense is not None:
                 margin = income - expense
             return {
-                "role": "forwarder",
+                "role": role.value,
                 "income_total": income,
                 "expense_total": expense,
                 "margin": margin,
                 "counterparty": None,
             }
 
-        if org_id == self.client_id:
+        if role == TripRole.CLIENT:
             return {
-                "role": "client",
+                "role": role.value,
                 "income_total": None,
                 "expense_total": self.carrier_total,
                 "margin": None,
                 "counterparty": self.forwarder or self.carrier,
             }
 
-        if org_id == self.carrier_id:
+        if role == TripRole.CARRIER:
             return {
-                "role": "carrier",
+                "role": role.value,
                 "income_total": self.client_total,
                 "expense_total": None,
                 "margin": None,
                 "counterparty": self.forwarder or self.client,
             }
 
+        # TripRole.OBSERVER
         return {
-            "role": "observer",
+            "role": role.value,
             "income_total": None,
             "expense_total": None,
             "margin": None,

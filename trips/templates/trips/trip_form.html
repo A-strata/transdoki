@@ -10,7 +10,7 @@
     <form method="post" class="form-card" novalidate>
         {% csrf_token %}
 
-        {# ── Sticky-навигация по секциям ── #}
+        {# Sticky-nav #}
         <div class="sticky-nav" id="sticky-nav">
             <h1 class="sticky-nav-title">{% if object %}Редактировать рейс{% else %}Создать рейс{% endif %}</h1>
             <div class="sticky-nav-actions">
@@ -26,31 +26,19 @@
         {% if form.errors or points_errors %}
             <div class="form-errors" role="alert" tabindex="-1" id="form-errors-summary">
                 <p><strong>Форма не сохранена. Исправьте ошибки:</strong></p>
-                {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                {% endfor %}
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
                 {% for field in form %}
                     {% if field.errors %}
-                        <p>
-                            <a href="#{{ field.id_for_label }}">{{ field.label }}</a>:
-                            {{ field.errors|join:" " }}
-                        </p>
+                        <p><a href="#{{ field.id_for_label }}">{{ field.label }}</a>: {{ field.errors|join:" " }}</p>
                     {% endif %}
                 {% endfor %}
-                {% for err in points_errors %}
-                    <p>Маршрут: {{ err }}</p>
-                {% endfor %}
+                {% for err in points_errors %}<p>Маршрут: {{ err }}</p>{% endfor %}
             </div>
         {% endif %}
 
         <div class="section" id="section-role">
             <h2 class="section-title">Основная информация</h2>
             <div class="fields-grid">
-                <!--<div class="field">
-                    {{ form.num_of_trip.label_tag }}
-                    {{ form.num_of_trip }}
-                    {{ form.num_of_trip.errors }}
-                </div>-->
                 <div class="field">
                     {% if object %}
                         {{ form.num_of_trip.label_tag }}
@@ -71,10 +59,18 @@
         </div>
 
         {% if role_org %}
+        {% comment %}
+           Серверный контракт для trip_form_role.js.
+           - org-id: pk текущей навбар-фирмы (viewer).
+           - own-org-ids: CSV из pk всех моих фирм этого account-а (Phase 2).
+           Источник истины о роли — computeTripRole() в JS, зеркалит
+           trips.roles.compute_trip_role.
+        {% endcomment %}
         <div id="role-config" hidden
              data-org-id="{{ role_org.id }}"
              data-org-name="{{ role_org.name }}"
-             data-has-vehicles="{{ role_org.has_vehicles|yesno:'true,false' }}">
+             data-has-vehicles="{{ role_org.has_vehicles|yesno:'true,false' }}"
+             data-own-org-ids="{{ role_org.own_org_ids|join:',' }}">
         </div>
 
         <div class="section">
@@ -92,7 +88,6 @@
                     <span class="role-card-title">Перевозчик</span>
                     <span class="role-card-hint">Моя фирма выполняет перевозку</span>
                 </button>
-
             </div>
         </div>
         {% endif %}
@@ -108,10 +103,7 @@
                         {{ form.client.label_tag }}
                         <div class="field-add-row">
                             {{ form.client }}
-                            <button type="button" class="qc-add-btn"
-                                    data-qc-type="organization"
-                                    data-qc-target="{{ form.client.id_for_label }}"
-                                    title="Добавить организацию">+</button>
+                            <button type="button" class="qc-add-btn" data-qc-type="organization" data-qc-target="{{ form.client.id_for_label }}" title="Добавить организацию">+</button>
                         </div>
                         {{ form.client.errors }}
                     </div>
@@ -134,10 +126,7 @@
                         {{ form.carrier.label_tag }}
                         <div class="field-add-row">
                             {{ form.carrier }}
-                            <button type="button" class="qc-add-btn"
-                                    data-qc-type="organization"
-                                    data-qc-target="{{ form.carrier.id_for_label }}"
-                                    title="Добавить организацию">+</button>
+                            <button type="button" class="qc-add-btn" data-qc-type="organization" data-qc-target="{{ form.carrier.id_for_label }}" title="Добавить организацию">+</button>
                         </div>
                         {{ form.carrier.errors }}
                     </div>
@@ -145,10 +134,7 @@
                         {{ form.driver.label_tag }}
                         <div class="field-add-row">
                             {{ form.driver }}
-                            <button type="button" class="qc-add-btn"
-                                    data-qc-type="person"
-                                    data-qc-target="{{ form.driver.id_for_label }}"
-                                    title="Добавить водителя">+</button>
+                            <button type="button" class="qc-add-btn" data-qc-type="person" data-qc-target="{{ form.driver.id_for_label }}" title="Добавить водителя">+</button>
                         </div>
                         {{ form.driver.errors }}
                     </div>
@@ -156,11 +142,7 @@
                         {{ form.truck.label_tag }}
                         <div class="field-add-row">
                             {{ form.truck }}
-                            <button type="button" class="qc-add-btn"
-                                    data-qc-type="vehicle"
-                                    data-qc-target="{{ form.truck.id_for_label }}"
-                                    data-qc-vehicle-types="single,truck"
-                                    title="Добавить ТС">+</button>
+                            <button type="button" class="qc-add-btn" data-qc-type="vehicle" data-qc-target="{{ form.truck.id_for_label }}" data-qc-vehicle-types="single,truck" title="Добавить ТС">+</button>
                         </div>
                         {{ form.truck.errors }}
                     </div>
@@ -168,11 +150,7 @@
                         {{ form.trailer.label_tag }}
                         <div class="field-add-row">
                             {{ form.trailer }}
-                            <button type="button" class="qc-add-btn"
-                                    data-qc-type="vehicle"
-                                    data-qc-target="{{ form.trailer.id_for_label }}"
-                                    data-qc-vehicle-types="trailer"
-                                    title="Добавить прицеп">+</button>
+                            <button type="button" class="qc-add-btn" data-qc-type="vehicle" data-qc-target="{{ form.trailer.id_for_label }}" data-qc-vehicle-types="trailer" title="Добавить прицеп">+</button>
                         </div>
                         {{ form.trailer.errors }}
                     </div>
@@ -182,52 +160,28 @@
 
         <div class="section" id="section-route">
             <h2 class="section-title">Маршрут</h2>
-
-            {# ── Конфиг для route builder JS ── #}
             <div id="route-config" hidden
                  data-points="{{ points_json }}"
                  data-mode="{% if object %}edit{% else %}create{% endif %}"
                  data-org-search-url="{% url 'organizations:search' %}"
                  data-address-suggest-url="{% url 'trips:address_suggest' %}">
             </div>
-
-            {# ── Ошибки маршрута (от бэкенда) ── #}
-            <div id="route-errors" class="route-errors"
-                 {% if not points_errors %}hidden{% endif %}>
-                {% if points_errors %}
-                    {% for err in points_errors %}<p>{{ err }}</p>{% endfor %}
-                {% endif %}
+            <div id="route-errors" class="route-errors" {% if not points_errors %}hidden{% endif %}>
+                {% if points_errors %}{% for err in points_errors %}<p>{{ err }}</p>{% endfor %}{% endif %}
             </div>
-
-            {# ── Контейнер route builder (заполняется JS) ── #}
             <div id="route-builder" class="route-builder"></div>
-
-            {# ── Hidden input с JSON точек для отправки формы ── #}
             <input type="hidden" id="route-points-json" name="points_json" value="">
         </div>
 
         <div class="section" id="section-cargo">
             <h2 class="section-title">Груз</h2>
             <div class="cargo-grid">
-                <div class="field">
-                    {{ form.cargo.label_tag }}
-                    {{ form.cargo }}
-                    {{ form.cargo.errors }}
-                </div>
-                <div class="field">
-                    {{ form.weight.label_tag }}
-                    {{ form.weight }}
-                    {{ form.weight.errors }}
-                </div>
-                <div class="field">
-                    {{ form.volume.label_tag }}
-                    {{ form.volume }}
-                    {{ form.volume.errors }}
-                </div>
+                <div class="field">{{ form.cargo.label_tag }}{{ form.cargo }}{{ form.cargo.errors }}</div>
+                <div class="field">{{ form.weight.label_tag }}{{ form.weight }}{{ form.weight.errors }}</div>
+                <div class="field">{{ form.volume.label_tag }}{{ form.volume }}{{ form.volume.errors }}</div>
                 <div class="field">
                     <label>Кол-во мест</label>
-                    <input type="number" id="id_places_count" min="0" step="1"
-                           placeholder="—" disabled name="">
+                    <input type="number" id="id_places_count" min="0" step="1" placeholder="—" disabled name="">
                 </div>
             </div>
         </div>
@@ -235,144 +189,91 @@
         <div class="section" id="section-finance">
             <h2 class="section-title">Финансы и оплата</h2>
             <div class="finance-grid">
-
-                {# ---- Заказчик ---- #}
                 <div class="finance-col" id="finance-client-col" data-finance-side="client">
                     <h3 class="finance-col-title" id="finance-client-title">Ставка заказчику</h3>
-
                     <div class="field">
                         <label for="{{ form.client_cost.id_for_label }}">Ставка</label>
-                        <div class="cost-input-group">
-                            {{ form.client_cost }}
-                            {{ form.client_cost_unit }}
-                        </div>
+                        <div class="cost-input-group">{{ form.client_cost }}{{ form.client_cost_unit }}</div>
                         <div class="finance-hint" id="finance-client-hint" hidden></div>
-                        {{ form.client_cost.errors }}
-                        {{ form.client_cost_unit.errors }}
+                        {{ form.client_cost.errors }}{{ form.client_cost_unit.errors }}
                     </div>
-
                     <div class="field">
                         <label for="{{ form.client_payment_method.id_for_label }}">Форма оплаты</label>
                         <div class="payment-method-row">
                             {{ form.client_payment_method }}
-                            <div class="vat-wrap" id="client-vat-wrap">
-                                {{ form.client_vat_rate }}
-                            </div>
+                            <div class="vat-wrap" id="client-vat-wrap">{{ form.client_vat_rate }}</div>
                         </div>
-                        {{ form.client_payment_method.errors }}
-                        {{ form.client_vat_rate.errors }}
+                        {{ form.client_payment_method.errors }}{{ form.client_vat_rate.errors }}
                     </div>
-
                     <div class="field">
                         <label>Срок оплаты</label>
                         {% with pv=form.payment_condition.value %}
                         <div class="payment-term-block">
                             <label class="radio-option">
-                                <input type="radio" name="payment_condition" value="documents"
-                                       {% if pv != 'unloading' %}checked{% endif %}>
+                                <input type="radio" name="payment_condition" value="documents" {% if pv != 'unloading' %}checked{% endif %}>
                                 <span class="radio-label-text">Через</span>
-                                <input type="number" name="payment_term" id="id_payment_term"
-                                       value="{{ form.payment_term.value|default:'' }}"
-                                       min="0" max="999" class="term-days-input">
+                                <input type="number" name="payment_term" id="id_payment_term" value="{{ form.payment_term.value|default:'' }}" min="0" max="999" class="term-days-input">
                                 <span class="radio-label-text">банк. дней</span>
                             </label>
                             <label class="radio-option">
-                                <input type="radio" name="payment_condition" value="unloading"
-                                       {% if pv == 'unloading' %}checked{% endif %}>
+                                <input type="radio" name="payment_condition" value="unloading" {% if pv == 'unloading' %}checked{% endif %}>
                                 <span class="radio-label-text">Оплата на выгрузке</span>
                             </label>
                         </div>
                         {% endwith %}
-                        {{ form.payment_condition.errors }}
-                        {{ form.payment_term.errors }}
+                        {{ form.payment_condition.errors }}{{ form.payment_term.errors }}
                     </div>
-
-                    {# Фактическое количество (только для км/часов) #}
                     <div class="field" id="client-qty-row" style="display:none">
                         <label for="{{ form.client_quantity.id_for_label }}" id="client-qty-label">Фактически</label>
-                        <div class="cost-input-group">
-                            {{ form.client_quantity }}
-                            <div class="cost-unit-badge" id="client-qty-badge">км</div>
-                        </div>
+                        <div class="cost-input-group">{{ form.client_quantity }}<div class="cost-unit-badge" id="client-qty-badge">км</div></div>
                         {{ form.client_quantity.errors }}
                     </div>
-
-                    {# Итоговая сумма — только подсказка, read-only #}
-                    <div class="finance-total" id="client-total-hint" style="display:none">
-                        Итого: <strong id="client-total-value">—</strong>
-                    </div>
+                    <div class="finance-total" id="client-total-hint" style="display:none">Итого: <strong id="client-total-value">—</strong></div>
                 </div>
 
-                {# ---- Перевозчик ---- #}
                 <div class="finance-col" id="finance-carrier-col" data-finance-side="carrier">
                     <h3 class="finance-col-title" id="finance-carrier-title">Ставка перевозчику</h3>
-
                     <div class="field">
                         <label for="{{ form.carrier_cost.id_for_label }}">Ставка</label>
-                        <div class="cost-input-group">
-                            {{ form.carrier_cost }}
-                            {{ form.carrier_cost_unit }}
-                        </div>
+                        <div class="cost-input-group">{{ form.carrier_cost }}{{ form.carrier_cost_unit }}</div>
                         <div class="finance-hint" id="finance-carrier-hint" hidden></div>
-                        {{ form.carrier_cost.errors }}
-                        {{ form.carrier_cost_unit.errors }}
+                        {{ form.carrier_cost.errors }}{{ form.carrier_cost_unit.errors }}
                     </div>
-
                     <div class="field">
                         <label for="{{ form.carrier_payment_method.id_for_label }}">Форма оплаты</label>
                         <div class="payment-method-row">
                             {{ form.carrier_payment_method }}
-                            <div class="vat-wrap" id="carrier-vat-wrap">
-                                {{ form.carrier_vat_rate }}
-                            </div>
+                            <div class="vat-wrap" id="carrier-vat-wrap">{{ form.carrier_vat_rate }}</div>
                         </div>
-                        {{ form.carrier_payment_method.errors }}
-                        {{ form.carrier_vat_rate.errors }}
+                        {{ form.carrier_payment_method.errors }}{{ form.carrier_vat_rate.errors }}
                     </div>
-
                     <div class="field">
                         <label>Срок оплаты</label>
                         {% with cpv=form.carrier_payment_condition.value %}
                         <div class="payment-term-block">
                             <label class="radio-option">
-                                <input type="radio" name="carrier_payment_condition" value="documents"
-                                       {% if cpv != 'unloading' %}checked{% endif %}>
+                                <input type="radio" name="carrier_payment_condition" value="documents" {% if cpv != 'unloading' %}checked{% endif %}>
                                 <span class="radio-label-text">Через</span>
-                                <input type="number" name="carrier_payment_term" id="id_carrier_payment_term"
-                                       value="{{ form.carrier_payment_term.value|default:'' }}"
-                                       min="0" max="999" class="term-days-input">
+                                <input type="number" name="carrier_payment_term" id="id_carrier_payment_term" value="{{ form.carrier_payment_term.value|default:'' }}" min="0" max="999" class="term-days-input">
                                 <span class="radio-label-text">банк. дней</span>
                             </label>
                             <label class="radio-option">
-                                <input type="radio" name="carrier_payment_condition" value="unloading"
-                                       {% if cpv == 'unloading' %}checked{% endif %}>
+                                <input type="radio" name="carrier_payment_condition" value="unloading" {% if cpv == 'unloading' %}checked{% endif %}>
                                 <span class="radio-label-text">Оплата на выгрузке</span>
                             </label>
                         </div>
                         {% endwith %}
-                        {{ form.carrier_payment_condition.errors }}
-                        {{ form.carrier_payment_term.errors }}
+                        {{ form.carrier_payment_condition.errors }}{{ form.carrier_payment_term.errors }}
                     </div>
-
-                    {# Фактическое количество (только для км/часов) #}
                     <div class="field" id="carrier-qty-row" style="display:none">
                         <label for="{{ form.carrier_quantity.id_for_label }}" id="carrier-qty-label">Фактически</label>
-                        <div class="cost-input-group">
-                            {{ form.carrier_quantity }}
-                            <div class="cost-unit-badge" id="carrier-qty-badge">км</div>
-                        </div>
+                        <div class="cost-input-group">{{ form.carrier_quantity }}<div class="cost-unit-badge" id="carrier-qty-badge">км</div></div>
                         {{ form.carrier_quantity.errors }}
                     </div>
-
-                    {# Итоговая сумма — только подсказка, read-only #}
-                    <div class="finance-total" id="carrier-total-hint" style="display:none">
-                        Итого: <strong id="carrier-total-value">—</strong>
-                    </div>
+                    <div class="finance-total" id="carrier-total-hint" style="display:none">Итого: <strong id="carrier-total-value">—</strong></div>
                 </div>
-
             </div>
 
-            {# ── Блок маржи (только для экспедитора) ── #}
             <div class="margin-block" id="margin-block" hidden>
                 <div class="margin-block-inner">
                     <span class="margin-block-label">Маржа</span>
@@ -382,17 +283,12 @@
             </div>
 
             <div class="field field--spaced">
-                {{ form.comments.label_tag }}
-                {{ form.comments }}
-                {{ form.comments.errors }}
+                {{ form.comments.label_tag }}{{ form.comments }}{{ form.comments.errors }}
             </div>
         </div>
-
-        {# Кнопки перенесены в sticky-навигацию #}
     </form>
 </section>
 
-{# ── Config для quick-create модалок ── #}
 <div id="qc-config" hidden
      data-org-create-url="{% url 'organizations:quick_create' %}"
      data-person-create-url="{% url 'persons:quick_create' %}"
@@ -402,7 +298,6 @@
      data-address-suggest-url="{% url 'trips:address_suggest' %}">
 </div>
 
-{# ── Модал: добавить организацию ── #}
 <div class="modal-overlay" id="qc-org-modal" hidden>
     <div class="modal-dialog modal-dialog--wide">
         <h3 class="modal-title">Добавить организацию</h3>
@@ -440,7 +335,6 @@
     </div>
 </div>
 
-{# ── Модал: добавить водителя ── #}
 <div class="modal-overlay" id="qc-person-modal" hidden>
     <div class="modal-dialog modal-dialog--wide">
         <h3 class="modal-title">Добавить водителя</h3>
@@ -449,32 +343,15 @@
             <div class="modal-fields">
                 <div class="modal-field modal-field--full">
                     <label for="qc-person-employer">Компания</label>
-                    <select id="qc-person-employer" name="employer_id"
-                            data-search-url="{% url 'organizations:search' %}" required>
+                    <select id="qc-person-employer" name="employer_id" data-search-url="{% url 'organizations:search' %}" required>
                         <option value="">— начните вводить —</option>
                     </select>
                     <p class="modal-field-error" data-err="employer_id"></p>
                 </div>
-                <div class="modal-field">
-                    <label for="qc-person-surname">Фамилия</label>
-                    <input type="text" id="qc-person-surname" name="surname" required>
-                    <p class="modal-field-error" data-err="surname"></p>
-                </div>
-                <div class="modal-field">
-                    <label for="qc-person-name">Имя</label>
-                    <input type="text" id="qc-person-name" name="name" required>
-                    <p class="modal-field-error" data-err="name"></p>
-                </div>
-                <div class="modal-field">
-                    <label for="qc-person-patronymic">Отчество</label>
-                    <input type="text" id="qc-person-patronymic" name="patronymic">
-                    <p class="modal-field-error" data-err="patronymic"></p>
-                </div>
-                <div class="modal-field">
-                    <label for="qc-person-phone">Телефон</label>
-                    <input type="text" id="qc-person-phone" name="phone">
-                    <p class="modal-field-error" data-err="phone"></p>
-                </div>
+                <div class="modal-field"><label for="qc-person-surname">Фамилия</label><input type="text" id="qc-person-surname" name="surname" required><p class="modal-field-error" data-err="surname"></p></div>
+                <div class="modal-field"><label for="qc-person-name">Имя</label><input type="text" id="qc-person-name" name="name" required><p class="modal-field-error" data-err="name"></p></div>
+                <div class="modal-field"><label for="qc-person-patronymic">Отчество</label><input type="text" id="qc-person-patronymic" name="patronymic"><p class="modal-field-error" data-err="patronymic"></p></div>
+                <div class="modal-field"><label for="qc-person-phone">Телефон</label><input type="text" id="qc-person-phone" name="phone"><p class="modal-field-error" data-err="phone"></p></div>
             </div>
             <div class="modal-form-errors" hidden></div>
             <div class="modal-actions">
@@ -485,7 +362,6 @@
     </div>
 </div>
 
-{# ── Модал: добавить ТС ── #}
 <div class="modal-overlay" id="qc-vehicle-modal" hidden>
     <div class="modal-dialog modal-dialog--wide">
         <h3 class="modal-title">Добавить транспортное средство</h3>
@@ -494,8 +370,7 @@
             <div class="modal-fields">
                 <div class="modal-field">
                     <label for="qc-vehicle-owner">Владелец</label>
-                    <select id="qc-vehicle-owner" name="owner_id"
-                            data-search-url="{% url 'organizations:search' %}" required>
+                    <select id="qc-vehicle-owner" name="owner_id" data-search-url="{% url 'organizations:search' %}" required>
                         <option value="">— начните вводить —</option>
                     </select>
                     <p class="modal-field-error" data-err="owner_id"></p>
@@ -503,37 +378,21 @@
                 <div class="modal-field">
                     <label for="qc-vehicle-property">Тип владения</label>
                     <select id="qc-vehicle-property" name="property_type">
-                        {% for value, label in property_types %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
+                        {% for value, label in property_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
                     </select>
                     <p class="modal-field-error" data-err="property_type"></p>
                 </div>
                 <div class="modal-field modal-field--full">
                     <label for="qc-vehicle-type">Тип ТС</label>
                     <select id="qc-vehicle-type" name="vehicle_type">
-                        {% for value, label in vehicle_types %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
+                        {% for value, label in vehicle_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
                     </select>
                     <p class="modal-field-error" data-err="vehicle_type"></p>
                 </div>
                 <div class="modal-field-row">
-                    <div class="modal-field">
-                        <label for="qc-vehicle-grn">Рег. номер</label>
-                        <input type="text" id="qc-vehicle-grn" name="grn" data-grn-mask required>
-                        <p class="modal-field-error" data-err="grn"></p>
-                    </div>
-                    <div class="modal-field">
-                        <label for="qc-vehicle-brand">Марка</label>
-                        <input type="text" id="qc-vehicle-brand" name="brand" required>
-                        <p class="modal-field-error" data-err="brand"></p>
-                    </div>
-                    <div class="modal-field">
-                        <label for="qc-vehicle-model">Модель</label>
-                        <input type="text" id="qc-vehicle-model" name="model">
-                        <p class="modal-field-error" data-err="model"></p>
-                    </div>
+                    <div class="modal-field"><label for="qc-vehicle-grn">Рег. номер</label><input type="text" id="qc-vehicle-grn" name="grn" data-grn-mask required><p class="modal-field-error" data-err="grn"></p></div>
+                    <div class="modal-field"><label for="qc-vehicle-brand">Марка</label><input type="text" id="qc-vehicle-brand" name="brand" required><p class="modal-field-error" data-err="brand"></p></div>
+                    <div class="modal-field"><label for="qc-vehicle-model">Модель</label><input type="text" id="qc-vehicle-model" name="model"><p class="modal-field-error" data-err="model"></p></div>
                 </div>
             </div>
             <div class="modal-form-errors" hidden></div>
