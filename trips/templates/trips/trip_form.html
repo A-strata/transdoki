@@ -119,36 +119,25 @@
 
                 <div class="parties-col">
                     <h3 class="parties-col-title">Исполнение перевозки</h3>
+                    {# Combobox: отдельные кнопки «+» убраны — создание сущности доступно прямо из dropdown'а автокомплита (см. data-ac-create-type в TripForm._apply_queryset_filters). #}
                     <div class="field">
                         {{ form.carrier.label_tag }}
-                        <div class="field-add-row">
-                            {{ form.carrier }}
-                            <button type="button" class="qc-add-btn" data-qc-type="organization" data-qc-target="{{ form.carrier.id_for_label }}" title="Добавить организацию">+</button>
-                        </div>
+                        {{ form.carrier }}
                         {{ form.carrier.errors }}
                     </div>
                     <div class="field">
                         {{ form.driver.label_tag }}
-                        <div class="field-add-row">
-                            {{ form.driver }}
-                            <button type="button" class="qc-add-btn" data-qc-type="person" data-qc-target="{{ form.driver.id_for_label }}" title="Добавить водителя">+</button>
-                        </div>
+                        {{ form.driver }}
                         {{ form.driver.errors }}
                     </div>
                     <div class="field">
                         {{ form.truck.label_tag }}
-                        <div class="field-add-row">
-                            {{ form.truck }}
-                            <button type="button" class="qc-add-btn" data-qc-type="vehicle" data-qc-target="{{ form.truck.id_for_label }}" data-qc-vehicle-types="single,truck" title="Добавить ТС">+</button>
-                        </div>
+                        {{ form.truck }}
                         {{ form.truck.errors }}
                     </div>
                     <div class="field">
                         {{ form.trailer.label_tag }}
-                        <div class="field-add-row">
-                            {{ form.trailer }}
-                            <button type="button" class="qc-add-btn" data-qc-type="vehicle" data-qc-target="{{ form.trailer.id_for_label }}" data-qc-vehicle-types="trailer" title="Добавить прицеп">+</button>
-                        </div>
+                        {{ form.trailer }}
                         {{ form.trailer.errors }}
                     </div>
                 </div>
@@ -352,7 +341,7 @@
             </div>
             <div class="modal-form-errors" hidden></div>
             <div class="modal-actions">
-                <button type="submit" class="tms-btn tms-btn-primary">Создать</button>
+                <button type="submit" class="tms-btn tms-btn-primary">Сохранить и выбрать</button>
                 <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
             </div>
         </form>
@@ -394,7 +383,7 @@
             </div>
             <div class="modal-form-errors" hidden></div>
             <div class="modal-actions">
-                <button type="submit" class="tms-btn tms-btn-primary">Создать</button>
+                <button type="submit" class="tms-btn tms-btn-primary">Сохранить и выбрать</button>
                 <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
             </div>
         </form>

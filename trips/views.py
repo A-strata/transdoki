@@ -22,10 +22,10 @@ from dotenv import load_dotenv
 
 from billing.mixins import LimitCheckMixin
 from billing.services.limits import can_create_trip
+from organizations.models import Organization
+from transdoki.search import AjaxSearchView
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
-
-from organizations.models import Organization
 from vehicles.models import PropertyType, VehicleType
 
 from .forms import TripAttachmentUploadForm, TripForm, TripPointForm
@@ -743,22 +743,24 @@ class TripAgreementDownloadView(LoginRequiredMixin, View):
         return AgreementRequestGenerator.generate_response(trip)
 
 
-@login_required
-@require_GET
-def trip_search(request):
-    account = get_request_account(request)
-    q = (request.GET.get("q") or "").strip()
-    qs = Trip.objects.for_account(account).order_by("-date_of_trip", "-num_of_trip")
-    if q:
-        qs = qs.filter(num_of_trip__icontains=q)
-    results = [
-        {
-            "id": t.pk,
-            "text": f"№{t.num_of_trip} от {t.date_of_trip.strftime('%d.%m.%Y')}",
+class TripSearchView(AjaxSearchView):
+    """AJAX-поиск рейсов (используется в форме путевого листа).
+
+    GET-параметры:
+      q — поиск по num_of_trip (icontains).
+
+    Рейсы упорядочены по убыванию даты и номера (свежие сверху).
+    """
+
+    model = Trip
+    search_fields = ("num_of_trip",)
+    order_by = ("-date_of_trip", "-num_of_trip")
+
+    def serialize_item(self, obj):
+        return {
+            "id": obj.pk,
+            "text": f"№{obj.num_of_trip} от {obj.date_of_trip.strftime('%d.%m.%Y')}",
         }
-        for t in qs[:25]
-    ]
-    return JsonResponse({"results": results})
 
 
 @login_required

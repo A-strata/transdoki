@@ -5,18 +5,24 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
-from django.db.models import ProtectedError, Q
+from django.db.models import ProtectedError
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.decorators.http import require_POST
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
 from organizations.models import Organization
+from transdoki.search import AjaxSearchView, CarrierGroupingMixin
 from transdoki.tenancy import get_request_account
-from transdoki.views import UserOwnedListView
 
-from .forms import VehicleForm, VehicleFormWithOwner
+from .forms import VehicleForm
 from .models import Vehicle, VehicleType
 
 
@@ -252,69 +258,35 @@ class VehicleListView(LoginRequiredMixin, ListView):
         return context
 
 
-@login_required
-@require_GET
-def vehicle_search(request):
-    account = get_request_account(request)
-    q = request.GET.get("q", "").strip()
-    vtype = request.GET.get("type", "")
-    carrier_id = request.GET.get("carrier_id", "").strip()
+class VehicleSearchView(CarrierGroupingMixin, AjaxSearchView):
+    """AJAX-поиск транспортных средств для autocomplete-полей.
 
-    base_qs = Vehicle.objects.for_account(account)
-    if request.GET.get("own") == "1":
-        base_qs = base_qs.filter(owner__is_own_company=True)
-    if vtype == "truck":
-        base_qs = base_qs.filter(vehicle_type__in=["truck", "single"])
-    elif vtype == "trailer":
-        base_qs = base_qs.filter(vehicle_type="trailer")
+    GET-параметры:
+      q          — поиск по grn / brand.
+      type       — "truck" (truck+single) | "trailer"; остальные игнорируются.
+      own=1      — только ТС «наших» фирм (owner.is_own_company=True).
+      carrier_id — группировка по owner_id = carrier_id (см. CarrierGroupingMixin).
 
-    def apply_q(qs):
-        if q:
-            return qs.filter(Q(grn__icontains=q) | Q(brand__icontains=q))
+    Хинт "ТС не привязаны к перевозчику — показаны все" — когда у выбранного
+    «нашего» перевозчика нет ТС в справочнике.
+    """
+
+    model = Vehicle
+    search_fields = ("grn", "brand")
+    order_by = ("grn",)
+    owner_field = "owner"
+    no_link_hint_text = "ТС не привязаны к перевозчику — показаны все"
+
+    def apply_extra_filters(self, qs):
+        g = self.request.GET
+        if g.get("own") == "1":
+            qs = qs.filter(owner__is_own_company=True)
+        vtype = g.get("type", "")
+        if vtype == "truck":
+            qs = qs.filter(vehicle_type__in=["truck", "single"])
+        elif vtype == "trailer":
+            qs = qs.filter(vehicle_type="trailer")
         return qs
-
-    def serialize(qs):
-        return [
-            {"id": v.pk, "text": str(v)}
-            for v in qs.order_by("grn")[:25]
-        ]
-
-    if not carrier_id.isdigit():
-        return JsonResponse({
-            "carrier": [],
-            "others": serialize(apply_q(base_qs)),
-            "hint": None,
-        })
-
-    org = (
-        Organization.objects.for_account(account)
-        .filter(pk=int(carrier_id))
-        .first()
-    )
-
-    if not org or not org.is_own_company:
-        return JsonResponse({
-            "carrier": [],
-            "others": serialize(apply_q(base_qs)),
-            "hint": "no_employer_data",
-        })
-
-    carrier_qs = base_qs.filter(owner_id=org.pk)
-    carrier_results = serialize(apply_q(carrier_qs))
-
-    if not carrier_results and not q:
-        return JsonResponse({
-            "carrier": [],
-            "others": serialize(base_qs),
-            "hint": "no_employer_data",
-        })
-
-    others_qs = apply_q(base_qs.exclude(owner_id=org.pk)) if q else None
-    return JsonResponse({
-        "carrier": carrier_results,
-        "others": serialize(others_qs) if others_qs is not None else [],
-        "hint": None,
-    })
 
 
 @login_required

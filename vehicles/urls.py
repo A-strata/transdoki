@@ -6,9 +6,9 @@ from .views import (
     VehicleDeleteView,
     VehicleDetailView,
     VehicleListView,
+    VehicleSearchView,
     VehicleUpdateView,
     vehicle_quick_create,
-    vehicle_search,
 )
 
 app_name = 'vehicles'
@@ -29,5 +29,5 @@ urlpatterns = [
         name='list'
     ),
     path('quick-create/', vehicle_quick_create, name='quick_create'),
-    path('search/', vehicle_search, name='search'),
+    path('search/', VehicleSearchView.as_view(), name='search'),
 ]

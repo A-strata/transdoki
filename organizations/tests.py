@@ -186,7 +186,9 @@ class OrganizationSearchTests(TestCase):
             url += "?" + urlencode(params)
         resp = self.c.get(url)
         self.assertEqual(resp.status_code, 200)
-        return [r["id"] for r in resp.json()["results"]]
+        # Единый JSON-контракт search-endpoint'ов (transdoki/search.py):
+        # {"items": [{"id", "text", "group"?}, ...], "groups"?, "hint"?}.
+        return [r["id"] for r in resp.json()["items"]]
 
     def test_search_returns_all_orgs_of_account_by_default(self):
         ids = self._search()

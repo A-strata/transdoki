@@ -2,11 +2,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import IntegrityError
-from django.db.models import ProtectedError, Q
+from django.db.models import ProtectedError
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -15,10 +15,9 @@ from django.views.generic import (
     UpdateView,
 )
 
-from transdoki.tenancy import get_request_account
-from transdoki.views import UserOwnedListView
-
 from organizations.models import Organization
+from transdoki.search import AjaxSearchView, CarrierGroupingMixin
+from transdoki.tenancy import get_request_account
 
 from .forms import PersonForm, PersonQuickForm
 from .models import Person
@@ -130,69 +129,26 @@ class PersonListView(LoginRequiredMixin, ListView):
         ).select_related("employer")
 
 
-@login_required
-@require_GET
-def person_search(request):
-    account = get_request_account(request)
-    q = request.GET.get("q", "").strip()
-    carrier_id = request.GET.get("carrier_id", "").strip()
+class PersonSearchView(CarrierGroupingMixin, AjaxSearchView):
+    """AJAX-поиск водителей для autocomplete-полей.
 
-    base_qs = Person.objects.for_account(account)
+    GET-параметры:
+      q          — поиск по surname / name / patronymic (AND между словами,
+                   OR между полями).
+      carrier_id — pk «нашего» перевозчика; если задан, водители перевозчика
+                   (employer_id = carrier_id) выделяются в первую группу,
+                   остальные — во вторую (только при непустом q).
+                   См. CarrierGroupingMixin для детальной семантики.
 
-    def apply_q(qs):
-        filtered = qs
-        for part in q.split():
-            filtered = filtered.filter(
-                Q(surname__icontains=part)
-                | Q(name__icontains=part)
-                | Q(patronymic__icontains=part)
-            )
-        return filtered
+    Хинт "Водители не привязаны к перевозчику — показаны все" показывается,
+    когда у выбранного «нашего» перевозчика нет водителей в справочнике.
+    """
 
-    def serialize(qs):
-        return [
-            {"id": p.pk, "text": str(p)}
-            for p in qs.order_by("surname", "name")[:25]
-        ]
-
-    if not carrier_id.isdigit():
-        return JsonResponse({
-            "carrier": [],
-            "others": serialize(apply_q(base_qs) if q else base_qs),
-            "hint": None,
-        })
-
-    org = (
-        Organization.objects.for_account(account)
-        .filter(pk=int(carrier_id))
-        .first()
-    )
-
-    if not org or not org.is_own_company:
-        others_qs = apply_q(base_qs) if q else base_qs
-        return JsonResponse({
-            "carrier": [],
-            "others": serialize(others_qs),
-            "hint": "no_employer_data",
-        })
-
-    carrier_qs = base_qs.filter(employer_id=org.pk)
-    carrier_results = serialize(apply_q(carrier_qs) if q else carrier_qs)
-
-    if not carrier_results and not q:
-        others_qs = base_qs
-        return JsonResponse({
-            "carrier": [],
-            "others": serialize(others_qs),
-            "hint": "no_employer_data",
-        })
-
-    others_qs = apply_q(base_qs.exclude(employer_id=org.pk)) if q else None
-    return JsonResponse({
-        "carrier": carrier_results,
-        "others": serialize(others_qs) if others_qs is not None else [],
-        "hint": None,
-    })
+    model = Person
+    search_fields = ("surname", "name", "patronymic")
+    order_by = ("surname", "name")
+    owner_field = "employer"
+    no_link_hint_text = "Водители не привязаны к перевозчику — показаны все"
 
 
 @login_required

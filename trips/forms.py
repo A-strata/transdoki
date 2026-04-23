@@ -218,17 +218,39 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
         for fname in ["client", "carrier"]:
             self._setup_ajax_field(fname, full_org, org_search_url)
 
-        # Combobox с inline-create: на первой итерации — только для заказчика.
+        # Combobox с inline-create: включён на всех FK-полях, кроме forwarder
+        # (там поиск всегда ограничен «нашими» фирмами — создавать нечего).
         # autocomplete.js, обнаружив data-ac-create-type, добавляет в dropdown
-        # закреплённый пункт «+ Добавить организацию», который триггерит
-        # существующую модалку quick_create через data-qc-* делегирование.
-        # Если ок — раскатаем аналогично на carrier/driver/truck.
+        # закреплённый пункт «+ Добавить …» и триггерит существующую модалку
+        # quick_create через data-qc-* делегирование. Для ТС/прицепа
+        # дополнительно пробрасывается data-ac-qc-vehicle-types →
+        # data-qc-vehicle-types, которое quick_create.js использует, чтобы
+        # скрыть неподходящие типы в модалке.
         if "client" in self.fields:
             self.fields["client"].widget.attrs["data-ac-create-type"] = "organization"
+        if "carrier" in self.fields:
+            self.fields["carrier"].widget.attrs["data-ac-create-type"] = "organization"
 
         self._setup_ajax_field("driver", full_person, person_search_url)
+        if "driver" in self.fields:
+            self.fields["driver"].widget.attrs["data-ac-create-type"] = "person"
+
         self._setup_ajax_field("truck", full_truck, vehicle_search_url, search_type="truck")
+        if "truck" in self.fields:
+            self.fields["truck"].widget.attrs.update({
+                "data-ac-create-type": "vehicle",
+                "data-ac-qc-vehicle-types": "single,truck",
+                "data-ac-create-empty": "ТС не найдено в справочнике. Проверьте написание — либо добавьте новое.",
+            })
+
         self._setup_ajax_field("trailer", full_trailer, vehicle_search_url, search_type="trailer")
+        if "trailer" in self.fields:
+            self.fields["trailer"].widget.attrs.update({
+                "data-ac-create-type": "vehicle",
+                "data-ac-qc-vehicle-types": "trailer",
+                "data-ac-create-label": "Добавить прицеп",
+                "data-ac-create-empty": "Прицеп не найден в справочнике. Проверьте написание — либо добавьте новый.",
+            })
 
         # Экспедитор: такой же autocomplete, как client/carrier, но
         # поиск всегда ограничен нашими фирмами (?own=1). Видимость поля

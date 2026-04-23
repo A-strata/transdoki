@@ -9,16 +9,16 @@ from django.db.models import Count, ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
     DetailView,
-    ListView,
     UpdateView,
 )
 
 from billing.services.limits import can_create_organization
+from transdoki.search import AjaxSearchView
 from transdoki.tenancy import get_request_account
 from transdoki.views import UserOwnedListView
 
@@ -325,45 +325,50 @@ class OrganizationDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
-@login_required
-@require_GET
-def organization_search(request):
-    account = get_request_account(request)
-    q = request.GET.get("q", "").strip()
-    qs = Organization.objects.for_account(account)
-    # own и external — взаимоисключающие фильтры по типу организации.
-    # own=1 → только наши фирмы (is_own_company=True), используется для
-    # поля активной роли и для forwarder.
-    # external=1 → только контрагенты (is_own_company=False), используется
-    # в форме рейса при активной роли «Экспедитор» для полей client/carrier:
-    # если мы посредник, то клиент и перевозчик — чужие стороны.
-    # Если переданы оба — выигрывает own (порядок фильтров).
-    if request.GET.get("own") == "1":
-        qs = qs.filter(is_own_company=True)
-    elif request.GET.get("external") == "1":
-        qs = qs.filter(is_own_company=False)
+class OrganizationSearchView(AjaxSearchView):
+    """AJAX-поиск организаций для autocomplete-полей.
 
-    # exclude — CSV из pk организаций, которые клиент хочет скрыть
-    # (например, в форме рейса поле «Перевозчик» исключает уже выбранного
-    # заказчика, чтобы не показывать его в дропдауне). Невалидные значения
-    # игнорируем молча — endpoint терпим к «мусору» на стороне клиента.
-    exclude_raw = request.GET.get("exclude", "")
-    if exclude_raw:
-        exclude_pks = []
-        for part in exclude_raw.split(","):
-            part = part.strip()
-            if part.isdigit():
-                exclude_pks.append(int(part))
-        if exclude_pks:
-            qs = qs.exclude(pk__in=exclude_pks)
+    GET-параметры:
+      q        — поиск по short_name / inn (icontains, OR).
+      own=1    — только свои фирмы (is_own_company=True); используется
+                 для поля активной роли, forwarder.
+      external=1 — только контрагенты (is_own_company=False); форма рейса
+                 при роли «Экспедитор» для client/carrier.
+                 Если переданы оба — выигрывает own.
+      exclude  — CSV из pk, которые нужно скрыть (форма рейса: в дропдауне
+                 «Перевозчик» исключается уже выбранный заказчик).
+                 Невалидные токены молча игнорируются — endpoint терпим.
 
-    if q:
-        qs = qs.filter(Q(short_name__icontains=q) | Q(inn__icontains=q))
-    results = [
-        {"id": o.pk, "text": o.short_name}
-        for o in qs.order_by("short_name")[:25]
-    ]
-    return JsonResponse({"results": results})
+    Ответ — плоский список (без группировки), формат — см.
+    transdoki/search.py.
+    """
+
+    model = Organization
+    search_fields = ("short_name", "inn")
+    order_by = ("short_name",)
+
+    def apply_extra_filters(self, qs):
+        g = self.request.GET
+        if g.get("own") == "1":
+            qs = qs.filter(is_own_company=True)
+        elif g.get("external") == "1":
+            qs = qs.filter(is_own_company=False)
+
+        exclude_raw = g.get("exclude", "")
+        if exclude_raw:
+            exclude_pks = [
+                int(part) for part in exclude_raw.split(",")
+                if part.strip().isdigit()
+            ]
+            if exclude_pks:
+                qs = qs.exclude(pk__in=exclude_pks)
+
+        return qs
+
+    def serialize_item(self, obj):
+        # short_name — пользовательски понятное отображение организации.
+        # По-умолчанию str(obj) вернул бы то же самое, но явнее.
+        return {"id": obj.pk, "text": obj.short_name}
 
 
 @login_required

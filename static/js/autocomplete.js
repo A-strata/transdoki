@@ -10,12 +10,35 @@ function initAutocomplete(selectId) {
     // Inline-create footer: если у select есть data-ac-create-type,
     // в dropdown добавляется закреплённый пункт «+ Добавить …», который
     // триггерит существующий quick_create.js через data-qc-* атрибуты.
-    // Применяется для полей, где пользователь может завести новую
-    // сущность не уходя из текущей формы (trip_form: Заказчик → Организация).
+    // Применяется для FK-полей, где пользователь может завести новую
+    // сущность не уходя из текущей формы (trip_form: Заказчик, Перевозчик,
+    // Водитель, ТС, Прицеп).
+    //
+    // Дефолтные тексты для label / empty-state выбираются по create-type
+    // (organization / person / vehicle); любую из этих строк можно
+    // перебить через data-ac-create-label / data-ac-create-empty.
+    //
+    // Дополнительные data-qc-* атрибуты (например, data-qc-vehicle-types
+    // для фильтрации типов ТС в модалке) прокидываются на proxy-кнопку
+    // через пары data-ac-qc-<suffix>="value" на <select>.
+    const CREATE_DEFAULTS = {
+        organization: {
+            label: 'Добавить организацию',
+            empty: 'Организация не найдена в справочнике. Проверьте написание — либо добавьте новую.',
+        },
+        person: {
+            label: 'Добавить водителя',
+            empty: 'Водитель не найден в справочнике. Проверьте написание — либо добавьте нового.',
+        },
+        vehicle: {
+            label: 'Добавить ТС',
+            empty: 'Запись не найдена в справочнике. Проверьте написание — либо добавьте новую.',
+        },
+    };
     const createType = select.dataset.acCreateType || '';
-    const createLabel = select.dataset.acCreateLabel || 'Добавить организацию';
-    const createEmptyMsg = select.dataset.acCreateEmpty
-        || 'Организация с таким названием не найдена в справочнике. Проверьте написание — либо добавьте новую.';
+    const createDefaults = CREATE_DEFAULTS[createType] || { label: 'Добавить', empty: 'Ничего не найдено.' };
+    const createLabel = select.dataset.acCreateLabel || createDefaults.label;
+    const createEmptyMsg = select.dataset.acCreateEmpty || createDefaults.empty;
 
     // ── DOM setup ─────────────────────────────────────────────────────────
     const container = document.createElement('div');
@@ -216,10 +239,17 @@ function initAutocomplete(selectId) {
         return el;
     }
 
-    function createHintEl(text) {
+    function createHintEl(text, type) {
         var el = document.createElement('div');
         el.textContent = text;
-        el.style.cssText = 'padding:8px 12px; font-size:var(--text-sm); color:var(--warning-text); background:var(--warning-bg); border-bottom:1px solid var(--warning-border);';
+        // type: 'warning' | 'info'. По умолчанию — warning (жёлтая плашка),
+        // info — нейтральная. Цвета берутся из тех же CSS-переменных, что
+        // и на остальных предупреждениях приложения.
+        var isInfo = type === 'info';
+        var colorVars = isInfo
+            ? 'color:var(--muted); background:var(--hover-active); border-bottom:1px solid var(--border);'
+            : 'color:var(--warning-text); background:var(--warning-bg); border-bottom:1px solid var(--warning-border);';
+        el.style.cssText = 'padding:8px 12px; font-size:var(--text-sm); ' + colorVars;
         return el;
     }
 
@@ -276,6 +306,15 @@ function initAutocomplete(selectId) {
         proxy.type = 'button';
         proxy.dataset.qcType = createType;
         proxy.dataset.qcTarget = select.id;
+        // Пробрасываем доп. атрибуты для quick_create: data-ac-qc-<name>
+        // на <select> превращаются в data-qc-<name> на proxy. Например,
+        // data-ac-qc-vehicle-types="single,truck" → data-qc-vehicle-types.
+        // dataset хранит ключи в camelCase: acQcVehicleTypes → qcVehicleTypes.
+        Object.keys(select.dataset).forEach(function (key) {
+            if (key.length > 4 && key.indexOf('acQc') === 0) {
+                proxy.dataset['qc' + key.slice(4)] = select.dataset[key];
+            }
+        });
         proxy.style.display = 'none';
         document.body.appendChild(proxy);
         proxy.click();
@@ -287,61 +326,77 @@ function initAutocomplete(selectId) {
         dropdown.appendChild(createCreateFooterEl());
     }
 
-    function renderItems(items) {
+    // Единый рендер ответа search-endpoint'а.
+    //
+    // Формат ответа (см. transdoki/search.py):
+    //   {
+    //     items:   [{id, text, group?}, ...],
+    //     groups?: [{key, label}, ...],
+    //     hint?:   {type, text}
+    //   }
+    //
+    // - Если groups отсутствует/пусто → items рендерятся плоско.
+    // - Если groups задана → элементы разбиваются по item.group в порядке
+    //   groups; заголовок группы выводится только если label задан и это
+    //   не первая отрисованная группа (первая безымянная — без заголовка).
+    // - hint — одна подсказка над списком (warning/info).
+    // - Combobox-футер «+ Добавить …» и empty-state работают одинаково
+    //   для всех полей (нет двух веток кода, которые могут рассинхрониться).
+    function renderResponse(data) {
         dropdown.innerHTML = '';
-        var hasItems = items && items.length > 0;
+        var items = (data && data.items) || [];
+        var groups = (data && data.groups) || null;
+        var hint = (data && data.hint) || null;
         var q = input.value.trim();
         var canShowCreate = !!createType && q.length >= 2;
 
-        if (!hasItems && !canShowCreate) {
+        if (!items.length && !canShowCreate) {
             dropdown.style.display = 'none';
             detachScrollListener();
             return;
         }
 
-        if (hasItems) {
-            items.forEach(function (item) {
-                dropdown.appendChild(createItemEl(item, false));
-            });
+        if (hint && hint.text) {
+            dropdown.appendChild(createHintEl(hint.text, hint.type || 'warning'));
+        }
+
+        if (items.length) {
+            if (groups && groups.length) {
+                // Разложить items по группам, сохранив порядок внутри группы.
+                var buckets = {};
+                groups.forEach(function (g) { buckets[g.key] = []; });
+                items.forEach(function (it) {
+                    var bucket = it.group && buckets[it.group];
+                    if (bucket) bucket.push(it);
+                });
+
+                var rendered = 0;
+                groups.forEach(function (g) {
+                    var bucket = buckets[g.key] || [];
+                    if (!bucket.length) return;
+                    // Заголовок рисуем только когда уже что-то отрисовано выше,
+                    // и только если у группы есть человекочитаемый label.
+                    if (rendered > 0 && g.label) {
+                        dropdown.appendChild(createGroupHeader(g.label));
+                    }
+                    bucket.forEach(function (it) {
+                        // muted=true для элементов «не в первой группе» —
+                        // сохраняет прежнее визуальное разделение
+                        // (carrier-записи ярче, others — приглушённее).
+                        dropdown.appendChild(createItemEl(it, rendered > 0));
+                    });
+                    rendered += bucket.length;
+                });
+            } else {
+                items.forEach(function (it) {
+                    dropdown.appendChild(createItemEl(it, false));
+                });
+            }
             if (canShowCreate) appendCreateFooter();
         } else {
-            // Совпадений нет, но create-тип включён: показать empty-state + footer
+            // items пуст, но create-type включён: показать empty-state + footer.
             dropdown.appendChild(createEmptyStateEl());
             appendCreateFooter();
-        }
-
-        positionDropdown();
-        dropdown.style.display = 'block';
-        attachScrollListener();
-    }
-
-    function renderGrouped(data, q) {
-        dropdown.innerHTML = '';
-        var carrier = data.carrier || [];
-        var others = data.others || [];
-        var hint = data.hint || null;
-
-        if (!carrier.length && !others.length) {
-            dropdown.style.display = 'none';
-            detachScrollListener();
-            return;
-        }
-
-        if (hint === 'no_employer_data') {
-            dropdown.appendChild(createHintEl('Водители не привязаны к перевозчику \u2014 показаны все'));
-        }
-
-        carrier.forEach(function (item) {
-            dropdown.appendChild(createItemEl(item, false));
-        });
-
-        if (others.length && q) {
-            if (carrier.length) {
-                dropdown.appendChild(createGroupHeader('Другие'));
-            }
-            others.forEach(function (item) {
-                dropdown.appendChild(createItemEl(item, carrier.length > 0));
-            });
         }
 
         positionDropdown();
@@ -382,13 +437,7 @@ function initAutocomplete(selectId) {
 
             fetch(url.toString(), { signal: controller.signal })
                 .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (data.results) {
-                        renderItems(data.results);
-                    } else {
-                        renderGrouped(data, q);
-                    }
-                })
+                .then(renderResponse)
                 .catch(function () {});
         }
 
@@ -460,11 +509,13 @@ function initAutocomplete(selectId) {
                 updateClearBtn();
                 select.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            renderItems(getDomItems(q));
+            // DOM-режим оборачивает список из <option> в тот же контракт,
+            // что и AJAX-ответ, — renderResponse работает единообразно.
+            renderResponse({ items: getDomItems(q) });
         });
 
         input.addEventListener('focus', function () {
-            renderItems(getDomItems(input.value.trim()));
+            renderResponse({ items: getDomItems(input.value.trim()) });
         });
     }
 

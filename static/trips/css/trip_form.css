@@ -484,40 +484,6 @@
     margin-top: 16px;
 }
 
-/* Inline add button */
-.field-add-row {
-    display: flex;
-    gap: 6px;
-    align-items: flex-start;
-}
-
-.field-add-row select,
-.field-add-row .autocomplete-container {
-    flex: 1;
-    min-width: 0;
-}
-
-.qc-add-btn {
-    flex-shrink: 0;
-    width: 36px;
-    height: 40px;
-    border-radius: 8px;
-    border: 1px solid var(--border-interactive);
-    background: var(--hover);
-    font-size: var(--text-lg);
-    line-height: 1;
-    cursor: pointer;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background .15s ease;
-}
-
-.qc-add-btn:hover {
-    background: var(--border);
-}
-
 @media (max-width: 760px) {
     .form-card { padding: 12px; }
 

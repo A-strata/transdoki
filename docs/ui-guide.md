@@ -1382,3 +1382,118 @@ outline: 3px solid rgba(37, 99, 235, 0.3);
 | Размер шрифта                       | Только `--text-xs` ... `--text-xl` (раздел 2)        |
 | Z-index                             | Только `--z-*` переменные (раздел 2)                 |
 | Новая иконка                        | Lucide, inline SVG, спецификация в разделе 18        |
+| Autocomplete-поле / combobox        | `AjaxSearchView` + `data-search-url` + `initAutocomplete('id_…')` (раздел 23) |
+
+---
+
+## 23. AJAX-search endpoints и combobox
+
+Autocomplete-поля форм (Заказчик, Перевозчик, Водитель, ТС, Прицеп, Экспедитор, Рейс, Организация в точках маршрута, customer в счёте и т. д.) строятся поверх одной пары:
+
+- **Сервер:** подкласс `AjaxSearchView` из `transdoki/search.py`.
+- **Клиент:** `static/js/autocomplete.js` → `initAutocomplete('id_<field>')`.
+
+### 23.1. Единый JSON-контракт
+
+Все search-endpoint-ы возвращают одну и ту же структуру:
+
+```json
+{
+  "items":  [{"id": 12, "text": "Иванов И.И.", "group": "carrier"}],
+  "groups": [
+    {"key": "carrier", "label": null},
+    {"key": "others",  "label": "Другие"}
+  ],
+  "hint":   {"type": "warning", "text": "Не привязаны к перевозчику — показаны все"}
+}
+```
+
+Правила:
+- `items` — всегда массив; поле `group` у элемента опционально.
+- `groups` — опциональна. Если её нет — items рендерятся плоско. Если есть — порядок групп задаёт порядок рендера; `label: null` = безымянная группа (без заголовка).
+- `hint` — опциональна, одна на ответ, `type` = `"info"` | `"warning"`.
+
+Клиент обрабатывает единой функцией `renderResponse(data)` — никаких веток по формату нет.
+
+### 23.2. Новый autocomplete-endpoint: минимальный подкласс
+
+```python
+# myapp/views.py
+from transdoki.search import AjaxSearchView
+
+class WarehouseSearchView(AjaxSearchView):
+    model = Warehouse
+    search_fields = ("name", "address")
+    order_by = ("name",)
+```
+
+```python
+# myapp/urls.py
+path("search/", WarehouseSearchView.as_view(), name="search"),
+```
+
+Всё — поле получает поиск с tenant-изоляцией, пагинацией по 25, поиском по нескольким полям (OR между полями, AND между словами в `q`).
+
+**Переопределяемые хуки:**
+
+| Хук | Когда использовать |
+|-----|--------------------|
+| `apply_extra_filters(qs)` | Для доп. GET-фильтров вроде `own=1`, `type=truck`, `exclude=<pk,pk>` |
+| `serialize_item(obj)` | Когда нужен кастомный `text` (например, `short_name` вместо `str(obj)`) |
+| `build_response(qs)` | Для группировки и хинтов (обычно через готовый миксин) |
+
+### 23.3. Группировка по перевозчику
+
+Для полей, где результаты надо разделить на «связанные с выбранным перевозчиком» и «остальные» (водители, ТС, прицепы в форме рейса), подключается `CarrierGroupingMixin`:
+
+```python
+class DriverSearchView(CarrierGroupingMixin, AjaxSearchView):
+    model = Driver
+    search_fields = ("surname", "name")
+    order_by = ("surname",)
+    owner_field = "employer"   # FK-поле, указывающее на Organization
+    no_link_hint_text = "Водители не привязаны к перевозчику — показаны все"
+```
+
+Клиент передаёт `?carrier_id=<pk>` (обычно это делает `trip_form_carrier_filter.js`). Семантика ответов описана в docstring миксина в `transdoki/search.py`.
+
+### 23.4. Combobox — пункт «+ Добавить …»
+
+В autocomplete можно встроить пункт «+ Добавить …» внизу дропдауна, чтобы пользователь мог завести новую запись без ухода с формы.
+
+**Подключение (серверная форма):**
+
+```python
+self.fields["client"].widget.attrs.update({
+    "data-search-url": reverse("organizations:search"),
+    "data-ac-create-type": "organization",  # organization | person | vehicle
+})
+```
+
+Для ТС-полей можно ограничить, какие типы ТС показывает модалка quick_create:
+
+```python
+self.fields["truck"].widget.attrs.update({
+    "data-search-url": reverse("vehicles:search"),
+    "data-ac-create-type": "vehicle",
+    "data-ac-qc-vehicle-types": "single,truck",
+    "data-ac-create-empty": "ТС не найдено в справочнике. Проверьте написание — либо добавьте новое.",
+})
+```
+
+**Что получает пользователь:**
+- При вводе ≥ 2 символов — в дропдауне помимо найденных записей появляется закреплённый пункт «+ Добавить …».
+- Если найдено 0 записей — показывается empty-state («… не найдено в справочнике») и тот же пункт «+ Добавить».
+- Клик открывает существующую модалку `quick_create.js`; после сохранения запись автоматически выбирается в поле.
+
+Поведение одинаковое для всех полей с `data-ac-create-type` — нет двух путей рендера.
+
+### 23.5. Tenant-изоляция: автотест
+
+Любой новый подкласс `AjaxSearchView` с моделью-наследником `UserOwnedModel` автоматически проверяется в `tests/test_tenant_isolation.py`. Базовый `get_queryset` уже фильтрует по `account` через `for_account(get_request_account(self.request))`, поэтому забыть tenant-фильтр невозможно.
+
+### 23.6. Не делать
+
+- **Не** возвращать из endpoint-а произвольный JSON (вроде `{"results": [...]}` или `{"drivers": [...], "vehicles": [...]}`). Контракт один — `{"items": [...], "groups"?, "hint"?}`. Иначе `autocomplete.js` не отрендерит ответ.
+- **Не** обходить `AjaxSearchView`, писать новый FBV-search. Любая фильтрация выражается через `apply_extra_filters`, любая группировка — через `build_response` или миксин.
+- **Не** писать новую JS-обвязку для комбобокса. Она уже есть в `autocomplete.js`.

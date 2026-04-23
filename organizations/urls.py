@@ -6,6 +6,7 @@ from .views import (
     OrganizationDeleteView,
     OrganizationDetailView,
     OrganizationListView,
+    OrganizationSearchView,
     OrganizationUpdateView,
     OwnCompanyListView,
     bank_account_delete,
@@ -15,7 +16,6 @@ from .views import (
     contact_quick_create,
     contact_update,
     organization_quick_create,
-    organization_search,
 )
 
 app_name = "organizations"
@@ -37,5 +37,5 @@ urlpatterns = [
     path("contact/quick-create/", contact_quick_create, name="contact_quick_create"),
     path("contact/update/", contact_update, name="contact_update"),
     path("contact/delete/", contact_delete, name="contact_delete"),
-    path("search/", organization_search, name="search"),
+    path("search/", OrganizationSearchView.as_view(), name="search"),
 ]
