@@ -3,6 +3,12 @@ from django.db import models
 
 from transdoki.models import UserOwnedModel
 
+from .templates_registry import (
+    ATTACHMENT_TYPE_CHOICES,
+    CONTRACT_TYPE_CHOICES,
+    TEMPLATE_TYPE_CHOICES,
+)
+
 
 def contract_template_upload_to(instance, filename):
     return f"contract_templates/{instance.account_id}/{instance.template_type}.docx"
@@ -11,14 +17,8 @@ def contract_template_upload_to(instance, filename):
 class ContractTemplate(models.Model):
     """Пользовательский DOCX-шаблон документа. Один шаблон на тип на аккаунт."""
 
-    TEMPLATE_TYPE_CHOICES = [
-        ("transport_contract", "Договор об организации перевозки грузов"),
-        ("transport_request", "Заявка на перевозку груза"),
-        ("single_transport", "Договор на перевозку (разовый)"),
-        ("order_request", "Договор-заявка (разовый)"),
-        ("supply_contract", "Договор поставки"),
-        ("supply_spec", "Спецификация"),
-    ]
+    # Источник правды — contracts/templates_registry.py
+    TEMPLATE_TYPE_CHOICES = TEMPLATE_TYPE_CHOICES
 
     account = models.ForeignKey(
         "accounts.Account",
@@ -55,12 +55,8 @@ class ContractTemplate(models.Model):
 class Contract(UserOwnedModel):
     """Договор с контрагентом."""
 
-    CONTRACT_TYPE_CHOICES = [
-        ("transport_contract", "Перевозка (долгосрочный)"),
-        ("single_transport", "Перевозка (разовый)"),
-        ("order_request", "Договор-заявка (разовый)"),
-        ("supply_contract", "Поставка"),
-    ]
+    # Источник правды — contracts/templates_registry.py
+    CONTRACT_TYPE_CHOICES = CONTRACT_TYPE_CHOICES
 
     STATUS_CHOICES = [
         ("draft", "Черновик"),
@@ -126,10 +122,8 @@ class Contract(UserOwnedModel):
 class ContractAttachment(UserOwnedModel):
     """Дочерний документ договора (спецификация, допсоглашение, заявка)."""
 
-    ATTACHMENT_TYPE_CHOICES = [
-        ("transport_request", "Заявка на перевозку груза"),
-        ("supply_spec", "Спецификация"),
-    ]
+    # Источник правды — contracts/templates_registry.py
+    ATTACHMENT_TYPE_CHOICES = ATTACHMENT_TYPE_CHOICES
 
     contract = models.ForeignKey(
         Contract,

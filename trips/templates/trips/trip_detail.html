@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static person_filters %}
 {% block head %}
 <link rel="stylesheet" href="{% static 'trips/css/trip_detail.css' %}">
 {% endblock %}
@@ -131,7 +131,7 @@
                                     <span class="tl-date tl-date--actual" title="Фактическая дата{% if p.actual_time %} и время{% endif %}">факт {{ p.actual_date|date:"d.m.Y" }}{% if p.actual_time %} {{ p.actual_time|time:"H:i" }}{% endif %}</span>
                                 {% endif %}
                                 {% if p.contact_name or p.contact_phone %}
-                                    <span class="tl-contact">{{ p.contact_name|default:"" }}{% if p.contact_name and p.contact_phone %}, {% endif %}{{ p.contact_phone|default:"" }}</span>
+                                    <span class="tl-contact">{{ p.contact_name|default:"" }}{% if p.contact_name and p.contact_phone %}, {% endif %}{% if p.contact_phone %}{% phone_link p.contact_phone %}{% endif %}</span>
                                 {% endif %}
                                 {% if p.odometer is not None %}
                                     <span class="tl-odo">{{ p.odometer }} км</span>
@@ -194,7 +194,7 @@
                         </div>
                         <div class="kv kv--full">
                             <p class="kv-label">Водитель</p>
-                            <p class="kv-value">{{ trip.driver|default:"—" }}{% if trip.driver and trip.driver.phone %}, {{ trip.driver.phone }}{% endif %}</p>
+                            <p class="kv-value">{{ trip.driver|default:"—" }}{% if trip.driver and trip.driver.phone %}, {% phone_link trip.driver.phone %}{% endif %}</p>
                         </div>
                         <div class="kv kv--full">
                             <p class="kv-label">Тягач</p>

@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мокап · Карточка и форма ТС</title>
+<style>
+/* === Design tokens (из docs/ui-guide.md, раздел 2) === */
+:root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --border-interactive: #b0b7c3;
+    --border-input: #a0a8b4;
+    --border-input-hover: #8b94a6;
+    --hover: #f8fafc;
+    --hover-active: #eef6ff;
+
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-ring: rgba(37, 99, 235, 0.3);
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+
+    --radius: 12px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.25rem;
+    --text-xl: 1.5rem;
+
+    --success-text: #16a34a;
+    --success-bg:   #f0fdf4;
+    --success-border: #bbf7d0;
+    --warning-text: #d97706;
+    --warning-bg:   #fffbeb;
+    --warning-border: #fde68a;
+    --error-text:   #dc2626;
+    --error-bg:     #fef2f2;
+    --error-border: #fecaca;
+    --neutral-text: #6b7280;
+    --neutral-bg:   #f3f4f6;
+    --neutral-border: #e5e7eb;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    padding: 40px 20px 80px;
+}
+
+.mockup-wrap { max-width: 1100px; margin: 0 auto; }
+.mockup-section { margin: 0 0 56px; }
+.mockup-section:last-child { margin-bottom: 0; }
+.mockup-label {
+    display: inline-block;
+    margin: 0 0 14px;
+    padding: 4px 10px;
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 700;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+}
+h2.mockup-heading {
+    margin: 0 0 6px;
+    font-size: var(--text-lg);
+    font-weight: 700;
+}
+p.mockup-sub {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: var(--text-sm);
+}
+
+/* === Buttons === */
+.tms-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: var(--radius-sm);
+    font-size: var(--text-sm); font-weight: 500;
+    border: 1px solid transparent; cursor: pointer;
+    transition: 0.15s ease; text-decoration: none;
+    font-family: inherit; white-space: nowrap;
+    background: var(--surface); color: var(--text);
+}
+.tms-btn-primary   { background: var(--primary); color: #fff; }
+.tms-btn-primary:hover { background: var(--primary-hover); }
+.tms-btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border-interactive); }
+.tms-btn-secondary:hover { background: var(--hover); }
+.tms-btn-light     { background: transparent; color: var(--text); }
+.tms-btn-light:hover { background: var(--hover); }
+.tms-btn-danger    { background: var(--danger); color: #fff; }
+.tms-btn-danger:hover { background: var(--danger-hover); }
+.tms-btn-sm { padding: 5px 10px; font-size: var(--text-xs); }
+
+/* === Card === */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 24px;
+}
+.section {
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+}
+.section:first-child { border-top: 0; padding-top: 0; }
+.section-title {
+    font-size: var(--text-base);
+    font-weight: 700;
+    margin: 0 0 14px;
+}
+
+/* === Page head (карточка ТС) === */
+.page-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.page-title-wrap {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.page-title {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+    font-weight: 700;
+    font-feature-settings: "tnum";
+    letter-spacing: 0.03em;
+}
+.page-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* === Бейджи (тип/статус) === */
+.badge-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: var(--text-xs); font-weight: 600;
+    border: 1px solid transparent;
+}
+.badge-pill--type    { background: var(--hover-active); color: var(--primary-hover); }
+.badge-pill--status-park { background: var(--neutral-bg); color: var(--neutral-text); border-color: var(--neutral-border); }
+.badge-pill--status-line { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+
+/* === Date badge (универсальный компонент) === */
+.date-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: var(--text-xs); font-weight: 600;
+    border: 1px solid transparent;
+    font-variant-numeric: tabular-nums;
+}
+.date-badge svg { width: 12px; height: 12px; flex-shrink: 0; }
+.date-badge--ok       { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+.date-badge--soon     { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-border); }
+.date-badge--expired  { background: var(--error-bg);   color: var(--error-text);   border-color: var(--error-border); }
+.date-badge--missing  { background: var(--neutral-bg); color: var(--neutral-text); border-color: var(--neutral-border); }
+
+/* === Summary strip (над основной карточкой) === */
+.summary-strip {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 14px;
+    font-size: var(--text-sm); font-weight: 500;
+    flex-wrap: wrap;
+}
+.summary-strip--warning {
+    background: var(--warning-bg); border: 1px solid var(--warning-border);
+    color: var(--warning-text);
+}
+.summary-strip--error {
+    background: var(--error-bg); border: 1px solid var(--error-border);
+    color: var(--error-text);
+}
+.summary-strip-content {
+    display: flex; align-items: center; gap: 10px;
+    min-width: 0; flex-wrap: wrap;
+}
+.summary-strip-content svg { width: 18px; height: 18px; flex-shrink: 0; }
+.summary-strip a {
+    color: inherit; text-decoration: none; font-weight: 600;
+    white-space: nowrap; border-bottom: 1px solid currentColor;
+}
+.summary-strip a:hover { opacity: 0.8; }
+
+/* === KV-grid === */
+.kv-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px 28px;
+}
+.kv { min-width: 0; }
+.kv-label {
+    margin: 0 0 2px;
+    font-size: var(--text-sm); color: var(--muted);
+}
+.kv-value {
+    margin: 0;
+    font-size: var(--text-base); font-weight: 500;
+    word-break: break-word;
+    display: flex; align-items: center; gap: 6px;
+}
+.kv-value a { color: var(--primary); text-decoration: none; }
+.kv-value a:hover { text-decoration: underline; }
+.kv-value.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.kv-copy {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 6px;
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--muted); transition: 0.15s ease;
+}
+.kv-copy:hover { background: var(--hover); color: var(--primary); }
+.kv-copy svg { width: 14px; height: 14px; }
+.kv--full { grid-column: 1 / -1; }
+
+/* === Doc cards (ОСАГО / ДК) === */
+.doc-cards {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.doc-card {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    transition: 0.15s ease;
+}
+.doc-card--expired { border-color: var(--error-border); background: var(--error-bg); }
+.doc-card--soon    { border-color: var(--warning-border); background: var(--warning-bg); }
+.doc-card-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: var(--text-sm); color: var(--muted);
+    margin-bottom: 2px;
+}
+.doc-card-head-left { display: flex; align-items: center; gap: 6px; }
+.doc-card-head svg { width: 15px; height: 15px; }
+.doc-card-value {
+    font-size: var(--text-base); font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+    color: var(--text);
+}
+.doc-card-expiry {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin-top: 6px;
+}
+.doc-card-expiry-label { font-size: var(--text-sm); color: var(--muted); }
+.doc-card--empty .doc-card-value { color: var(--muted); font-weight: 400; font-style: italic; }
+.doc-card-empty-cta {
+    align-self: flex-start;
+    margin-top: 6px; font-size: var(--text-sm);
+    color: var(--primary); text-decoration: none; font-weight: 500;
+}
+.doc-card-empty-cta:hover { text-decoration: underline; }
+
+/* === Форма === */
+.form-card { max-width: 900px; margin: 0 auto; }
+.page-subtitle { color: var(--muted); font-size: var(--text-sm); margin: 4px 0 0; }
+
+.fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > label {
+    font-size: var(--text-sm); color: var(--muted); font-weight: 500;
+}
+.field input, .field select, .field textarea {
+    padding: 8px 12px; font-size: var(--text-base);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-family: inherit; color: var(--text);
+    transition: 0.15s ease;
+    line-height: 1.3;
+}
+.field input:hover, .field select:hover { border-color: var(--border-input-hover); }
+.field input:focus, .field select:focus {
+    outline: 3px solid var(--primary-ring); outline-offset: 0;
+    border-color: var(--primary);
+}
+.field--full { grid-column: 1 / -1; }
+.field-row {
+    grid-column: 1 / -1;
+    display: grid; grid-template-columns: 140px 200px 1fr; gap: 16px;
+}
+.field-row .field { min-width: 0; }
+.helptext { font-size: var(--text-xs); color: var(--muted); margin-top: 2px; }
+.field-upper input { text-transform: uppercase; }
+
+/* Секция документов — подблоки */
+.docs-subblock {
+    padding: 14px 0 4px;
+    border-top: 1px dashed var(--border);
+}
+.docs-subblock:first-of-type { padding-top: 4px; border-top: 0; }
+.docs-subblock-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: var(--text-sm); font-weight: 600;
+    margin: 0 0 10px;
+    color: var(--text);
+}
+.docs-subblock-title svg { width: 16px; height: 16px; color: var(--muted); }
+
+/* Toggle */
+.toggle-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.toggle-switch { position: relative; display: inline-block; width: 42px; height: 22px; flex-shrink: 0; }
+.toggle-input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider {
+    position: absolute; inset: 0;
+    background: #cbd5e1; border-radius: 999px;
+    transition: 0.2s ease; cursor: pointer;
+}
+.toggle-slider::before {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: #fff; border-radius: 50%;
+    transition: 0.2s ease;
+}
+.toggle-input:checked + .toggle-slider { background: var(--primary); }
+.toggle-input:checked + .toggle-slider::before { transform: translateX(20px); }
+.toggle-label { font-size: var(--text-sm); font-weight: 500; }
+
+.form-actions {
+    display: flex; gap: 10px;
+    margin-top: 20px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* Палитра бейджей */
+.palette { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+/* Responsive */
+@media (max-width: 800px) {
+    .kv-grid, .fields-grid, .doc-cards { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .page-head { flex-direction: column; align-items: stretch; }
+}
+</style>
+</head>
+<body>
+
+<div class="mockup-wrap">
+
+<!-- ============================================================ -->
+<!-- Палитра бейджей срока                                          -->
+<!-- ============================================================ -->
+<section class="mockup-section">
+    <span class="mockup-label">Компонент · .date-badge</span>
+    <h2 class="mockup-heading">Бейджи срока действия документов</h2>
+    <p class="mockup-sub">
+        Единый компонент, применяется в списках, карточках и формах. Расчёт статуса — на бэкенде,
+        в шаблон приходит готовый код: <code>ok / soon / expired / missing</code>. Соответствует
+        семантической палитре из UI-гайда.
+    </p>
+
+    <div class="card">
+        <div class="palette">
+            <span class="date-badge date-badge--ok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                до 18.03.2027
+            </span>
+            <span class="date-badge date-badge--soon" title="Истекает через 18 дней">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                до 08.05.2026 · 18 дн.
+            </span>
+            <span class="date-badge date-badge--expired" title="Просрочено 12 дней">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                просрочено 12 дн.
+            </span>
+            <span class="date-badge date-badge--missing">не указан</span>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Карточка ТС · всё в порядке                                   -->
+<!-- ============================================================ -->
+<section class="mockup-section">
+    <span class="mockup-label">Карточка · всё в порядке</span>
+    <h2 class="mockup-heading">Детальная страница ТС (состояние: документы актуальны)</h2>
+    <p class="mockup-sub">Summary-strip не отображается, т.к. предупреждений нет. Все бейджи в зелёной палитре.</p>
+
+    <div class="card">
+        <!-- page-head -->
+        <div class="page-head">
+            <div class="page-title-wrap">
+                <h1 class="page-title">А 123 ВЕ 777</h1>
+                <span class="badge-pill badge-pill--type">Тягач седельный</span>
+                <span class="badge-pill badge-pill--status-line">На линии</span>
+            </div>
+            <div class="page-head-actions">
+                <a href="#" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
+                <a href="#" class="tms-btn tms-btn-light tms-btn-sm">К списку</a>
+                <button class="tms-btn tms-btn-danger tms-btn-sm">Удалить</button>
+            </div>
+        </div>
+
+        <!-- Секция 1: Характеристики -->
+        <div class="section">
+            <h2 class="section-title">Характеристики</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Марка и модель</p>
+                    <p class="kv-value">Scania R440</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Год выпуска</p>
+                    <p class="kv-value">2019</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">VIN</p>
+                    <p class="kv-value mono">
+                        YS2R4X20005412345
+                        <button class="kv-copy" title="Скопировать" aria-label="Скопировать VIN">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </button>
+                    </p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">СТС</p>
+                    <p class="kv-value mono">99 25 · 123456</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция 2: Владение -->
+        <div class="section">
+            <h2 class="section-title">Владение</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Собственник</p>
+                    <p class="kv-value"><a href="#">ООО «Ромашка-Логистика»</a></p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Основание</p>
+                    <p class="kv-value">Собственность</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Одометр</p>
+                    <p class="kv-value mono">458 320 км</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Статус</p>
+                    <p class="kv-value">На линии</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция 3: Документы -->
+        <div class="section" id="docs">
+            <h2 class="section-title">Документы</h2>
+            <div class="doc-cards">
+                <div class="doc-card">
+                    <div class="doc-card-head">
+                        <span class="doc-card-head-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            ОСАГО
+                        </span>
+                    </div>
+                    <p class="doc-card-value">ХХХ 0342187654</p>
+                    <div class="doc-card-expiry">
+                        <span class="doc-card-expiry-label">действует до</span>
+                        <span class="date-badge date-badge--ok">18.03.2027</span>
+                    </div>
+                </div>
+                <div class="doc-card">
+                    <div class="doc-card-head">
+                        <span class="doc-card-head-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                            Диагностическая карта
+                        </span>
+                    </div>
+                    <p class="doc-card-value">41523412345678901</p>
+                    <div class="doc-card-expiry">
+                        <span class="doc-card-expiry-label">действует до</span>
+                        <span class="date-badge date-badge--ok">22.11.2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция 4: Оборудование -->
+        <div class="section">
+            <h2 class="section-title">Оборудование</h2>
+            <div class="kv-grid">
+                <div class="kv">
+                    <p class="kv-label">Тахограф</p>
+                    <p class="kv-value">Continental VDO DTCO 4.0</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Срок поверки</p>
+                    <p class="kv-value">
+                        <span class="date-badge date-badge--ok">до 14.09.2026</span>
+                    </p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Блок СКЗИ</p>
+                    <p class="kv-value mono">NKM-1-0-12345678</p>
+                </div>
+                <div class="kv">
+                    <p class="kv-label">Срок замены СКЗИ</p>
+                    <p class="kv-value">
+                        <span class="date-badge date-badge--ok">до 01.06.2027</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Карточка ТС · скоро истекает                                  -->
+<!-- ============================================================ -->
+<section class="mockup-section">
+    <span class="mockup-label">Карточка · внимание</span>
+    <h2 class="mockup-heading">Детальная страница ТС (состояние: скоро истекает)</h2>
+    <p class="mockup-sub">Summary-strip жёлтый — ОСАГО истекает через 18 дней. Бейдж самой даты тоже жёлтый.</p>
+
+    <div class="card">
+        <div class="summary-strip summary-strip--warning">
+            <span class="summary-strip-content">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Скоро истекает: ОСАГО — через 18 дней (08.05.2026)
+            </span>
+            <a href="#docs">К документам →</a>
+        </div>
+
+        <div class="page-head">
+            <div class="page-title-wrap">
+                <h1 class="page-title">А 123 ВЕ 777</h1>
+                <span class="badge-pill badge-pill--type">Тягач седельный</span>
+                <span class="badge-pill badge-pill--status-park">В парке</span>
+            </div>
+            <div class="page-head-actions">
+                <a href="#" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
+                <a href="#" class="tms-btn tms-btn-light tms-btn-sm">К списку</a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Характеристики</h2>
+            <div class="kv-grid">
+                <div class="kv"><p class="kv-label">Марка и модель</p><p class="kv-value">Scania R440</p></div>
+                <div class="kv"><p class="kv-label">Год выпуска</p><p class="kv-value">2019</p></div>
+                <div class="kv"><p class="kv-label">VIN</p><p class="kv-value mono">YS2R4X20005412345</p></div>
+                <div class="kv"><p class="kv-label">СТС</p><p class="kv-value mono">99 25 · 123456</p></div>
+            </div>
+        </div>
+
+        <div class="section" id="docs2">
+            <h2 class="section-title">Документы</h2>
+            <div class="doc-cards">
+                <div class="doc-card doc-card--soon">
+                    <div class="doc-card-head">
+                        <span class="doc-card-head-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            ОСАГО
+                        </span>
+                    </div>
+                    <p class="doc-card-value">ХХХ 0342187654</p>
+                    <div class="doc-card-expiry">
+                        <span class="doc-card-expiry-label">действует до</span>
+                        <span class="date-badge date-badge--soon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            08.05.2026 · 18 дн.
+                        </span>
+                    </div>
+                </div>
+                <div class="doc-card">
+                    <div class="doc-card-head">
+                        <span class="doc-card-head-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Диагностическая карта
+                        </span>
+                    </div>
+                    <p class="doc-card-value">41523412345678901</p>
+                    <div class="doc-card-expiry">
+                        <span class="doc-card-expiry-label">действует до</span>
+                        <span class="date-badge date-badge--ok">22.11.2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Оборудование</h2>
+            <div class="kv-grid">
+                <div class="kv"><p class="kv-label">Тахограф</p><p class="kv-value">Continental VDO DTCO 4.0</p></div>
+                <div class="kv">
+                    <p class="kv-label">Срок поверки</p>
+                    <p class="kv-value"><span class="date-badge date-badge--ok">до 14.09.2026</span></p>
+                </div>
+                <div class="kv"><p class="kv-label">Блок СКЗИ</p><p class="kv-value mono">NKM-1-0-12345678</p></div>
+                <div class="kv">
+                    <p class="kv-label">Срок замены СКЗИ</p>
+                    <p class="kv-value"><span class="date-badge date-badge--ok">до 01.06.2027</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Карточка ТС · просрочено + пустой документ                     -->
+<!-- ============================================================ -->
+<section class="mockup-section">
+    <span class="mockup-label">Карточка · критично</span>
+    <h2 class="mockup-heading">Детальная страница ТС (ДК просрочена, ОСАГО не заполнен)</h2>
+    <p class="mockup-sub">Summary-strip красный, явно указывает на блокирующие риски. У пустого документа — состояние empty со ссылкой «Заполнить».</p>
+
+    <div class="card">
+        <div class="summary-strip summary-strip--error">
+            <span class="summary-strip-content">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Диагностическая карта просрочена 12 дней · ОСАГО не указан · СКЗИ истекает через 9 дней
+            </span>
+            <a href="#docs">Исправить →</a>
+        </div>
+
+        <div class="page-head">
+            <div class="page-title-wrap">
+                <h1 class="page-title">В 456 РО 178</h1>
+                <span class="badge-pill badge-pill--type">Грузовик одиночный</span>
+                <span class="badge-pill badge-pill--status-park">В парке</span>
+            </div>
+            <div class="page-head-actions">
+                <a href="#" class="tms-btn tms-btn-primary tms-btn-sm">+ Заполнить документы</a>
+                <a href="#" class="tms-btn tms-btn-secondary tms-btn-sm">Редактировать</a>
+                <a href="#" class="tms-btn tms-btn-light tms-btn-sm">К списку</a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Характеристики</h2>
+            <div class="kv-grid">
+                <div class="kv"><p class="kv-label">Марка и модель</p><p class="kv-value">ГАЗ-3302 «Газель»</p></div>
+                <div class="kv"><p class="kv-label">Год выпуска</p><p class="kv-value">2015</p></div>
+                <div class="kv"><p class="kv-label">VIN</p><p class="kv-value mono">X9633020050987654</p></div>
+                <div class="kv"><p class="kv-label">СТС</p><p class="kv-value mono">77 14 · 987654</p></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Документы</h2>
+            <div class="doc-cards">
+                <div class="doc-card doc-card--empty">
+                    <div class="doc-card-head">
+                        <span class="doc-card-head-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            ОСАГО
+                        </span>
+                        <span class="date-badge date-badge--missing">не указан</span>
+                    </div>
+                    <p class="doc-card-value">—</p>
+                    <a href="#" class="doc-card-empty-cta">+ Заполнить полис</a>
+                </div>
+                <div class="doc-card doc-card--expired">
+                    <div class="doc-card-head">
+                        <span class="doc-card-head-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Диагностическая карта
+                        </span>
+                    </div>
+                    <p class="doc-card-value">41523499887766554</p>
+                    <div class="doc-card-expiry">
+                        <span class="doc-card-expiry-label">действовала до</span>
+                        <span class="date-badge date-badge--expired">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            09.04.2026 · −12 дн.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Оборудование</h2>
+            <div class="kv-grid">
+                <div class="kv"><p class="kv-label">Тахограф</p><p class="kv-value">Меркурий ТА-001</p></div>
+                <div class="kv">
+                    <p class="kv-label">Срок поверки</p>
+                    <p class="kv-value"><span class="date-badge date-badge--ok">до 02.02.2027</span></p>
+                </div>
+                <div class="kv"><p class="kv-label">Блок СКЗИ</p><p class="kv-value mono">NKM-1-0-55443322</p></div>
+                <div class="kv">
+                    <p class="kv-label">Срок замены СКЗИ</p>
+                    <p class="kv-value">
+                        <span class="date-badge date-badge--soon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            до 30.04.2026 · 9 дн.
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Форма создания / редактирования ТС                            -->
+<!-- ============================================================ -->
+<section class="mockup-section">
+    <span class="mockup-label">Форма · создание / редактирование</span>
+    <h2 class="mockup-heading">Форма ТС</h2>
+    <p class="mockup-sub">Четыре секции в одной .form-card. Тахограф — на toggle, детали скрыты пока выключен. Поля-даты — нативный <code>&lt;input type="date"&gt;</code>.</p>
+
+    <div class="card form-card">
+        <h1 class="page-title">Добавить транспортное средство</h1>
+        <p class="page-subtitle">Обязательны госномер, марка, тип ТС и собственник. Остальные поля можно заполнить позже.</p>
+
+        <!-- Секция 1: Основное -->
+        <div class="section">
+            <h2 class="section-title">Основное</h2>
+            <div class="fields-grid">
+                <div class="field">
+                    <label for="f-type">Тип ТС *</label>
+                    <select id="f-type">
+                        <option>Грузовик одиночный</option>
+                        <option selected>Тягач седельный</option>
+                        <option>Прицеп</option>
+                    </select>
+                </div>
+                <div class="field field-upper">
+                    <label for="f-grn">Госномер *</label>
+                    <input id="f-grn" type="text" value="А 123 ВЕ 777" placeholder="А123ВЕ77">
+                    <span class="helptext">Формат определяется по типу ТС. Заглавные русские буквы.</span>
+                </div>
+                <div class="field">
+                    <label for="f-brand">Марка *</label>
+                    <input id="f-brand" type="text" value="Scania">
+                </div>
+                <div class="field">
+                    <label for="f-model">Модель</label>
+                    <input id="f-model" type="text" value="R440">
+                </div>
+                <div class="field">
+                    <label for="f-year">Год выпуска</label>
+                    <input id="f-year" type="number" min="1950" max="2027" value="2019" style="max-width: 160px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция 2: Идентификация -->
+        <div class="section">
+            <h2 class="section-title">Идентификация</h2>
+            <div class="fields-grid">
+                <div class="field field--full field-upper">
+                    <label for="f-vin">VIN</label>
+                    <input id="f-vin" type="text" maxlength="17" value="YS2R4X20005412345" style="max-width: 360px; font-variant-numeric: tabular-nums;">
+                    <span class="helptext">17 символов, без букв I, O, Q.</span>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="f-sts-s">Серия СТС</label>
+                        <input id="f-sts-s" type="text" value="99 25" style="max-width: 120px;">
+                    </div>
+                    <div class="field">
+                        <label for="f-sts-n">Номер СТС</label>
+                        <input id="f-sts-n" type="text" value="123456" style="max-width: 180px;">
+                    </div>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция 3: Владение -->
+        <div class="section">
+            <h2 class="section-title">Владение</h2>
+            <div class="fields-grid">
+                <div class="field">
+                    <label for="f-prop">Основание *</label>
+                    <select id="f-prop">
+                        <option selected>Собственность</option>
+                        <option>Совместная собственность супругов</option>
+                        <option>Аренда</option>
+                        <option>Лизинг</option>
+                        <option>Безвозмездное пользование</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="f-owner">Собственник *</label>
+                    <select id="f-owner">
+                        <option selected>ООО «Ромашка-Логистика»</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция 4: Документы -->
+        <div class="section">
+            <h2 class="section-title">Документы</h2>
+
+            <div class="docs-subblock">
+                <h3 class="docs-subblock-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    ОСАГО
+                </h3>
+                <div class="fields-grid">
+                    <div class="field field-upper">
+                        <label for="f-osago-n">Номер полиса</label>
+                        <input id="f-osago-n" type="text" value="ХХХ 0342187654" placeholder="ХХХ 1234567890">
+                    </div>
+                    <div class="field">
+                        <label for="f-osago-d">Действует до</label>
+                        <input id="f-osago-d" type="date" value="2027-03-18">
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-subblock">
+                <h3 class="docs-subblock-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    Диагностическая карта
+                </h3>
+                <div class="fields-grid">
+                    <div class="field">
+                        <label for="f-dc-n">Номер ЕАИСТО</label>
+                        <input id="f-dc-n" type="text" value="41523412345678901" style="font-variant-numeric: tabular-nums;">
+                    </div>
+                    <div class="field">
+                        <label for="f-dc-d">Действует до</label>
+                        <input id="f-dc-d" type="date" value="2026-11-22">
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-subblock">
+                <div class="toggle-row">
+                    <label class="toggle-switch">
+                        <input class="toggle-input" type="checkbox" id="f-tach" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <label for="f-tach" class="toggle-label">ТС оснащено тахографом</label>
+                </div>
+                <div class="fields-grid tach-details is-shown">
+                    <div class="field">
+                        <label for="f-tach-m">Модель тахографа</label>
+                        <input id="f-tach-m" type="text" value="Continental VDO DTCO 4.0">
+                    </div>
+                    <div class="field">
+                        <label for="f-tach-c">Срок поверки</label>
+                        <input id="f-tach-c" type="date" value="2026-09-14">
+                    </div>
+                    <div class="field">
+                        <label for="f-skzi-n">Номер блока СКЗИ</label>
+                        <input id="f-skzi-n" type="text" value="NKM-1-0-12345678" style="font-variant-numeric: tabular-nums;">
+                    </div>
+                    <div class="field">
+                        <label for="f-skzi-d">Срок замены СКЗИ</label>
+                        <input id="f-skzi-d" type="date" value="2027-06-01">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="tms-btn tms-btn-primary">Сохранить</button>
+            <button type="submit" class="tms-btn tms-btn-secondary">Сохранить и добавить ещё</button>
+            <a href="#" class="tms-btn tms-btn-light">Отмена</a>
+        </div>
+    </div>
+</section>
+
+</div>
+
+</body>
+</html>

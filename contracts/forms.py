@@ -1,3 +1,5 @@
+import zipfile
+
 from django import forms
 
 from organizations.models import Organization
@@ -42,12 +44,13 @@ class ContractForm(ErrorHighlightMixin, forms.ModelForm):
                 getattr(self.user, "profile", None), "account_id", None
             )
             if account_id:
-                all_orgs = Organization.objects.filter(account_id=account_id)
+                # Используем tenant-менеджер вместо .filter — см. CLAUDE.md.
                 self.fields["own_company"].queryset = Organization.objects.own_for(
                     account_id
                 )
-                self.fields["contractor"].queryset = all_orgs.filter(
-                    is_own_company=False
+                self.fields["contractor"].queryset = (
+                    Organization.objects.for_account(account_id)
+                    .filter(is_own_company=False)
                 )
 
 
@@ -71,7 +74,6 @@ class ContractAttachmentForm(ErrorHighlightMixin, forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop("user", None)
         kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
 
@@ -79,10 +81,34 @@ class ContractAttachmentForm(ErrorHighlightMixin, forms.ModelForm):
 class TemplateUploadForm(forms.Form):
     file = forms.FileField(label="Файл шаблона (.docx)")
 
+    MAX_FILE_SIZE = 5 * 1024 * 1024
+
     def clean_file(self):
         f = self.cleaned_data["file"]
         if not f.name.lower().endswith(".docx"):
             raise forms.ValidationError("Допускаются только файлы формата .docx")
-        if f.size > 5 * 1024 * 1024:
+        if f.size > self.MAX_FILE_SIZE:
             raise forms.ValidationError("Максимальный размер файла — 5 МБ")
+
+        # Строгая проверка: DOCX — это ZIP-архив с word/document.xml.
+        # Не даёт загрузить произвольный бинарь с расширением .docx.
+        try:
+            f.seek(0)
+            with zipfile.ZipFile(f) as zf:
+                if "word/document.xml" not in zf.namelist():
+                    raise forms.ValidationError(
+                        "Файл не является корректным DOCX: внутри не найдена "
+                        "word/document.xml. Сохраните документ в Word как .docx."
+                    )
+        except zipfile.BadZipFile as exc:
+            raise forms.ValidationError(
+                "Файл повреждён или не является DOCX."
+            ) from exc
+        finally:
+            # Вернём указатель в начало, иначе Django сохранит файл не с нуля.
+            try:
+                f.seek(0)
+            except Exception:
+                pass
+
         return f

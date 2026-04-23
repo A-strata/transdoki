@@ -51,8 +51,15 @@
     border-radius: 9px;
     font-size: var(--text-sm);
     color: var(--text);
+    background: transparent;
     border: 1px solid transparent;
+    text-decoration: none;
     transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+button.nav-link {
+    font: inherit;
+    cursor: pointer;
 }
 
 .nav-link:hover {

@@ -1,22 +1,27 @@
-from urllib.parse import urlencode
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import ProtectedError, Q
+from django.db.models import ProtectedError
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    TemplateView,
+    UpdateView,
+)
 
 from accounts.models import UserProfile
 from billing.mixins import ModuleRequiredMixin
 from transdoki.tenancy import get_request_account
-from transdoki.views import UserOwnedListView
+from transdoki.views import FilteredSortedListMixin, UserOwnedListView
 
 from . import services
 from .forms import ContractAttachmentForm, ContractForm, TemplateUploadForm
 from .models import Contract, ContractAttachment, ContractTemplate
+from .templates_registry import SECTIONS, TEMPLATES
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -50,10 +55,9 @@ class EditPermissionMixin:
 # ---------------------------------------------------------------------------
 
 
-CONTRACT_SORT_FIELDS = ("date_signed", "number", "contractor__short_name")
-
-
-class ContractListView(ContractsModuleMixin, UserOwnedListView):
+class ContractListView(
+    ContractsModuleMixin, FilteredSortedListMixin, UserOwnedListView
+):
     model = Contract
     template_name = "contracts/contract_list.html"
     partial_template_name = "contracts/contract_list_table.html"
@@ -61,44 +65,33 @@ class ContractListView(ContractsModuleMixin, UserOwnedListView):
     paginate_by = 25
     page_size_options = [25, 50, 100]
 
+    search_fields = ("number", "contractor__short_name")
+    sort_fields = ("date_signed", "number", "contractor__short_name")
+    default_sort = "date_signed"
+    default_sort_dir = "desc"
+
     def get_template_names(self):
         if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return [self.partial_template_name]
         return [self.template_name]
 
-    def _parse_sort(self):
-        sort_field = self.request.GET.get("sort", "date_signed").strip()
-        sort_dir = self.request.GET.get("dir", "desc").strip()
-        if sort_field not in CONTRACT_SORT_FIELDS:
-            sort_field = "date_signed"
-        if sort_dir not in ("asc", "desc"):
-            sort_dir = "desc"
-        return sort_field, sort_dir
+    def _get_status_filter(self) -> str:
+        status = self.request.GET.get("status", "")
+        return status if status in dict(Contract.STATUS_CHOICES) else ""
+
+    def apply_extra_filters(self, qs):
+        status = self._get_status_filter()
+        if status:
+            qs = qs.filter(status=status)
+        return qs
+
+    def get_extra_filter_params(self):
+        status = self._get_status_filter()
+        return {"status": status} if status else {}
 
     def get_queryset(self):
         qs = super().get_queryset().select_related("own_company", "contractor")
-
-        q = self.request.GET.get("q", "").strip()
-        if q:
-            qs = qs.filter(
-                Q(number__icontains=q) | Q(contractor__short_name__icontains=q)
-            )
-
-        status = self.request.GET.get("status")
-        if status and status in dict(Contract.STATUS_CHOICES):
-            qs = qs.filter(status=status)
-
-        sort_field, sort_dir = self._parse_sort()
-        order = sort_field if sort_dir == "asc" else f"-{sort_field}"
-        return qs.order_by(order, "-pk")
-
-    def _build_sort_url(self, field, current_sort, current_dir, base_params):
-        params = dict(base_params)
-        params["sort"] = field
-        params["dir"] = (
-            "desc" if (field == current_sort and current_dir == "asc") else "asc"
-        )
-        return "?" + urlencode(params)
+        return self.apply_filters_and_sort(qs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -107,46 +100,24 @@ class ContractListView(ContractsModuleMixin, UserOwnedListView):
         ctx["pagination_items"] = (
             self._build_pagination_items(page_obj) if page_obj else []
         )
-        ctx["page_size_options"] = self.page_size_options
 
-        q = self.request.GET.get("q", "").strip()
-        status = self.request.GET.get("status", "")
-        sort_field, sort_dir = self._parse_sort()
-        current_page_size = self.get_paginate_by(self.object_list)
-
-        if q:
-            base_qs = super().get_queryset()
-            if status and status in dict(Contract.STATUS_CHOICES):
+        # total_count нужен только при активном поиске — чтобы показать
+        # "найдено X из Y" в нижней плашке. Без поиска Y == X, лишний запрос.
+        if self.get_search_query():
+            base_qs = Contract.objects.for_account(
+                get_request_account(self.request)
+            )
+            status = self._get_status_filter()
+            if status:
                 base_qs = base_qs.filter(status=status)
             ctx["total_count"] = base_qs.count()
 
         ctx["status_choices"] = Contract.STATUS_CHOICES
-        ctx["filters"] = {
-            "q": q,
-            "status": status,
-            "sort": sort_field,
-            "dir": sort_dir,
-            "page_size": str(current_page_size),
-        }
-
-        base_params = {}
-        if q:
-            base_params["q"] = q
-        if status:
-            base_params["status"] = status
-        if sort_field != "date_signed":
-            base_params["sort"] = sort_field
-        if sort_dir != "desc":
-            base_params["dir"] = sort_dir
-        if str(current_page_size) != str(self.paginate_by):
-            base_params["page_size"] = current_page_size
-        ctx["query_string"] = ("&" + urlencode(base_params)) if base_params else ""
-
-        ctx["sort_urls"] = {
-            f: self._build_sort_url(f, sort_field, sort_dir, base_params)
-            for f in CONTRACT_SORT_FIELDS
-        }
-
+        ctx.update(self.get_filter_context())
+        # filters из миксина уже содержит status через get_extra_filter_params,
+        # но при пустом статусе он не попадёт — шаблон ожидает всегда наличие
+        # ключа (<option selected>), поэтому явно добавим.
+        ctx["filters"].setdefault("status", "")
         return ctx
 
 
@@ -255,7 +226,18 @@ class ContractDownloadView(ContractsModuleMixin, LoginRequiredMixin, View):
             pk=pk,
             account=get_request_account(request),
         )
-        return services.generate_contract_response(contract)
+        try:
+            return services.generate_contract_response(contract)
+        except services.TemplateNotConfiguredError:
+            messages.error(
+                request,
+                "Шаблон для этого типа договора не настроен. "
+                "Загрузите свой шаблон в разделе «Шаблоны документов».",
+            )
+            return redirect(reverse("contracts:template_settings"))
+        except services.DocGenerationError as exc:
+            messages.error(request, f"Не удалось сгенерировать документ: {exc}")
+            return redirect(reverse("contracts:detail", kwargs={"pk": pk}))
 
 
 # ---------------------------------------------------------------------------
@@ -279,11 +261,6 @@ class AttachmentCreateView(
             pk=kwargs["contract_pk"],
         )
         return super().dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
-        return kwargs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -312,7 +289,20 @@ class AttachmentDownloadView(ContractsModuleMixin, LoginRequiredMixin, View):
             pk=pk,
             contract__account=get_request_account(request),
         )
-        return services.generate_attachment_response(attachment)
+        try:
+            return services.generate_attachment_response(attachment)
+        except services.TemplateNotConfiguredError:
+            messages.error(
+                request,
+                "Шаблон для этого типа приложения не настроен. "
+                "Загрузите свой шаблон в разделе «Шаблоны документов».",
+            )
+            return redirect(reverse("contracts:template_settings"))
+        except services.DocGenerationError as exc:
+            messages.error(request, f"Не удалось сгенерировать документ: {exc}")
+            return redirect(
+                reverse("contracts:detail", kwargs={"pk": attachment.contract_id})
+            )
 
 
 class AttachmentDeleteView(
@@ -339,78 +329,36 @@ class AttachmentDeleteView(
 # ---------------------------------------------------------------------------
 
 
-TEMPLATE_META = {
-    "transport_contract": {
-        "badge": "Рамочный",
-        "section": "transport",
-        "parent": None,
-    },
-    "transport_request": {
-        "badge": "Дочерний",
-        "section": "transport",
-        "parent": "transport_contract",
-    },
-    "single_transport": {
-        "badge": "Самостоятельный",
-        "section": "transport",
-        "parent": None,
-    },
-    "order_request": {
-        "badge": "Самостоятельный",
-        "section": "transport",
-        "parent": None,
-    },
-    "supply_contract": {
-        "badge": "Рамочный",
-        "section": "supply",
-        "parent": None,
-    },
-    "supply_spec": {
-        "badge": "Дочерний",
-        "section": "supply",
-        "parent": "supply_contract",
-    },
-}
-
-SECTIONS = [
-    ("transport", "Перевозки"),
-    ("supply", "Поставки"),
-]
-
-
 class TemplateSettingsView(
     ContractsModuleMixin,
     EditPermissionMixin,
     LoginRequiredMixin,
-    View,
+    TemplateView,
 ):
-    def get(self, request):
-        account = get_request_account(request)
+    template_name = "contracts/template_settings.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        account = get_request_account(self.request)
         uploaded = {
             ct.template_type: ct
             for ct in ContractTemplate.objects.filter(account=account)
         }
 
         items = []
-        for code, label in ContractTemplate.TEMPLATE_TYPE_CHOICES:
-            ct = uploaded.get(code)
-            meta = TEMPLATE_META.get(code, {})
+        for spec in TEMPLATES:
             items.append({
-                "code": code,
-                "label": label,
-                "uploaded": ct,
-                "badge": meta.get("badge", ""),
-                "section": meta.get("section", ""),
-                "is_child": meta.get("parent") is not None,
-                "placeholders": services.PLACEHOLDERS.get(code, []),
+                "code": spec.code,
+                "label": spec.template_label,
+                "uploaded": uploaded.get(spec.code),
+                "badge": spec.badge,
+                "section": spec.section,
+                "is_child": spec.parent is not None,
+                "placeholders": services.PLACEHOLDERS.get(spec.code, []),
             })
-
-        from django.shortcuts import render
-
-        return render(request, "contracts/template_settings.html", {
-            "items": items,
-            "sections": SECTIONS,
-        })
+        ctx["items"] = items
+        ctx["sections"] = SECTIONS
+        return ctx
 
 
 class TemplateUploadView(
@@ -472,9 +420,13 @@ class TemplateDownloadDefaultView(ContractsModuleMixin, LoginRequiredMixin, View
             messages.error(request, "Неизвестный тип шаблона.")
             return redirect("contracts:template_settings")
 
-        path = services._get_default_template_path(template_type)
+        path = services.get_default_template_path(template_type)
         if not path.exists():
-            messages.error(request, "Дефолтный шаблон не найден.")
+            messages.error(
+                request,
+                "Дефолтный шаблон для этого типа документа пока не поставляется. "
+                "Загрузите свой файл через форму выше.",
+            )
             return redirect("contracts:template_settings")
 
         return FileResponse(

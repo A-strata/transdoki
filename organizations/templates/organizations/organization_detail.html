@@ -60,7 +60,7 @@
                 <div class="kv">
                     <p class="kv-label">Телефон</p>
                     {% if organization.phone %}
-                        <p class="kv-value">{{ organization.phone }}</p>
+                        <p class="kv-value">{% phone_link organization.phone %}</p>
                     {% else %}
                         <p class="kv-value kv-value--empty">не указан</p>
                     {% endif %}
@@ -192,7 +192,7 @@
                 <div class="mini-item mini-item--hoverable">
                     <div class="mini-item-content">
                         <p class="mini-item-title">{{ contact.name }}{% if contact.position %} <span class="mini-item-tag">{{ contact.position }}</span>{% endif %}</p>
-                        <p class="mini-item-sub">{{ contact.phone|phone_format|default:"телефон не указан" }}</p>
+                        <p class="mini-item-sub">{% phone_link contact.phone empty="Телефон не указан" %}</p>
                     </div>
                     <div class="mini-item-actions">
                         <button type="button"
@@ -342,7 +342,7 @@
                     {% for person in employees %}
                     <tr>
                         <td data-label="ФИО">{{ person.surname }} {{ person.name }} {{ person.patronymic }}</td>
-                        <td data-label="Телефон">{{ person.phone|phone_format }}</td>
+                        <td data-label="Телефон">{% phone_link person.phone %}</td>
                         <td data-label="Категории ВУ">{{ person.license_categories|default:"—" }}</td>
                         <td data-label="Действия">
                             <div class="row-actions">

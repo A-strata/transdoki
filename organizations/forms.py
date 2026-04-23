@@ -19,6 +19,27 @@ class OrganizationForm(ErrorHighlightMixin, forms.ModelForm):
         ),
     )
 
+    phone = forms.CharField(
+        label="Телефон",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "type": "tel",
+                "data-phone-mask": "",
+            }
+        ),
+    )
+
+    def clean_phone(self):
+        # Локальный импорт — защита от циклов (persons тоже опирается на этот
+        # модуль) и единообразие с persons.PersonForm.clean_phone.
+        from persons.services import normalize_phone
+
+        value = (self.cleaned_data.get("phone") or "").strip()
+        if not value:
+            return ""
+        return normalize_phone(value)
+
     class Meta:
         model = Organization
         fields = [

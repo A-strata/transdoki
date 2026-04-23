@@ -185,6 +185,11 @@
     </div>
 </div>
 
+<script src="https://unpkg.com/imask"></script>
 <script src="{% static 'organizations/js/suggestions_by_inn.js' %}"></script>
 <script src="{% static 'organizations/js/organization_form.js' %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/phone_mask.js' %}"></script>
 {% endblock %}

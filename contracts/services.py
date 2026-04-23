@@ -1,16 +1,25 @@
+import functools
 from io import BytesIO
 from pathlib import Path
 
+from django.core.files.storage import default_storage
+from django.db import transaction
 from django.http import FileResponse
 from docxtpl import DocxTemplate
+from jinja2.sandbox import SandboxedEnvironment
 
 from transdoki.branding import branding_context
 
 from .models import ContractTemplate
+from .templates_registry import TEMPLATES
 
 
 class DocGenerationError(Exception):
     pass
+
+
+class TemplateNotConfiguredError(DocGenerationError):
+    """У аккаунта нет пользовательского шаблона и дефолтный тоже отсутствует."""
 
 
 # ---------------------------------------------------------------------------
@@ -168,17 +177,25 @@ def amount_to_words(amount):
 
 _ORG_KEYS = (
     "full_name", "short_name", "inn", "kpp", "ogrn", "address",
+    "phone", "email",
     "director_title", "director_name",
     "director_title_genitive", "director_name_genitive",
     "bank_name", "bic", "corr_account", "account_num",
 )
 
 
-def _to_genitive(phrase):
-    """Склоняет фразу в родительный падеж через pymorphy3."""
+@functools.lru_cache(maxsize=1)
+def _get_morph():
+    """Синглтон MorphAnalyzer. Инициализация тяжёлая (загрузка словарей ~десятки МБ),
+    поэтому делаем один раз на процесс."""
     import pymorphy3
 
-    morph = pymorphy3.MorphAnalyzer()
+    return pymorphy3.MorphAnalyzer()
+
+
+def _to_genitive(phrase):
+    """Склоняет фразу в родительный падеж через pymorphy3."""
+    morph = _get_morph()
     words = phrase.split()
     result = []
     for word in words:
@@ -208,6 +225,8 @@ def _org_context(org, prefix):
         f"{prefix}_kpp": org.kpp or "—",
         f"{prefix}_ogrn": org.ogrn or "—",
         f"{prefix}_address": org.address or "—",
+        f"{prefix}_phone": org.phone or "—",
+        f"{prefix}_email": org.email or "—",
         f"{prefix}_director_title": org.director_title or "—",
         f"{prefix}_director_name": org.director_name or "—",
         f"{prefix}_director_title_genitive": (
@@ -267,14 +286,20 @@ def build_attachment_context(attachment):
 # ---------------------------------------------------------------------------
 
 
-def _get_default_template_path(template_type):
+def get_default_template_path(template_type):
+    """Путь к эталонному DOCX-шаблону из поставки (может не существовать на диске)."""
     return (
         Path(__file__).resolve().parent / "default_templates" / f"{template_type}.docx"
     )
 
 
 def get_template_for_account(account, template_type):
-    """Возвращает путь к файлу шаблона: пользовательский или дефолтный."""
+    """Возвращает путь к файлу шаблона: пользовательский или дефолтный.
+
+    Поднимает TemplateNotConfiguredError, если нет ни того, ни другого —
+    это отдельный подкласс DocGenerationError, чтобы view мог отличить
+    "пользователь не загрузил шаблон, и в поставке его нет" от прочих ошибок.
+    """
     try:
         ct = ContractTemplate.objects.get(
             account=account,
@@ -285,21 +310,26 @@ def get_template_for_account(account, template_type):
     except ContractTemplate.DoesNotExist:
         pass
 
-    default = _get_default_template_path(template_type)
+    default = get_default_template_path(template_type)
     if default.exists():
         return str(default)
 
-    raise DocGenerationError(
-        f"Шаблон «{template_type}» не найден: нет ни пользовательского, "
-        f"ни дефолтного ({default})."
+    raise TemplateNotConfiguredError(
+        f"Шаблон «{template_type}» не настроен: ни пользовательский, "
+        f"ни дефолтный ({default}) не найдены."
     )
 
 
 def generate_document(template_path, context):
-    """Заполняет DOCX-шаблон контекстом, возвращает BytesIO."""
+    """Заполняет DOCX-шаблон контекстом, возвращает BytesIO.
+
+    Рендер идёт через SandboxedEnvironment Jinja2 — это критично для мультитенанта:
+    пользовательский шаблон не должен иметь доступ к os/subprocess/etc. через
+    выражения вида {{ cycler.__init__.__globals__ }}.
+    """
     try:
         doc = DocxTemplate(str(template_path))
-        doc.render(context)
+        doc.render(context, jinja_env=SandboxedEnvironment())
     except Exception as exc:
         raise DocGenerationError(
             f"Ошибка рендера шаблона {template_path}: {exc}"
@@ -353,39 +383,69 @@ def generate_attachment_response(attachment):
     )
 
 
+def _schedule_storage_delete(name: str) -> None:
+    """После успешного коммита транзакции — удалить файл из storage.
+
+    При откате транзакции файл остаётся на диске (это приемлемый
+    сирота-файл; в худшем случае периодический cleanup его подберёт).
+    """
+    if not name:
+        return
+
+    def _do_delete():
+        try:
+            if default_storage.exists(name):
+                default_storage.delete(name)
+        except Exception:
+            # Не валим пользовательский запрос из-за проблем с FS —
+            # оркестрация файлов не должна мешать бизнес-операции.
+            pass
+
+    transaction.on_commit(_do_delete)
+
+
 def replace_template(account, template_type, new_file, user=None):
-    """Удаляет старый шаблон, сохраняет новый."""
-    ct, created = ContractTemplate.objects.get_or_create(
-        account=account,
-        template_type=template_type,
-        defaults={"file": new_file, "uploaded_by": user},
-    )
-    if not created:
-        # Удалить старый файл с диска
-        if ct.file:
-            old_path = Path(ct.file.path)
-            if old_path.exists():
-                old_path.unlink()
-        ct.file = new_file
-        ct.uploaded_by = user
-        ct.save(update_fields=["file", "uploaded_by", "uploaded_at"])
+    """Сохраняет новый шаблон, удаляет старый файл после успешного коммита.
+
+    Атомарно: запись в БД и регистрация post-commit хука идут в одной
+    транзакции. Если save() упадёт — БД откатится, старый файл не тронут.
+    """
+    with transaction.atomic():
+        ct, created = ContractTemplate.objects.get_or_create(
+            account=account,
+            template_type=template_type,
+            defaults={"file": new_file, "uploaded_by": user},
+        )
+        if not created:
+            old_name = ct.file.name if ct.file else ""
+            ct.file = new_file
+            ct.uploaded_by = user
+            ct.save(update_fields=["file", "uploaded_by", "uploaded_at"])
+            new_name = ct.file.name
+            # upload_to детерминированный: storage избегает коллизии, автоматически
+            # добавляя суффикс. Если путь отличается — удаляем старый после коммита.
+            if old_name and old_name != new_name:
+                _schedule_storage_delete(old_name)
     return ct
 
 
 def delete_template(account, template_type):
-    """Удаляет пользовательский шаблон, возвращая к дефолтному."""
-    try:
-        ct = ContractTemplate.objects.get(
-            account=account,
-            template_type=template_type,
-        )
-    except ContractTemplate.DoesNotExist:
-        return
-    if ct.file:
-        old_path = Path(ct.file.path)
-        if old_path.exists():
-            old_path.unlink()
-    ct.delete()
+    """Удаляет пользовательский шаблон, возвращая к дефолтному.
+
+    Атомарно: сначала DB-запись (в транзакции), затем физический файл
+    удаляется только после успешного коммита.
+    """
+    with transaction.atomic():
+        try:
+            ct = ContractTemplate.objects.get(
+                account=account,
+                template_type=template_type,
+            )
+        except ContractTemplate.DoesNotExist:
+            return
+        file_name = ct.file.name if ct.file else ""
+        ct.delete()
+        _schedule_storage_delete(file_name)
 
 
 # ---------------------------------------------------------------------------
@@ -406,6 +466,8 @@ _CONTRACT_PLACEHOLDERS = [
     ("own_company_kpp", "Наша компания — КПП"),
     ("own_company_ogrn", "Наша компания — ОГРН"),
     ("own_company_address", "Наша компания — адрес"),
+    ("own_company_phone", "Наша компания — телефон"),
+    ("own_company_email", "Наша компания — email"),
     ("own_company_director_title", "Наша компания — должность руководителя"),
     ("own_company_director_name", "Наша компания — ФИО руководителя"),
     ("own_company_director_title_genitive", "Наша компания — должность (род. падеж)"),
@@ -420,6 +482,8 @@ _CONTRACT_PLACEHOLDERS = [
     ("contractor_kpp", "Контрагент — КПП"),
     ("contractor_ogrn", "Контрагент — ОГРН"),
     ("contractor_address", "Контрагент — адрес"),
+    ("contractor_phone", "Контрагент — телефон"),
+    ("contractor_email", "Контрагент — email"),
     ("contractor_director_title", "Контрагент — должность руководителя"),
     ("contractor_director_name", "Контрагент — ФИО руководителя"),
     ("contractor_director_title_genitive", "Контрагент — должность (род. падеж)"),
@@ -440,10 +504,10 @@ _ATTACHMENT_EXTRA = [
 ]
 
 PLACEHOLDERS = {
-    "transport_contract": _CONTRACT_PLACEHOLDERS,
-    "single_transport": _CONTRACT_PLACEHOLDERS,
-    "order_request": _CONTRACT_PLACEHOLDERS,
-    "supply_contract": _CONTRACT_PLACEHOLDERS,
-    "transport_request": _CONTRACT_PLACEHOLDERS + _ATTACHMENT_EXTRA,
-    "supply_spec": _CONTRACT_PLACEHOLDERS + _ATTACHMENT_EXTRA,
+    t.code: (
+        _CONTRACT_PLACEHOLDERS + _ATTACHMENT_EXTRA
+        if t.is_attachment
+        else _CONTRACT_PLACEHOLDERS
+    )
+    for t in TEMPLATES
 }
