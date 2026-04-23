@@ -7,6 +7,16 @@ function initAutocomplete(selectId) {
     const searchType = select.dataset.searchType || '';
     const isAjax = !!searchUrl;
 
+    // Inline-create footer: если у select есть data-ac-create-type,
+    // в dropdown добавляется закреплённый пункт «+ Добавить …», который
+    // триггерит существующий quick_create.js через data-qc-* атрибуты.
+    // Применяется для полей, где пользователь может завести новую
+    // сущность не уходя из текущей формы (trip_form: Заказчик → Организация).
+    const createType = select.dataset.acCreateType || '';
+    const createLabel = select.dataset.acCreateLabel || 'Добавить организацию';
+    const createEmptyMsg = select.dataset.acCreateEmpty
+        || 'Организация с таким названием не найдена в справочнике. Проверьте написание — либо добавьте новую.';
+
     // ── DOM setup ─────────────────────────────────────────────────────────
     const container = document.createElement('div');
     container.style.cssText = 'position:relative; display:block;';
@@ -81,10 +91,23 @@ function initAutocomplete(selectId) {
     function positionDropdown() {
         var rect = input.getBoundingClientRect();
         var visibleTop = getVisibleTop();
-        var spaceBelow = window.innerHeight - rect.bottom;
-        var spaceAbove = rect.top - visibleTop;
-        var maxH = 220;
-        var openUp = spaceBelow < maxH && spaceAbove > spaceBelow;
+        // Из-за position:fixed dropdown не может быть проскроллен вместе со
+        // страницей — ограничение — именно viewport. Но это не повод прыгать
+        // вверх, если снизу просто «чуть меньше 220px»: пользователь видит
+        // контент документа под input'ом и не ожидает переключения.
+        // Поэтому порог переключения — 120px (~4 item'а), а высоту dropdown
+        // подгоняем под доступное место (внутренний скролл, а не прыжок).
+        var viewportPad = 8;
+        var preferredH = 220;
+        var flipThreshold = 120;
+
+        var spaceBelow = window.innerHeight - rect.bottom - viewportPad;
+        var spaceAbove = rect.top - visibleTop - viewportPad;
+        var openUp = spaceBelow < flipThreshold && spaceAbove > spaceBelow;
+
+        var available = openUp ? spaceAbove : spaceBelow;
+        var maxH = Math.max(80, Math.min(preferredH, available));
+        dropdown.style.maxHeight = maxH + 'px';
 
         dropdown.style.left = rect.left + 'px';
         dropdown.style.width = rect.width + 'px';
@@ -200,16 +223,93 @@ function initAutocomplete(selectId) {
         return el;
     }
 
+    // ── Inline-create footer (пункт «+ Добавить …» внизу dropdown) ─────────
+    function createCreateFooterEl() {
+        var el = document.createElement('div');
+        el.className = 'autocomplete-create-footer';
+        el.setAttribute('data-ac-role', 'create');
+        el.setAttribute('role', 'option');
+        el.style.cssText = [
+            'padding:10px 12px; cursor:pointer; font-size:.92rem;',
+            'color:var(--primary); font-weight:600; background:var(--hover-active);',
+            'border-top:1px solid var(--border);',
+            'display:flex; align-items:center; gap:8px;',
+        ].join('');
+        var plus = document.createElement('span');
+        plus.textContent = '+';
+        plus.style.cssText = 'font-size:1.05rem; line-height:1;';
+        var label = document.createElement('span');
+        label.textContent = createLabel;
+        el.appendChild(plus);
+        el.appendChild(label);
+        el.addEventListener('mouseenter', function () { this.style.background = 'var(--primary)'; this.style.color = '#fff'; });
+        el.addEventListener('mouseleave', function () { this.style.background = 'var(--hover-active)'; this.style.color = 'var(--primary)'; });
+        el.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            triggerQuickCreate();
+        });
+        return el;
+    }
+
+    function createEmptyStateEl() {
+        var el = document.createElement('div');
+        el.className = 'autocomplete-empty-state';
+        el.setAttribute('data-ac-role', 'empty');
+        el.textContent = createEmptyMsg;
+        el.style.cssText = [
+            'padding:12px 14px; font-size:var(--text-sm);',
+            'color:var(--muted); line-height:1.45;',
+        ].join('');
+        return el;
+    }
+
+    function triggerQuickCreate() {
+        // Очищаем содержимое dropdown — иначе отложенный blur-автовыбор
+        // (см. обработчик blur ниже) через 200ms может выбрать единственный
+        // оставшийся real-item, хотя пользователь явно кликнул «Добавить».
+        dropdown.innerHTML = '';
+        closeDropdown();
+        // Делегируем quick_create.js: он слушает клики по [data-qc-type]
+        // глобально. Создаём временный элемент с нужными атрибутами и
+        // диспатчим на нём click, чтобы не дублировать логику открытия модалки.
+        var proxy = document.createElement('button');
+        proxy.type = 'button';
+        proxy.dataset.qcType = createType;
+        proxy.dataset.qcTarget = select.id;
+        proxy.style.display = 'none';
+        document.body.appendChild(proxy);
+        proxy.click();
+        document.body.removeChild(proxy);
+    }
+
+    function appendCreateFooter() {
+        if (!createType) return;
+        dropdown.appendChild(createCreateFooterEl());
+    }
+
     function renderItems(items) {
         dropdown.innerHTML = '';
-        if (!items.length) {
+        var hasItems = items && items.length > 0;
+        var q = input.value.trim();
+        var canShowCreate = !!createType && q.length >= 2;
+
+        if (!hasItems && !canShowCreate) {
             dropdown.style.display = 'none';
             detachScrollListener();
             return;
         }
-        items.forEach(function (item) {
-            dropdown.appendChild(createItemEl(item, false));
-        });
+
+        if (hasItems) {
+            items.forEach(function (item) {
+                dropdown.appendChild(createItemEl(item, false));
+            });
+            if (canShowCreate) appendCreateFooter();
+        } else {
+            // Совпадений нет, но create-тип включён: показать empty-state + footer
+            dropdown.appendChild(createEmptyStateEl());
+            appendCreateFooter();
+        }
+
         positionDropdown();
         dropdown.style.display = 'block';
         attachScrollListener();
@@ -318,6 +418,11 @@ function initAutocomplete(selectId) {
                 }
             }
             if (!q) {
+                // Отменяем отложенный и in-flight запрос: иначе результаты
+                // для предыдущей строки (например от последнего нажатия перед
+                // полной очисткой) придут и нарисуют dropdown на пустом поле.
+                clearTimeout(debounceTimer);
+                if (controller) controller.abort();
                 if (select.dataset.openOnFocus === '1') {
                     fetchResults('');
                 } else {
@@ -326,6 +431,8 @@ function initAutocomplete(selectId) {
                 return;
             }
             if (q.length < 2) {
+                clearTimeout(debounceTimer);
+                if (controller) controller.abort();
                 closeDropdown();
                 return;
             }
@@ -364,9 +471,11 @@ function initAutocomplete(selectId) {
     // ── Общие обработчики ─────────────────────────────────────────────────
     input.addEventListener('blur', function () {
         setTimeout(function () {
-            // Автовыбор единственного совпадения при уходе из поля
+            // Автовыбор единственного совпадения при уходе из поля.
+            // Считаем только "настоящие" items (без data-ac-role) — empty-state
+            // и create-footer не должны автовыбираться по blur.
             if (!select.value && input.value.trim()) {
-                var items = dropdown.querySelectorAll('div');
+                var items = dropdown.querySelectorAll('div:not([data-ac-role])');
                 if (items.length === 1) {
                     items[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
                 }
@@ -382,7 +491,10 @@ function initAutocomplete(selectId) {
     input.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const first = dropdown.querySelector('div');
+            // Сначала ищем обычный item, затем — create-footer (когда
+            // совпадений нет и единственное действие — создать).
+            var first = dropdown.querySelector('div:not([data-ac-role])')
+                || dropdown.querySelector('[data-ac-role="create"]');
             if (first) first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
         }
         if (e.key === 'Escape') {

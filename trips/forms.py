@@ -218,6 +218,14 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
         for fname in ["client", "carrier"]:
             self._setup_ajax_field(fname, full_org, org_search_url)
 
+        # Combobox с inline-create: на первой итерации — только для заказчика.
+        # autocomplete.js, обнаружив data-ac-create-type, добавляет в dropdown
+        # закреплённый пункт «+ Добавить организацию», который триггерит
+        # существующую модалку quick_create через data-qc-* делегирование.
+        # Если ок — раскатаем аналогично на carrier/driver/truck.
+        if "client" in self.fields:
+            self.fields["client"].widget.attrs["data-ac-create-type"] = "organization"
+
         self._setup_ajax_field("driver", full_person, person_search_url)
         self._setup_ajax_field("truck", full_truck, vehicle_search_url, search_type="truck")
         self._setup_ajax_field("trailer", full_trailer, vehicle_search_url, search_type="trailer")

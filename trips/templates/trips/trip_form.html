@@ -99,10 +99,8 @@
                     <h3 class="parties-col-title">Заказчик</h3>
                     <div class="field">
                         {{ form.client.label_tag }}
-                        <div class="field-add-row">
-                            {{ form.client }}
-                            <button type="button" class="qc-add-btn" data-qc-type="organization" data-qc-target="{{ form.client.id_for_label }}" title="Добавить организацию">+</button>
-                        </div>
+                        {# Combobox: отдельной кнопки «+» больше нет — создание организации доступно прямо из dropdown'а автокомплита (см. data-ac-create-type в TripForm._apply_queryset_filters). #}
+                        {{ form.client }}
                         {{ form.client.errors }}
                     </div>
                 </div>
@@ -327,7 +325,7 @@
             <input type="hidden" name="address">
             <div class="modal-form-errors" hidden></div>
             <div class="modal-actions">
-                <button type="submit" class="tms-btn tms-btn-primary">Создать</button>
+                <button type="submit" class="tms-btn tms-btn-primary">Сохранить и выбрать</button>
                 <button type="button" class="tms-btn tms-btn-secondary" data-modal-close>Отмена</button>
             </div>
         </form>

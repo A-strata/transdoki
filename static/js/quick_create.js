@@ -116,6 +116,11 @@
                     if (currentTarget) {
                         var option = new Option(result.body.text, result.body.id, true, true);
                         currentTarget.add(option);
+                        // Триггерим change, чтобы autocomplete.syncInputToSelect()
+                        // подтянул имя новой сущности в видимый input. Без этого
+                        // пользователь после сохранения видит в поле свой старый
+                        // ввод (например, «Ром»), а не имя созданной организации.
+                        currentTarget.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                     modal.hidden = true;
                     return;
