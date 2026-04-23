@@ -220,10 +220,28 @@ class AgreementRequestGenerator(TNGenerator):
             "bik": bank.bic if bank else "—",
         }
 
+    @staticmethod
+    def _format_rate_ru(amount) -> str:
+        """Форматирует число по-русски: '1 234,56' (неразрывный пробел, запятая)."""
+        from decimal import ROUND_HALF_UP, Decimal
+
+        q = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        sign = "-" if q < 0 else ""
+        q = abs(q)
+        int_part, _, frac_part = f"{q:.2f}".partition(".")
+        grouped = f"{int(int_part):,}".replace(",", " ")
+        return f"{sign}{grouped},{frac_part}"
+
     @classmethod
     def build_context(cls, trip) -> dict:
         context = super().build_context(trip)
         context["passport_data"] = cls._format_passport(trip.driver)
+
+        if trip.client_cost is not None:
+            unit_label = trip.get_client_cost_unit_display() or ""
+            context["client_cost"] = (
+                f"{cls._format_rate_ru(trip.client_cost)} {unit_label}".strip()
+            )
 
         if trip.carrier and trip.carrier.is_own_company:
             own, counterparty = trip.carrier, trip.client

@@ -412,6 +412,126 @@
     border-top: 1px solid var(--border);
 }
 
+/* ── Блок «Счёт на оплату» ── */
+.invoice-widget {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.invoice-widget__main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.invoice-widget__title {
+    margin: 0 0 4px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: none;
+}
+
+.invoice-widget__hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.4;
+}
+
+.invoice-widget__hint--blocked {
+    color: var(--text);
+}
+
+.invoice-widget__fix-link {
+    margin-left: 6px;
+    color: var(--primary-hover);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.invoice-widget__fix-link:hover {
+    text-decoration: underline;
+}
+
+.invoice-widget__meta {
+    margin: 0 0 4px;
+    font-size: var(--text-sm);
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.invoice-widget__number {
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.invoice-widget__number:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+.invoice-widget__sep {
+    color: var(--muted);
+}
+
+.invoice-widget__amount {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.invoice-widget__amount-sub {
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 4px;
+    font-size: var(--text-sm);
+}
+
+.invoice-widget__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.invoice-widget__unbind {
+    margin: 0;
+    display: inline-flex;
+}
+
+.invoice-widget .inline-form {
+    display: inline;
+    margin: 0;
+}
+
+.invoice-widget__unbind-btn {
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    font-size: var(--text-sm);
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.invoice-widget__unbind-btn:hover {
+    color: var(--danger);
+    background: var(--surface);
+}
+
 /* ── Ссылки на сущности ── */
 .entity-link {
     color: var(--primary-hover);

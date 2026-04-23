@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static person_filters %}
+{% load static person_filters invoice_filters %}
 {% block head %}
 <link rel="stylesheet" href="{% static 'trips/css/trip_detail.css' %}">
 {% endblock %}
@@ -348,21 +348,84 @@
             </div>
             {% endif %}
 
-            <div class="invoice-link-block">
-                {% if trip.invoice_lines.exists %}
-                    {% with inv_line=trip.invoice_lines.first %}
-                    <p class="kv-label">Счёт</p>
-                    <p class="kv-value">
-                        <a href="{% url 'invoicing:invoice_detail' inv_line.invoice.pk %}">
-                            {{ inv_line.invoice.number }}
-                        </a>
-                    </p>
-                    {% endwith %}
-                {% else %}
-                    <a href="{% url 'invoicing:invoice_create' %}?trip_id={{ trip.pk }}"
-                       class="tms-btn tms-btn-secondary tms-btn-sm">Выставить счёт</a>
-                {% endif %}
+            {% if invoice_block.state != 'hidden' %}
+            <div class="invoice-widget invoice-widget--{{ invoice_block.state }}">
+                <div class="invoice-widget__main">
+                    <h3 class="invoice-widget__title">Счёт на оплату</h3>
+
+                    {% if invoice_block.state == 'ready' %}
+                        <p class="invoice-widget__hint">Счёт по этому рейсу ещё не выставлен.</p>
+
+                    {% elif invoice_block.state == 'blocked' %}
+                        <p class="invoice-widget__hint invoice-widget__hint--blocked">
+                            {{ invoice_block.reason }}
+                            {% if invoice_block.reason_link %}
+                                <a href="{{ invoice_block.reason_link.url }}"
+                                   class="invoice-widget__fix-link">{{ invoice_block.reason_link.text }} →</a>
+                            {% endif %}
+                        </p>
+
+                    {% elif invoice_block.state == 'issued' %}
+                        {% with inv=invoice_block.invoice %}
+                        <p class="invoice-widget__meta">
+                            <a href="{% url 'invoicing:invoice_detail' inv.pk %}"
+                               class="invoice-widget__number">{{ inv.display_number }}</a>
+                            <span class="invoice-widget__sep">·</span>
+                            <span>от {{ inv.date|date:"d.m.Y" }}</span>
+                            {% if inv.payment_due %}
+                                <span class="invoice-widget__sep">·</span>
+                                <span>оплатить до {{ inv.payment_due|date:"d.m.Y" }}</span>
+                            {% endif %}
+                        </p>
+                        <p class="invoice-widget__amount">
+                            {{ inv.total|money }}&nbsp;₽
+                            {% if inv.total_vat %}
+                                <span class="invoice-widget__amount-sub">· в&nbsp;т.ч.&nbsp;НДС — {{ inv.total_vat|money }}&nbsp;₽</span>
+                            {% else %}
+                                <span class="invoice-widget__amount-sub">· без&nbsp;НДС</span>
+                            {% endif %}
+                        </p>
+                        {% endwith %}
+                    {% endif %}
+                </div>
+
+                <div class="invoice-widget__actions">
+                    {% if invoice_block.state == 'ready' %}
+                        <a href="{% url 'invoicing:invoice_create' %}?trip_id={{ trip.pk }}"
+                           class="tms-btn tms-btn-primary tms-btn-sm">Выставить счёт</a>
+
+                    {% elif invoice_block.state == 'blocked' %}
+                        <button type="button" class="tms-btn tms-btn-primary tms-btn-sm"
+                                disabled aria-disabled="true">Выставить счёт</button>
+
+                    {% elif invoice_block.state == 'issued' %}
+                        <a href="{% url 'invoicing:invoice_download' invoice_block.invoice.pk %}"
+                           class="tms-btn tms-btn-secondary tms-btn-sm">Скачать</a>
+                        <a href="{% url 'invoicing:invoice_detail' invoice_block.invoice.pk %}"
+                           class="tms-btn tms-btn-secondary tms-btn-sm">Открыть</a>
+                        <div class="confirm-inline invoice-widget__unbind" data-confirm>
+                            <button type="button" class="invoice-widget__unbind-btn"
+                                    title="Отвязать рейс от счёта" data-confirm-trigger>Отвязать</button>
+                            <div class="confirm-inline-prompt" hidden>
+                                <span>Отвязать?</span>
+                                <form method="post"
+                                      action="{% url 'invoicing:invoice_line_unbind' invoice_block.invoice_line_pk %}"
+                                      class="inline-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next"
+                                           value="{% url 'trips:detail' trip.pk %}">
+                                    <button type="submit"
+                                            class="tms-btn tms-btn-danger tms-btn-sm">Да</button>
+                                </form>
+                                <button type="button"
+                                        class="tms-btn tms-btn-secondary tms-btn-sm"
+                                        data-confirm-cancel>Нет</button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
+            {% endif %}
         </div>
 
         {# ── Вложения ── #}

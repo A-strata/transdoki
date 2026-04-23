@@ -376,7 +376,84 @@ class TripDetailView(LoginRequiredMixin, DetailView):
         context["perspective"] = perspective
         context["trip_role"] = perspective["role"] if org else None
 
+        context["invoice_block"] = self._build_invoice_block(
+            trip, org, context["trip_role"]
+        )
+
         return context
+
+    @staticmethod
+    def _build_invoice_block(trip, current_org, trip_role):
+        """
+        Возвращает dict для рендера секции «Счёт на оплату» в карточке рейса.
+
+        Состояния:
+            hidden   — блок не рендерится (пользователь — заказчик или
+                       не участвует; нет активной фирмы);
+            issued   — счёт уже выставлен, показать ссылку и сумму;
+            blocked  — выставить нельзя, объяснить причину + предложить
+                       действие (заполнить данные / добавить р/с);
+            ready    — всё готово к выставлению счёта.
+
+        Порядок проверок для blocked:
+            1) Наличный расчёт — счёт не нужен;
+            2) Не указана сумма заказчику — нельзя сформировать строку;
+            3) У seller-фирмы нет расчётного счёта — нельзя сформировать
+               платёжные реквизиты.
+        """
+        # Блок скрыт: нет активной своей фирмы, или роль не "исполнитель".
+        if current_org is None or trip_role not in ("carrier", "forwarder"):
+            return {"state": "hidden"}
+
+        # Уже выставлен — показать ссылку на счёт.
+        invoice_line = (
+            trip.invoice_lines
+            .select_related("invoice")
+            .order_by("invoice__year", "invoice__number")
+            .first()
+        )
+        if invoice_line is not None:
+            invoice = invoice_line.invoice
+            return {
+                "state": "issued",
+                "invoice": invoice,
+                "invoice_line_pk": invoice_line.pk,
+            }
+
+        # Наличный расчёт с заказчиком — счёт не выставляется.
+        if trip.client_payment_method == "cash":
+            return {
+                "state": "blocked",
+                "reason": "Наличный расчёт с заказчиком — счёт не требуется.",
+            }
+
+        # Нет суммы клиенту — нечего выставлять.
+        if trip.client_total is None:
+            return {
+                "state": "blocked",
+                "reason": "Не указана стоимость для заказчика.",
+                "reason_link": {
+                    "url": reverse("trips:edit", kwargs={"pk": trip.pk}),
+                    "text": "Заполнить",
+                },
+            }
+
+        # Нет расчётного счёта у нашей фирмы — нечего подставить в реквизиты.
+        if not current_org.bank_accounts.exists():
+            return {
+                "state": "blocked",
+                "reason": (
+                    f"У фирмы «{current_org.short_name}» нет расчётного счёта."
+                ),
+                "reason_link": {
+                    "url": reverse(
+                        "organizations:edit", kwargs={"pk": current_org.pk}
+                    ),
+                    "text": "Добавить",
+                },
+            }
+
+        return {"state": "ready"}
 
     @staticmethod
     def _build_route_summary(trip):

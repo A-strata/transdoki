@@ -53,12 +53,6 @@
     </td>
     <td class="row-actions-cell" data-row-actions>
         <div class="row-actions">
-            <a href="{% url 'trips:detail' trip.pk %}" class="row-action row-action--view" title="Просмотр">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.2"/>
-                </svg>
-            </a>
             <a href="{% url 'trips:create' %}?copy_from={{ trip.id }}" class="row-action row-action--copy" title="Дублировать">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>

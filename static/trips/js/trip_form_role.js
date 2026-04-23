@@ -181,10 +181,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Одноразовое предзаполнение при активации роли: если в поле нет
-    // нашей фирмы — пишем туда orgId (pk навбар-фирмы). Если наша уже
-    // стоит — оставляем (пользователь мог выбрать другую свою фирму).
-    // После этого момента в поле больше не вмешиваемся.
+    // Предзаполнение поля активной роли навбар-фирмой (orgId).
+    //
+    // Параметр force задаёт семантику:
+    //   force=false (bootstrap) — уважаем уже стоящее значение, если там
+    //       одна из наших фирм (internal-рейс A↔B: client=A, carrier=B —
+    //       оба значения с сервера, не трогаем).
+    //   force=true (клик пользователя по карточке) — всегда ставим навбар.
+    //       Семантика карточки = «навбар-фирма играет эту роль», и она
+    //       обязана зеркалиться в поле. Если в поле уже стояла другая
+    //       своя фирма (B), она заменяется на навбар (A). Альтернативную
+    //       свою фирму пользователь выбирает уже после через dropdown
+    //       (own=1, openOnFocusAlways).
+    // Когда текущее значение уже равно orgId — no-op (не дёргаем change).
     function ensureOrgOption(select) {
         if (!select || select.tagName !== 'SELECT') return;
         var exists = Array.from(select.options).some(function (o) {
@@ -193,10 +202,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!exists) select.add(new Option(orgName, orgId));
     }
 
-    function prefillIfNeeded(inputId) {
+    function prefillIfNeeded(inputId, force) {
         var el = document.getElementById(inputId);
         if (!el) return;
-        if (isOwnOrg(el.value)) return;
+        if (String(el.value) === String(orgId)) return;
+        if (!force && isOwnOrg(el.value)) return;
         if (el.tagName === 'SELECT') {
             ensureOrgOption(el);
             el.value = orgId;
@@ -221,7 +231,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateCards(role) {
         cards.forEach(function (c) {
-            c.classList.toggle('is-active', c.dataset.role === role);
+            var isActive = c.dataset.role === role;
+            c.classList.toggle('is-active', isActive);
+            c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         });
     }
 
@@ -230,16 +242,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Главный мутатор ──
-    //   active role поле: search URL → ?own=1, предзаполнить нашей фирмой
-    //                     (если ещё не наша).
-    //   client/carrier неактивной роли: search URL → базовый,
-    //                     значение не трогаем (может быть внешний контрагент).
-    //   forwarder неактивной роли: значение очищаем. Экспедитор — всегда
-    //                     наша фирма и поле показывается только при
-    //                     активной роли «Экспедитор»; не сбрасывая значение,
-    //                     мы могли бы сохранить в БД «призрак» предыдущей
-    //                     попытки выбора.
-    function applyRole(newRole) {
+    //   userInitiated=true (клик по карточке):
+    //     - поле активной роли: search URL → ?own=1, ставим навбар-фирму
+    //       ВСЕГДА (force=true). Это зеркалит семантику карточки: «навбар
+    //       играет эту роль». Если там уже стояла другая своя фирма — она
+    //       заменяется на навбар; чтобы оставить альтернативную свою фирму,
+    //       пользователь выберет её в dropdown'е уже после клика карточки.
+    //     - поле предыдущей активной роли (client/carrier): если там
+    //       одна из наших фирм — чистим (артефакт предыдущего prefill'а,
+    //       не ввод пользователя: иначе ловится validate_client_cannot_be_carrier).
+    //       Внешний контрагент — оставляем.
+    //     - forwarder, если стал неактивным: значение очищаем (экспедитор
+    //       всегда своя фирма; поле видимо только при активной роли).
+    //
+    //   userInitiated=false (bootstrap):
+    //     - поле активной роли: search URL → ?own=1, предзаполняем
+    //       навбаром только если там НЕ наша фирма (force=false). Это
+    //       уважает серверные значения, включая internal-рейс A↔B, где
+    //       в client=A, carrier=B обе фирмы свои.
+    //     - client/carrier неактивной роли: значения не трогаем
+    //       (серверные данные не стираем).
+    //     - forwarder, если стал неактивным: всё равно очищаем (historical
+    //       behavior; edge-case observer-fallback отмечен как Task #6).
+    function applyRole(newRole, opts) {
+        opts = opts || {};
+        var userInitiated = !!opts.userInitiated;
+        var prevRole = activeRole;
         activeRole = newRole;
 
         ['client', 'carrier', 'forwarder'].forEach(function (r) {
@@ -247,14 +275,26 @@ document.addEventListener('DOMContentLoaded', function () {
             var active = (r === newRole);
             setOwnSearch(inputId, active);
             if (active) {
-                prefillIfNeeded(inputId);
-            } else if (r === 'forwarder') {
-                var el = document.getElementById(inputId);
-                if (el && el.value) {
+                prefillIfNeeded(inputId, userInitiated);
+                return;
+            }
+            var el = document.getElementById(inputId);
+            if (!el) return;
+            if (r === 'forwarder') {
+                if (el.value) {
                     el.value = '';
                     if (el.tagName === 'SELECT') {
                         el.dispatchEvent(new Event('change', { bubbles: true }));
                     }
+                }
+                return;
+            }
+            // client/carrier: чистим только при user-initiated смене роли
+            // и только если там одна из наших фирм (артефакт prefill'а).
+            if (userInitiated && r === prevRole && isOwnOrg(el.value)) {
+                el.value = '';
+                if (el.tagName === 'SELECT') {
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
         });
@@ -291,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function () {
     cards.forEach(function (card) {
         card.addEventListener('click', function () {
             var role = card.dataset.role;
-            if (activeRole !== role) applyRole(role);
+            if (activeRole !== role) applyRole(role, { userInitiated: true });
         });
     });
 

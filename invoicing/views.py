@@ -462,6 +462,90 @@ class InvoiceEditView(LoginRequiredMixin, View):
 # Invoice delete
 # ─────────────────────────────────────────────────────────────────────
 
+class InvoiceLineUnbindView(LoginRequiredMixin, View):
+    """
+    Отвязывает строку счёта от рейса (фактически удаляет строку).
+
+    Сценарий: из карточки рейса пользователь хочет «отцепить» рейс
+    от уже выставленного счёта — например, если собирается его
+    перевыставить или включить в другой счёт.
+
+    Изоляция: строку берём через invoice.account_id (tenant) и
+    проверяем что текущая своя фирма == invoice.seller (как в
+    InvoiceEditView._guard_current_org).
+
+    Edge case «последняя строка счёта»: если после удаления в счёте
+    не остаётся ни одной строки — удаляем сам счёт целиком, чтобы не
+    оставлять «пустышки» в списке и не нарушать бизнес-смысл.
+    Номер счёта при этом «выгорает» — это осознанная плата за простоту
+    UI (пересоздание номеров ломает сквозную нумерацию и аудит).
+
+    Редирект: по параметру next=, иначе — на detail счёта. next
+    валидируется — допускается только относительный путь внутри
+    сайта (без схемы и домена), иначе open redirect.
+    """
+
+    def post(self, request, pk):
+        account = get_request_account(request)
+        line = get_object_or_404(
+            InvoiceLine.objects.select_related("invoice", "invoice__seller")
+            .filter(invoice__account=account),
+            pk=pk,
+        )
+        invoice = line.invoice
+
+        current_org = getattr(request, "current_org", None)
+        if current_org is None or current_org.pk != invoice.seller_id:
+            messages.error(
+                request,
+                f"Для изменения счёта {invoice.display_number} "
+                f"переключитесь на фирму «{invoice.seller.short_name}».",
+            )
+            return redirect("invoicing:invoice_detail", pk=invoice.pk)
+
+        display = invoice.display_number
+        remaining = invoice.lines.exclude(pk=line.pk).count()
+
+        try:
+            if remaining == 0:
+                # Пустой счёт бессмысленен — удаляем целиком.
+                invoice.delete()
+                messages.success(
+                    request,
+                    f"Счёт {display} удалён (в нём была одна строка).",
+                )
+            else:
+                update_invoice(
+                    invoice,
+                    user=request.user,
+                    header_data={},
+                    lines_diff={
+                        "to_create": [],
+                        "to_update": [],
+                        "to_delete": [line.pk],
+                    },
+                )
+                messages.success(
+                    request, f"Рейс отвязан от счёта {display}."
+                )
+        except ValidationError as exc:
+            if hasattr(exc, "message_dict"):
+                for errs in exc.message_dict.values():
+                    for msg in errs:
+                        messages.error(request, msg)
+            else:
+                messages.error(request, str(exc))
+            return redirect("invoicing:invoice_detail", pk=invoice.pk)
+
+        # Безопасный redirect по next= или на detail счёта.
+        next_url = request.POST.get("next", "")
+        if next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(next_url)
+        if remaining == 0:
+            return redirect("invoicing:invoice_list")
+        return redirect("invoicing:invoice_detail", pk=invoice.pk)
+
+
 class InvoiceDeleteView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
