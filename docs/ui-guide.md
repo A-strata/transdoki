@@ -1461,12 +1461,18 @@ class DriverSearchView(CarrierGroupingMixin, AjaxSearchView):
 
 В autocomplete можно встроить пункт «+ Добавить …» внизу дропдауна, чтобы пользователь мог завести новую запись без ухода с формы.
 
+Атрибуты управления разделены на две ортогональные оси:
+
+- `data-ac-entity-type` (`organization` | `person` | `vehicle`) — семантика поля. Даёт дефолтные тексты лейбла футера и empty-state; включает показ empty-state при пустых результатах. Ставится на **все** AJAX-поля, где нужно осмысленное пустое состояние (в том числе где inline-create не предусмотрен — например forwarder).
+- `data-ac-create="1"` — включает сам футер «+ Добавить …». Независим от entity-type; может меняться рантайм (см. `trip_form_role.js`, где атрибут снимается с поля активной роли, чтобы не создавать внешнего контрагента в режиме «только наши фирмы»).
+
 **Подключение (серверная форма):**
 
 ```python
 self.fields["client"].widget.attrs.update({
     "data-search-url": reverse("organizations:search"),
-    "data-ac-create-type": "organization",  # organization | person | vehicle
+    "data-ac-entity-type": "organization",  # organization | person | vehicle
+    "data-ac-create": "1",
 })
 ```
 
@@ -1475,18 +1481,28 @@ self.fields["client"].widget.attrs.update({
 ```python
 self.fields["truck"].widget.attrs.update({
     "data-search-url": reverse("vehicles:search"),
-    "data-ac-create-type": "vehicle",
+    "data-ac-entity-type": "vehicle",
+    "data-ac-create": "1",
     "data-ac-qc-vehicle-types": "single,truck",
     "data-ac-create-empty": "ТС не найдено в справочнике. Проверьте написание — либо добавьте новое.",
 })
 ```
 
-**Что получает пользователь:**
-- При вводе ≥ 2 символов — в дропдауне помимо найденных записей появляется закреплённый пункт «+ Добавить …».
-- Если найдено 0 записей — показывается empty-state («… не найдено в справочнике») и тот же пункт «+ Добавить».
-- Клик открывает существующую модалку `quick_create.js`; после сохранения запись автоматически выбирается в поле.
+Поле только с поиском, без inline-create, но с информативным empty-state
+(как forwarder):
 
-Поведение одинаковое для всех полей с `data-ac-create-type` — нет двух путей рендера.
+```python
+self.fields["forwarder"].widget.attrs["data-ac-entity-type"] = "organization"
+# data-ac-create не ставим
+```
+
+**Что получает пользователь:**
+- При вводе ≥ 2 символов и `data-ac-create="1"` — в дропдауне помимо найденных записей появляется закреплённый пункт «+ Добавить …».
+- Если найдено 0 записей и `data-ac-create="1"` — показывается empty-state («… не найдено в справочнике») и тот же пункт «+ Добавить».
+- Если найдено 0 записей и `data-ac-create` отсутствует — показывается empty-state без призыва к созданию (для organization — объяснение ограничения «только наши фирмы»).
+- Клик по футеру открывает существующую модалку `quick_create.js`; после сохранения запись автоматически выбирается в поле.
+
+Поведение одинаковое для всех полей с `data-ac-entity-type` — нет двух путей рендера.
 
 ### 23.5. Tenant-изоляция: автотест
 

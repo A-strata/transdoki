@@ -99,7 +99,7 @@
                     <h3 class="parties-col-title">Заказчик</h3>
                     <div class="field">
                         {{ form.client.label_tag }}
-                        {# Combobox: отдельной кнопки «+» больше нет — создание организации доступно прямо из dropdown'а автокомплита (см. data-ac-create-type в TripForm._apply_queryset_filters). #}
+                        {# Combobox: отдельной кнопки «+» больше нет — создание организации доступно прямо из dropdown'а автокомплита (см. data-ac-entity-type + data-ac-create в TripForm._apply_queryset_filters). #}
                         {{ form.client }}
                         {{ form.client.errors }}
                     </div>
@@ -119,7 +119,7 @@
 
                 <div class="parties-col">
                     <h3 class="parties-col-title">Исполнение перевозки</h3>
-                    {# Combobox: отдельные кнопки «+» убраны — создание сущности доступно прямо из dropdown'а автокомплита (см. data-ac-create-type в TripForm._apply_queryset_filters). #}
+                    {# Combobox: отдельные кнопки «+» убраны — создание сущности доступно прямо из dropdown'а автокомплита (см. data-ac-entity-type + data-ac-create в TripForm._apply_queryset_filters). #}
                     <div class="field">
                         {{ form.carrier.label_tag }}
                         {{ form.carrier }}

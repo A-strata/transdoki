@@ -78,9 +78,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // из наших фирм на уровне формы — см. trips/forms.py); setOwnSearch
     // не дублирует параметр.
     var baseSearchUrl = {};
+    // Исходное состояние data-ac-create (заданное на сервере в forms.py).
+    // Нужно, чтобы setCreateAllowed мог корректно восстанавливать атрибут
+    // на неактивных ролях: для client/carrier — вернуть '1', для forwarder —
+    // оставить пустым (inline-create там никогда не предлагается).
+    var baseAcCreate = {};
     ['id_client', 'id_carrier', 'id_forwarder'].forEach(function (id) {
         var el = document.getElementById(id);
-        if (el) baseSearchUrl[id] = el.dataset.searchUrl || '';
+        if (el) {
+            baseSearchUrl[id] = el.dataset.searchUrl || '';
+            baseAcCreate[id] = el.dataset.acCreate || '';
+        }
     });
 
     function computeTripRole(clientId, carrierId, forwarderId, viewerOrgId) {
@@ -156,22 +164,29 @@ document.addEventListener('DOMContentLoaded', function () {
         rebuildSearchUrl(inputId);
     }
 
-    // Вкл/выкл inline-create footer «+ Добавить организацию» в дропдауне
-    // автокомплита. Выключаем на поле активной роли: оно работает в
-    // режиме «только наши фирмы» (?own=1), а quick_create создаёт
+    // Вкл/выкл inline-create footer «+ Добавить …» в дропдауне автокомплита
+    // через управление data-ac-create. Снимаем на поле активной роли: оно
+    // работает в режиме «только наши фирмы» (?own=1), а quick_create создаёт
     // обычного внешнего контрагента без привязки к account как own-org.
     // Итог без этого флага: пользователь создавал мусорную организацию,
     // blur-страховка через 300 ms молча сбрасывала значение обратно на
-    // навбар-фирму, а запись оставалась в БД. autocomplete.js читает
-    // data-ac-create-disabled при каждом рендере — апдейт срабатывает
-    // сразу, без переинициализации автокомплита.
+    // навбар-фирму, а запись оставалась в БД.
+    //
+    // При восстановлении (allowed=true) уважаем исходное серверное
+    // состояние: для forwarder baseAcCreate[id] === '' — data-ac-create
+    // там никогда не ставилось на сервере, и мы не должны появлять его
+    // задним числом (inline-create экспедитора не предусмотрен). Для
+    // client/carrier baseAcCreate[id] === '1' — возвращаем атрибут.
+    //
+    // autocomplete.js читает data-ac-create при каждом рендере, так что
+    // апдейт подхватывается мгновенно без переинициализации.
     function setCreateAllowed(inputId, allowed) {
         var el = document.getElementById(inputId);
         if (!el) return;
-        if (allowed) {
-            delete el.dataset.acCreateDisabled;
+        if (allowed && baseAcCreate[inputId] === '1') {
+            el.dataset.acCreate = '1';
         } else {
-            el.dataset.acCreateDisabled = '1';
+            delete el.dataset.acCreate;
         }
     }
 
@@ -293,10 +308,11 @@ document.addEventListener('DOMContentLoaded', function () {
             var inputId = ROLE_TO_INPUT[r];
             var active = (r === newRole);
             setOwnSearch(inputId, active);
-            // Футер «+ Добавить» на поле активной роли скрываем — создавать
-            // там нечего (см. setCreateAllowed). На forwarder вызов безвреден:
-            // data-ac-create-type там не установлен, так что флаг ни на что
-            // не влияет. Симметрично: на предыдущем активном поле футер
+            // Футер «+ Добавить» на поле активной роли скрываем —
+            // создавать там нечего (см. setCreateAllowed). Для forwarder
+            // setCreateAllowed(..., true) — no-op, потому что на сервере
+            // data-ac-create не ставилось (baseAcCreate остаётся пустым).
+            // Симметрично: на предыдущем активном client/carrier футер
             // возвращается, когда роль уходит с него.
             setCreateAllowed(inputId, !active);
             if (active) {

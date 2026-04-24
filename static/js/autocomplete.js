@@ -7,27 +7,41 @@ function initAutocomplete(selectId) {
     const searchType = select.dataset.searchType || '';
     const isAjax = !!searchUrl;
 
-    // Inline-create footer: если у select есть data-ac-create-type,
-    // в dropdown добавляется закреплённый пункт «+ Добавить …», который
-    // триггерит существующий quick_create.js через data-qc-* атрибуты.
-    // Применяется для FK-полей, где пользователь может завести новую
-    // сущность не уходя из текущей формы (trip_form: Заказчик, Перевозчик,
-    // Водитель, ТС, Прицеп).
+    // ── Entity type + create (две ортогональные оси) ─────────────────────
     //
-    // Дефолтные тексты для label / empty-state выбираются по create-type
-    // (organization / person / vehicle); любую из этих строк можно
-    // перебить через data-ac-create-label / data-ac-create-empty.
+    // data-ac-entity-type=<organization|person|vehicle>
+    //   Семантическое скоупинг поля: определяет тексты лейблов и
+    //   empty-state из ENTITY_DEFAULTS. Задание entity-type включает
+    //   empty-state: при пустых результатах показывается осмысленное
+    //   сообщение (с объяснением причины, если надо). Без entity-type
+    //   поведение как раньше — пустой дропдаун схлопывается молча.
     //
-    // Дополнительные data-qc-* атрибуты (например, data-qc-vehicle-types
-    // для фильтрации типов ТС в модалке) прокидываются на proxy-кнопку
-    // через пары data-ac-qc-<suffix>="value" на <select>.
-    // empty          — текст empty-state, когда создание доступно (висит
-    //                   над футером «+ Добавить …»).
-    // emptyNoCreate  — текст empty-state, когда создание выключено
-    //                   (data-ac-create-disabled). Без призыва к созданию
-    //                   и по возможности — с объяснением причины (поле
-    //                   ограничено нашими фирмами).
-    const CREATE_DEFAULTS = {
+    // data-ac-create="1"
+    //   Доступно ли inline-создание новой сущности прямо из дропдауна
+    //   (футер «+ Добавить …», триггерящий quick_create.js-модалку).
+    //   Полностью независим от entity-type в текущем состоянии. Может
+    //   меняться динамически (см. trip_form_role.js: на поле активной
+    //   роли create снимается, т.к. поле работает в режиме «только наши
+    //   фирмы» и quick_create там создавал бы мусорный внешний контрагент).
+    //
+    // data-ac-create-label / data-ac-create-empty
+    //   Пер-поле оверрайды дефолтных текстов (label футера и empty-state
+    //   при доступном create). Редко нужны — основной путь через
+    //   ENTITY_DEFAULTS.
+    //
+    // data-ac-qc-<suffix>="value"
+    //   Прокидываются на proxy-кнопку quick_create как data-qc-<suffix>.
+    //   Пример: data-ac-qc-vehicle-types="single,truck" → data-qc-vehicle-types,
+    //   которое quick_create.js использует для фильтрации типов ТС.
+    //
+    // Тексты:
+    //   empty          — когда создание доступно (над футером «+ Добавить»).
+    //                    Призыв «…либо добавьте новую» уместен.
+    //   emptyNoCreate  — когда создание недоступно (либо не включено, либо
+    //                    снято рантайм-логикой активной роли). Без призыва
+    //                    к созданию; для organization — объяснение
+    //                    ограничения «только наши фирмы».
+    const ENTITY_DEFAULTS = {
         organization: {
             label: 'Добавить организацию',
             empty: 'Организация не найдена в справочнике. Проверьте написание — либо добавьте новую.',
@@ -44,15 +58,17 @@ function initAutocomplete(selectId) {
             emptyNoCreate: 'Совпадений не найдено. Проверьте написание.',
         },
     };
-    const createType = select.dataset.acCreateType || '';
-    const createDefaults = CREATE_DEFAULTS[createType] || {
+    const GENERIC_DEFAULTS = {
         label: 'Добавить',
         empty: 'Ничего не найдено.',
         emptyNoCreate: 'Ничего не найдено.',
     };
-    const createLabel = select.dataset.acCreateLabel || createDefaults.label;
-    const createEmptyMsg = select.dataset.acCreateEmpty || createDefaults.empty;
-    const createEmptyMsgNoCreate = createDefaults.emptyNoCreate;
+
+    const entityType = select.dataset.acEntityType || '';
+    const entityDefaults = ENTITY_DEFAULTS[entityType] || GENERIC_DEFAULTS;
+    const createLabel = select.dataset.acCreateLabel || entityDefaults.label;
+    const createEmptyMsg = select.dataset.acCreateEmpty || entityDefaults.empty;
+    const createEmptyMsgNoCreate = entityDefaults.emptyNoCreate;
 
     // ── DOM setup ─────────────────────────────────────────────────────────
     const container = document.createElement('div');
@@ -366,7 +382,7 @@ function initAutocomplete(selectId) {
         // диспатчим на нём click, чтобы не дублировать логику открытия модалки.
         var proxy = document.createElement('button');
         proxy.type = 'button';
-        proxy.dataset.qcType = createType;
+        proxy.dataset.qcType = entityType;
         proxy.dataset.qcTarget = select.id;
         // Пробрасываем доп. атрибуты для quick_create: data-ac-qc-<name>
         // на <select> превращаются в data-qc-<name> на proxy. Например,
@@ -384,7 +400,10 @@ function initAutocomplete(selectId) {
     }
 
     function appendCreateFooter() {
-        if (!createType) return;
+        // Без entityType футер показать нельзя — quick_create.js не знает,
+        // какую модалку открывать. Гарантируется дополнительно внешним
+        // гейтом canShowCreate в renderResponse.
+        if (!entityType) return;
         dropdown.appendChild(createCreateFooterEl());
     }
 
@@ -410,20 +429,18 @@ function initAutocomplete(selectId) {
         var groups = (data && data.groups) || null;
         var hint = (data && data.hint) || null;
         var q = input.value.trim();
-        // data-ac-create-disabled — рантайм-флаг, которым владелец поля
-        // может временно выключить inline-create. Используется на полях,
-        // которые сейчас работают в режиме «только наши фирмы» (в
-        // trip_form_role.js — поле активной роли): создание внешнего
-        // контрагента там бессмысленно, результат всё равно сбрасывается
-        // blur-страховкой, а в БД остаётся мусорная запись.
-        var createDisabled = select.dataset.acCreateDisabled === '1';
-        // canShowEmptyState шире canShowCreate: empty-state имеет смысл
-        // и когда создание выключено — он информирует «ничего не найдено»
-        // и объясняет причину ограничения, даже если кнопки «+ Добавить»
-        // не будет. Раньше оба поведения контролировались одним флагом —
-        // при createDisabled пустой дропдаун схлопывался молча.
-        var canShowCreate = !!createType && !createDisabled && q.length >= 2;
-        var canShowEmptyState = !!createType && q.length >= 2;
+        // Две ортогональные оси:
+        //   entityType     — есть ли у поля семантика (organization/person/
+        //                    vehicle). Включает empty-state и даёт тексты.
+        //   createAllowed  — предлагать ли inline-создание (футер). Читается
+        //                    из data-ac-create на каждом рендере, так что
+        //                    рантайм-переключения (trip_form_role.js на
+        //                    поле активной роли) подхватываются мгновенно.
+        // canShowEmptyState шире canShowCreate: пустое состояние остаётся
+        // информативным, даже когда создание выключено.
+        var createAllowed = select.dataset.acCreate === '1';
+        var canShowCreate = createAllowed && !!entityType && q.length >= 2;
+        var canShowEmptyState = !!entityType && q.length >= 2;
 
         if (!items.length && !canShowEmptyState) {
             dropdown.style.display = 'none';
@@ -469,11 +486,10 @@ function initAutocomplete(selectId) {
             }
             if (canShowCreate) appendCreateFooter();
         } else {
-            // items пусто. Текст empty-state выбираем по состоянию создания:
-            // при createDisabled — сообщение без призыва «добавьте новую»,
-            // с объяснением причины ограничения. Футер рисуем только если
-            // создание реально доступно.
-            var emptyText = createDisabled ? createEmptyMsgNoCreate : createEmptyMsg;
+            // items пусто. Текст empty-state — линейный выбор по
+            // createAllowed: с призывом «добавьте новую» или без.
+            // Футер рисуем только если создание реально доступно.
+            var emptyText = createAllowed ? createEmptyMsg : createEmptyMsgNoCreate;
             dropdown.appendChild(createEmptyStateEl(emptyText));
             if (canShowCreate) appendCreateFooter();
         }

@@ -218,27 +218,42 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
         for fname in ["client", "carrier"]:
             self._setup_ajax_field(fname, full_org, org_search_url)
 
-        # Combobox с inline-create: включён на всех FK-полях, кроме forwarder
-        # (там поиск всегда ограничен «нашими» фирмами — создавать нечего).
-        # autocomplete.js, обнаружив data-ac-create-type, добавляет в dropdown
-        # закреплённый пункт «+ Добавить …» и триггерит существующую модалку
-        # quick_create через data-qc-* делегирование. Для ТС/прицепа
-        # дополнительно пробрасывается data-ac-qc-vehicle-types →
-        # data-qc-vehicle-types, которое quick_create.js использует, чтобы
-        # скрыть неподходящие типы в модалке.
+        # Autocomplete-атрибуты — две ортогональные оси:
+        #   data-ac-entity-type  — тип сущности (organization/person/vehicle).
+        #       Даёт autocomplete.js тексты лейбла и empty-state из его
+        #       ENTITY_DEFAULTS и включает показ empty-state вообще. Ставится
+        #       на все AJAX-поля, чтобы empty-state отображался единообразно
+        #       (в т.ч. на forwarder, где inline-create отсутствует).
+        #   data-ac-create="1"   — включает inline-create footer «+ Добавить …»
+        #       в дропдауне. На forwarder не ставится: там поиск всегда
+        #       ограничен ?own=1, а quick_create создаёт обычного внешнего
+        #       контрагента — ему там делать нечего. trip_form_role.js
+        #       динамически снимает этот атрибут с поля активной роли.
+        # data-ac-qc-vehicle-types → data-qc-vehicle-types на proxy-кнопке
+        # quick_create (фильтрация типов ТС в модалке).
         if "client" in self.fields:
-            self.fields["client"].widget.attrs["data-ac-create-type"] = "organization"
+            self.fields["client"].widget.attrs.update({
+                "data-ac-entity-type": "organization",
+                "data-ac-create": "1",
+            })
         if "carrier" in self.fields:
-            self.fields["carrier"].widget.attrs["data-ac-create-type"] = "organization"
+            self.fields["carrier"].widget.attrs.update({
+                "data-ac-entity-type": "organization",
+                "data-ac-create": "1",
+            })
 
         self._setup_ajax_field("driver", full_person, person_search_url)
         if "driver" in self.fields:
-            self.fields["driver"].widget.attrs["data-ac-create-type"] = "person"
+            self.fields["driver"].widget.attrs.update({
+                "data-ac-entity-type": "person",
+                "data-ac-create": "1",
+            })
 
         self._setup_ajax_field("truck", full_truck, vehicle_search_url, search_type="truck")
         if "truck" in self.fields:
             self.fields["truck"].widget.attrs.update({
-                "data-ac-create-type": "vehicle",
+                "data-ac-entity-type": "vehicle",
+                "data-ac-create": "1",
                 "data-ac-qc-vehicle-types": "single,truck",
                 "data-ac-create-empty": "ТС не найдено в справочнике. Проверьте написание — либо добавьте новое.",
             })
@@ -246,22 +261,29 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
         self._setup_ajax_field("trailer", full_trailer, vehicle_search_url, search_type="trailer")
         if "trailer" in self.fields:
             self.fields["trailer"].widget.attrs.update({
-                "data-ac-create-type": "vehicle",
+                "data-ac-entity-type": "vehicle",
+                "data-ac-create": "1",
                 "data-ac-qc-vehicle-types": "trailer",
                 "data-ac-create-label": "Добавить прицеп",
                 "data-ac-create-empty": "Прицеп не найден в справочнике. Проверьте написание — либо добавьте новый.",
             })
 
         # Экспедитор: такой же autocomplete, как client/carrier, но
-        # поиск всегда ограничен нашими фирмами (?own=1). Видимость поля
-        # (колонка parties-forwarder-col) и значение управляются через
-        # карточки ролей в trip_form_role.js — поле показывается только
-        # при активной роли «Экспедитор» и обнуляется при переключении
-        # на другую роль.
+        # поиск всегда ограничен нашими фирмами (?own=1). Без data-ac-create:
+        # inline-create создавал бы мусорного внешнего контрагента. Но
+        # data-ac-entity-type="organization" задан — чтобы пустой поиск
+        # показывал информативный empty-state «Совпадений среди ваших фирм
+        # нет. Добавить свою фирму можно только в личном кабинете.» вместо
+        # молча скрытого дропдауна.
+        # Видимость поля (колонка parties-forwarder-col) и значение
+        # управляются через карточки ролей в trip_form_role.js — поле
+        # показывается только при активной роли «Экспедитор» и обнуляется
+        # при переключении на другую роль.
         if "forwarder" in self.fields:
             own_orgs = Organization.objects.own_for(account_id)
             self._setup_ajax_field("forwarder", own_orgs, org_search_url + "?own=1")
             self.fields["forwarder"].required = False
+            self.fields["forwarder"].widget.attrs["data-ac-entity-type"] = "organization"
 
     def _setup_ajax_field(self, fname, full_qs, search_url, search_type=""):
         """Устанавливает validation queryset, display queryset (текущее значение)
