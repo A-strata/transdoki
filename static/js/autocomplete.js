@@ -21,24 +21,38 @@ function initAutocomplete(selectId) {
     // Дополнительные data-qc-* атрибуты (например, data-qc-vehicle-types
     // для фильтрации типов ТС в модалке) прокидываются на proxy-кнопку
     // через пары data-ac-qc-<suffix>="value" на <select>.
+    // empty          — текст empty-state, когда создание доступно (висит
+    //                   над футером «+ Добавить …»).
+    // emptyNoCreate  — текст empty-state, когда создание выключено
+    //                   (data-ac-create-disabled). Без призыва к созданию
+    //                   и по возможности — с объяснением причины (поле
+    //                   ограничено нашими фирмами).
     const CREATE_DEFAULTS = {
         organization: {
             label: 'Добавить организацию',
             empty: 'Организация не найдена в справочнике. Проверьте написание — либо добавьте новую.',
+            emptyNoCreate: 'Совпадений среди ваших фирм нет. Добавить свою фирму можно только в личном кабинете.',
         },
         person: {
             label: 'Добавить водителя',
             empty: 'Водитель не найден в справочнике. Проверьте написание — либо добавьте нового.',
+            emptyNoCreate: 'Совпадений не найдено. Проверьте написание.',
         },
         vehicle: {
             label: 'Добавить ТС',
             empty: 'Запись не найдена в справочнике. Проверьте написание — либо добавьте новую.',
+            emptyNoCreate: 'Совпадений не найдено. Проверьте написание.',
         },
     };
     const createType = select.dataset.acCreateType || '';
-    const createDefaults = CREATE_DEFAULTS[createType] || { label: 'Добавить', empty: 'Ничего не найдено.' };
+    const createDefaults = CREATE_DEFAULTS[createType] || {
+        label: 'Добавить',
+        empty: 'Ничего не найдено.',
+        emptyNoCreate: 'Ничего не найдено.',
+    };
     const createLabel = select.dataset.acCreateLabel || createDefaults.label;
     const createEmptyMsg = select.dataset.acCreateEmpty || createDefaults.empty;
+    const createEmptyMsgNoCreate = createDefaults.emptyNoCreate;
 
     // ── DOM setup ─────────────────────────────────────────────────────────
     const container = document.createElement('div');
@@ -329,11 +343,11 @@ function initAutocomplete(selectId) {
         return el;
     }
 
-    function createEmptyStateEl() {
+    function createEmptyStateEl(text) {
         var el = document.createElement('div');
         el.className = 'autocomplete-empty-state';
         el.setAttribute('data-ac-role', 'empty');
-        el.textContent = createEmptyMsg;
+        el.textContent = text || createEmptyMsg;
         el.style.cssText = [
             'padding:12px 14px; font-size:var(--text-sm);',
             'color:var(--muted); line-height:1.45;',
@@ -396,9 +410,22 @@ function initAutocomplete(selectId) {
         var groups = (data && data.groups) || null;
         var hint = (data && data.hint) || null;
         var q = input.value.trim();
-        var canShowCreate = !!createType && q.length >= 2;
+        // data-ac-create-disabled — рантайм-флаг, которым владелец поля
+        // может временно выключить inline-create. Используется на полях,
+        // которые сейчас работают в режиме «только наши фирмы» (в
+        // trip_form_role.js — поле активной роли): создание внешнего
+        // контрагента там бессмысленно, результат всё равно сбрасывается
+        // blur-страховкой, а в БД остаётся мусорная запись.
+        var createDisabled = select.dataset.acCreateDisabled === '1';
+        // canShowEmptyState шире canShowCreate: empty-state имеет смысл
+        // и когда создание выключено — он информирует «ничего не найдено»
+        // и объясняет причину ограничения, даже если кнопки «+ Добавить»
+        // не будет. Раньше оба поведения контролировались одним флагом —
+        // при createDisabled пустой дропдаун схлопывался молча.
+        var canShowCreate = !!createType && !createDisabled && q.length >= 2;
+        var canShowEmptyState = !!createType && q.length >= 2;
 
-        if (!items.length && !canShowCreate) {
+        if (!items.length && !canShowEmptyState) {
             dropdown.style.display = 'none';
             detachScrollListener();
             return;
@@ -442,9 +469,13 @@ function initAutocomplete(selectId) {
             }
             if (canShowCreate) appendCreateFooter();
         } else {
-            // items пуст, но create-type включён: показать empty-state + footer.
-            dropdown.appendChild(createEmptyStateEl());
-            appendCreateFooter();
+            // items пусто. Текст empty-state выбираем по состоянию создания:
+            // при createDisabled — сообщение без призыва «добавьте новую»,
+            // с объяснением причины ограничения. Футер рисуем только если
+            // создание реально доступно.
+            var emptyText = createDisabled ? createEmptyMsgNoCreate : createEmptyMsg;
+            dropdown.appendChild(createEmptyStateEl(emptyText));
+            if (canShowCreate) appendCreateFooter();
         }
 
         // Замеряем реальную высоту контента до позиционирования —

@@ -156,6 +156,25 @@ document.addEventListener('DOMContentLoaded', function () {
         rebuildSearchUrl(inputId);
     }
 
+    // Вкл/выкл inline-create footer «+ Добавить организацию» в дропдауне
+    // автокомплита. Выключаем на поле активной роли: оно работает в
+    // режиме «только наши фирмы» (?own=1), а quick_create создаёт
+    // обычного внешнего контрагента без привязки к account как own-org.
+    // Итог без этого флага: пользователь создавал мусорную организацию,
+    // blur-страховка через 300 ms молча сбрасывала значение обратно на
+    // навбар-фирму, а запись оставалась в БД. autocomplete.js читает
+    // data-ac-create-disabled при каждом рендере — апдейт срабатывает
+    // сразу, без переинициализации автокомплита.
+    function setCreateAllowed(inputId, allowed) {
+        var el = document.getElementById(inputId);
+        if (!el) return;
+        if (allowed) {
+            delete el.dataset.acCreateDisabled;
+        } else {
+            el.dataset.acCreateDisabled = '1';
+        }
+    }
+
     // Правило исключений (симметричное для client ↔ carrier):
     //   activeRole === 'client'  → значение id_client исключаем из id_carrier;
     //   activeRole === 'carrier' → значение id_carrier исключаем из id_client.
@@ -274,6 +293,12 @@ document.addEventListener('DOMContentLoaded', function () {
             var inputId = ROLE_TO_INPUT[r];
             var active = (r === newRole);
             setOwnSearch(inputId, active);
+            // Футер «+ Добавить» на поле активной роли скрываем — создавать
+            // там нечего (см. setCreateAllowed). На forwarder вызов безвреден:
+            // data-ac-create-type там не установлен, так что флаг ни на что
+            // не влияет. Симметрично: на предыдущем активном поле футер
+            // возвращается, когда роль уходит с него.
+            setCreateAllowed(inputId, !active);
             if (active) {
                 prefillIfNeeded(inputId, userInitiated);
                 return;
