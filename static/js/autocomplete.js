@@ -95,6 +95,15 @@ function initAutocomplete(selectId) {
 
     var scrollParent = null;
     var rafId = null;
+    // Фактическая высота контента dropdown'а. Обновляется в
+    // measureContentHeight() при каждом рендере списка. Используется
+    // в positionDropdown() вместо preferredH, чтобы решение о флипе
+    // принималось по реальному размеру dropdown'а, а не по резервному
+    // максимуму. Без этого короткий dropdown (например, empty-state
+    // «не найдено» + футер «+ Добавить») мог уходить вверх только
+    // потому, что снизу оставалось меньше preferredH — хотя для двух
+    // строк места было с запасом.
+    var cachedContentH = 0;
 
     function getVisibleTop() {
         var top = 0;
@@ -111,35 +120,74 @@ function initAutocomplete(selectId) {
         return top;
     }
 
+    // Замер естественной высоты dropdown'а. Снимаем max-height, ставим
+    // display:block + visibility:hidden (изменение и восстановление
+    // синхронны в одном tick'е — пользователь ничего не видит), читаем
+    // offsetHeight. Ширину фиксируем заранее — иначе при auto-width
+    // перенос строк исказит высоту. Вызывается из renderResponse
+    // каждый раз, когда содержимое меняется; scroll-reposition читает
+    // кэшированное значение и не пере-замеряет.
+    function measureContentHeight() {
+        var rect = input.getBoundingClientRect();
+        dropdown.style.width = rect.width + 'px';
+        var prevDisplay = dropdown.style.display;
+        var prevVisibility = dropdown.style.visibility;
+        dropdown.style.maxHeight = 'none';
+        dropdown.style.visibility = 'hidden';
+        dropdown.style.display = 'block';
+        cachedContentH = dropdown.offsetHeight;
+        dropdown.style.display = prevDisplay;
+        dropdown.style.visibility = prevVisibility;
+    }
+
     function positionDropdown() {
         var rect = input.getBoundingClientRect();
         var visibleTop = getVisibleTop();
-        // Из-за position:fixed dropdown не может быть проскроллен вместе со
-        // страницей — ограничение — именно viewport. Но это не повод прыгать
-        // вверх, если снизу просто «чуть меньше 220px»: пользователь видит
-        // контент документа под input'ом и не ожидает переключения.
-        // Поэтому порог переключения — 120px (~4 item'а), а высоту dropdown
-        // подгоняем под доступное место (внутренний скролл, а не прыжок).
+        // Prefer-fit: если desiredH помещается снизу — открываем вниз на
+        // полную высоту. Если снизу не помещается, а сверху есть место —
+        // флипаем наверх (без фазы «сжатия»). Если не помещается ни
+        // вниз, ни вверх — выбираем сторону с большим запасом, внутренний
+        // скролл остаётся как fallback.
+        //
+        // desiredH = min(preferredH, cachedContentH): для коротких
+        // dropdown'ов (empty-state + footer) порог флипа становится
+        // низким и не срабатывает зря. Для длинных — всё как раньше,
+        // эффективно равно preferredH.
+        //
+        // Гистерезис (flipHysteresis) нужен, чтобы при медленной прокрутке
+        // dropdown не дребезжал вверх-вниз на границе: единожды флипнув,
+        // требуем заметного перевеса другой стороны для обратного флипа.
         var viewportPad = 8;
         var preferredH = 220;
-        var flipThreshold = 120;
+        var flipHysteresis = 40;
+        var desiredH = Math.min(preferredH, cachedContentH || preferredH);
 
         var spaceBelow = window.innerHeight - rect.bottom - viewportPad;
         var spaceAbove = rect.top - visibleTop - viewportPad;
-        var openUp = spaceBelow < flipThreshold && spaceAbove > spaceBelow;
+
+        var wasUp = dropdown.dataset.acDir === 'up';
+        var openUp;
+        if (wasUp) {
+            // Держим текущее направление, пока снизу не станет заметно лучше.
+            openUp = spaceBelow < desiredH && spaceAbove + flipHysteresis > spaceBelow;
+        } else {
+            openUp = spaceBelow < desiredH && spaceAbove > spaceBelow + flipHysteresis;
+        }
 
         var available = openUp ? spaceAbove : spaceBelow;
-        var maxH = Math.max(80, Math.min(preferredH, available));
+        var maxH = Math.max(80, Math.min(desiredH, available));
         dropdown.style.maxHeight = maxH + 'px';
 
         dropdown.style.left = rect.left + 'px';
         dropdown.style.width = rect.width + 'px';
 
         if (openUp) {
+            dropdown.dataset.acDir = 'up';
             dropdown.style.top = 'auto';
             dropdown.style.bottom = (window.innerHeight - rect.top) + 'px';
             dropdown.style.borderRadius = '10px 10px 0 0';
         } else {
+            dropdown.dataset.acDir = 'down';
             dropdown.style.top = rect.bottom + 'px';
             dropdown.style.bottom = 'auto';
             dropdown.style.borderRadius = '0 0 10px 10px';
@@ -399,6 +447,9 @@ function initAutocomplete(selectId) {
             appendCreateFooter();
         }
 
+        // Замеряем реальную высоту контента до позиционирования —
+        // positionDropdown() использует её для принятия решения о флипе.
+        measureContentHeight();
         positionDropdown();
         dropdown.style.display = 'block';
         attachScrollListener();

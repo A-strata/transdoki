@@ -49,26 +49,33 @@
     gap: 14px;
 }
 
-/* table-layout: fixed — ширины задаются на th */
+/* Ширины — по содержимому. Заказчик растягивается и усекается ellipsis'ом. */
 .invoices-page .tms-table {
-    table-layout: fixed;
+    table-layout: auto;
+    width: 100%;
 }
 
 .invoices-page .tms-table thead th,
 .invoices-page .tms-table tbody td {
     white-space: nowrap;
+}
+
+.invoices-page .col-number,
+.invoices-page .col-date,
+.invoices-page .col-amount,
+.invoices-page .col-status,
+.invoices-page .col-due {
+    width: 1%;
+}
+
+.invoices-page .col-customer {
+    width: auto;
+    max-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.col-number   { width: 100px; }
-.col-date     { width: 110px; }
-.col-customer { width: 250px; }
-.col-amount   { width: 120px; }
-.col-status   { width: 120px; }
-.col-due      { width: 120px; }
-.col-spacer   { padding: 0; }
-.col-actions  { width: 90px; }
+.col-spacer   { padding: 0; width: auto; }
 
 thead .col-spacer {
     background: var(--hover);
@@ -133,19 +140,6 @@ thead .col-spacer {
         color: var(--muted);
         font-size: var(--text-xs);
         font-weight: 600;
-    }
-
-    .row-actions-cell {
-        width: auto;
-        padding: 10px 12px;
-    }
-
-    .row-actions-cell::before {
-        content: none;
-    }
-
-    .row-actions {
-        opacity: 1;
     }
 
     .cell-money {
