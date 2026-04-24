@@ -337,11 +337,18 @@ function initAutocomplete(selectId) {
         el.className = 'autocomplete-create-footer';
         el.setAttribute('data-ac-role', 'create');
         el.setAttribute('role', 'option');
+        // position:sticky с bottom:0 закрепляет футер у нижнего края
+        // дропдауна. Items скроллятся во внутреннем скролл-контейнере
+        // (max-height от positionDropdown), но футер остаётся видимым
+        // — пользователь не должен «искать» кнопку «+ Добавить». bg
+        // уже непрозрачный (var(--hover-active)), так что строки под
+        // sticky-футером не просвечивают.
         el.style.cssText = [
             'padding:10px 12px; cursor:pointer; font-size:.92rem;',
             'color:var(--primary); font-weight:600; background:var(--hover-active);',
             'border-top:1px solid var(--border);',
             'display:flex; align-items:center; gap:8px;',
+            'position:sticky; bottom:0; z-index:1;',
         ].join('');
         var plus = document.createElement('span');
         plus.textContent = '+';

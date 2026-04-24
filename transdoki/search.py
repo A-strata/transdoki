@@ -92,7 +92,13 @@ class AjaxSearchView(View):
     model = None
     search_fields: Sequence[str] = ()
     order_by: Sequence[str] = ()
-    limit: int = 25
+    # Суммарный лимит items в ответе. 10 — практический потолок для
+    # autocomplete на ноутбучном форм-факторе: больше пользователь всё
+    # равно не просматривает, а поиск уточняет запросом. Срезает DB- и
+    # network-cost на больших справочниках. Для группированных ответов
+    # (CarrierGroupingMixin) лимит применяется ко всему ответу, не
+    # поштучно к каждой группе.
+    limit: int = 10
 
     # ── Hooks for subclasses ────────────────────────────────────────────
 
@@ -212,10 +218,17 @@ class CarrierGroupingMixin:
         q = request.GET.get("q", "").strip()
         carrier_id_raw = request.GET.get("carrier_id", "").strip()
 
-        def flat_items(source_qs):
+        def flat_items(source_qs, cap=None):
+            """Сериализация с лимитом. По умолчанию — self.limit; можно
+            передать меньший cap, чтобы поделить бюджет между группами
+            (см. случай 3c ниже — carrier получает приоритет, others
+            добирают остаток)."""
+            n = self.limit if cap is None else cap
+            if n <= 0:
+                return []
             return [
                 self.serialize_item(o)
-                for o in source_qs.order_by(*self.order_by)[: self.limit]
+                for o in source_qs.order_by(*self.order_by)[:n]
             ]
 
         if not carrier_id_raw.isdigit():
@@ -253,15 +266,20 @@ class CarrierGroupingMixin:
             }
 
         # Случай 3c: q задан → carrier + others (с заголовком).
+        # Общий лимит — self.limit на обе группы суммарно. Carrier-записи
+        # приоритетнее (они семантически ближе к выбранному перевозчику),
+        # others добирают оставшийся бюджет. Если carrier уже забрал весь
+        # лимит — others пустой, группа «Другие» не рисуется.
+        others_budget = self.limit - len(carrier_items)
         others_qs = qs.exclude(**owner_filter)
-        others_items = flat_items(others_qs)
+        others_items = flat_items(others_qs, cap=others_budget)
+        groups = [SearchGroup(key="carrier")]
+        if others_items:
+            groups.append(SearchGroup(key="others", label="Другие"))
         return {
             "items": (
                 [{**it, "group": "carrier"} for it in carrier_items]
                 + [{**it, "group": "others"} for it in others_items]
             ),
-            "groups": (
-                SearchGroup(key="carrier"),
-                SearchGroup(key="others", label="Другие"),
-            ),
+            "groups": tuple(groups),
         }
