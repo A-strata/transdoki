@@ -76,6 +76,13 @@ class ImpersonateStopView(LoginRequiredMixin, View):
 
 
 class SwitchOrganizationView(LoginRequiredMixin, View):
+    # Ключи сессии, хранящие per-list «область просмотра» (scope=all).
+    # При явной смене активной фирмы в навбаре — сбрасываем их, чтобы
+    # списки переключились в режим «только эта фирма». Иначе пользователь
+    # выбирает фирму без рейсов, но по-прежнему видит все рейсы аккаунта
+    # из залипшего scope_all=True.
+    LIST_SCOPE_SESSION_KEYS = ("trips_scope_all",)
+
     def post(self, request):
         account = get_request_account(request)
         org_id = request.POST.get("org_id")
@@ -83,6 +90,8 @@ class SwitchOrganizationView(LoginRequiredMixin, View):
             org = Organization.objects.own_for(account).filter(pk=org_id).first()
             if org is not None:
                 request.session["current_org_id"] = org.pk
+                for key in self.LIST_SCOPE_SESSION_KEYS:
+                    request.session.pop(key, None)
                 profile = request.user.profile
                 if profile.last_active_org_id != org.pk:
                     profile.last_active_org = org

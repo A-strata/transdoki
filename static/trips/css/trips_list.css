@@ -608,6 +608,81 @@ tbody .row-actions-cell {
     flex-shrink: 0;
 }
 
+/* 17) Переключатель области просмотра (scope switch)
+   Сегмент-контрол «Текущая фирма ↔ Все мои фирмы», отрисовывается
+   только если у аккаунта ≥2 собственных фирм (см. scope_switch_visible).
+   Геометрия фиксирована (box-sizing: border-box на всех детях), чтобы
+   смена активной вкладки не дёргала размеры. */
+.toolbar-zone-scope {
+    flex-shrink: 0;
+}
+
+.scope-switch {
+    display: inline-flex;
+    align-items: stretch;
+    padding: 3px;
+    background: #e5e7eb;         /* заметно темнее, чем белый активный pill */
+    border: 1px solid var(--border-interactive, var(--border));
+    border-radius: 8px;
+    gap: 2px;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.scope-switch-item,
+.scope-switch-item:link,
+.scope-switch-item:visited {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border: 1px solid transparent;   /* резервируем место под border у is-active */
+    border-radius: 6px;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    line-height: 1;
+    white-space: nowrap;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.scope-switch-item:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.scope-switch-item.is-active,
+.scope-switch-item.is-active:link,
+.scope-switch-item.is-active:visited {
+    background: var(--surface);
+    color: var(--primary-hover);
+    border-color: var(--border);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    font-weight: 600;        /* дополнительный зуб отличия: жирнее текст */
+    cursor: default;
+}
+
+.scope-switch-item.is-active:hover {
+    color: var(--primary-hover);
+    background: var(--surface);
+}
+
+.scope-switch-item.is-active .scope-switch-icon {
+    color: var(--primary);
+}
+
+.scope-switch-icon {
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.scope-switch-label {
+    display: inline-block;
+}
+
 /* 16) Адаптив */
 @media (max-width: 768px) {
     .trips-page {
@@ -620,5 +695,11 @@ tbody .row-actions-cell {
 
     .page-size-control {
         justify-content: space-between;
+    }
+
+    .scope-switch-label {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }

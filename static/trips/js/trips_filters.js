@@ -17,6 +17,13 @@
         var form = document.querySelector('[data-trip-filters]');
         if (!form) return;
 
+        // Режим просмотра ("own" | "all") — читается из data-scope формы.
+        // Значение не меняется через JS (переключатель — обычные <a> href
+        // с полной перезагрузкой страницы), но должно включаться в URL
+        // partial-fetch'а, чтобы URL оставался в синке с серверной сессией
+        // и был шарящимся. scope=own в URL не пишем — это дефолт.
+        var scopeMode = form.getAttribute('data-scope') || 'own';
+
         var searchInput = form.querySelector('[name="q"]');
         var calendarToggle = form.querySelector('[data-calendar-toggle]');
         var calendarFields = form.querySelector('[data-calendar-fields]');
@@ -122,6 +129,10 @@
 
             if (overrides && overrides.page) {
                 params.set('page', overrides.page);
+            }
+
+            if (scopeMode === 'all') {
+                params.set('scope', 'all');
             }
 
             return params;

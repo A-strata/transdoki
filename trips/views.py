@@ -477,6 +477,12 @@ class TripListView(UserOwnedListView):
     paginate_by = 25
     page_size_options = [25, 50, 100]
 
+    # Ключ сессии для режима просмотра списка.
+    # "own" — показывать только рейсы, где участвует current_org (дефолт).
+    # "all" — показывать все рейсы аккаунта (по всем собственным фирмам).
+    # Режим "all" имеет смысл только при own_orgs ≥ 2; иначе форсируется "own".
+    SCOPE_SESSION_KEY = "trips_scope_all"
+
     def get_template_names(self):
         if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return [self.partial_template_name]
@@ -494,6 +500,54 @@ class TripListView(UserOwnedListView):
         ("consignee", "Получатель (выгрузка)"),
         ("driver", "Водитель"),
     ]
+
+    def _own_orgs_count(self):
+        """Число собственных фирм в аккаунте. Считывается из middleware."""
+        own_orgs = getattr(self.request, "own_orgs", None) or []
+        return len(own_orgs)
+
+    def _resolve_scope_all(self):
+        """Определяет текущий режим просмотра (True=all, False=own).
+
+        Правила:
+        1. Если own_orgs < 2 — режим всегда own (all не имеет смысла).
+        2. Если в GET передан ?scope=all — пишем True в сессию.
+           Если ?scope=own — удаляем ключ из сессии (дефолт own).
+           Любое другое значение (включая отсутствие параметра) — читаем
+           текущее состояние из сессии.
+
+        Важно: own-кнопка переключателя в шаблоне обязана рендерить URL
+        с ?scope=own, чтобы явный клик гарантированно обнулял залипший
+        scope=all в сессии. Иначе пользователь «прилипает» в all-режиме.
+
+        Кешируется на время запроса в self._scope_all_cache.
+        """
+        if hasattr(self, "_scope_all_cache"):
+            return self._scope_all_cache
+
+        if self._own_orgs_count() < 2:
+            # Страховка: если осталась одна собственная фирма, sweep-режим
+            # теряет смысл. Заодно чистим залипший флаг.
+            self.request.session.pop(self.SCOPE_SESSION_KEY, None)
+            self._scope_all_cache = False
+            return False
+
+        raw = self.request.GET.get("scope")
+        if raw == "all":
+            if not self.request.session.get(self.SCOPE_SESSION_KEY):
+                self.request.session[self.SCOPE_SESSION_KEY] = True
+            value = True
+        elif raw == "own":
+            # Явный клик «только моя фирма» — стираем сессию, чтобы
+            # последующие GET без параметра тоже вели к own-режиму.
+            if self.request.session.get(self.SCOPE_SESSION_KEY):
+                self.request.session.pop(self.SCOPE_SESSION_KEY, None)
+            value = False
+        else:
+            value = bool(self.request.session.get(self.SCOPE_SESSION_KEY, False))
+
+        self._scope_all_cache = value
+        return value
 
     def get_paginate_by(self, queryset):
         raw_value = (self.request.GET.get("page_size") or "").strip()
@@ -602,7 +656,8 @@ class TripListView(UserOwnedListView):
         )
 
         current_org = getattr(self.request, "current_org", None)
-        if current_org:
+        scope_all = self._resolve_scope_all()
+        if current_org and not scope_all:
             qs = qs.filter(
                 Q(client=current_org)
                 | Q(carrier=current_org)
@@ -688,6 +743,9 @@ class TripListView(UserOwnedListView):
 
         contractor_filters = self._get_contractor_filters()
 
+        scope_all = self._resolve_scope_all()
+        own_orgs_count = self._own_orgs_count()
+
         context["filters"] = {
             "q": (self.request.GET.get("q") or "").strip(),
             "date_mode": (self.request.GET.get("date_mode") or "loading").strip(),
@@ -695,7 +753,16 @@ class TripListView(UserOwnedListView):
             "date_to": (self.request.GET.get("date_to") or "").strip(),
             "contractors": contractor_filters,
             "page_size": str(current_page_size),
+            "scope": "all" if scope_all else "own",
         }
+
+        # Переключатель видимости: отрисовывается только при наличии
+        # ≥2 собственных фирм в аккаунте. Список фирм нужен шаблону для
+        # плашки-подзаголовка в all-режиме.
+        context["scope_all"] = scope_all
+        context["scope_switch_visible"] = own_orgs_count >= 2
+        context["scope_own_orgs"] = getattr(self.request, "own_orgs", None) or []
+        context["scope_own_orgs_count"] = own_orgs_count
 
         page_obj = context.get("page_obj")
         context["pagination_items"] = (
@@ -715,6 +782,16 @@ class TripListView(UserOwnedListView):
             base_params[f"contractor_{role}"] = query
         if str(current_page_size) != str(self.paginate_by):
             base_params["page_size"] = current_page_size
+        # query_string_no_scope — для href-ов самого переключателя:
+        # те URL-ы сами задают scope, дублировать параметр не нужно.
+        context["query_string_no_scope"] = (
+            ("&" + urlencode(base_params)) if base_params else ""
+        )
+
+        # scope=all — только в URL, если режим активен. scope=own — дефолт,
+        # мусорить параметром в URL не нужно.
+        if scope_all:
+            base_params["scope"] = "all"
         context["query_string"] = ("&" + urlencode(base_params)) if base_params else ""
 
         return context
