@@ -28,7 +28,6 @@
             'trailer',
             'planned_loading_date', 'planned_unloading_date',
             'cargo', 'weight',
-            'client_cost', 'carrier_cost',
             'client_payment_method', 'payment_condition',
             'carrier_payment_method', 'comments'
         ].filter(key => defaultOrder.includes(key));
