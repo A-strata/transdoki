@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мокап: идеальный лейаут списка рейсов</title>
+<style>
+  :root {
+    --surface: #ffffff;
+    --text: #1e293b;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --hover: #f8fafc;
+    --hover-active: #eef6ff;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-ring: rgba(37, 99, 235, 0.3);
+    --bg-page: #f3f4f6;
+    --success-bg: #ecfdf5;
+    --success-text: #065f46;
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .mockup-intro {
+    padding: 24px;
+    margin-bottom: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .mockup-intro h1 { margin: 0 0 8px 0; font-size: 22px; font-weight: 500; }
+  .mockup-intro p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  .mockup-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 24px 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mockup-label::before {
+    content: "";
+    display: inline-block;
+    width: 4px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  /* ── Nav-имитация ── */
+  .nav-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: none;
+  }
+  .nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    min-height: 48px;
+  }
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .nav-brand {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .nav-link {
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .nav-link.active { color: var(--primary); font-weight: 500; }
+  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .org-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+  }
+  .balance-pill {
+    padding: 4px 8px;
+    background: var(--success-bg);
+    color: var(--success-text);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+  }
+
+  /* ── Страница списка ── */
+  .list-page {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    padding: 20px 22px;
+  }
+
+  /* 1) Шапка: заголовок + scope-tabs двумя строками.
+        .list-header — flex-column.
+        Активный таб — полоска снизу (сливается с border-bottom шапки). */
+  .list-header {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+  }
+  .list-header-title {
+    margin: 0 0 10px 0;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .scope-tabs {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .scope-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    margin-bottom: -1px;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--muted);
+    text-decoration: none;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.12s ease, border-color 0.12s ease;
+  }
+  .scope-tab:hover { color: var(--text); }
+  .scope-tab.is-active {
+    color: var(--text);
+    border-bottom-color: var(--primary);
+    font-weight: 500;
+    cursor: default;
+  }
+
+  /* 2) Тулбар */
+  .list-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .search-field-wrap {
+    flex: 1 1 240px;
+    max-width: 360px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .search-field-wrap svg { flex-shrink: 0; color: var(--muted); }
+  .toolbar-zone-action { margin-left: auto; }
+  .tms-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .tms-btn-primary {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    font-weight: 500;
+  }
+  .tms-btn-ghost {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    color: var(--muted);
+  }
+
+  /* 3) Таблица */
+  .table-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  table.tms-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+  .tms-table thead th {
+    background: var(--hover);
+    padding: 10px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    font-weight: 500;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .tms-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tms-table tbody tr:last-child td { border-bottom: none; }
+  .tms-table tbody tr:hover td { background: var(--hover); }
+  .col-num { width: 10%; }
+  .col-date { width: 12%; }
+  .col-cost { text-align: right; width: 15%; }
+  .muted { color: var(--muted); }
+
+  /* 4) Футер */
+  .trips-footer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .trips-footer-pagination {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pagination-meta { font-size: 12px; color: var(--muted); }
+  .pagination-nav {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .pagination-link {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .pagination-link.is-current {
+    background: var(--primary);
+    color: white;
+    font-weight: 500;
+  }
+  .page-size-label { font-size: 12px; color: var(--muted); margin-left: 12px; }
+  .columns-visibility {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* 5) Блок мобильного превью */
+  .mobile-wrap {
+    background: var(--bg-page);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    display: flex;
+    justify-content: center;
+    border: 1px solid var(--border);
+  }
+  .mobile-screen {
+    width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .mobile-screen .list-page { padding: 14px; border: none; border-radius: 0; }
+  .mobile-screen .list-header-title { font-size: 18px; }
+  .mobile-screen .scope-tab { padding: 8px 12px; font-size: 13px; flex: 1; justify-content: center; }
+  .mobile-screen .scope-tabs { width: 100%; }
+  .mobile-screen .list-toolbar { flex-wrap: wrap; }
+  .mobile-screen .search-field-wrap { flex: 1 1 100%; max-width: none; }
+  .mobile-screen .tms-table th:nth-child(n+4), .mobile-screen .tms-table td:nth-child(n+4) { display: none; }
+
+  /* Пояснения */
+  .callout {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: var(--hover-active);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--primary-hover);
+    line-height: 1.6;
+  }
+  .callout strong { font-weight: 500; }
+  .annotation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .annotation-box {
+    padding: 12px 14px;
+    background: var(--hover);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .annotation-box strong {
+    display: block;
+    color: var(--text);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <div class="mockup-intro">
+    <h1>Список рейсов — целевой лейаут</h1>
+    <p>
+      Три логических слоя на странице: <strong>контекст</strong> (scope — какие рейсы смотрим), <strong>инструменты</strong> (поиск, фильтры) и <strong>действие</strong> (создать рейс). Scope вынесен в отдельную полосу-tabs под заголовком, с подчёркиванием активной вкладки синей полоской. Паттерн GitHub Issues / Jira / Linear.
+    </p>
+  </div>
+
+  <div class="mockup-label">Состояние 1 — режим «только текущая фирма» (дефолт)</div>
+
+  <div class="nav-wrap">
+    <div class="nav-container">
+      <div class="nav-left">
+        <span class="nav-brand">Трансдоки</span>
+        <a href="#" class="nav-link active">Рейсы</a>
+        <a href="#" class="nav-link">Финансы</a>
+        <a href="#" class="nav-link">Контрагенты</a>
+      </div>
+      <div class="nav-right">
+        <div class="org-pill">
+          ИП Иванов А.Б.
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
+        </div>
+        <div class="balance-pill">12 480 ₽</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="list-page">
+
+    <div class="list-header">
+      <h1 class="list-header-title">Рейсы</h1>
+      <nav class="scope-tabs" role="tablist" aria-label="Область просмотра">
+        <a href="#" class="scope-tab is-active" role="tab" aria-selected="true">
+          <span>Текущая фирма</span>
+        </a>
+        <a href="#" class="scope-tab" role="tab" aria-selected="false">
+          <span>Все мои фирмы · 3</span>
+        </a>
+      </nav>
+    </div>
+
+    <form class="list-toolbar">
+      <div class="search-field-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Номер или контрагент…
+      </div>
+      <button type="button" class="tms-btn tms-btn-ghost" title="Фильтр по дате">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </button>
+      <div class="toolbar-zone-action">
+        <a href="#" class="tms-btn tms-btn-primary">+ Создать рейс</a>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <table class="tms-table">
+        <thead>
+          <tr>
+            <th class="col-num">Номер</th>
+            <th class="col-date">Дата</th>
+            <th>Заказчик</th>
+            <th>Перевозчик</th>
+            <th>Маршрут</th>
+            <th class="col-cost">Доход</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0412</td>
+            <td class="muted">14.04.2026</td>
+            <td>ООО «Северный ветер»</td>
+            <td class="muted">ИП Иванов А.Б.</td>
+            <td class="muted">Москва → СПб</td>
+            <td class="col-cost">185 000 ₽</td>
+          </tr>
+          <tr>
+            <td>0413</td>
+            <td class="muted">15.04.2026</td>
+            <td>ИП Иванов А.Б.</td>
+            <td class="muted">ООО «Автолайн»</td>
+            <td class="muted">Казань → Самара</td>
+            <td class="col-cost">94 500 ₽</td>
+          </tr>
+          <tr>
+            <td>0414</td>
+            <td class="muted">16.04.2026</td>
+            <td>ИП Иванов А.Б.</td>
+            <td class="muted">ООО «Трансгруз»</td>
+            <td class="muted">Москва → Тверь</td>
+            <td class="col-cost">72 000 ₽</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="trips-footer-row">
+      <div class="trips-footer-pagination">
+        <span class="pagination-meta">Показано 1–3 из 42</span>
+        <div class="pagination-nav">
+          <span class="pagination-link">«</span>
+          <span class="pagination-link">‹</span>
+          <span class="pagination-link is-current">1</span>
+          <a href="#" class="pagination-link">2</a>
+          <a href="#" class="pagination-link">›</a>
+          <a href="#" class="pagination-link">»</a>
+          <span class="page-size-label">25 / стр</span>
+        </div>
+      </div>
+      <div class="columns-visibility" title="Настройка колонок">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/><circle cx="10" cy="18" r="2" fill="white"/></svg>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="annotation-grid">
+    <div class="annotation-box">
+      <strong>Шапка (.list-header)</strong>
+      flex-column: h1 сверху, scope-tabs под ним. Общий border-bottom — на него «ложится» полоска активного таба через margin-bottom: -1px. Даёт эффект «приросшего» таба.
+    </div>
+    <div class="annotation-box">
+      <strong>Scope-tabs</strong>
+      Неактивный — серый текст, без фона. Активный — чёрный, 500 weight, синяя полоска снизу (2px). Hover на неактивном — затемнение текста. Отрисовывается только если у аккаунта ≥2 собственных фирм.
+    </div>
+    <div class="annotation-box">
+      <strong>Toolbar</strong>
+      Поиск (flex: 1, max-width: 360px) — самый частый инструмент. Кнопка-иконка «Период» справа от него. CTA «+ Создать рейс» с margin-left: auto — прижимается к правому краю.
+    </div>
+    <div class="annotation-box">
+      <strong>Футер</strong>
+      Пагинация + page-size слева, «Настройка колонок» (иконка-шестерня) справа. Column visibility не в тулбаре, потому что это редкая глобальная настройка вида таблицы.
+    </div>
+  </div>
+
+  <div class="mockup-label">Состояние 2 — режим «все мои фирмы» (активна вторая вкладка)</div>
+
+  <div class="nav-wrap">
+    <div class="nav-container">
+      <div class="nav-left">
+        <span class="nav-brand">Трансдоки</span>
+        <a href="#" class="nav-link active">Рейсы</a>
+        <a href="#" class="nav-link">Финансы</a>
+        <a href="#" class="nav-link">Контрагенты</a>
+      </div>
+      <div class="nav-right">
+        <div class="org-pill">
+          ИП Иванов А.Б.
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
+        </div>
+        <div class="balance-pill">12 480 ₽</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="list-page">
+
+    <div class="list-header">
+      <h1 class="list-header-title">Рейсы</h1>
+      <nav class="scope-tabs" role="tablist" aria-label="Область просмотра">
+        <a href="#" class="scope-tab" role="tab" aria-selected="false">
+          <span>Текущая фирма</span>
+        </a>
+        <a href="#" class="scope-tab is-active" role="tab" aria-selected="true">
+          <span>Все мои фирмы · 3</span>
+        </a>
+      </nav>
+    </div>
+
+    <form class="list-toolbar">
+      <div class="search-field-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Номер или контрагент…
+      </div>
+      <button type="button" class="tms-btn tms-btn-ghost" title="Фильтр по дате">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </button>
+      <div class="toolbar-zone-action">
+        <a href="#" class="tms-btn tms-btn-primary">+ Создать рейс</a>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <table class="tms-table">
+        <thead>
+          <tr>
+            <th class="col-num">Номер</th>
+            <th class="col-date">Дата</th>
+            <th>Заказчик</th>
+            <th>Перевозчик</th>
+            <th>Маршрут</th>
+            <th class="col-cost">Доход</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0412</td>
+            <td class="muted">14.04.2026</td>
+            <td>ООО «Северный ветер»</td>
+            <td class="muted">ИП Иванов А.Б.</td>
+            <td class="muted">Москва → СПб</td>
+            <td class="col-cost">185 000 ₽</td>
+          </tr>
+          <tr>
+            <td>0415</td>
+            <td class="muted">16.04.2026</td>
+            <td>ООО «Ромашка»</td>
+            <td class="muted">ИП Петров</td>
+            <td class="muted">Новгород → Псков</td>
+            <td class="col-cost">62 000 ₽</td>
+          </tr>
+          <tr>
+            <td>0416</td>
+            <td class="muted">17.04.2026</td>
+            <td>ООО «Северный ветер»</td>
+            <td class="muted">ИП Иванов А.Б.</td>
+            <td class="muted">СПб → Петрозаводск</td>
+            <td class="col-cost">128 000 ₽</td>
+          </tr>
+          <tr>
+            <td>0418</td>
+            <td class="muted">20.04.2026</td>
+            <td>ИП Петров</td>
+            <td class="muted">ООО «Ромашка»</td>
+            <td class="muted">внутренний рейс</td>
+            <td class="col-cost">45 000 ₽</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="trips-footer-row">
+      <div class="trips-footer-pagination">
+        <span class="pagination-meta">Показано 1–4 из 110</span>
+        <div class="pagination-nav">
+          <span class="pagination-link">«</span>
+          <span class="pagination-link">‹</span>
+          <span class="pagination-link is-current">1</span>
+          <a href="#" class="pagination-link">2</a>
+          <a href="#" class="pagination-link">3</a>
+          <a href="#" class="pagination-link">›</a>
+          <a href="#" class="pagination-link">»</a>
+          <span class="page-size-label">25 / стр</span>
+        </div>
+      </div>
+      <div class="columns-visibility" title="Настройка колонок">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/><circle cx="10" cy="18" r="2" fill="white"/></svg>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <strong>Что изменилось при переключении:</strong> активный таб «переехал» на вторую вкладку, полоска снизу подсветилась под ней. Счётчик пагинации изменился с «из 42» на «из 110» — больше рейсов в выборке, так как фильтр по current_org снят. В таблице появились рейсы других собственных фирм (ИП Петров, ООО «Ромашка») и внутренние рейсы between own companies.
+  </div>
+
+  <div class="mockup-label">Адаптив — узкий экран (≤768px, мобильный / планшет)</div>
+
+  <div class="mobile-wrap">
+    <div class="mobile-screen">
+      <div class="list-page">
+        <div class="list-header">
+          <h1 class="list-header-title">Рейсы</h1>
+          <nav class="scope-tabs" role="tablist">
+            <a href="#" class="scope-tab is-active"><span>Текущая фирма</span></a>
+            <a href="#" class="scope-tab"><span>Все · 3</span></a>
+          </nav>
+        </div>
+        <form class="list-toolbar">
+          <div class="search-field-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Поиск…
+          </div>
+          <button type="button" class="tms-btn tms-btn-ghost" title="Период">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </button>
+          <a href="#" class="tms-btn tms-btn-primary" style="margin-left:auto;">+ Создать</a>
+        </form>
+        <div class="table-card">
+          <table class="tms-table">
+            <thead>
+              <tr>
+                <th>Номер</th>
+                <th>Дата</th>
+                <th class="col-cost">Доход</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>0412</td><td class="muted">14.04</td><td class="col-cost">185 000 ₽</td></tr>
+              <tr><td>0413</td><td class="muted">15.04</td><td class="col-cost">94 500 ₽</td></tr>
+              <tr><td>0414</td><td class="muted">16.04</td><td class="col-cost">72 000 ₽</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation-box" style="margin-top: 16px;">
+    <strong>Адаптив</strong>
+    Scope-tabs становятся full-width с равной долей (flex: 1), центрированный текст. Поиск занимает отдельную строку (flex-basis: 100%). Кнопка CTA сжимается до короткого «+ Создать». Таблица урезается до трёх самых важных колонок: номер, дата, доход — остальные уходят за scrollable container или скрываются в detail-view.
+  </div>
+
+</div>
+
+</body>
+</html>

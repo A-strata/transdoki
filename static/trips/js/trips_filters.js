@@ -414,6 +414,44 @@
             fetchList(params);
         });
 
+        // --- Scope-tabs: перехват кликов ---
+        //
+        // Переключение scope (Текущая фирма ↔ Все мои фирмы) работает через
+        // тот же partial-fetch, что и остальные фильтры. Это даёт две вещи:
+        //   1. фильтры (q, date, contractor_*) не теряются при смене scope —
+        //      они переживают через buildParams();
+        //   2. переключение мгновенное, без full page reload.
+        //
+        // Уважаем Ctrl/Cmd/Shift/middle-click — пусть браузер сам открывает
+        // ссылку в новой вкладке со штатным сервер-рендером.
+
+        document.addEventListener('click', function (e) {
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+
+            var tab = e.target.closest('.scope-tab[data-scope-target]');
+            if (!tab) return;
+
+            e.preventDefault();
+
+            if (tab.classList.contains('is-active')) return;
+
+            var target = tab.getAttribute('data-scope-target');
+            scopeMode = target;
+            form.setAttribute('data-scope', target);
+
+            // Optimistic UI: сразу переставляем активный таб, не ждём сервер.
+            var tabs = tab.parentElement.querySelectorAll('.scope-tab');
+            tabs.forEach(function (t) {
+                var isActive = (t === tab);
+                t.classList.toggle('is-active', isActive);
+                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            // page: '' → buildParams сбросит пагинацию на 1 страницу
+            // (в новой выборке общее число рейсов другое).
+            fetchList(buildParams({ page: '' }));
+        });
+
         // --- popstate ---
 
         function restoreFormFromParams(params) {
@@ -426,6 +464,22 @@
                 var val = params.get('contractor_' + role) || '';
                 if (val) contractorFilterOrder.push({ role: role, value: val });
             });
+
+            // Восстановить scope при Back/Forward. URL-параметр имеет
+            // приоритет над залипшим значением в сессии, и активный таб
+            // должен отражать текущее состояние URL.
+            var urlScope = params.get('scope');
+            scopeMode = (urlScope === 'all') ? 'all' : 'own';
+            form.setAttribute('data-scope', scopeMode);
+
+            var scopeTabsEl = document.querySelector('.scope-tabs');
+            if (scopeTabsEl) {
+                scopeTabsEl.querySelectorAll('.scope-tab').forEach(function (t) {
+                    var isActive = t.getAttribute('data-scope-target') === scopeMode;
+                    t.classList.toggle('is-active', isActive);
+                    t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+            }
 
             updateSearchState();
             syncCalendarVisibility();

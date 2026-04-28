@@ -214,9 +214,9 @@ class TripScopeSwitchTests(TestCase):
         # Активный класс стоит на own-кнопке (data-scope-target="own").
         self.assertIn('data-scope-target="own"', html)
         # Должна быть ровно одна .is-active в сегменте.
-        # Грубая проверка: подсчитать вхождения "scope-switch-item is-active"
-        # (обе кнопки всегда с "scope-switch-item", одна также с "is-active").
-        active_count = html.count("scope-switch-item is-active")
+        # Грубая проверка: подсчитать вхождения "scope-tab is-active"
+        # (обе кнопки всегда с "scope-tab", одна также с "is-active").
+        active_count = html.count("scope-tab is-active")
         self.assertEqual(active_count, 1)
 
     def test_rendered_switch_links_in_all_mode(self):
@@ -226,7 +226,9 @@ class TripScopeSwitchTests(TestCase):
         # Обе ссылки присутствуют.
         self.assertIn('href="?scope=own&amp;page=1"', html)
         self.assertIn('href="?scope=all&amp;page=1"', html)
-        # Плашка-подзаголовок отрисована.
-        self.assertIn("Сводный обзор по аккаунту", html)
+        # Конкретика фирм в title-подсказке кнопки «Все мои фирмы».
+        self.assertIn("Сводный обзор по фирмам:", html)
+        self.assertIn("Альфа", html)
+        self.assertIn("Бета", html)
         # is-active ровно один.
-        self.assertEqual(html.count("scope-switch-item is-active"), 1)
+        self.assertEqual(html.count("scope-tab is-active"), 1)
