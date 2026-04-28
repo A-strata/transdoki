@@ -1042,6 +1042,61 @@ class ForwarderFieldTests(RouteBuilderTestBase):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Регрессия: ставка в договоре-заявке для own=client
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AgreementRequestRateTests(RouteBuilderTestBase):
+    """
+    Баг на проде (заявка 52): для рейса own=client, где по правилу валидатора
+    заполнен только carrier_cost, ставка в договоре-заявке не печаталась —
+    AgreementRequestGenerator.build_context смотрел исключительно на client_cost
+    и при пустом client_cost вообще не клал ключ в контекст.
+    """
+
+    def _make_trip(self, **kwargs):
+        from datetime import date
+
+        defaults = {
+            "date_of_trip": date(2026, 5, 1),
+            "client": self.our_org,
+            "carrier": self.external_org,
+            "driver": self.driver,
+            "truck": self.truck,
+            "cargo": "Груз",
+            "account": self.account,
+            "created_by": self.user,
+        }
+        defaults.update(kwargs)
+        return Trip.objects.create(**defaults)
+
+    def test_rate_printed_when_own_is_client(self):
+        from decimal import Decimal
+
+        from trips.services import AgreementRequestGenerator
+
+        trip = self._make_trip(
+            client=self.our_org, carrier=self.external_org,
+            carrier_cost=Decimal("35000"), carrier_cost_unit="rub",
+        )
+        ctx = AgreementRequestGenerator.build_context(trip)
+        self.assertIn("client_cost", ctx)
+        self.assertIn("35\xa0000,00", ctx["client_cost"])
+
+    def test_rate_printed_when_own_is_carrier(self):
+        from decimal import Decimal
+
+        from trips.services import AgreementRequestGenerator
+
+        trip = self._make_trip(
+            client=self.external_org, carrier=self.our_org,
+            client_cost=Decimal("42000"), client_cost_unit="rub",
+        )
+        ctx = AgreementRequestGenerator.build_context(trip)
+        self.assertIn("client_cost", ctx)
+        self.assertIn("42\xa0000,00", ctx["client_cost"])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Регрессия: ставка с запятой + сохранение имён организаций при ошибке формы
 # ═══════════════════════════════════════════════════════════════════════════════
 

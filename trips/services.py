@@ -237,16 +237,18 @@ class AgreementRequestGenerator(TNGenerator):
         context = super().build_context(trip)
         context["passport_data"] = cls._format_passport(trip.driver)
 
-        if trip.client_cost is not None:
-            unit_label = trip.get_client_cost_unit_display() or ""
-            context["client_cost"] = (
-                f"{cls._format_rate_ru(trip.client_cost)} {unit_label}".strip()
-            )
-
         if trip.carrier and trip.carrier.is_own_company:
             own, counterparty = trip.carrier, trip.client
+            rate, rate_unit_display = trip.client_cost, trip.get_client_cost_unit_display()
         else:
             own, counterparty = trip.client, trip.carrier
+            rate, rate_unit_display = trip.carrier_cost, trip.get_carrier_cost_unit_display()
+
+        if rate is not None:
+            unit_label = rate_unit_display or ""
+            context["client_cost"] = (
+                f"{cls._format_rate_ru(rate)} {unit_label}".strip()
+            )
 
         own_bank = cls._bank_details(own)
         context["own_rs"] = own_bank["rs"]
