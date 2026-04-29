@@ -320,14 +320,29 @@ function initAutocomplete(selectId) {
     function createHintEl(text, type) {
         var el = document.createElement('div');
         el.textContent = text;
-        // type: 'warning' | 'info'. По умолчанию — warning (жёлтая плашка),
-        // info — нейтральная. Цвета берутся из тех же CSS-переменных, что
-        // и на остальных предупреждениях приложения.
+        // type: 'warning' | 'info'.
+        //   warning — жёлтая плашка с бордером (семантически предупреждение,
+        //     обычно идёт ПОВЕРХ списка items: «не привязаны — показаны все»).
+        //   info — нейтральная подсказка, играющая роль empty-state'а
+        //     (например, «у перевозчика X пока нет ни одной машины»).
+        //     Стилистически приравнена к createEmptyStateEl: белый фон,
+        //     без бордера, тот же padding/color/line-height — чтобы не
+        //     создавать визуального шума, когда хинт это и есть «пусто».
         var isInfo = type === 'info';
-        var colorVars = isInfo
-            ? 'color:var(--muted); background:var(--hover-active); border-bottom:1px solid var(--border);'
-            : 'color:var(--warning-text); background:var(--warning-bg); border-bottom:1px solid var(--warning-border);';
-        el.style.cssText = 'padding:8px 12px; font-size:var(--text-sm); ' + colorVars;
+        var styles;
+        if (isInfo) {
+            styles = [
+                'padding:12px 14px; font-size:var(--text-sm);',
+                'color:var(--muted); line-height:1.45;',
+            ].join('');
+        } else {
+            styles = [
+                'padding:8px 12px; font-size:var(--text-sm);',
+                'color:var(--warning-text); background:var(--warning-bg);',
+                'border-bottom:1px solid var(--warning-border);',
+            ].join('');
+        }
+        el.style.cssText = styles;
         return el;
     }
 
@@ -446,8 +461,20 @@ function initAutocomplete(selectId) {
         // canShowEmptyState шире canShowCreate: пустое состояние остаётся
         // информативным, даже когда создание выключено.
         var createAllowed = select.dataset.acCreate === '1';
-        var canShowCreate = createAllowed && !!entityType && q.length >= 2;
-        var canShowEmptyState = !!entityType && q.length >= 2;
+        // Гейт q.length >= 2 защищает от моргания empty-state и create-
+        // footer'а при первых нажатиях клавиш до debounce. Но в режиме
+        // openOnFocus(/Always) фетч уже выполнен на пустом q (например,
+        // выбран перевозчик и пользователь кликнул в поле «Автомобиль»),
+        // и ответ может содержательно сказать «у перевозчика нет машин» —
+        // тогда нужно показать осмысленное пустое состояние с футером
+        // «+ Добавить». Без этой ветки дропдаун молча схлопнется.
+        var triggeredByFocus = (
+            select.dataset.openOnFocus === '1' ||
+            select.dataset.openOnFocusAlways === '1'
+        );
+        var hasMeaningfulQuery = q.length >= 2 || (q === '' && triggeredByFocus);
+        var canShowCreate = createAllowed && !!entityType && hasMeaningfulQuery;
+        var canShowEmptyState = !!entityType && hasMeaningfulQuery;
 
         if (!items.length && !canShowEmptyState) {
             dropdown.style.display = 'none';
@@ -493,11 +520,18 @@ function initAutocomplete(selectId) {
             }
             if (canShowCreate) appendCreateFooter();
         } else {
-            // items пусто. Текст empty-state — линейный выбор по
-            // createAllowed: с призывом «добавьте новую» или без.
-            // Футер рисуем только если создание реально доступно.
-            var emptyText = createAllowed ? createEmptyMsg : createEmptyMsgNoCreate;
-            dropdown.appendChild(createEmptyStateEl(emptyText));
+            // items пусто. Если сервер уже прислал hint — он семантически
+            // и визуально (info-хинт стилизован под empty-state) играет
+            // роль empty-state'а и обычно более конкретен («У перевозчика
+            // X пока нет ни одной машины» ≫ generic «ТС не найдено»).
+            // Чтобы не дублировать одно и то же сообщение дважды, generic
+            // empty-state в этом случае не рисуем. Кнопка «+ Добавить»
+            // зависит от canShowCreate отдельно и остаётся доступной.
+            var hasHint = !!(hint && hint.text);
+            if (!hasHint) {
+                var emptyText = createAllowed ? createEmptyMsg : createEmptyMsgNoCreate;
+                dropdown.appendChild(createEmptyStateEl(emptyText));
+            }
             if (canShowCreate) appendCreateFooter();
         }
 

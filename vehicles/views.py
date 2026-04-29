@@ -265,17 +265,41 @@ class VehicleSearchView(CarrierGroupingMixin, AjaxSearchView):
       q          — поиск по grn / brand.
       type       — "truck" (truck+single) | "trailer"; остальные игнорируются.
       own=1      — только ТС «наших» фирм (owner.is_own_company=True).
-      carrier_id — группировка по owner_id = carrier_id (см. CarrierGroupingMixin).
+      carrier_id — STRICT-фильтр по owner_id = carrier_id (см.
+                   CarrierGroupingMixin, режим strict_carrier).
 
-    Хинт "ТС не привязаны к перевозчику — показаны все" — когда у выбранного
-    «нашего» перевозчика нет ТС в справочнике.
+    Strict-режим включён, потому что в форме рейса действует жёсткое
+    правило `validate_vehicles_belong_to_carrier`: truck.owner == carrier
+    (одинаково для своих и внешних перевозчиков). Любая выдача за пределами
+    этого критерия ведёт к ошибке валидации на сабмите — поэтому в дропдауне
+    показываем только машины выбранного перевозчика. Если их нет, отдаём
+    пустой список с info-хинтом — фронт нарисует empty-state и предложит
+    создать новое ТС (quick-create уже подставит carrier как owner).
     """
 
     model = Vehicle
     search_fields = ("grn", "brand")
     order_by = ("grn",)
     owner_field = "owner"
-    no_link_hint_text = "ТС не привязаны к перевозчику — показаны все"
+    strict_carrier = True
+    # Текст хинта зависит от GET-параметра type (см. format_empty_carrier_hint
+    # ниже). Атрибут используется как fallback, когда type не указан —
+    # в форме рейса это никогда не происходит (truck-поле всегда передаёт
+    # type=truck, trailer — type=trailer), но на случай прямых обращений
+    # к API оставляем разумный дефолт.
+    empty_carrier_hint_text = (
+        "У перевозчика «{carrier}» пока нет ни одной машины"
+    )
+    empty_carrier_hint_text_trailer = (
+        "У перевозчика «{carrier}» пока нет ни одного прицепа"
+    )
+
+    def format_empty_carrier_hint(self, carrier):
+        if self.request.GET.get("type", "") == "trailer":
+            return self.empty_carrier_hint_text_trailer.format(
+                carrier=str(carrier)
+            )
+        return super().format_empty_carrier_hint(carrier)
 
     def apply_extra_filters(self, qs):
         g = self.request.GET

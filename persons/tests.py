@@ -4,11 +4,16 @@
 Endpoint возвращает единый JSON-контракт (transdoki/search.py):
     {"items": [...], "groups"?: [...], "hint"?: {...}}
 
+PersonSearchView работает в strict_carrier-режиме (как VehicleSearchView):
+при наличии `carrier_id` выдача жёстко ограничивается водителями этого
+перевозчика (employer_id == carrier.pk). Сценарий зеркальный с UX поля
+«Автомобиль»: либо список водителей перевозчика, либо empty-state с
+кнопкой «+ Добавить водителя» (quick-create подставит employer = carrier).
+
 Сценарии:
   - плоский ответ (без carrier_id),
-  - хинт «не привязаны к перевозчику» при carrier_id=чужой/не-own,
-  - группа carrier без заголовка при пустом q,
-  - две группы carrier + «Другие» при непустом q,
+  - carrier_id (strict): свой/внешний перевозчик с водителями и без,
+  - q без совпадений → пустой список без хинта (фронт нарисует empty-state),
   - поиск по surname / name / patronymic,
   - tenant-изоляция: чужих водителей не видно.
 """
@@ -32,26 +37,22 @@ class PersonSearchTests(TestCase):
         cls.user.profile.account = cls.account
         cls.user.profile.save(update_fields=["account"])
 
-        # Наш перевозчик — для него группировка работает.
         cls.own_carrier = Organization.objects.create(
             account=cls.account, full_name="ООО Мой Парк", short_name="МойПарк",
             inn="7707083893", is_own_company=True,
         )
-        # Контрагент — с ним группировка не имеет смысла: carrier_id
-        # должен дать flat+hint.
         cls.ext_carrier = Organization.objects.create(
             account=cls.account, full_name="ООО Клиент", short_name="Клиент",
             inn="7728168971", is_own_company=False,
         )
 
-        # Два водителя «у нас», один — без работодателя (справочник).
         cls.own_driver = Person.objects.create(
             account=cls.account, name="Иван", surname="Иванов", patronymic="Иванович",
             phone="+79001112233", employer=cls.own_carrier,
         )
-        cls.other_driver = Person.objects.create(
+        cls.ext_driver = Person.objects.create(
             account=cls.account, name="Пётр", surname="Петров", patronymic="Петрович",
-            phone="+79002223344",
+            phone="+79002223344", employer=cls.ext_carrier,
         )
 
     def setUp(self):
@@ -66,7 +67,7 @@ class PersonSearchTests(TestCase):
         data = self._search()
         ids = [it["id"] for it in data["items"]]
         self.assertIn(self.own_driver.pk, ids)
-        self.assertIn(self.other_driver.pk, ids)
+        self.assertIn(self.ext_driver.pk, ids)
         self.assertNotIn("groups", data)
         self.assertNotIn("hint", data)
 
@@ -76,45 +77,59 @@ class PersonSearchTests(TestCase):
         self.assertNotIn("groups", data)
         self.assertNotIn("hint", data)
 
-    def test_non_own_carrier_gives_flat_plus_hint(self):
-        data = self._search(carrier_id=self.ext_carrier.pk)
-        self.assertNotIn("groups", data)
-        self.assertEqual(data["hint"]["type"], "warning")
-        self.assertIn("не привязаны", data["hint"]["text"].lower())
-
-    def test_own_carrier_without_query_single_group_no_header(self):
-        # carrier_id=own, q пуст → одна безымянная группа "carrier",
-        # только водители этого перевозчика.
+    def test_own_carrier_filtered_strictly_to_employees(self):
+        # Strict-режим: дропдаун содержит ТОЛЬКО водителей выбранного
+        # перевозчика. Никаких «Других», никаких фрилансеров.
         data = self._search(carrier_id=self.own_carrier.pk)
-        self.assertEqual(len(data["groups"]), 1)
-        self.assertEqual(data["groups"][0]["key"], "carrier")
+        self.assertEqual([g["key"] for g in data["groups"]], ["carrier"])
         self.assertIsNone(data["groups"][0]["label"])
         ids = [it["id"] for it in data["items"]]
         self.assertEqual(ids, [self.own_driver.pk])
-        self.assertEqual(data["items"][0]["group"], "carrier")
+        self.assertNotIn("hint", data)
 
-    def test_own_carrier_with_query_two_groups(self):
-        # q задан → показываем carrier + «Другие».
+    def test_external_carrier_filtered_strictly_to_employees(self):
+        # «Наша фирма — заказчик», перевозчик внешний (is_own_company=False).
+        # Поведение симметричное: только водители этого перевозчика.
+        # Раньше здесь отдавался весь справочник + warning-хинт.
+        data = self._search(carrier_id=self.ext_carrier.pk)
+        self.assertEqual([g["key"] for g in data["groups"]], ["carrier"])
+        ids = [it["id"] for it in data["items"]]
+        self.assertEqual(ids, [self.ext_driver.pk])
+        self.assertNotIn(self.own_driver.pk, ids)
+        self.assertNotIn("hint", data)
+
+    def test_own_carrier_with_query_only_carrier_group_no_others(self):
+        # q="ов" матчит обоих водителей (Иванов и Петров), но в strict
+        # дропдаун попадают только водители выбранного перевозчика.
         data = self._search(carrier_id=self.own_carrier.pk, q="ов")
-        group_keys = [g["key"] for g in data["groups"]]
-        self.assertEqual(group_keys, ["carrier", "others"])
-        self.assertEqual(data["groups"][1]["label"], "Другие")
+        self.assertEqual([g["key"] for g in data["groups"]], ["carrier"])
+        ids = [it["id"] for it in data["items"]]
+        self.assertEqual(ids, [self.own_driver.pk])
+        self.assertNotIn(self.ext_driver.pk, ids)
 
-        by_group = {"carrier": [], "others": []}
-        for it in data["items"]:
-            by_group[it["group"]].append(it["id"])
-        self.assertEqual(by_group["carrier"], [self.own_driver.pk])
-        self.assertIn(self.other_driver.pk, by_group["others"])
-
-    def test_own_carrier_no_attached_drivers_falls_back_to_all_plus_hint(self):
-        # Перевозчик без привязанных водителей: плоский ответ + hint.
+    def test_carrier_without_drivers_returns_empty_with_info_hint(self):
+        # У перевозчика нет водителей и пользователь ничего не ищет —
+        # пустой список + info-хинт. Фронт нарисует empty-state с
+        # кнопкой «+ Добавить водителя» (quick-create подставит
+        # employer = carrier).
         empty_carrier = Organization.objects.create(
             account=self.account, full_name="ООО Пусто", short_name="Пусто",
             inn="7736050003", is_own_company=True,
         )
         data = self._search(carrier_id=empty_carrier.pk)
+        self.assertEqual(data["items"], [])
         self.assertNotIn("groups", data)
-        self.assertEqual(data["hint"]["type"], "warning")
+        self.assertEqual(data["hint"]["type"], "info")
+        self.assertIn("Пусто", data["hint"]["text"])
+        self.assertIn("ни одного водителя", data["hint"]["text"])
+
+    def test_carrier_with_query_no_match_returns_empty_without_hint(self):
+        # У перевозчика есть водитель, но q не совпадает — пустой список
+        # БЕЗ хинта. Фронт нарисует обычный empty-state из ENTITY_DEFAULTS.
+        data = self._search(carrier_id=self.own_carrier.pk, q="ZZZZZZZ")
+        self.assertEqual(data["items"], [])
+        self.assertNotIn("groups", data)
+        self.assertNotIn("hint", data)
 
     def test_search_is_and_across_words_or_across_fields(self):
         # "Иван Иванов" → должен найти И.И. Иванова по двум полям.

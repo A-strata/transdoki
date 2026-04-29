@@ -477,11 +477,13 @@ class TripListView(UserOwnedListView):
     paginate_by = 25
     page_size_options = [25, 50, 100]
 
-    # Ключ сессии для режима просмотра списка.
-    # "own" — показывать только рейсы, где участвует current_org (дефолт).
-    # "all" — показывать все рейсы аккаунта (по всем собственным фирмам).
-    # Режим "all" имеет смысл только при own_orgs ≥ 2; иначе форсируется "own".
-    SCOPE_SESSION_KEY = "trips_scope_all"
+    # Режим просмотра списка хранится в URL-параметре ?scope=:
+    #   отсутствует / любое значение кроме "all" — режим "own" (только current_org, дефолт)
+    #   "all" — все рейсы аккаунта по всем собственным фирмам (только при own_orgs ≥ 2)
+    # URL — единственный источник правды. Никакой сессии: иначе UI и данные
+    # неизбежно расходятся при partial-fetch (см. trips_filters.js: clicks
+    # на табах формируют запрос через buildParams, который для own-режима
+    # просто опускает параметр).
 
     def get_template_names(self):
         if self.request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -509,45 +511,15 @@ class TripListView(UserOwnedListView):
     def _resolve_scope_all(self):
         """Определяет текущий режим просмотра (True=all, False=own).
 
-        Правила:
-        1. Если own_orgs < 2 — режим всегда own (all не имеет смысла).
-        2. Если в GET передан ?scope=all — пишем True в сессию.
-           Если ?scope=own — удаляем ключ из сессии (дефолт own).
-           Любое другое значение (включая отсутствие параметра) — читаем
-           текущее состояние из сессии.
-
-        Важно: own-кнопка переключателя в шаблоне обязана рендерить URL
-        с ?scope=own, чтобы явный клик гарантированно обнулял залипший
-        scope=all в сессии. Иначе пользователь «прилипает» в all-режиме.
-
-        Кешируется на время запроса в self._scope_all_cache.
+        URL-driven: значение читается строго из ?scope= в request.GET.
+        Любое значение, кроме "all", трактуется как own (включая отсутствие
+        параметра, "own" и невалидные значения). При own_orgs < 2 режим
+        all форсированно отключается — переключатель в этом случае скрыт,
+        а прямой ?scope=all в URL игнорируется.
         """
-        if hasattr(self, "_scope_all_cache"):
-            return self._scope_all_cache
-
         if self._own_orgs_count() < 2:
-            # Страховка: если осталась одна собственная фирма, sweep-режим
-            # теряет смысл. Заодно чистим залипший флаг.
-            self.request.session.pop(self.SCOPE_SESSION_KEY, None)
-            self._scope_all_cache = False
             return False
-
-        raw = self.request.GET.get("scope")
-        if raw == "all":
-            if not self.request.session.get(self.SCOPE_SESSION_KEY):
-                self.request.session[self.SCOPE_SESSION_KEY] = True
-            value = True
-        elif raw == "own":
-            # Явный клик «только моя фирма» — стираем сессию, чтобы
-            # последующие GET без параметра тоже вели к own-режиму.
-            if self.request.session.get(self.SCOPE_SESSION_KEY):
-                self.request.session.pop(self.SCOPE_SESSION_KEY, None)
-            value = False
-        else:
-            value = bool(self.request.session.get(self.SCOPE_SESSION_KEY, False))
-
-        self._scope_all_cache = value
-        return value
+        return self.request.GET.get("scope") == "all"
 
     def get_paginate_by(self, queryset):
         raw_value = (self.request.GET.get("page_size") or "").strip()

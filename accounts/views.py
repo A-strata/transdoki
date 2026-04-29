@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -76,12 +77,19 @@ class ImpersonateStopView(LoginRequiredMixin, View):
 
 
 class SwitchOrganizationView(LoginRequiredMixin, View):
-    # Ключи сессии, хранящие per-list «область просмотра» (scope=all).
-    # При явной смене активной фирмы в навбаре — сбрасываем их, чтобы
-    # списки переключились в режим «только эта фирма». Иначе пользователь
-    # выбирает фирму без рейсов, но по-прежнему видит все рейсы аккаунта
-    # из залипшего scope_all=True.
-    LIST_SCOPE_SESSION_KEYS = ("trips_scope_all",)
+    """Смена активной фирмы (current_org) в навбаре.
+
+    Per-list «область просмотра» (scope=all|own) живёт в URL-параметре
+    списка. При смене current_org возвращаем пользователя на referer,
+    но стрипаем ?scope=all — иначе пользователь выбирает фирму, ожидая
+    увидеть её рейсы, а UI остаётся в общем режиме и показывает рейсы
+    всех фирм. Сброс scope при смене контекста — намеренный UX.
+    """
+
+    # Query-параметры, которые при смене current_org теряют смысл
+    # и должны быть удалены из URL редиректа. Каждый list-view,
+    # хранящий per-list режим в URL, добавляет сюда свой ключ.
+    SCOPE_QUERY_PARAMS = ("scope",)
 
     def post(self, request):
         account = get_request_account(request)
@@ -90,14 +98,23 @@ class SwitchOrganizationView(LoginRequiredMixin, View):
             org = Organization.objects.own_for(account).filter(pk=org_id).first()
             if org is not None:
                 request.session["current_org_id"] = org.pk
-                for key in self.LIST_SCOPE_SESSION_KEYS:
-                    request.session.pop(key, None)
                 profile = request.user.profile
                 if profile.last_active_org_id != org.pk:
                     profile.last_active_org = org
                     profile.save(update_fields=["last_active_org"])
-        referer = request.META.get("HTTP_REFERER") or reverse("trips:list")
-        return redirect(referer)
+        return redirect(self._resolve_redirect_url(request))
+
+    def _resolve_redirect_url(self, request):
+        referer = request.META.get("HTTP_REFERER")
+        if not referer:
+            return reverse("trips:list")
+        parsed = urlparse(referer)
+        kept = [
+            (k, v)
+            for k, v in parse_qsl(parsed.query, keep_blank_values=True)
+            if k not in self.SCOPE_QUERY_PARAMS
+        ]
+        return urlunparse(parsed._replace(query=urlencode(kept)))
 
 
 class RegisterView(FormView):

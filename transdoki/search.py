@@ -175,39 +175,90 @@ class AjaxSearchView(View):
 class CarrierGroupingMixin:
     """Группировка выдачи по связи с выбранным перевозчиком.
 
-    Типовой сценарий: в форме рейса уже выбран «наш» перевозчик, и для
-    полей driver / truck / trailer пользователь хочет видеть сначала
-    записи, связанные с этим перевозчиком (его водители / его ТС),
-    а потом — остальные.
+    Два режима, переключаемые атрибутом подкласса `strict_carrier`.
+
+    ── Non-strict (default, используется для Person / водителей) ──────
+    Сценарий: в форме рейса уже выбран «наш» перевозчик, и для поля
+    driver пользователь хочет видеть сначала водителей этого перевозчика,
+    а потом — остальных. Жёсткой связи водителя с перевозчиком на уровне
+    модели нет (водителя могут «одолжить»), поэтому «Другие» — допустимый
+    вариант выбора.
+
+    Поведение non-strict:
+      1. carrier_id не задан                → плоский ответ.
+      2. carrier_id невалиден / не нашёлся
+         в аккаунте / не is_own_company     → плоский ответ + warning-hint.
+      3. carrier_id валиден, own_company:
+         3a. в carrier_qs ничего нет, q пуст → плоский ответ по полной
+             базе + warning-hint (группировка бессмысленна).
+         3b. q пуст  → группа "carrier" без заголовка.
+         3c. q задан → группы "carrier" (без заголовка) и "others"
+             (заголовок «Другие»).
+
+    ── Strict (используется для Vehicle / ТС) ─────────────────────────
+    Сценарий: в форме рейса для truck/trailer действует жёсткое правило
+    `validate_vehicles_belong_to_carrier` (truck.owner == carrier). Любая
+    выдача, выходящая за этот критерий, ведёт к ошибке валидации на
+    сабмите — поэтому показываем ТОЛЬКО машины перевозчика. Гейт
+    `is_own_company` здесь не применяется: правило одинаково для своих и
+    внешних перевозчиков. Если у перевозчика нет машин — отдаём пустой
+    список с info-хинтом, фронт нарисует empty-state и предложит создать
+    новое ТС (quick-create уже подставит правильного владельца).
+
+    Поведение strict:
+      1. carrier_id не задан / невалиден / не из аккаунта
+                                                  → плоский ответ.
+      2. carrier_id валиден, у перевозчика есть машины (с учётом q)
+                                                  → группа "carrier".
+      3. carrier_id валиден, машин нет:
+         3a. q пуст                               → пустой список +
+             info-хинт «У перевозчика «X» пока нет ни одной машины».
+         3b. q задан (просто не нашлось)          → пустой список без
+             хинта; фронт покажет стандартное empty-state.
 
     Подкласс задаёт:
         owner_field — имя FK-поля модели, указывающего на Organization:
                       "employer" для Person, "owner" для Vehicle.
-
-    Параметры из запроса:
-        carrier_id — pk организации-перевозчика. Если невалиден или
-                     не относится к account'у — выдаётся плоский ответ.
-                     Если не «наш» (is_own_company=False) — плоский ответ
-                     с хинтом «Не привязаны к перевозчику — показаны все».
-
-    Поведение:
-      1. carrier_id не задан           → плоский ответ.
-      2. carrier_id валиден, но org    → плоский ответ + hint.
-         не own_company / не существует
-      3. carrier_id валиден, own_company:
-         3a. в carrier_qs ничего нет, и q пуст
-             → плоский ответ по полной базе + hint
-               (в этом случае группировка бессмысленна).
-         3b. q пуст  → группа "carrier" без заголовка.
-         3c. q задан → группы "carrier" (без заголовка) и "others"
-             (заголовок «Другие»).
     """
 
     owner_field: str = ""
 
-    # Текст хинта вынесен атрибутом класса — чтобы можно было
-    # переопределить в Person / Vehicle, не дублируя логику.
+    # Включает strict-режим (см. docstring класса). Для Vehicle = True.
+    strict_carrier: bool = False
+
+    # Текст хинта (non-strict) — когда группировка бессмысленна и мы
+    # вынуждены показать всю базу.
     no_link_hint_text: str = "Не привязаны к перевозчику — показаны все"
+
+    # Шаблон info-хинта (strict) — когда у выбранного перевозчика нет
+    # ни одной связанной записи и пользователь ничего не ищет. {carrier}
+    # — строковое представление организации (Organization.__str__ →
+    # short_name). Подкласс может переопределить либо сам шаблон, либо
+    # метод format_empty_carrier_hint() ниже — последнее нужно, когда
+    # формулировка зависит от параметров запроса (например, разный текст
+    # для type=truck и type=trailer в VehicleSearchView).
+    empty_carrier_hint_text: str = (
+        "У перевозчика «{carrier}» пока нет связанных записей"
+    )
+
+    def format_empty_carrier_hint(self, carrier) -> str:
+        """Текст info-хинта для перевозчика без связанных записей.
+
+        По умолчанию подставляет {carrier} в self.empty_carrier_hint_text.
+        Переопределение в подклассе позволяет выбрать формулировку по
+        контексту запроса (например, type=truck vs type=trailer)."""
+        return self.empty_carrier_hint_text.format(carrier=str(carrier))
+
+    def filter_carrier_qs(self, qs: QuerySet, carrier) -> QuerySet:
+        """В strict-режиме — queryset записей, считающихся «связанными
+        с перевозчиком».
+
+        По умолчанию — точное совпадение по owner_field_id. Подкласс
+        может расширить семантику: например, для Person FK
+        Person.employer допускает NULL by design (фрилансер без
+        работодателя в справочнике), и такие водители разумно показывать
+        при любом перевозчике."""
+        return qs.filter(**{f"{self.owner_field}_id": carrier.pk})
 
     def build_response(self, qs: QuerySet) -> dict:
         # Поздний импорт: избегаем circular import между
@@ -240,6 +291,42 @@ class CarrierGroupingMixin:
             .filter(pk=int(carrier_id_raw))
             .first()
         )
+
+        # ── Strict-режим: жёсткая фильтрация по carrier, без «Других». ──
+        if self.strict_carrier:
+            if carrier is None:
+                # carrier_id указывает на чужой/несуществующий tenant —
+                # fallback на плоский ответ. Серверная валидация всё
+                # равно отвергнет такую попытку при сабмите.
+                return {"items": flat_items(qs)}
+
+            carrier_qs = self.filter_carrier_qs(qs, carrier)
+            carrier_items = flat_items(carrier_qs)
+
+            if not carrier_items:
+                if not q:
+                    # Перевозчик выбран, ничего не ищем — пусто значит
+                    # «у этого перевозчика нет ни одной записи».
+                    # Хинт + пустой список → фронт рисует empty-state
+                    # с футером «+ Добавить».
+                    return {
+                        "items": [],
+                        "hint": SearchHint(
+                            type="info",
+                            text=self.format_empty_carrier_hint(carrier),
+                        ),
+                    }
+                # q задан, но не нашлось — возвращаем просто пусто;
+                # фронт нарисует обычный empty-state из ENTITY_DEFAULTS
+                # («…проверьте написание — либо добавьте новое»).
+                return {"items": []}
+
+            return {
+                "items": [{**it, "group": "carrier"} for it in carrier_items],
+                "groups": (SearchGroup(key="carrier"),),
+            }
+
+        # ── Non-strict (старая логика, используется для Person). ──────
         if carrier is None or not carrier.is_own_company:
             return {
                 "items": flat_items(qs),

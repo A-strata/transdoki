@@ -135,20 +135,26 @@ class PersonSearchView(CarrierGroupingMixin, AjaxSearchView):
     GET-параметры:
       q          — поиск по surname / name / patronymic (AND между словами,
                    OR между полями).
-      carrier_id — pk «нашего» перевозчика; если задан, водители перевозчика
-                   (employer_id = carrier_id) выделяются в первую группу,
-                   остальные — во вторую (только при непустом q).
-                   См. CarrierGroupingMixin для детальной семантики.
+      carrier_id — pk перевозчика (свой/внешний — без разницы); STRICT-фильтр
+                   по employer_id = carrier_id. Если carrier_id невалиден /
+                   не из аккаунта — плоский ответ.
 
-    Хинт "Водители не привязаны к перевозчику — показаны все" показывается,
-    когда у выбранного «нашего» перевозчика нет водителей в справочнике.
+    Strict-режим — полная симметрия с VehicleSearchView: после выбора
+    перевозчика дропдаун водителя показывает либо его водителей, либо
+    empty-state с кнопкой «+ Добавить водителя» (quick-create подставит
+    employer = carrier). Серверный валидатор «driver.employer == carrier»
+    в trips/forms.py НЕ добавлен — клиентский UX направляет, бэк не
+    запрещает; при необходимости валидатор легко добавить отдельно.
     """
 
     model = Person
     search_fields = ("surname", "name", "patronymic")
     order_by = ("surname", "name")
     owner_field = "employer"
-    no_link_hint_text = "Водители не привязаны к перевозчику — показаны все"
+    strict_carrier = True
+    empty_carrier_hint_text = (
+        "У перевозчика «{carrier}» пока нет ни одного водителя"
+    )
 
 
 @login_required

@@ -147,31 +147,30 @@ class TripScopeSwitchTests(TestCase):
         trips = list(resp.context["trips"])
         self.assertNotIn(self.other_trip, trips)
 
-    def test_scope_all_persists_in_session(self):
-        """После ?scope=all следующий GET без параметра сохраняет режим."""
+    def test_scope_does_not_leak_into_session(self):
+        """URL — единственный источник правды: ?scope=all не пишется в сессию,
+        и следующий GET без параметра возвращает в дефолтный own-режим."""
         self._list(scope="all")
-        self.assertTrue(self.client.session.get("trips_scope_all"))
+        self.assertNotIn("trips_scope_all", self.client.session)
 
-        resp = self._list()
-        self.assertTrue(resp.context["scope_all"])
-        self.assertIn(self.trip_b, list(resp.context["trips"]))
-
-    def test_scope_own_clears_session(self):
-        """?scope=own возвращает в дефолтный режим и перезаписывает сессию."""
-        self._list(scope="all")
-        self.assertTrue(self.client.session.get("trips_scope_all"))
-
-        resp = self._list(scope="own")
-        self.assertFalse(self.client.session.get("trips_scope_all"))
+        resp = self._list()  # без параметра
         self.assertFalse(resp.context["scope_all"])
         self.assertNotIn(self.trip_b, list(resp.context["trips"]))
 
-    def test_invalid_scope_value_ignored(self):
-        """?scope=bogus не должен ломать view или менять сессию."""
+    def test_scope_own_returns_to_own_mode(self):
+        """?scope=own (явный) — own-режим, как и любое значение, кроме "all"."""
+        # Сначала зайти со scope=all — убедиться, что это не закрепляется.
+        self._list(scope="all")
+        resp = self._list(scope="own")
+        self.assertFalse(resp.context["scope_all"])
+        self.assertNotIn(self.trip_b, list(resp.context["trips"]))
+
+    def test_invalid_scope_value_falls_back_to_own(self):
+        """?scope=bogus не ломает view, трактуется как own."""
         resp = self._list(scope="bogus")
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context["scope_all"])
-        self.assertFalse(self.client.session.get("trips_scope_all", False))
+        self.assertNotIn("trips_scope_all", self.client.session)
 
     def test_scope_switch_visible_when_two_own_orgs(self):
         resp = self._list()
@@ -232,3 +231,33 @@ class TripScopeSwitchTests(TestCase):
         self.assertIn("Бета", html)
         # is-active ровно один.
         self.assertEqual(html.count("scope-tab is-active"), 1)
+
+    # ── Сброс scope при смене активной фирмы ──
+
+    def test_switch_org_strips_scope_from_referer(self):
+        """Смена current_org через навбар стрипает ?scope=all из referer-URL,
+        чтобы пользователь увидел рейсы выбранной фирмы, а не сводный обзор."""
+        url = reverse("accounts:switch_org")
+        list_url = reverse("trips:list")
+        resp = self.client.post(
+            url,
+            {"org_id": self.own_b.pk},
+            HTTP_REFERER=f"http://testserver{list_url}?scope=all&q=cargo",
+        )
+        # Редирект — на тот же список, но без scope, с сохранением остальных фильтров.
+        self.assertEqual(resp.status_code, 302)
+        location = resp["Location"]
+        self.assertIn(list_url, location)
+        self.assertNotIn("scope=", location)
+        self.assertIn("q=", location)
+
+    def test_switch_org_preserves_referer_when_no_scope(self):
+        """Если в referer нет scope, URL редиректа остаётся как есть."""
+        url = reverse("accounts:switch_org")
+        list_url = reverse("trips:list")
+        referer = f"http://testserver{list_url}?q=cargo"
+        resp = self.client.post(
+            url, {"org_id": self.own_b.pk}, HTTP_REFERER=referer,
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("q=", resp["Location"])
