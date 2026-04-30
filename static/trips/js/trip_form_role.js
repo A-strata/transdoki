@@ -259,6 +259,28 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Дин. обязательность carrier/driver/truck ──
+    // Зеркалит серверный валидатор validate_required_unless_forwarder:
+    // когда forwarder задан, эти три поля опциональны; иначе — обязательны.
+    // CSS-правило .field:has(:required) > label::after рисует звёздочку
+    // автоматически по значению атрибута required, никаких доп. стилей
+    // менять не нужно.
+    //
+    // Источник истины — фактическое значение id_forwarder в DOM, а не
+    // forwarderEnabled. forwarderEnabled — это UI-флаг видимости колонки;
+    // фактическое наличие forwarder может расходиться с ним кратко (момент
+    // между showColumn и заполнением поля). Атрибут required синхронизируем
+    // только с реальным значением — соответствует тому, что увидит сервер.
+    function syncOptionalFields() {
+        var forwarderEl = document.getElementById('id_forwarder');
+        var hasForwarder = !!(forwarderEl && forwarderEl.value);
+        ['id_carrier', 'id_driver', 'id_truck'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.required = !hasForwarder;
+        });
+    }
+
     function dispatchRoleChange() {
         document.dispatchEvent(new CustomEvent('trip-role-change', {
             detail: { role: activeRole, forwarderEnabled: forwarderEnabled }
@@ -329,6 +351,7 @@ document.addEventListener('DOMContentLoaded', function () {
         syncForwarderCol();
         updateCards();
         syncToggleCheckboxes();
+        syncOptionalFields();
         dispatchRoleChange();
     }
 
@@ -345,6 +368,18 @@ document.addEventListener('DOMContentLoaded', function () {
             carrierEl.addEventListener('change', function () {
                 if (activeRole === 'carrier') syncExclusions();
             });
+        }
+    })();
+
+    // ── Слушатель смены значения forwarder для обязательности полей ──
+    // Когда пользователь выбирает или очищает экспедитора через
+    // autocomplete (× или выбор из дропдауна), <select>#id_forwarder
+    // диспатчит change. applyState не вызывается, поэтому отдельно
+    // пере-синхронизируем required-атрибуты на carrier/driver/truck.
+    (function bindForwarderChangeForOptionality() {
+        var forwarderEl = document.getElementById('id_forwarder');
+        if (forwarderEl) {
+            forwarderEl.addEventListener('change', syncOptionalFields);
         }
     })();
 

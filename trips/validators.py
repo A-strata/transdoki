@@ -118,8 +118,16 @@ def validate_trailer_for_truck(truck, trailer):
 def validate_vehicles_belong_to_carrier(truck, trailer, carrier):
     """
     Валидатор: автомобиль и прицеп (если обязателен)
-    должны принадлежать перевозчику
+    должны принадлежать перевозчику.
+
+    Если carrier=None (трёхзвенный рейс «заказчик + внешний экспедитор»,
+    перевозчик ещё неизвестен) — правило неприменимо: пользователь может
+    знать ТС от экспедитора заранее, а владельца — нет. В этом случае
+    проверка ownership пропускается.
     """
+    if carrier is None:
+        return
+
     errors = {}
 
     # Проверяем автомобиль
@@ -147,6 +155,39 @@ def validate_vehicles_belong_to_carrier(truck, trailer, carrier):
             "Прицеп должен принадлежать перевозчику"
             f"Этот прицеп принадлежит {truck.owner.short_name}"
         )
+
+    if errors:
+        raise ValidationError(errors)
+
+
+def validate_required_unless_forwarder(carrier, driver, truck, forwarder):
+    """
+    Условная обязательность carrier/driver/truck.
+
+    Правило:
+    - Если в рейсе есть экспедитор (forwarder задан, неважно own или
+      внешний) — поля carrier, driver, truck опциональны. Сценарий из
+      реального юзкейса заказчика: логист привлёк экспедитора, рейс
+      нужно создать сразу для печати ТН, а перевозчика и водителя
+      экспедитор подберёт позже (сообщит после погрузки или вовсе
+      впишет в Word руками).
+    - Если экспедитора нет (двухзвенный рейс) — все три поля
+      обязательны: без перевозчика рейс семантически бессмыслен.
+
+    Trailer не входит в правило: он опционален всегда (модель
+    null=True), а для седельных тягачей обязательность доп.
+    проверяется validate_trailer_for_truck.
+    """
+    if forwarder is not None:
+        return
+
+    errors = {}
+    if carrier is None:
+        errors["carrier"] = "Укажите перевозчика."
+    if driver is None:
+        errors["driver"] = "Укажите водителя."
+    if truck is None:
+        errors["truck"] = "Укажите автомобиль."
 
     if errors:
         raise ValidationError(errors)

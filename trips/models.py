@@ -94,6 +94,13 @@ class Trip(UserOwnedModel):
         on_delete=models.PROTECT,
         related_name="trips_as_carrier",
         verbose_name="Перевозчик",
+        # null=True для случая «заказчик + внешний экспедитор»: логист
+        # создаёт рейс, не зная фактического перевозчика (его подбирает
+        # экспедитор позже), и должен иметь возможность распечатать ТН
+        # с известными данными. Серверная требовательность поля
+        # обеспечивается validate_required_unless_forwarder в форме.
+        null=True,
+        blank=True,
     )
     forwarder = models.ForeignKey(
         Organization,
@@ -108,12 +115,18 @@ class Trip(UserOwnedModel):
         on_delete=models.PROTECT,
         related_name="trips_as_driver",
         verbose_name="Водитель",
+        # См. комментарий у carrier — те же соображения. Водитель и ТС
+        # неизвестны, пока перевозчик не назначен.
+        null=True,
+        blank=True,
     )
     truck = models.ForeignKey(
         Vehicle,
         on_delete=models.PROTECT,
         related_name="trips_as_truck",
         verbose_name="Автомобиль",
+        null=True,
+        blank=True,
     )
     trailer = models.ForeignKey(
         Vehicle,

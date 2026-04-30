@@ -122,6 +122,7 @@ from .validators import (
     validate_costs_by_our_company_role,
     validate_forwarder,
     validate_our_company_participation,
+    validate_required_unless_forwarder,
     validate_trailer_for_truck,
     validate_unique_trip_number_and_date,
     validate_vehicles_belong_to_carrier,
@@ -356,6 +357,15 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
                 carrier=cleaned_data.get("carrier"),
                 client_cost=cleaned_data.get("client_cost"),
                 carrier_cost=cleaned_data.get("carrier_cost"),
+                forwarder=cleaned_data.get("forwarder"),
+            )
+            # Обязательность carrier/driver/truck зависит от наличия
+            # экспедитора: если есть — рейс может быть создан для печати
+            # ТН с минимумом данных (см. docstring валидатора).
+            validate_required_unless_forwarder(
+                carrier=cleaned_data.get("carrier"),
+                driver=cleaned_data.get("driver"),
+                truck=cleaned_data.get("truck"),
                 forwarder=cleaned_data.get("forwarder"),
             )
 
