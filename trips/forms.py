@@ -268,22 +268,36 @@ class TripForm(LocalizedDecimalFormMixin, ErrorHighlightMixin, forms.ModelForm):
                 "data-ac-create-empty": "Прицеп не найден в справочнике. Проверьте написание — либо добавьте новый.",
             })
 
-        # Экспедитор: такой же autocomplete, как client/carrier, но
-        # поиск всегда ограничен нашими фирмами (?own=1). Без data-ac-create:
-        # inline-create создавал бы мусорного внешнего контрагента. Но
-        # data-ac-entity-type="organization" задан — чтобы пустой поиск
-        # показывал информативный empty-state «Совпадений среди ваших фирм
-        # нет. Добавить свою фирму можно только в личном кабинете.» вместо
-        # молча скрытого дропдауна.
-        # Видимость поля (колонка parties-forwarder-col) и значение
-        # управляются через карточки ролей в trip_form_role.js — поле
-        # показывается только при активной роли «Экспедитор» и обнуляется
-        # при переключении на другую роль.
+        # Экспедитор: queryset валидации — ВСЕ организации аккаунта,
+        # как у client/carrier. Дискриминация «свои vs чужие» переезжает
+        # в JS: trip_form_role.js добавляет ?own=1 к search-URL, когда
+        # активна роль «Экспедитор» (наша фирма-посредник). При роли
+        # «Заказчик» / «Перевозчик» с включённым тогглом «Привлекаю /
+        # Работаю через экспедитора» поиск идёт по всем организациям —
+        # тогда экспедитором может быть внешний контрагент в трёхзвенной
+        # цепочке A → Б → В.
+        #
+        # data-ac-entity-type="organization" — общий empty-state
+        # автокомплита (для пустого поиска).
+        # data-ac-create НЕ ставится здесь жёстко: trip_form_role.js
+        # включает inline-create только для роли активного контрагента
+        # и для тоггла «внешний экспедитор». См. setCreateAllowed.
+        # Видимость колонки parties-forwarder-col и значение поля
+        # управляются полностью JS-ом из (activeRole, forwarderEnabled).
         if "forwarder" in self.fields:
-            own_orgs = Organization.objects.own_for(account_id)
-            self._setup_ajax_field("forwarder", own_orgs, org_search_url + "?own=1")
+            self._setup_ajax_field("forwarder", full_org, org_search_url)
             self.fields["forwarder"].required = False
-            self.fields["forwarder"].widget.attrs["data-ac-entity-type"] = "organization"
+            # data-ac-create="1" — базовый разрешитель inline-create.
+            # trip_form_role.js динамически снимает его при активной роли
+            # «Экспедитор» (создавать там нечего: forwarder этого режима —
+            # только из наших фирм). На ролях «Заказчик» / «Перевозчик» с
+            # включённым тоггом «Привлекаю/Работаю через экспедитора» он
+            # остаётся включённым — пользователь может добавить нового
+            # внешнего контрагента прямо из дропдауна.
+            self.fields["forwarder"].widget.attrs.update({
+                "data-ac-entity-type": "organization",
+                "data-ac-create": "1",
+            })
 
     def _setup_ajax_field(self, fname, full_qs, search_url, search_type=""):
         """Устанавливает validation queryset, display queryset (текущее значение)

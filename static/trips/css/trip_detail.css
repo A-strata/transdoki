@@ -206,6 +206,26 @@
     font-size: var(--text-sm);
     font-weight: 700;
     color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Бейдж рядом с подзаголовком sub-card.                      */
+/* Используется для маркировки «Внешний посредник» на карточке  */
+/* экспедитора, когда forwarder.is_own_company=False — чтобы    */
+/* визуально отделить случай «мы сами экспедитор» от случая,    */
+/* когда экспедитор — отдельное звено цепочки.                  */
+.participant-badge {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--neutral-bg);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
 }
 
 /* ── Маршрут: вертикальный timeline ── */

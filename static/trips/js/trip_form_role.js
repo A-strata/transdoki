@@ -1,55 +1,68 @@
 /**
  * Роль навбар-фирмы в рейсе: JS-контроллер формы.
  *
- * Архитектура
- * -----------
- * Единственный источник истины — activeRole. Менять его могут только:
- *   1) Автодетект при загрузке (bootstrap из серверных значений).
- *   2) Клик пользователя по карточке роли.
+ * Архитектура (двумерное состояние)
+ * ----------------------------------
+ * Состояние формы — пара (activeRole, forwarderEnabled):
  *
- * Карточка роли определяет:
- *   - что показывает финансовый блок (событие trip-role-change),
- *   - видимость колонки «Экспедитор»,
- *   - источник поиска в autocomplete для поля, соответствующего роли:
- *     активная роль → ?own=1 (в дропдауне только наши фирмы);
- *     остальные     → базовый поиск (все организации, в т.ч. внешние
- *     контрагенты).
- *   - поведение дропдауна на фокус: у активного поля дропдаун с нашими
- *     фирмами вываливается сразу при фокусе (флаг openOnFocusAlways).
- *     Наших фирм обычно немного — выбор быстрее, чем набор.
+ *   activeRole       ∈ { client, carrier, forwarder }
+ *       Какую роль навбар-фирма играет в рейсе. Источник истины — карточка
+ *       роли. Bootstrap: detected role из серверных значений; observer
+ *       откатывается на default.
  *
- * Поле-autocomplete в остальном ведёт себя как обычно: пользователь
- * свободно печатает и выбирает. Две тонкости, вытекающие из того, что
- * роль задана и значение обязательно:
- *   1) При активации карточки, если в целевом поле ещё нет нашей фирмы,
- *      оно предзаполняется навбар-фирмой (orgId).
- *   2) После blur'а поле активной роли не может остаться пустым либо
- *      с чужой фирмой — если так случилось (× при незагрузившемся
- *      дропдауне, несовпавший ввод) — возвращаем orgId.
+ *   forwarderEnabled ∈ { false, true }
+ *       Только для activeRole в { client, carrier }: означает «в рейсе
+ *       присутствует внешний экспедитор как отдельное звено цепочки».
+ *       При activeRole === 'forwarder' принудительно false (бессмыслен —
+ *       мы сами экспедитор).
  *
- * Финансовый блок зависит ТОЛЬКО от активной роли, а не от того, какую
- * именно фирму (из нескольких наших) пользователь выбрал в поле.
+ *       ВАЖНО про carrier-роль: UI-управление (тоггл) есть только в
+ *       карточке client. У carrier тоггла нет осознанно — трёхзвенный
+ *       рейс под навбаром перевозчика out-of-scope MVP. Поэтому в
+ *       carrier-роли forwarderEnabled может стать true только на
+ *       bootstrap-е существующего рейса с уже заполненным forwarder
+ *       (создан под другой own-фирмой). State-машина это поддерживает
+ *       без специальных веток — поле редактируемо как любое другое,
+ *       очистка через × естественным образом сводит cycle к двухзвенному.
  *
- * Роль всегда выбрана
- * -------------------
- * Create: default = 'client'; если у аккаунта есть хоть одно ТС — 'carrier'.
- * Edit:   computeTripRole(поля, viewer). Если viewer не участник (observer) —
- *         фолбэк на тот же default. Полноценный read-only режим для observer —
- *         Task #6.
+ * Видимость колонки «Экспедитор» (parties-forwarder-col):
+ *   activeRole === 'forwarder'                                 → показана
+ *   activeRole в {client, carrier} && forwarderEnabled         → показана
+ *   activeRole в {client, carrier} && !forwarderEnabled        → скрыта
  *
- * Почему так, а не как было
- * -------------------------
- * Прежняя реализация слушала change/blur на полях участников и
- * пересчитывала роль «по факту значения». Это порождало баги: во время
- * набора текста hidden select кратко пустел → роль считалась observer →
- * финансовый блок флипал посреди редактирования. Поток теперь
- * односторонний: роль → ограничения поиска + (одноразовое) предзаполнение.
+ * Поведение поля forwarder:
+ *   activeRole === 'forwarder':
+ *       - search ?own=1, openOnFocusAlways (только наши фирмы)
+ *       - inline-create запрещён (создавать «свою» фирму нельзя из формы)
+ *       - prefill навбар-фирмой (карточка = «навбар играет эту роль»)
+ *   activeRole в {client, carrier} && forwarderEnabled:
+ *       - search без ?own=1 (любая организация аккаунта)
+ *       - inline-create разрешён (можно добавить нового внешнего)
+ *       - prefill отсутствует (пользователь явно выбирает звено цепочки)
+ *   activeRole в {client, carrier} && !forwarderEnabled:
+ *       - значение поля очищается, колонка скрыта
+ *
+ * Источник истины — DOM. forwarderEnabled нигде не персистится отдельно;
+ * на bootstrap выводится из правила «forwarder задан ∧ detected role
+ * ≠ forwarder». При сабмите с form-валидацией провалом сервер ре-рендерит
+ * с теми же значениями полей, и логика восстанавливается симметрично.
  *
  * Зеркало серверной функции
  * -------------------------
  * computeTripRole(...) дублирует trips.roles.compute_trip_role и
  * используется только на bootstrap. Любое изменение серверной функции
  * требует правки здесь + tests_roles.py.
+ *
+ * Карточки — div с role=button
+ * ----------------------------
+ * Раньше карточки были <button>. Внутрь карточки теперь вкладывается
+ * <input type=checkbox> (тоггл «Привлекаю экспедитора» / «Работаю через
+ * экспедитора»), а вложенный input внутри button невалиден по HTML и
+ * приводит к двойному срабатыванию click (button → checkbox → bubble
+ * обратно к button). Поэтому карточка стала <div role="button"
+ * tabindex="0">, а активация по Enter/Space реализована вручную в
+ * keydown-обработчике. Стилизация в CSS — по классу .role-card,
+ * её смена тега не затрагивает.
  */
 document.addEventListener('DOMContentLoaded', function () {
     var config = document.getElementById('role-config');
@@ -70,18 +83,14 @@ document.addEventListener('DOMContentLoaded', function () {
         forwarder: 'id_forwarder',
     };
 
-    // Базовые search-URL селектов до наших модификаций. Нужны, чтобы
-    // на неактивную роль возвращать базовый поиск.
-    // Для client/carrier base — полный org-поиск (внешние контрагенты
-    // разрешены, ?own=1 добавляется только когда роль активна).
-    // Для forwarder base уже содержит ?own=1 (экспедитор всегда только
-    // из наших фирм на уровне формы — см. trips/forms.py); setOwnSearch
-    // не дублирует параметр.
+    // Базовые search-URL и ac-create — заданные сервером в forms.py.
+    // baseSearchUrl: для client/carrier — обычный org-поиск; для
+    // forwarder с Этапа 2 — тоже обычный (?own=1 теперь добавляется
+    // динамически только когда роль = forwarder).
+    // baseAcCreate: '1' для всех трёх (forwarder тоже — нужен на роли
+    // client/carrier с включённым тоггом «внешний экспедитор»). На роли
+    // forwarder снимаем динамически.
     var baseSearchUrl = {};
-    // Исходное состояние data-ac-create (заданное на сервере в forms.py).
-    // Нужно, чтобы setCreateAllowed мог корректно восстанавливать атрибут
-    // на неактивных ролях: для client/carrier — вернуть '1', для forwarder —
-    // оставить пустым (inline-create там никогда не предлагается).
     var baseAcCreate = {};
     ['id_client', 'id_carrier', 'id_forwarder'].forEach(function (id) {
         var el = document.getElementById(id);
@@ -100,19 +109,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'observer';
     }
 
-    var activeRole = null;  // будет установлена в applyRole из bootstrap
+    var activeRole = null;
+    var forwarderEnabled = false;
 
     function isOwnOrg(val) {
         if (!val) return false;
         return ownOrgIds.indexOf(String(val)) !== -1;
     }
 
-    // Флаги параметров поиска, управляемые ролью + выбором активного поля.
-    // Перестраиваются в dataset.searchUrl через rebuildSearchUrl(). Хранить
-    // их отдельно нужно, чтобы setOwnSearch и setExclude могли независимо
-    // менять свои куски без необходимости парсить URL.
-    //   ownOnly   — autocomplete ищет только среди наших фирм (?own=1).
-    //   excludePk — эту организацию исключаем из дропдауна (?exclude=<pk>).
     var searchFlags = {
         id_client: { ownOnly: false, excludePk: '' },
         id_carrier: { ownOnly: false, excludePk: '' },
@@ -126,8 +130,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!base) return;
         var flags = searchFlags[inputId] || {};
         var params = [];
-        // own=1 может уже быть в базовом URL (forwarder, см. trips/forms.py)
-        // — не дублируем.
         if (flags.ownOnly && base.indexOf('own=1') === -1) {
             params.push('own=1');
         }
@@ -138,13 +140,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (params.length) {
             url += (base.indexOf('?') === -1 ? '?' : '&') + params.join('&');
         }
-        // Autocomplete.js читает dataset.searchUrl динамически при каждом
-        // запросе, так что апдейт срабатывает сразу.
         el.dataset.searchUrl = url;
     }
 
-    // У поля активной роли дропдаун со списком наших фирм должен
-    // вываливаться сразу при фокусе, а не ждать ввода двух символов.
     function setOwnSearch(inputId, ownOnly) {
         var flags = searchFlags[inputId];
         if (!flags) return;
@@ -164,22 +162,6 @@ document.addEventListener('DOMContentLoaded', function () {
         rebuildSearchUrl(inputId);
     }
 
-    // Вкл/выкл inline-create footer «+ Добавить …» в дропдауне автокомплита
-    // через управление data-ac-create. Снимаем на поле активной роли: оно
-    // работает в режиме «только наши фирмы» (?own=1), а quick_create создаёт
-    // обычного внешнего контрагента без привязки к account как own-org.
-    // Итог без этого флага: пользователь создавал мусорную организацию,
-    // blur-страховка через 300 ms молча сбрасывала значение обратно на
-    // навбар-фирму, а запись оставалась в БД.
-    //
-    // При восстановлении (allowed=true) уважаем исходное серверное
-    // состояние: для forwarder baseAcCreate[id] === '' — data-ac-create
-    // там никогда не ставилось на сервере, и мы не должны появлять его
-    // задним числом (inline-create экспедитора не предусмотрен). Для
-    // client/carrier baseAcCreate[id] === '1' — возвращаем атрибут.
-    //
-    // autocomplete.js читает data-ac-create при каждом рендере, так что
-    // апдейт подхватывается мгновенно без переинициализации.
     function setCreateAllowed(inputId, allowed) {
         var el = document.getElementById(inputId);
         if (!el) return;
@@ -190,14 +172,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Правило исключений (симметричное для client ↔ carrier):
-    //   activeRole === 'client'  → значение id_client исключаем из id_carrier;
-    //   activeRole === 'carrier' → значение id_carrier исключаем из id_client.
-    // Заказчик и перевозчик не могут совпадать (validate_client_cannot_be_carrier).
-    // Активная роль гарантирует, что в «своём» поле стоит одна из наших фирм
-    // (prefillIfNeeded + blur-страховка); исключение этой фирмы из поля-пары
-    // предотвращает ситуацию «выбрал ту же организацию → ошибка валидации
-    // на сабмите». Во всех прочих комбинациях exclude очищаем.
+    // Заказчик и перевозчик не могут совпадать
+    // (validate_client_cannot_be_carrier). Активная роль гарантирует, что
+    // в «своём» поле стоит одна из наших фирм, поэтому исключаем её
+    // из дропдауна парного поля. Для forwarder exclude не делаем — поле
+    // принимает любую org аккаунта, валидаторы проверят равенство потом.
     function syncExclusions() {
         setExclude('id_client', '');
         setExclude('id_carrier', '');
@@ -215,19 +194,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Предзаполнение поля активной роли навбар-фирмой (orgId).
-    //
-    // Параметр force задаёт семантику:
-    //   force=false (bootstrap) — уважаем уже стоящее значение, если там
-    //       одна из наших фирм (internal-рейс A↔B: client=A, carrier=B —
-    //       оба значения с сервера, не трогаем).
-    //   force=true (клик пользователя по карточке) — всегда ставим навбар.
-    //       Семантика карточки = «навбар-фирма играет эту роль», и она
-    //       обязана зеркалиться в поле. Если в поле уже стояла другая
-    //       своя фирма (B), она заменяется на навбар (A). Альтернативную
-    //       свою фирму пользователь выбирает уже после через dropdown
-    //       (own=1, openOnFocusAlways).
-    // Когда текущее значение уже равно orgId — no-op (не дёргаем change).
     function ensureOrgOption(select) {
         if (!select || select.tagName !== 'SELECT') return;
         var exists = Array.from(select.options).some(function (o) {
@@ -244,114 +210,129 @@ document.addEventListener('DOMContentLoaded', function () {
         if (el.tagName === 'SELECT') {
             ensureOrgOption(el);
             el.value = orgId;
-            // change → autocomplete.js синхронизирует видимый input и ×.
             el.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-            // Фолбэк на случай не-SELECT (не должен срабатывать в текущей
-            // конфигурации — все три поля рендерятся как autocomplete).
             el.value = orgId;
+        }
+    }
+
+    function clearField(inputId) {
+        var el = document.getElementById(inputId);
+        if (!el) return;
+        if (el.value) {
+            el.value = '';
+            if (el.tagName === 'SELECT') {
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
     }
 
     var partiesGrid = document.getElementById('parties-grid');
     var forwarderCol = document.getElementById('parties-forwarder-col');
 
-    function syncForwarderCol(role) {
+    function syncForwarderCol() {
         if (!partiesGrid || !forwarderCol) return;
-        var isForwarder = role === 'forwarder';
-        forwarderCol.hidden = !isForwarder;
-        partiesGrid.classList.toggle('parties-grid--with-forwarder', isForwarder);
+        var visible = activeRole === 'forwarder' ||
+            ((activeRole === 'client' || activeRole === 'carrier') && forwarderEnabled);
+        forwarderCol.hidden = !visible;
+        partiesGrid.classList.toggle('parties-grid--with-forwarder', visible);
     }
 
-    function updateCards(role) {
+    function syncForwarderField() {
+        var roleIsForwarder = activeRole === 'forwarder';
+        var roleIsParticipant = activeRole === 'client' || activeRole === 'carrier';
+        setOwnSearch('id_forwarder', roleIsForwarder);
+        setCreateAllowed('id_forwarder', roleIsParticipant && forwarderEnabled);
+    }
+
+    function updateCards() {
         cards.forEach(function (c) {
-            var isActive = c.dataset.role === role;
+            var isActive = c.dataset.role === activeRole;
             c.classList.toggle('is-active', isActive);
             c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         });
     }
 
-    function dispatchRoleChange(role) {
-        document.dispatchEvent(new CustomEvent('trip-role-change', { detail: { role: role } }));
+    function syncToggleCheckboxes() {
+        document.querySelectorAll('[data-role-toggle="forwarder"]').forEach(function (cb) {
+            cb.checked = forwarderEnabled;
+        });
     }
 
-    // ── Главный мутатор ──
-    //   userInitiated=true (клик по карточке):
-    //     - поле активной роли: search URL → ?own=1, ставим навбар-фирму
-    //       ВСЕГДА (force=true). Это зеркалит семантику карточки: «навбар
-    //       играет эту роль». Если там уже стояла другая своя фирма — она
-    //       заменяется на навбар; чтобы оставить альтернативную свою фирму,
-    //       пользователь выберет её в dropdown'е уже после клика карточки.
-    //     - поле предыдущей активной роли (client/carrier): если там
-    //       одна из наших фирм — чистим (артефакт предыдущего prefill'а,
-    //       не ввод пользователя: иначе ловится validate_client_cannot_be_carrier).
-    //       Внешний контрагент — оставляем.
-    //     - forwarder, если стал неактивным: значение очищаем (экспедитор
-    //       всегда своя фирма; поле видимо только при активной роли).
-    //
-    //   userInitiated=false (bootstrap):
-    //     - поле активной роли: search URL → ?own=1, предзаполняем
-    //       навбаром только если там НЕ наша фирма (force=false). Это
-    //       уважает серверные значения, включая internal-рейс A↔B, где
-    //       в client=A, carrier=B обе фирмы свои.
-    //     - client/carrier неактивной роли: значения не трогаем
-    //       (серверные данные не стираем).
-    //     - forwarder, если стал неактивным: всё равно очищаем (historical
-    //       behavior; edge-case observer-fallback отмечен как Task #6).
-    function applyRole(newRole, opts) {
-        opts = opts || {};
-        var userInitiated = !!opts.userInitiated;
-        var prevRole = activeRole;
-        activeRole = newRole;
+    function dispatchRoleChange() {
+        document.dispatchEvent(new CustomEvent('trip-role-change', {
+            detail: { role: activeRole, forwarderEnabled: forwarderEnabled }
+        }));
+    }
 
-        ['client', 'carrier', 'forwarder'].forEach(function (r) {
+    /**
+     * Главный мутатор. Принимает любые комбинации role / forwarderEnabled.
+     * Семантика:
+     *   role не задан → оставляем текущую активную роль
+     *   forwarderEnabled не задан → оставляем текущий, но при userInitiated
+     *       смене роли принудительно сбрасываем (UX: новая роль начинается
+     *       с чистого листа, чтобы предыдущая «открытая» колонка не
+     *       тащилась на новую роль).
+     *   role === 'forwarder' → forwarderEnabled принудительно false
+     *       (бессмыслен — мы сами экспедитор).
+     */
+    function applyState(opts) {
+        opts = opts || {};
+        var prevRole = activeRole;
+        var newRole = opts.role !== undefined ? opts.role : activeRole;
+        var newFwdEnabled = opts.forwarderEnabled !== undefined
+            ? opts.forwarderEnabled : forwarderEnabled;
+        var userInitiated = !!opts.userInitiated;
+
+        if (newRole === 'forwarder') {
+            newFwdEnabled = false;
+        }
+        if (userInitiated && newRole !== prevRole && opts.forwarderEnabled === undefined) {
+            newFwdEnabled = false;
+        }
+
+        activeRole = newRole;
+        forwarderEnabled = newFwdEnabled;
+
+        // ── Поля client/carrier ──
+        ['client', 'carrier'].forEach(function (r) {
             var inputId = ROLE_TO_INPUT[r];
-            var active = (r === newRole);
+            var active = (r === activeRole);
             setOwnSearch(inputId, active);
-            // Футер «+ Добавить» на поле активной роли скрываем —
-            // создавать там нечего (см. setCreateAllowed). Для forwarder
-            // setCreateAllowed(..., true) — no-op, потому что на сервере
-            // data-ac-create не ставилось (baseAcCreate остаётся пустым).
-            // Симметрично: на предыдущем активном client/carrier футер
-            // возвращается, когда роль уходит с него.
             setCreateAllowed(inputId, !active);
             if (active) {
                 prefillIfNeeded(inputId, userInitiated);
                 return;
             }
-            var el = document.getElementById(inputId);
-            if (!el) return;
-            if (r === 'forwarder') {
-                if (el.value) {
-                    el.value = '';
-                    if (el.tagName === 'SELECT') {
-                        el.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                }
-                return;
-            }
-            // client/carrier: чистим только при user-initiated смене роли
-            // и только если там одна из наших фирм (артефакт prefill'а).
-            if (userInitiated && r === prevRole && isOwnOrg(el.value)) {
-                el.value = '';
-                if (el.tagName === 'SELECT') {
-                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                }
+            // Чистим поле предыдущей активной роли только при user-initiated
+            // смене и только если там одна из наших фирм (артефакт prefill'а).
+            // Внешнего контрагента, явно введённого пользователем, не трогаем.
+            var prevEl = document.getElementById(inputId);
+            if (userInitiated && r === prevRole && prevEl && isOwnOrg(prevEl.value)) {
+                clearField(inputId);
             }
         });
 
+        // ── Поле forwarder ──
+        syncForwarderField();
+        if (activeRole === 'forwarder') {
+            prefillIfNeeded('id_forwarder', userInitiated);
+        } else if (!forwarderEnabled) {
+            // Колонка скрыта — значение не имеет смысла.
+            clearField('id_forwarder');
+        }
+        // (activeRole в {client, carrier} && forwarderEnabled): значение
+        // оставляем — либо bootstrap восстановил серверный forwarder, либо
+        // пользователь введёт вручную.
+
         syncExclusions();
-        syncForwarderCol(newRole);
-        updateCards(newRole);
-        dispatchRoleChange(newRole);
+        syncForwarderCol();
+        updateCards();
+        syncToggleCheckboxes();
+        dispatchRoleChange();
     }
 
-    // Пересчёт exclude при изменении значения в поле активной роли.
-    // autocomplete.js диспатчит 'change' на SELECT при выборе из дропдауна
-    // или очистке через ×. Ребилд отрабатывает сразу — следующий запрос
-    // в парном поле уже пойдёт с обновлённым ?exclude.
-    //   activeRole=client:  change в id_client  → пересчёт exclude для id_carrier;
-    //   activeRole=carrier: change в id_carrier → пересчёт exclude для id_client.
+    // ── Слушатели изменений в полях для пересчёта exclude ──
     (function bindChangeForExclusions() {
         var clientEl = document.getElementById('id_client');
         if (clientEl) {
@@ -367,24 +348,53 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     })();
 
-    // ── Клик по карточке ──
-    //   Роль всегда выбрана, поэтому повторный клик по активной — no-op.
+    // ── Активация карточки ролью (клик / Enter / Space) ──
+    function activateCard(card) {
+        var role = card.dataset.role;
+        if (activeRole !== role) {
+            applyState({ role: role, userInitiated: true });
+        }
+    }
+
     cards.forEach(function (card) {
-        card.addEventListener('click', function () {
-            var role = card.dataset.role;
-            if (activeRole !== role) applyRole(role, { userInitiated: true });
+        card.addEventListener('click', function (e) {
+            // Клик по чекбоксу/лейблу не активирует карточку — иначе
+            // bubble привёл бы к двойному эффекту: смена роли + toggle.
+            if (e.target.closest('.role-card-toggle')) return;
+            activateCard(card);
+        });
+        card.addEventListener('keydown', function (e) {
+            if (e.target.closest('.role-card-toggle')) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                activateCard(card);
+            }
+        });
+    });
+
+    // ── Слушатели чекбоксов «Привлекаю / Работаю через экспедитора» ──
+    document.querySelectorAll('[data-role-toggle="forwarder"]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            // Тоггл должен срабатывать только на активной карточке. CSS
+            // прячет неактивные тогглы, но защитимся от программного
+            // change — иначе stale-чекбокс мог бы изменить состояние.
+            var card = cb.closest('.role-card');
+            if (!card || !card.classList.contains('is-active')) {
+                cb.checked = forwarderEnabled;
+                return;
+            }
+            applyState({
+                forwarderEnabled: cb.checked,
+                userInitiated: true,
+            });
         });
     });
 
     // ── Страховка: поле активной роли не должно остаться пустым ──
-    //
-    // Когда выбрана карточка роли, соответствующее поле обязано содержать
-    // одну из наших фирм. Пользователь может случайно очистить его (× или
-    // стереть ввод и уйти, не выбрав из дропдауна). autocomplete.js
-    // в своём blur даёт 200ms на авто-select; мы проверяем ПОСЛЕ этого
-    // окна и, если поле всё ещё пустое или в нём не наша фирма, возвращаем
-    // orgId (навбар-фирму). Это НЕ reverse-flow: роль не меняется, мы
-    // лишь восстанавливаем контракт «поле активной роли — наша фирма».
+    // Применяется только к id_client/id_carrier/id_forwarder, когда
+    // соответствующая роль активна. Для роли client/carrier с тоггом ON
+    // forwarder-поле НЕ страхуем: пользователь может намеренно оставить
+    // его пустым и форма сохранится без forwarder.
     ['id_client', 'id_carrier', 'id_forwarder'].forEach(function (id) {
         var select = document.getElementById(id);
         if (!select) return;
@@ -423,10 +433,15 @@ document.addEventListener('DOMContentLoaded', function () {
         startRole = defaultRole();
     } else {
         var detected = computeTripRole(initialClient, initialCarrier, initialForwarder, orgId);
-        // Observer edit-mode (viewer не участник) — фолбэк на default,
-        // чтобы интерфейс не оставался без выбранной роли. Полноценный
-        // read-only режим — Task #6.
         startRole = (detected === 'observer') ? defaultRole() : detected;
     }
-    applyRole(startRole);
+
+    // forwarderEnabled выводится из факта наличия forwarder при detected
+    // роли ≠ forwarder. Покрывает edit-режим: если рейс создан с внешним
+    // экспедитором (наша фирма — client/carrier), при загрузке формы
+    // тоггл должен быть в положении ON.
+    var startFwdEnabled = !!(initialForwarder &&
+        (startRole === 'client' || startRole === 'carrier'));
+
+    applyState({ role: startRole, forwarderEnabled: startFwdEnabled });
 });

@@ -203,6 +203,34 @@
     line-height: 1.3;
 }
 
+/* ── Тоггл «Привлекаю/Работаю через экспедитора» ── */
+/* Рендерится в карточках client и carrier, виден только когда карточка */
+/* активна. На карточке forwarder тоггла нет — там колонка экспедитора */
+/* раскрывается автоматически. */
+.role-card-toggle {
+    display: none;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    width: 100%;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-xs);
+    color: var(--text);
+    cursor: pointer;
+    line-height: 1.3;
+}
+
+.role-card.is-active .role-card-toggle {
+    display: flex;
+}
+
+.role-card-toggle input[type="checkbox"] {
+    margin: 0;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
 
 /* ── Анимация переключения роли ── */
 @keyframes slideIn {

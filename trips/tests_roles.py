@@ -146,6 +146,27 @@ class ComputeTripRoleTests(SimpleTestCase):
         )
         self.assertEqual(role, TripRole.CARRIER)
 
+    # ── Внешний экспедитор: не должен «отбирать» роль у нашей фирмы ──
+    # Сценарий Этапа 1: A (own client) → Б (внешний forwarder) → В (внешний
+    # carrier). Viewer = A, forwarder = Б. Должно вернуться CLIENT, не
+    # FORWARDER. compute_trip_role оперирует id-ями и не знает про
+    # is_own_company — корректность гарантирует то, что viewer_org_id (наш A)
+    # не совпадает с forwarder_id (внешний Б).
+
+    def test_external_forwarder_keeps_client_role_for_own_client(self):
+        role = compute_trip_role(
+            client_id=SL, carrier_id=OTHER, forwarder_id=FWD,
+            viewer_org_id=SL,
+        )
+        self.assertEqual(role, TripRole.CLIENT)
+
+    def test_external_forwarder_keeps_carrier_role_for_own_carrier(self):
+        role = compute_trip_role(
+            client_id=OTHER, carrier_id=IP, forwarder_id=FWD,
+            viewer_org_id=IP,
+        )
+        self.assertEqual(role, TripRole.CARRIER)
+
     # ── Keyword-only: защита от ошибок порядка аргументов ──
 
     def test_positional_args_rejected(self):

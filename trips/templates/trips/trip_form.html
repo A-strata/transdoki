@@ -76,18 +76,37 @@
         <div class="section">
             <h2 class="section-title">Моя роль в перевозке</h2>
             <div class="role-cards">
-                <button type="button" class="role-card" data-role="client" aria-pressed="false">
+                {# Карточка-кнопка содержит тоггл-чекбокс, который виден  #}
+                {# только когда карточка активна. Используется <div role="button"> #}
+                {# вместо <button>: вложенный <input type="checkbox"> внутри <button> #}
+                {# невалиден по HTML, и клик по чекбоксу будет всплывать как клик #}
+                {# по button → активация карточки + одновременный toggle, #}
+                {# что приводит к рассинхрону. div + role/tabindex/keyboard handler #}
+                {# в JS даёт ту же доступность без этой коллизии. #}
+                <div class="role-card" data-role="client" role="button" tabindex="0" aria-pressed="false">
                     <span class="role-card-title">Заказчик</span>
                     <span class="role-card-hint">Моя фирма заказывает перевозку</span>
-                </button>
-                <button type="button" class="role-card" data-role="forwarder" aria-pressed="false">
+                    <label class="role-card-toggle" data-toggle="forwarder">
+                        <input type="checkbox" data-role-toggle="forwarder">
+                        <span>Привлекаю экспедитора</span>
+                    </label>
+                </div>
+                <div class="role-card" data-role="forwarder" role="button" tabindex="0" aria-pressed="false">
                     <span class="role-card-title">Экспедитор</span>
                     <span class="role-card-hint">Я нахожу груз и транспорт</span>
-                </button>
-                <button type="button" class="role-card" data-role="carrier" aria-pressed="false">
+                </div>
+                {# В карточке «Перевозчик» тоггла «Работаю через экспедитора»  #}
+                {# нет осознанно: трёхзвенный рейс под навбаром перевозчика     #}
+                {# out-of-scope MVP. Forwarder может появиться только если рейс #}
+                {# был создан под другой own-фирмой (роль client) с уже         #}
+                {# заполненным экспедитором — тогда bootstrap покажет колонку,  #}
+                {# поле editable как обычно. Не добавляйте сюда тоггл «для      #}
+                {# симметрии» без явного product-решения, иначе нарушите        #}
+                {# политику и/или сломаете JS-state-машину.                     #}
+                <div class="role-card" data-role="carrier" role="button" tabindex="0" aria-pressed="false">
                     <span class="role-card-title">Перевозчик</span>
                     <span class="role-card-hint">Моя фирма выполняет перевозку</span>
-                </button>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -111,7 +130,7 @@
                     <div class="field">
                         <label for="{{ form.forwarder.id_for_label }}">Организация</label>
                         {{ form.forwarder }}
-                        <p class="helptext">Ваша фирма выступает посредником между заказчиком и перевозчиком.</p>
+                        <p class="helptext">Посредник между заказчиком и перевозчиком.</p>
                         {{ form.forwarder.errors }}
                     </div>
                 </div>

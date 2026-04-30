@@ -84,6 +84,37 @@ class TNGenerator(BaseDocxGenerator):
         "trips/templates/docs/tn_template.docx",
     )
 
+    @staticmethod
+    def _format_party(org) -> str:
+        """
+        Форматирует организацию для подстановки в ТН в виде
+        «Краткое наименование, ИНН <номер_инн>, юридический адрес».
+
+        Используется для transport_customer / service_customer:
+        накладная требует полные реквизиты участника одной строкой,
+        в отличие от грузоотправителя/грузополучателя, где имя
+        печатается отдельно.
+
+        Деградирует gracefully:
+        - org=None → "—" (для service_customer без forwarder вместо
+          этого вызывается отдельная ветка с пустой строкой);
+        - отсутствующий адрес/инн пропускается (для тестовых данных
+          и юр.лиц, у которых поле ещё не заполнено).
+        """
+        if not org:
+            return "—"
+        parts = []
+        name = (getattr(org, "short_name", "") or "").strip()
+        if name:
+            parts.append(name)
+        inn = (getattr(org, "inn", "") or "").strip()
+        if inn:
+            parts.append(f"ИНН {inn}")
+        address = (getattr(org, "address", "") or "").strip()
+        if address:
+            parts.append(address)
+        return ", ".join(parts) if parts else "—"
+
     @classmethod
     def build_context(cls, trip) -> dict:
         def fmt_date(date_val, format_str):
@@ -101,6 +132,24 @@ class TNGenerator(BaseDocxGenerator):
         load_p = trip.load_point
         unload_p = trip.unload_point
 
+        # Распределение участников в реквизитах ТН.
+        # Логика отражает 87-ФЗ «О ТЭД» / ПП №2200:
+        #   - В трёхзвенной цепочке (есть forwarder) договор перевозки
+        #     заключён между перевозчиком и экспедитором; экспедитор
+        #     становится «Заказчиком перевозки» (transport_customer)
+        #     в накладной. Грузовладелец (наш client) при этом
+        #     указывается как «Заказчик услуг экспедирования»
+        #     (service_customer) — это разные графы.
+        #   - В двухзвенной (без forwarder) роль transport_customer
+        #     играет сам client; service_customer пуст — отдельной
+        #     экспедиторской услуги нет.
+        if trip.forwarder is not None:
+            transport_customer = cls._format_party(trip.forwarder)
+            service_customer = cls._format_party(trip.client)
+        else:
+            transport_customer = cls._format_party(trip.client)
+            service_customer = ""
+
         return {
             **branding_context(trip.account),
             "date_of_trip": fmt_date(trip.date_of_trip, "%d.%m.%Y"),
@@ -111,6 +160,10 @@ class TNGenerator(BaseDocxGenerator):
             "consignor": (load_p.organization if load_p and load_p.organization else None) or "—",
             "consignee": (unload_p.organization if unload_p and unload_p.organization else None) or "—",
             "carrier": trip.carrier or "—",
+            # Реквизиты участников договора перевозки и услуг экспедирования.
+            # См. подробный комментарий выше в build_context.
+            "transport_customer": transport_customer,
+            "service_customer": service_customer,
             "driver": trip.driver or "—",
             "truck": trip.truck or "—",
             "trailer": trip.trailer or "—",
@@ -220,6 +273,25 @@ class AgreementRequestGenerator(TNGenerator):
             "bik": bank.bic if bank else "—",
         }
 
+    @classmethod
+    def _build_payment_terms_text(cls, method: str, condition: str, term) -> str:
+        method_map = {
+            "cashless": "Безналичный расчёт",
+            "cash": "Наличный расчёт",
+        }
+        condition_map = {
+            "documents": "по оригиналам документов",
+            "unloading": "оплата на выгрузке",
+        }
+        parts = []
+        if method in method_map:
+            parts.append(method_map[method])
+        if condition in condition_map:
+            parts.append(condition_map[condition])
+        if term and condition != "unloading":
+            parts.append(f"через {int(term)} банк. дн.")
+        return ", ".join(parts) if parts else "—"
+
     @staticmethod
     def _format_rate_ru(amount) -> str:
         """Форматирует число по-русски: '1 234,56' (неразрывный пробел, запятая)."""
@@ -240,14 +312,29 @@ class AgreementRequestGenerator(TNGenerator):
         if trip.carrier and trip.carrier.is_own_company:
             own, counterparty = trip.carrier, trip.client
             rate, rate_unit_display = trip.client_cost, trip.get_client_cost_unit_display()
+            vat_rate = trip.client_vat_rate
+            pay_method = trip.client_payment_method
+            pay_condition = trip.payment_condition
+            pay_term = trip.payment_term
         else:
             own, counterparty = trip.client, trip.carrier
             rate, rate_unit_display = trip.carrier_cost, trip.get_carrier_cost_unit_display()
+            vat_rate = trip.carrier_vat_rate
+            pay_method = trip.carrier_payment_method
+            pay_condition = trip.carrier_payment_condition
+            pay_term = trip.carrier_payment_term
+
+        context["payment_terms_text"] = cls._build_payment_terms_text(
+            pay_method, pay_condition, pay_term
+        )
 
         if rate is not None:
             unit_label = rate_unit_display or ""
+            vat_text = (
+                "НДС не облагается" if vat_rate is None else f"в т. ч. НДС {vat_rate}%"
+            )
             context["client_cost"] = (
-                f"{cls._format_rate_ru(rate)} {unit_label}".strip()
+                f"{cls._format_rate_ru(rate)} {unit_label}".strip() + f", {vat_text}"
             )
 
         own_bank = cls._bank_details(own)

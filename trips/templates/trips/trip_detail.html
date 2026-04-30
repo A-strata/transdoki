@@ -167,7 +167,18 @@
 
                 {% if trip.forwarder %}
                 <div class="sub-card">
-                    <h3 class="sub-title">Экспедитор</h3>
+                    <h3 class="sub-title">
+                        Экспедитор
+                        {% if not trip.forwarder.is_own_company %}
+                            {# Внешний экспедитор: трёхзвенная цепочка, в которой #}
+                            {# наша фирма — заказчик или перевозчик. Бейдж #}
+                            {# подсказывает пользователю, какой документооборот #}
+                            {# здесь применим (договор-заявка с экспедитором, #}
+                            {# экспедиторская расписка), отличая от случая #}
+                            {# «мы сами экспедитор» — там трактовка иная. #}
+                            <span class="participant-badge">Внешний посредник</span>
+                        {% endif %}
+                    </h3>
                     <div class="kv">
                         <p class="kv-label">Организация</p>
                         <p class="kv-value">
@@ -223,10 +234,20 @@
 
             {% if trip_role == 'client' %}
             {# ── Заказчик: одна колонка — стоимость перевозки (carrier) ── #}
+            {# Подпись зависит от того, есть ли в цепочке внешний экспедитор: #}
+            {# при его наличии получатель платежа — экспедитор, не перевозчик. #}
+            {# Если экспедитор — наша же фирма (is_own_company), это сценарий #}
+            {# internal-рейса, для подписи он эквивалентен прямой оплате. #}
             <div class="finance-single">
                 <div class="finance-col">
                     <h3 class="finance-col-title">Стоимость перевозки</h3>
-                    <p class="finance-hint">Сумма, которую вы заплатите за перевозку</p>
+                    <p class="finance-hint">
+                        {% if trip.forwarder and not trip.forwarder.is_own_company %}
+                            Сумма, которую вы заплатите экспедитору
+                        {% else %}
+                            Сумма, которую вы заплатите за перевозку
+                        {% endif %}
+                    </p>
 
                     <div class="kv-grid">
                         <div class="kv">
@@ -251,10 +272,18 @@
 
             {% elif trip_role == 'carrier' %}
             {# ── Перевозчик: одна колонка — стоимость перевозки (client) ── #}
+            {# Симметрично client-ветке: при внешнем экспедиторе плательщик #}
+            {# для нас — экспедитор, не заказчик-грузовладелец. #}
             <div class="finance-single">
                 <div class="finance-col">
                     <h3 class="finance-col-title">Стоимость перевозки</h3>
-                    <p class="finance-hint">Сумма, которую вы получите за перевозку</p>
+                    <p class="finance-hint">
+                        {% if trip.forwarder and not trip.forwarder.is_own_company %}
+                            Сумма, которую вы получите от экспедитора
+                        {% else %}
+                            Сумма, которую вы получите за перевозку
+                        {% endif %}
+                    </p>
 
                     <div class="kv-grid">
                         <div class="kv">

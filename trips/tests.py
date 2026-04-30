@@ -756,29 +756,127 @@ class ForwarderFieldTests(RouteBuilderTestBase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn(trip, list(resp.context["trips"]))
 
-    def test_form_rejects_external_forwarder(self):
-        """Экспедитором может быть только наша фирма — внешняя отклоняется.
+    def test_form_accepts_external_forwarder_when_we_are_client(self):
+        """
+        Внешний экспедитор допустим, когда наша фирма — заказчик.
 
-        Исторически здесь проверялось ограничение «forwarder = current_org».
-        С Phase 1.5 (role-driven autocomplete) ограничение снято: экспедитором
-        может быть ЛЮБАЯ из наших фирм аккаунта. Проверка is_own_company
-        осталась и проверяется этим тестом."""
+        Сценарий трёхзвенной цепочки: A (наш клиент-заказчик) → Б (внешний
+        экспедитор) → В (внешний перевозчик). Историческое ограничение
+        «forwarder обязан быть own-фирмой» снято в рамках Этапа 1: внешний
+        forwarder приемлем, потому что наша фирма участвует в перевозке
+        как заказчик и validate_our_company_participation удовлетворён.
+        """
         from trips.forms import TripForm
         form = TripForm(
             data={
                 "date_of_trip": "2026-05-01",
-                "client": self.external_org.pk,
+                "client": self.our_org.pk,            # мы — заказчик
+                "carrier": self.external_org.pk,      # внешний перевозчик
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "carrier_cost": "50000",              # роль «мы-заказчик» → carrier_cost
+                "carrier_cost_unit": "rub",
+                "forwarder": self.third_org.pk,       # внешний экспедитор
+            },
+            user=self.user,
+            current_org=self.our_org,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_accepts_external_forwarder_when_we_are_carrier(self):
+        """
+        Внешний экспедитор допустим, когда наша фирма — перевозчик.
+
+        Сценарий: внешний заказчик → внешний экспедитор → мы как
+        фактический перевозчик. Симметричный случай к
+        test_form_accepts_external_forwarder_when_we_are_client.
+        """
+        from trips.forms import TripForm
+        own_truck = Vehicle.objects.create(
+            grn="С500ОО77", brand="МАЗ", vehicle_type="single",
+            owner=self.our_org,  # ТС принадлежит нам как перевозчику
+            created_by=self.user, account=self.account,
+        )
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.external_org.pk,       # внешний заказчик
+                "carrier": self.our_org.pk,           # мы — перевозчик
+                "driver": self.driver.pk,
+                "truck": own_truck.pk,
+                "cargo": "Груз",
+                "client_cost": "55000",               # роль «мы-перевозчик» → client_cost
+                "client_cost_unit": "rub",
+                "forwarder": self.third_org.pk,       # внешний экспедитор
+            },
+            user=self.user,
+            current_org=self.our_org,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_rejects_external_forwarder_when_we_dont_participate(self):
+        """
+        Внешний экспедитор + ни client, ни carrier не наша фирма →
+        ошибка validate_our_company_participation. Это страховка от
+        попытки описать чужую цепочку, в которой нашей фирмы нет вовсе.
+        """
+        from trips.forms import TripForm
+        # Четвёртая внешняя организация — чтобы все три участника были разными
+        fourth_org = Organization.objects.create(
+            full_name='ООО "Четвёртая"', short_name="Четвёртая",
+            inn="5024002119",
+            created_by=self.user, account=self.account,
+        )
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.third_org.pk,          # внешний
+                "carrier": self.external_org.pk,      # внешний
+                "driver": self.driver.pk,
+                "truck": self.truck.pk,
+                "cargo": "Груз",
+                "forwarder": fourth_org.pk,           # внешний, не равен ни client ни carrier
+            },
+            user=self.user,
+            current_org=self.our_org,
+        )
+        self.assertFalse(form.is_valid())
+        # Ошибка — non_field_error от validate_our_company_participation
+        self.assertTrue(
+            any("компания" in str(e).lower() or "участн" in str(e).lower()
+                for e in form.non_field_errors()),
+            f"Ожидаем ошибку про участие нашей фирмы; got: {form.errors}",
+        )
+
+    def test_form_external_forwarder_keeps_cost_rules_for_client_role(self):
+        """
+        Внешний forwarder НЕ снимает обычные правила стоимостей.
+
+        Мы — заказчик, экспедитор внешний → разрешено заполнять только
+        carrier_cost (то, что мы платим в цепочку). Заполнение client_cost
+        бессмысленно с точки зрения нашего учёта и валидатор это ловит.
+        Контрастирует с поведением «forwarder.is_own_company=True», где
+        обе стоимости разрешены как маржа посредника.
+        """
+        from trips.forms import TripForm
+        form = TripForm(
+            data={
+                "date_of_trip": "2026-05-01",
+                "client": self.our_org.pk,            # мы — заказчик
                 "carrier": self.external_org.pk,
                 "driver": self.driver.pk,
                 "truck": self.truck.pk,
                 "cargo": "Груз",
-                "forwarder": self.external_org.pk,  # не наша фирма
+                "client_cost": "50000",               # запрещено для роли «заказчик»
+                "client_cost_unit": "rub",
+                "forwarder": self.third_org.pk,       # внешний экспедитор
             },
             user=self.user,
-            current_org=self.our_org2,
+            current_org=self.our_org,
         )
         self.assertFalse(form.is_valid())
-        self.assertIn("forwarder", form.errors)
+        self.assertIn("client_cost", form.errors)
 
     def test_form_accepts_own_forwarder_not_equal_to_current_org(self):
         """Экспедитор — не обязательно совпадает с current_org; достаточно
